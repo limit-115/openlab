@@ -1,4 +1,4 @@
-import { ExternalEffect } from "@lab/protocol/constants";
+import { ExternalEffect, SourceClassification } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
 import {
     DirectorPlanSchema,
@@ -150,6 +150,35 @@ describe("research structured-output contracts", () => {
         expect(result.evidence[0]?.target_kind).toBe(RESEARCH_TARGET_KIND.ASSUMPTION);
         expect(result.capability_requests).toEqual([]);
         expect(result.capability_blocked).toBe(false);
+        expect(result.sources).toEqual([]);
+    });
+
+    it("accepts source-only citations only as an inconclusive non-empirical result", () => {
+        const sourceOnly = {
+            summary: "A relevant specification was identified",
+            hypothesis: "The specification may constrain the implementation",
+            outcome: RESEARCH_OUTCOME.INCONCLUSIVE,
+            evidence: [],
+            sources: [
+                {
+                    target_kind: RESEARCH_TARGET_KIND.CLAIM,
+                    target_index: 0,
+                    url: "https://example.com/specification",
+                    title: "Example specification",
+                    claimed_classification: SourceClassification.PRIMARY
+                }
+            ],
+            limitations: ["The citation is not empirical evidence"],
+            next_experiments: []
+        } as const;
+
+        expect(ResearchResultSchema.parse(sourceOnly).execution_plan).toBeUndefined();
+        expect(() =>
+            ResearchResultSchema.parse({
+                ...sourceOnly,
+                outcome: RESEARCH_OUTCOME.SUPPORTED
+            })
+        ).toThrow(/must remain inconclusive/);
     });
 
     it("rejects model-created artifact paths as empirical evidence", () => {

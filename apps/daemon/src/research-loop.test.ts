@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { chmod, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
+import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -30,9 +31,10 @@ import {
     ExperimentStatus,
     ExternalEffect,
     InternalTaskStatus,
-    LabState
+    LabState,
+    SourceClassification
 } from "@lab/protocol/constants";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
     CRITIC_VERDICT,
     EVALUATOR_VERDICT,
@@ -94,6 +96,11 @@ const DormantCapabilityFixture = {
     BLOCKER: "The research lab orchestrator crashes while restoring queued tasks"
 } as const;
 
+const SourceCitationFixture = {
+    BODY: "official citation body",
+    TITLE: "Official benchmark specification"
+} as const;
+
 class ScriptedHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE;
     readonly requests: HarnessRunRequest[] = [];
@@ -118,6 +125,8 @@ class ScriptedHarness implements AgentHarness {
     readonly #inspectOutcomeEnvironment: boolean;
     readonly #requestVerifierCapability: boolean;
     readonly #protectedControlPlaneDirection: boolean;
+    readonly #sourceCandidateUrl: string | undefined;
+    readonly #sourceOnly: boolean;
     readonly #researchEvaluatorPaths: string[] = [];
     readonly #precomputedArtifactPaths: string[] = [];
 
@@ -143,6 +152,8 @@ class ScriptedHarness implements AgentHarness {
             inspectOutcomeEnvironment?: boolean;
             requestVerifierCapability?: boolean;
             protectedControlPlaneDirection?: boolean;
+            sourceCandidateUrl?: string;
+            sourceOnly?: boolean;
         } = {}
     ) {
         this.kind = kind;
@@ -165,6 +176,8 @@ class ScriptedHarness implements AgentHarness {
         this.#inspectOutcomeEnvironment = options.inspectOutcomeEnvironment ?? false;
         this.#requestVerifierCapability = options.requestVerifierCapability ?? false;
         this.#protectedControlPlaneDirection = options.protectedControlPlaneDirection ?? false;
+        this.#sourceCandidateUrl = options.sourceCandidateUrl;
+        this.#sourceOnly = options.sourceOnly ?? false;
     }
 
     async preflight(): Promise<HarnessPreflight> {
@@ -269,6 +282,18 @@ class ScriptedHarness implements AgentHarness {
             } else {
                 this.#researchEvaluatorPaths.shift();
             }
+            const sourceCandidates =
+                this.#sourceCandidateUrl === undefined
+                    ? []
+                    : [
+                          {
+                              target_kind: RESEARCH_TARGET_KIND.CLAIM,
+                              target_index: 0,
+                              url: this.#sourceCandidateUrl,
+                              title: SourceCitationFixture.TITLE,
+                              claimed_classification: SourceClassification.PRIMARY
+                          }
+                      ];
             if (datasetBlocked) {
                 const capabilityRequest = {
                     need: DatasetCapabilityFixture.NEED,
@@ -284,6 +309,18 @@ class ScriptedHarness implements AgentHarness {
                     next_experiments: [],
                     capability_requests: [capabilityRequest, capabilityRequest],
                     capability_blocked: true
+                };
+            } else if (this.#sourceOnly) {
+                output = {
+                    summary: "A supplemental source was identified",
+                    hypothesis: "The source may inform a later empirical test",
+                    outcome: RESEARCH_OUTCOME.INCONCLUSIVE,
+                    evidence: [],
+                    sources: sourceCandidates,
+                    limitations: ["A citation is not empirical evidence"],
+                    next_experiments: [],
+                    capability_requests: [],
+                    capability_blocked: false
                 };
             } else {
                 const artifactPath = this.#precommitOutcomeOnly
@@ -317,6 +354,7 @@ class ScriptedHarness implements AgentHarness {
                             contradicts_hypothesis: this.#falsifyAssumption
                         }
                     ],
+                    sources: sourceCandidates,
                     execution_plan: {
                         file: this.#forbiddenOutcomeCommands
                             ? request.prompt.includes(
@@ -1100,6 +1138,182 @@ describe.sequential("runResearchLoop", () => {
         ).toBe(false);
     });
 
+    it("records daemon-fetched citations with clickable report metadata across recovery", async () => {
+        const sourceServer = await startCitationServer(200);
+        const workspace = await createWorkspace();
+        try {
+            const sourceUrl = `${sourceServer.baseUrl}/citation`;
+            const outcome = await runResearchLoop(workspace, {
+                harnesses: [
+                    new ScriptedHarness(HarnessKinds.CODEX, { sourceCandidateUrl: sourceUrl }),
+                    new ScriptedHarness(HarnessKinds.CLAUDE, { sourceCandidateUrl: sourceUrl })
+                ]
+            });
+
+            expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
+            const citations = workspace
+                .getEvidence()
+                .filter(({ kind }) => kind === EvidenceKind.SOURCE);
+            expect(citations).toHaveLength(2);
+            for (const citation of citations) {
+                expect(citation).toMatchObject({
+                    supports: false,
+                    independent: false,
+                    artifact_hash: createHash("sha256")
+                        .update(SourceCitationFixture.BODY)
+                        .digest("hex"),
+                    source: {
+                        requested_url: sourceUrl,
+                        final_url: sourceUrl,
+                        title: SourceCitationFixture.TITLE,
+                        claimed_classification: SourceClassification.PRIMARY,
+                        http_status: 200,
+                        fetched_at: expect.any(String)
+                    }
+                });
+                await expect(readFile(citation.artifact_path ?? "", "utf8")).resolves.toBe(
+                    SourceCitationFixture.BODY
+                );
+            }
+            const report = await readFile(path.join(workspace.runDirectory, "report.md"), "utf8");
+            expect(report).toContain(`[${SourceCitationFixture.TITLE}](<${sourceUrl}>)`);
+            expect(report).toContain("classification claimed by researcher: primary");
+            const recovered = await LabWorkspace.load(
+                path.dirname(path.dirname(workspace.runDirectory)),
+                workspace.runDirectory
+            );
+            expect(
+                recovered.getEvidence().filter(({ kind }) => kind === EvidenceKind.SOURCE)
+            ).toEqual(citations);
+        } finally {
+            await sourceServer.close();
+        }
+    });
+
+    it("never promotes or completes a claim from source citations alone", async () => {
+        const sourceServer = await startCitationServer(200);
+        const workspace = await createWorkspace();
+        const abortController = new AbortController();
+        try {
+            const sourceUrl = `${sourceServer.baseUrl}/citation`;
+            const outcome = await runResearchLoop(workspace, {
+                harnesses: [
+                    new ScriptedHarness(HarnessKinds.CODEX, {
+                        sourceCandidateUrl: sourceUrl,
+                        sourceOnly: true
+                    }),
+                    new ScriptedHarness(HarnessKinds.CLAUDE, {
+                        sourceCandidateUrl: sourceUrl,
+                        sourceOnly: true
+                    })
+                ],
+                signal: abortController.signal,
+                waitForCycle: async () =>
+                    abortController.abort(new Error("source-only cycle observed"))
+            });
+
+            expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
+            expect(workspace.getEvidence()).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ kind: EvidenceKind.SOURCE, supports: false })
+                ])
+            );
+            const claimStatuses = workspace.getSnapshot().claims.map(({ status }) => status);
+            expect(claimStatuses).not.toContain(ClaimStatus.SUPPORTED);
+            expect(claimStatuses).not.toContain(ClaimStatus.REPRODUCED);
+            expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+                EventType.LAB_COMPLETED
+            );
+        } finally {
+            await sourceServer.close();
+        }
+    });
+
+    it("keeps 404 citations as negative source attempts instead of evidence", async () => {
+        const sourceServer = await startCitationServer(404);
+        const workspace = await createWorkspace();
+        const abortController = new AbortController();
+        try {
+            const sourceUrl = `${sourceServer.baseUrl}/citation`;
+            await runResearchLoop(workspace, {
+                harnesses: [
+                    new ScriptedHarness(HarnessKinds.CODEX, {
+                        sourceCandidateUrl: sourceUrl,
+                        sourceOnly: true
+                    }),
+                    new ScriptedHarness(HarnessKinds.CLAUDE, {
+                        sourceCandidateUrl: sourceUrl,
+                        sourceOnly: true
+                    })
+                ],
+                signal: abortController.signal,
+                waitForCycle: async () => abortController.abort(new Error("404 cycle observed"))
+            });
+
+            expect(workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.SOURCE)).toBe(
+                false
+            );
+            expect(workspace.getSnapshot().experiments).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        evaluator: "Daemon-owned source fetcher",
+                        status: ExperimentStatus.FAILED,
+                        output_path: expect.any(String),
+                        output_hash: expect.stringMatching(/^[a-f\d]{64}$/u)
+                    })
+                ])
+            );
+            expect(workspace.getSnapshot().frontier.blockers).toEqual(
+                expect.arrayContaining([expect.stringContaining("HTTP 404")])
+            );
+        } finally {
+            await sourceServer.close();
+        }
+    });
+
+    it("rejects model-provider source URLs before fetch and records negative attempts", async () => {
+        const fetchSpy = vi
+            .spyOn(globalThis, "fetch")
+            .mockRejectedValue(new Error("Unexpected network request"));
+        const workspace = await createWorkspace();
+        const abortController = new AbortController();
+        try {
+            await runResearchLoop(workspace, {
+                harnesses: [
+                    new ScriptedHarness(HarnessKinds.CODEX, {
+                        sourceCandidateUrl: "https://api.openai.com/v1/models",
+                        sourceOnly: true
+                    }),
+                    new ScriptedHarness(HarnessKinds.CLAUDE, {
+                        sourceCandidateUrl: "https://api.openai.com/v1/models",
+                        sourceOnly: true
+                    })
+                ],
+                signal: abortController.signal,
+                waitForCycle: async () =>
+                    abortController.abort(new Error("provider source cycle observed"))
+            });
+
+            expect(fetchSpy).not.toHaveBeenCalled();
+            expect(workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.SOURCE)).toBe(
+                false
+            );
+            expect(workspace.getSnapshot().experiments).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        evaluator: "Daemon-owned source fetcher",
+                        status: ExperimentStatus.FAILED
+                    })
+                ])
+            );
+            expect(workspace.getSnapshot().frontier.blockers).toEqual(
+                expect.arrayContaining([expect.stringContaining("model-provider policy")])
+            );
+        } finally {
+            fetchSpy.mockRestore();
+        }
+    });
+
     it("isolates daemon outcome processes from provider credentials and subscription homes", async () => {
         const workspace = await createWorkspace();
         const markerRoot = await mkdtemp(path.join(tmpdir(), "lab-outcome-auth-marker-"));
@@ -1870,6 +2084,41 @@ function restoreEnvironmentVariable(name: string, value: string | undefined): vo
         return;
     }
     process.env[name] = value;
+}
+
+async function startCitationServer(status: 200 | 404): Promise<{
+    baseUrl: string;
+    close: () => Promise<void>;
+}> {
+    const server = createServer((_request, response) => {
+        response.writeHead(status, { "content-type": "text/plain" });
+        response.end(status === 200 ? SourceCitationFixture.BODY : "missing citation");
+    });
+    await listen(server);
+    const address = server.address();
+    if (address === null || typeof address === "string") {
+        throw new Error("Citation test server did not bind a TCP address");
+    }
+    return {
+        baseUrl: `http://127.0.0.1:${address.port}`,
+        close: () => closeServer(server)
+    };
+}
+
+function listen(server: Server): Promise<void> {
+    return new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", () => {
+            server.off("error", reject);
+            resolve();
+        });
+    });
+}
+
+function closeServer(server: Server): Promise<void> {
+    return new Promise((resolve, reject) => {
+        server.close((error) => (error === undefined ? resolve() : reject(error)));
+    });
 }
 
 async function createWorkspace(

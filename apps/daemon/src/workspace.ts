@@ -60,6 +60,7 @@ export interface WorkspaceMutationResult {
 }
 
 const EvidenceDisposition = {
+    CITATION: "citation",
     SUPPORTS: "supports",
     CONTRADICTS: "contradicts"
 } as const;
@@ -852,7 +853,10 @@ export class LabWorkspace {
         }
         if (
             !selected.some(
-                ({ kind, supports }) => kind !== EvidenceKind.VERIFIER_RESULT && supports
+                ({ kind, supports }) =>
+                    kind !== EvidenceKind.VERIFIER_RESULT &&
+                    kind !== EvidenceKind.SOURCE &&
+                    supports
             )
         ) {
             throw new Error("Completion requires supporting material evidence before verification");
@@ -959,14 +963,21 @@ export class LabWorkspace {
         const snapshot = this.snapshot;
         const selectedEvidenceIds = new Set(details.supportingEvidenceIds ?? []);
         const evidence = this.evidence.map((item) => {
-            const disposition = item.supports
-                ? EvidenceDisposition.SUPPORTS
-                : EvidenceDisposition.CONTRADICTS;
+            const disposition =
+                item.kind === EvidenceKind.SOURCE
+                    ? EvidenceDisposition.CITATION
+                    : item.supports
+                      ? EvidenceDisposition.SUPPORTS
+                      : EvidenceDisposition.CONTRADICTS;
             const selected = selectedEvidenceIds.has(item.id) ? " [completion evidence]" : "";
             const artifact =
                 item.artifact_path === undefined
                     ? ""
                     : `; artifact: ${path.relative(this.runDirectory, item.artifact_path)}`;
+            if (item.kind === EvidenceKind.SOURCE && item.source !== undefined) {
+                const sourceTitle = markdownLinkLabel(item.source.title);
+                return `${item.id}${selected} (${item.kind}, ${disposition}): [${sourceTitle}](<${item.source.final_url}>); classification claimed by researcher: ${item.source.claimed_classification}; daemon fetch: HTTP ${item.source.http_status} at ${item.source.fetched_at}${artifact}`;
+            }
             return `${item.id}${selected} (${item.kind}, ${disposition}): ${item.summary}${artifact}`;
         });
         const counterexamples = [
@@ -1060,4 +1071,8 @@ ${markdownList([...new Set(nextExperiments)], "No informative experiment remains
 
 function markdownList(items: readonly string[], empty: string): string {
     return items.length === 0 ? `- ${empty}` : items.map((item) => `- ${item}`).join("\n");
+}
+
+function markdownLinkLabel(value: string): string {
+    return value.replaceAll("\\", "\\\\").replaceAll("[", "\\[").replaceAll("]", "\\]");
 }

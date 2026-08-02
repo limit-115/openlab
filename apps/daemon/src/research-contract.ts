@@ -1,4 +1,4 @@
-import { ExternalEffect } from "@lab/protocol/constants";
+import { ExternalEffect, SourceClassification } from "@lab/protocol/constants";
 import type { TaskInput } from "@lab/protocol/schemas";
 import { z } from "zod";
 import {
@@ -192,6 +192,14 @@ const ResearchEvidenceSchema = z.object({
     contradicts_hypothesis: z.boolean()
 });
 
+const ResearchSourceCandidateSchema = z.object({
+    target_kind: z.enum(domainValues(RESEARCH_TARGET_KIND)),
+    target_index: z.number().int().nonnegative(),
+    url: z.url(),
+    title: z.string().trim().min(1),
+    claimed_classification: z.enum(domainValues(SourceClassification))
+});
+
 const ResearchExecutionPlanSchema = z
     .object({
         file: z.string().trim().min(1),
@@ -220,6 +228,7 @@ export const ResearchResultSchema = z
         hypothesis: z.string().min(1),
         outcome: z.enum(domainValues(RESEARCH_OUTCOME)),
         evidence: z.array(ResearchEvidenceSchema),
+        sources: z.array(ResearchSourceCandidateSchema).default([]),
         execution_plan: ResearchExecutionPlanSchema.optional(),
         limitations: z.array(z.string()),
         next_experiments: z.array(z.string()),
@@ -234,18 +243,29 @@ export const ResearchResultSchema = z
                 message: "A resource-blocked result must include a concrete capability request"
             });
         }
-        if (!result.capability_blocked && result.execution_plan === undefined) {
+        if (
+            !result.capability_blocked &&
+            result.execution_plan === undefined &&
+            result.sources.length === 0
+        ) {
             context.addIssue({
                 code: "custom",
                 path: ["execution_plan"],
-                message: "An evidence-bearing result requires a daemon execution plan"
+                message: "A result requires a daemon execution plan or a source candidate"
             });
         }
-        if (!result.capability_blocked && result.evidence.length === 0) {
+        if (result.execution_plan !== undefined && result.evidence.length === 0) {
             context.addIssue({
                 code: "custom",
                 path: ["evidence"],
-                message: "An evidence-bearing result requires at least one evidence target"
+                message: "A daemon execution plan requires at least one evidence target"
+            });
+        }
+        if (result.execution_plan === undefined && result.evidence.length > 0) {
+            context.addIssue({
+                code: "custom",
+                path: ["execution_plan"],
+                message: "An empirical evidence target requires a daemon execution plan"
             });
         }
         if (result.capability_blocked && result.execution_plan !== undefined) {
@@ -253,6 +273,18 @@ export const ResearchResultSchema = z
                 code: "custom",
                 path: ["execution_plan"],
                 message: "A blocked result cannot request outcome execution"
+            });
+        }
+        if (
+            !result.capability_blocked &&
+            result.execution_plan === undefined &&
+            result.sources.length > 0 &&
+            result.outcome !== RESEARCH_OUTCOME.INCONCLUSIVE
+        ) {
+            context.addIssue({
+                code: "custom",
+                path: ["outcome"],
+                message: "A source-only result must remain inconclusive"
             });
         }
     });

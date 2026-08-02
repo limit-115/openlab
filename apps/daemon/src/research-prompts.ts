@@ -92,11 +92,12 @@ ${SUBSCRIPTION_ONLY_POLICY}
 
 ${MISSING_CAPABILITY_POLICY}
 
-Investigate the direction below as a read-only planner. Formulate a concrete hypothesis and return
-one explicit execution_plan. Do not run commands, write files, edit the repository, or create outcome
-artifacts yourself. The daemon alone executes the plan and records every attempt. The daemon has
-already frozen the evaluators; do not edit, replace, or run them. Do not claim support based only on
-your judgement.
+Investigate the direction below as a read-only planner. Formulate a concrete hypothesis and normally
+return one explicit execution_plan. You may also return supplemental source candidates, or a
+source-only inconclusive result when no empirical plan is warranted. Do not run commands, write files,
+edit the repository, create outcome artifacts, or fetch source URLs yourself. The daemon alone
+executes plans and fetches citations while recording every attempt. The daemon has already frozen the
+evaluators; do not edit, replace, or run them. Do not claim support based only on your judgement.
 
 Task:
 ${taskContext(task)}
@@ -133,6 +134,11 @@ expected relative artifact path in execution_plan.declared_output_paths. Use no 
 and args are passed directly to the process. Classify external_effect accurately and include a stable
 reconciliation_key when one exists. Do not return an evaluator command. The daemon will run the plan,
 snapshot and re-hash declared outputs, then run only its frozen evaluator against those outputs.
+
+For every source candidate, identify its claim or assumption target, URL, title, and whether you claim
+it is primary or secondary. That classification is only your claim, not established provenance. The
+daemon validates and fetches http(s) URLs itself; a citation is supplemental and can never promote a
+claim or substitute for empirical evidence.
 
 Set capability_blocked to true only when this isolated direction cannot produce material evidence
 until one of its reported capability_requests is provisioned. Keep it false when useful evidence is
