@@ -1,5 +1,6 @@
 import { type LifecycleContext, transitionLabState } from "@lab/core/lifecycle";
-import type { LabState, TaskInput } from "@lab/protocol/schemas";
+import { LabState, type LabState as LabStateValue } from "@lab/protocol/constants";
+import type { TaskInput } from "@lab/protocol/schemas";
 import { and, eq } from "drizzle-orm";
 import type { Database } from "#src/client";
 import { labs } from "#src/schema";
@@ -15,8 +16,8 @@ export interface CreateLabInput {
 
 export interface PersistLifecycleInput {
     readonly labId: string;
-    readonly expectedState: LabState;
-    readonly state: LabState;
+    readonly expectedState: LabStateValue;
+    readonly state: LabStateValue;
     readonly context?: LifecycleContext;
     readonly reason?: string;
     readonly now?: Date;
@@ -62,9 +63,9 @@ export class LabRepository {
                 state: input.state,
                 stateReason: input.reason ?? null,
                 updatedAt: now,
-                ...(input.state === "HIBERNATING" ? { hibernatedAt: now } : {}),
-                ...(input.state === "COMPLETED" ? { completedAt: now } : {}),
-                ...(input.state === "STOPPED" ? { stoppedAt: now } : {})
+                ...(input.state === LabState.HIBERNATING ? { hibernatedAt: now } : {}),
+                ...(input.state === LabState.COMPLETED ? { completedAt: now } : {}),
+                ...(input.state === LabState.STOPPED ? { stoppedAt: now } : {})
             })
             .where(and(eq(labs.id, input.labId), eq(labs.state, input.expectedState)))
             .returning();

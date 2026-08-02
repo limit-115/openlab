@@ -1,4 +1,5 @@
-import type { SchedulerLane } from "@lab/core/scheduler";
+import type { SchedulerLane } from "@lab/core/constants";
+import { BranchStatus } from "@lab/protocol/constants";
 import { and, asc, eq } from "drizzle-orm";
 import type { Database } from "#src/client";
 import { branches } from "#src/schema";
@@ -47,7 +48,7 @@ export class BranchRepository {
         return this.#database
             .select()
             .from(branches)
-            .where(and(eq(branches.labId, labId), eq(branches.status, "active")))
+            .where(and(eq(branches.labId, labId), eq(branches.status, BranchStatus.ACTIVE)))
             .orderBy(asc(branches.createdAt));
     }
 
@@ -57,8 +58,8 @@ export class BranchRepository {
         }
         const [record] = await this.#database
             .update(branches)
-            .set({ status: "closed", closedReason: reason, updatedAt: now })
-            .where(and(eq(branches.id, branchId), eq(branches.status, "active")))
+            .set({ status: BranchStatus.CLOSED, closedReason: reason, updatedAt: now })
+            .where(and(eq(branches.id, branchId), eq(branches.status, BranchStatus.ACTIVE)))
             .returning({ id: branches.id });
         if (record === undefined) {
             throw new Error(`Branch ${branchId} is not active`);

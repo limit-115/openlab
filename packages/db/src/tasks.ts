@@ -1,12 +1,12 @@
-import type { SchedulerLane } from "@lab/core/scheduler";
-import type { AgentRole } from "@lab/protocol/schemas";
+import type { SchedulerLane } from "@lab/core/constants";
+import { type AgentRole, InternalTaskStatus } from "@lab/protocol/constants";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Database } from "#src/client";
+import { AttemptStatus, type AttemptStatus as AttemptStatusValue } from "#src/constants";
 import { attempts, tasks } from "#src/schema";
 
 export type TaskRecord = typeof tasks.$inferSelect;
 export type AttemptRecord = typeof attempts.$inferSelect;
-export type AttemptStatus = AttemptRecord["status"];
 
 export interface QueueTaskInput {
     readonly id: string;
@@ -44,7 +44,10 @@ export interface FinishAttemptInput {
     readonly attemptId: string;
     readonly taskId: string;
     readonly workerId: string;
-    readonly status: Exclude<AttemptStatus, "planned" | "running">;
+    readonly status: Exclude<
+        AttemptStatusValue,
+        typeof AttemptStatus.PLANNED | typeof AttemptStatus.RUNNING
+    >;
     readonly exitCode?: number;
     readonly stdoutPath?: string;
     readonly stderrPath?: string;
@@ -98,7 +101,7 @@ export class TaskRepository {
                 FROM ${tasks}
                 WHERE ${tasks.labId} = ${input.labId}
                     AND ${tasks.lane} = ${input.lane}
-                    AND ${tasks.status} = 'queued'
+                    AND ${tasks.status} = ${InternalTaskStatus.QUEUED}
                     AND ${tasks.availableAt} <= ${sql.param(now, tasks.availableAt)}
                 ORDER BY ${tasks.priority} DESC, ${tasks.createdAt} ASC
                 FOR UPDATE SKIP LOCKED
@@ -106,7 +109,7 @@ export class TaskRepository {
             )
             UPDATE ${tasks}
             SET
-                status = 'leased',
+                status = ${InternalTaskStatus.LEASED},
                 lease_owner = ${input.workerId},
                 lease_expires_at = ${sql.param(leaseExpiresAt, tasks.leaseExpiresAt)},
                 updated_at = ${sql.param(now, tasks.updatedAt)}
@@ -135,7 +138,7 @@ export class TaskRepository {
                 and(
                     eq(tasks.id, taskId),
                     eq(tasks.leaseOwner, workerId),
-                    sql`${tasks.status} IN ('leased', 'running')`,
+                    sql`${tasks.status} IN (${InternalTaskStatus.LEASED}, ${InternalTaskStatus.RUNNING})`,
                     gt(tasks.leaseExpiresAt, now)
                 )
             )
@@ -148,11 +151,11 @@ export class TaskRepository {
         return this.#database.transaction(async (transaction) => {
             const [task] = await transaction
                 .update(tasks)
-                .set({ status: "running", updatedAt: now })
+                .set({ status: InternalTaskStatus.RUNNING, updatedAt: now })
                 .where(
                     and(
                         eq(tasks.id, input.taskId),
-                        eq(tasks.status, "leased"),
+                        eq(tasks.status, InternalTaskStatus.LEASED),
                         eq(tasks.leaseOwner, input.workerId),
                         gt(tasks.leaseExpiresAt, now)
                     )
@@ -169,7 +172,7 @@ export class TaskRepository {
                     taskId: input.taskId,
                     attemptNumber: task.attempt,
                     workerId: input.workerId,
-                    status: "running",
+                    status: AttemptStatus.RUNNING,
                     command: input.command,
                     cwd: input.cwd,
                     inputs: { ...(input.inputs ?? {}) },
@@ -207,7 +210,7 @@ export class TaskRepository {
                         eq(attempts.id, input.attemptId),
                         eq(attempts.taskId, input.taskId),
                         eq(attempts.workerId, input.workerId),
-                        eq(attempts.status, "running")
+                        eq(attempts.status, AttemptStatus.RUNNING)
                     )
                 )
                 .returning();
@@ -220,12 +223,12 @@ export class TaskRepository {
                 .update(tasks)
                 .set({
                     status: retry
-                        ? "queued"
-                        : input.status === "succeeded"
-                          ? "succeeded"
-                          : input.status === "cancelled"
-                            ? "cancelled"
-                            : "failed",
+                        ? InternalTaskStatus.QUEUED
+                        : input.status === AttemptStatus.SUCCEEDED
+                          ? InternalTaskStatus.SUCCEEDED
+                          : input.status === AttemptStatus.CANCELLED
+                            ? InternalTaskStatus.CANCELLED
+                            : InternalTaskStatus.FAILED,
                     attempt: retry ? sql`${tasks.attempt} + 1` : tasks.attempt,
                     availableAt: input.retryAt ?? now,
                     leaseOwner: null,
@@ -237,7 +240,7 @@ export class TaskRepository {
                     and(
                         eq(tasks.id, input.taskId),
                         eq(tasks.leaseOwner, input.workerId),
-                        eq(tasks.status, "running")
+                        eq(tasks.status, InternalTaskStatus.RUNNING)
                     )
                 )
                 .returning({ id: tasks.id });
@@ -253,7 +256,7 @@ export class TaskRepository {
             const expired = await transaction.execute<{ id: string }>(sql`
                 SELECT ${tasks.id}
                 FROM ${tasks}
-                WHERE ${tasks.status} IN ('leased', 'running')
+                WHERE ${tasks.status} IN (${InternalTaskStatus.LEASED}, ${InternalTaskStatus.RUNNING})
                     AND ${tasks.leaseExpiresAt} <= ${sql.param(now, tasks.leaseExpiresAt)}
                 FOR UPDATE SKIP LOCKED
             `);
@@ -265,7 +268,7 @@ export class TaskRepository {
             await transaction.execute(sql`
                 UPDATE ${attempts}
                 SET
-                    status = 'failed',
+                    status = ${AttemptStatus.FAILED},
                     error = 'Worker lease expired during attempt',
                     finished_at = ${sql.param(now, attempts.finishedAt)},
                     updated_at = ${sql.param(now, attempts.updatedAt)}
@@ -273,12 +276,12 @@ export class TaskRepository {
                     taskIds.map((id) => sql`${id}`),
                     sql`, `
                 )})
-                    AND ${attempts.status} = 'running'
+                    AND ${attempts.status} = ${AttemptStatus.RUNNING}
             `);
             await transaction.execute(sql`
                 UPDATE ${tasks}
                 SET
-                    status = 'queued',
+                    status = ${InternalTaskStatus.QUEUED},
                     attempt = ${tasks.attempt} + 1,
                     lease_owner = NULL,
                     lease_expires_at = NULL,

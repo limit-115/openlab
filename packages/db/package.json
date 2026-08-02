@@ -8,6 +8,7 @@
         "./capabilities": "./src/capabilities.ts",
         "./claims": "./src/claims.ts",
         "./client": "./src/client.ts",
+        "./constants": "./src/constants.ts",
         "./events": "./src/events.ts",
         "./labs": "./src/labs.ts",
         "./schema": "./src/schema.ts",

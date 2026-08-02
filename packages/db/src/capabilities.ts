@@ -1,3 +1,4 @@
+import { CapabilityRequestType, CapabilityStatus } from "@lab/protocol/constants";
 import type { CapabilityRequest } from "@lab/protocol/schemas";
 import { and, eq } from "drizzle-orm";
 import type { Database } from "#src/client";
@@ -48,12 +49,17 @@ export class CapabilityRepository {
         const [record] = await this.#database
             .update(capabilityRequests)
             .set({
-                status: "provided",
+                status: CapabilityStatus.PROVIDED,
                 resourceReference,
                 providedAt: now,
                 updatedAt: now
             })
-            .where(and(eq(capabilityRequests.id, requestId), eq(capabilityRequests.status, "open")))
+            .where(
+                and(
+                    eq(capabilityRequests.id, requestId),
+                    eq(capabilityRequests.status, CapabilityStatus.OPEN)
+                )
+            )
             .returning({ id: capabilityRequests.id });
         if (record === undefined) {
             throw new Error(`Capability request ${requestId} is not open`);
@@ -64,7 +70,7 @@ export class CapabilityRepository {
 function toCapabilityRequest(record: typeof capabilityRequests.$inferSelect): CapabilityRequest {
     return {
         id: record.id,
-        type: "capability_request",
+        type: CapabilityRequestType.CAPABILITY_REQUEST,
         need: record.need,
         reason: record.reason,
         provisioning_hint: record.provisioningHint,

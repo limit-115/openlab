@@ -1,7 +1,14 @@
-import { type AssessedEvidence, type EvidenceOrigin, transitionClaim } from "@lab/core/claims";
-import type { Claim, ClaimStatus, Evidence } from "@lab/protocol/schemas";
+import { type AssessedEvidence, transitionClaim } from "@lab/core/claims";
+import type { EvidenceOrigin } from "@lab/core/constants";
+import {
+    ClaimStatus,
+    type ClaimStatus as ClaimStatusValue,
+    type EvidenceKind
+} from "@lab/protocol/constants";
+import type { Claim, Evidence } from "@lab/protocol/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import type { Database } from "#src/client";
+import { EvidenceRelationship } from "#src/constants";
 import { claimDependencies, claimEvidence, claims, evidence } from "#src/schema";
 
 export interface CreateClaimInput {
@@ -20,7 +27,7 @@ export interface AddEvidenceInput {
     readonly claimId: string;
     readonly sourceBranchId: string;
     readonly attemptId?: string;
-    readonly kind: Evidence["kind"];
+    readonly kind: EvidenceKind;
     readonly origin: EvidenceOrigin;
     readonly fingerprint: string;
     readonly runId?: string;
@@ -115,13 +122,15 @@ export class ClaimRepository {
                 .values({
                     claimId: input.claimId,
                     evidenceId: stored.id,
-                    relationship: input.supports ? "supports" : "contradicts"
+                    relationship: input.supports
+                        ? EvidenceRelationship.SUPPORTS
+                        : EvidenceRelationship.CONTRADICTS
                 })
                 .onConflictDoNothing();
         });
     }
 
-    async transition(claimId: string, target: ClaimStatus, now = new Date()): Promise<Claim> {
+    async transition(claimId: string, target: ClaimStatusValue, now = new Date()): Promise<Claim> {
         return this.#database.transaction(async (transaction) => {
             const locked = await transaction.execute<{ id: string }>(sql`
                 SELECT ${claims.id} FROM ${claims}
@@ -151,13 +160,13 @@ export class ClaimRepository {
                 .innerJoin(evidence, eq(evidence.id, claimEvidence.evidenceId))
                 .where(eq(claimEvidence.claimId, claimId));
             const assessedEvidence = evidenceRows.map(({ evidence: stored, relationship }) =>
-                toAssessedEvidence(claimId, stored, relationship === "supports")
+                toAssessedEvidence(claimId, stored, relationship === EvidenceRelationship.SUPPORTS)
             );
             const supportingIds = evidenceRows
-                .filter(({ relationship }) => relationship === "supports")
+                .filter(({ relationship }) => relationship === EvidenceRelationship.SUPPORTS)
                 .map(({ evidence: stored }) => stored.id);
             const contradictingIds = evidenceRows
-                .filter(({ relationship }) => relationship === "contradicts")
+                .filter(({ relationship }) => relationship === EvidenceRelationship.CONTRADICTS)
                 .map(({ evidence: stored }) => stored.id);
             const current = toClaim(
                 record,
@@ -176,7 +185,7 @@ export class ClaimRepository {
                 .update(claims)
                 .set({ status: target, stale: transitioned.stale, updatedAt: now })
                 .where(eq(claims.id, claimId));
-            if (target === "refuted") {
+            if (target === ClaimStatus.REFUTED) {
                 await transaction.execute(sql`
                     WITH RECURSIVE dependents(id) AS (
                         SELECT ${claimDependencies.claimId}

@@ -1,3 +1,15 @@
+import { EvidenceOrigin, SchedulerLane } from "@lab/core/constants";
+import {
+    AgentRole,
+    BranchStatus,
+    CapabilityStatus,
+    ClaimStatus,
+    domainValues,
+    EventType,
+    EvidenceKind,
+    InternalTaskStatus,
+    LabState
+} from "@lab/protocol/constants";
 import type { TaskInput } from "@lab/protocol/schemas";
 import {
     bigint,
@@ -12,63 +24,23 @@ import {
     timestamp,
     uniqueIndex
 } from "drizzle-orm/pg-core";
+import { AttemptStatus, EvidenceRelationship } from "#src/constants";
 
-export const labStateEnum = pgEnum("lab_state", [
-    "RUNNING",
-    "HIBERNATING",
-    "COMPLETED",
-    "STOPPED",
-    "FAILED"
-]);
-export const branchStatusEnum = pgEnum("branch_status", ["active", "paused", "closed"]);
-export const agentRoleEnum = pgEnum("agent_role", ["director", "researcher", "critic", "verifier"]);
-export const schedulerLaneEnum = pgEnum("scheduler_lane", [
-    "promising",
-    "exploration",
-    "adversarial",
-    "reproduction"
-]);
-export const taskStatusEnum = pgEnum("task_status", [
-    "queued",
-    "leased",
-    "running",
-    "succeeded",
-    "failed",
-    "cancelled"
-]);
-export const attemptStatusEnum = pgEnum("attempt_status", [
-    "planned",
-    "running",
-    "succeeded",
-    "failed",
-    "timed_out",
-    "cancelled"
-]);
-export const claimStatusEnum = pgEnum("claim_status", [
-    "proposed",
-    "testing",
-    "supported",
-    "refuted",
-    "reproduced"
-]);
-export const evidenceKindEnum = pgEnum("evidence_kind", [
-    "experiment",
-    "source",
-    "artifact",
-    "counterexample",
-    "verifier_result"
-]);
-export const evidenceOriginEnum = pgEnum("evidence_origin", [
-    "empirical",
-    "model_judgement",
-    "primary_source",
-    "verifier"
-]);
-export const evidenceRelationshipEnum = pgEnum("evidence_relationship", [
-    "supports",
-    "contradicts"
-]);
-export const capabilityStatusEnum = pgEnum("capability_status", ["open", "provided", "obsolete"]);
+export const labStateEnum = pgEnum("lab_state", domainValues(LabState));
+export const branchStatusEnum = pgEnum("branch_status", domainValues(BranchStatus));
+export const agentRoleEnum = pgEnum("agent_role", domainValues(AgentRole));
+export const schedulerLaneEnum = pgEnum("scheduler_lane", domainValues(SchedulerLane));
+export const taskStatusEnum = pgEnum("task_status", domainValues(InternalTaskStatus));
+export const attemptStatusEnum = pgEnum("attempt_status", domainValues(AttemptStatus));
+export const claimStatusEnum = pgEnum("claim_status", domainValues(ClaimStatus));
+export const evidenceKindEnum = pgEnum("evidence_kind", domainValues(EvidenceKind));
+export const evidenceOriginEnum = pgEnum("evidence_origin", domainValues(EvidenceOrigin));
+export const evidenceRelationshipEnum = pgEnum(
+    "evidence_relationship",
+    domainValues(EvidenceRelationship)
+);
+export const capabilityStatusEnum = pgEnum("capability_status", domainValues(CapabilityStatus));
+export const eventTypeEnum = pgEnum("event_type", domainValues(EventType));
 
 const timestamps = {
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -81,7 +53,7 @@ export const labs = pgTable(
         id: text("id").primaryKey(),
         goal: text("goal").notNull(),
         input: jsonb("input").$type<TaskInput>().notNull(),
-        state: labStateEnum("state").notNull().default("RUNNING"),
+        state: labStateEnum("state").notNull().default(LabState.RUNNING),
         stateReason: text("state_reason"),
         workspacePath: text("workspace_path").notNull(),
         startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
@@ -102,7 +74,7 @@ export const branches = pgTable(
             .references(() => labs.id, { onDelete: "cascade" }),
         title: text("title").notNull(),
         approach: text("approach").notNull(),
-        status: branchStatusEnum("status").notNull().default("active"),
+        status: branchStatusEnum("status").notNull().default(BranchStatus.ACTIVE),
         lane: schedulerLaneEnum("lane").notNull(),
         isolated: boolean("isolated").notNull().default(true),
         closedReason: text("closed_reason"),
@@ -123,7 +95,7 @@ export const tasks = pgTable(
             .references(() => branches.id, { onDelete: "cascade" }),
         objective: text("objective").notNull(),
         contextRefs: jsonb("context_refs").$type<string[]>().notNull().default([]),
-        status: taskStatusEnum("status").notNull().default("queued"),
+        status: taskStatusEnum("status").notNull().default(InternalTaskStatus.QUEUED),
         role: agentRoleEnum("role").notNull(),
         lane: schedulerLaneEnum("lane").notNull(),
         priority: integer("priority").notNull().default(0),
@@ -155,7 +127,7 @@ export const attempts = pgTable(
             .references(() => tasks.id, { onDelete: "cascade" }),
         attemptNumber: integer("attempt_number").notNull(),
         workerId: text("worker_id").notNull(),
-        status: attemptStatusEnum("status").notNull().default("planned"),
+        status: attemptStatusEnum("status").notNull().default(AttemptStatus.PLANNED),
         command: text("command"),
         cwd: text("cwd"),
         inputs: jsonb("inputs").$type<Record<string, unknown>>().notNull().default({}),
@@ -188,7 +160,7 @@ export const claims = pgTable(
             .notNull()
             .references(() => branches.id, { onDelete: "cascade" }),
         statement: text("statement").notNull(),
-        status: claimStatusEnum("status").notNull().default("proposed"),
+        status: claimStatusEnum("status").notNull().default(ClaimStatus.PROPOSED),
         universal: boolean("universal").notNull().default(false),
         stale: boolean("stale").notNull().default(false),
         ...timestamps
@@ -267,7 +239,7 @@ export const events = pgTable(
         labId: text("lab_id")
             .notNull()
             .references(() => labs.id, { onDelete: "cascade" }),
-        type: text("type").notNull(),
+        type: eventTypeEnum("type").notNull(),
         payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
         occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow()
     },
@@ -288,7 +260,7 @@ export const capabilityRequests = pgTable(
         need: text("need").notNull(),
         reason: text("reason").notNull(),
         provisioningHint: text("provisioning_hint").notNull(),
-        status: capabilityStatusEnum("status").notNull().default("open"),
+        status: capabilityStatusEnum("status").notNull().default(CapabilityStatus.OPEN),
         resourceReference: text("resource_reference"),
         providedAt: timestamp("provided_at", { withTimezone: true }),
         ...timestamps
