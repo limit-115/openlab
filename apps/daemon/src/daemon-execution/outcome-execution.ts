@@ -119,19 +119,18 @@ export async function executeResearchOutcome(
         );
     } catch (error) {
         const finishedAt = new Date().toISOString();
+        const reason = `Daemon-owned outcome execution could not start: ${error instanceof Error ? error.message : String(error)}`;
         await workspace.update((draft) => {
             const experiment = requiredById(draft.experiments, experimentId);
             experiment.status = ExperimentStatus.FAILED;
             experiment.finished_at = finishedAt;
+            experiment.error = reason;
         });
         await workspace.appendEvent(EventType.EXPERIMENT_FAILED, {
             experiment_id: experimentId
         });
         await workspace.appendEvent(EventType.ATTEMPT_FAILED, { attempt_id: experimentId });
-        throw new OutcomeExecutionAttemptError(
-            `Daemon-owned outcome execution could not start: ${error instanceof Error ? error.message : String(error)}`,
-            { cause: error }
-        );
+        throw new OutcomeExecutionAttemptError(reason, { cause: error });
     }
 
     let status = protocolExperimentStatus(result.status);
@@ -165,6 +164,12 @@ export async function executeResearchOutcome(
         experiment.finished_at = result.finishedAt;
         experiment.output_path = result.manifest.path;
         experiment.output_hash = result.manifest.sha256;
+        if (status === ExperimentStatus.FAILED && validationError !== undefined) {
+            experiment.error =
+                validationError instanceof Error
+                    ? validationError.message
+                    : String(validationError);
+        }
     });
     await workspace.appendEvent(experimentEventType(status), { experiment_id: experimentId });
     await workspace.appendEvent(attemptEventType(status), { attempt_id: experimentId });

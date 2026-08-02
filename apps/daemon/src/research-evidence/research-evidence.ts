@@ -110,6 +110,9 @@ export async function recordResearchSources(
                 experiment.finished_at = fetched.fetchedAt;
                 experiment.output_path = fetched.manifest.path;
                 experiment.output_hash = fetched.manifest.sha256;
+                if (fetched.outcome === SourceFetchOutcome.REJECTED) {
+                    experiment.error = fetched.error;
+                }
             }
         );
         await workspace.appendEvent(attemptEventType(status), {

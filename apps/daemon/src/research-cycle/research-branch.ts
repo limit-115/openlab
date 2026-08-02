@@ -196,10 +196,11 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
             };
         } catch (error) {
             const failedRun = error instanceof StructuredAgentRunError ? error.result : undefined;
+            const reason = error instanceof Error ? error.message : String(error);
             if (attemptPrepared) {
-                await finishResearchAttempt(workspace, experimentId, failedRun, false);
+                await finishResearchAttempt(workspace, experimentId, failedRun, false, reason);
             }
-            issues.push(error instanceof Error ? error.message : String(error));
+            issues.push(reason);
             if (signal?.aborted) {
                 await failRoleTask(workspace, ids, true);
                 throw error;
@@ -294,7 +295,8 @@ async function finishResearchAttempt(
     workspace: LabWorkspace,
     experimentId: string,
     run: HarnessRunResult | undefined,
-    succeeded: boolean
+    succeeded: boolean,
+    reason?: string
 ): Promise<void> {
     const finishedAt = new Date().toISOString();
     await workspace.update((draft) => {
@@ -309,6 +311,9 @@ async function finishResearchAttempt(
                 ? ExperimentStatus.TIMED_OUT
                 : ExperimentStatus.FAILED;
         experiment.finished_at = finishedAt;
+        if (!succeeded && reason !== undefined) {
+            experiment.error = reason;
+        }
         if (run !== undefined) {
             experiment.command = renderHarnessCommand(run);
             experiment.exit_code = run.exitCode;
