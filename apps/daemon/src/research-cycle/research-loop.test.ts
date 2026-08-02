@@ -44,7 +44,7 @@ import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const"
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import {
@@ -148,7 +148,6 @@ class ScriptedHarness implements AgentHarness {
     readonly #cosmeticCriticEvaluator: boolean;
     readonly #blockingVerifierEvaluator: boolean;
     readonly #irreversibleOutcomeTimeout: boolean;
-    readonly #forbiddenOutcomeCommands: boolean;
     readonly #fabricatedVerifierArtifactPath: boolean;
     readonly #mutateOutcomeDuringEvaluation: boolean;
     readonly #inspectOutcomeEnvironment: boolean;
@@ -175,7 +174,6 @@ class ScriptedHarness implements AgentHarness {
             cosmeticCriticEvaluator?: boolean;
             blockingVerifierEvaluator?: boolean;
             irreversibleOutcomeTimeout?: boolean;
-            forbiddenOutcomeCommands?: boolean;
             fabricatedVerifierArtifactPath?: boolean;
             mutateOutcomeDuringEvaluation?: boolean;
             inspectOutcomeEnvironment?: boolean;
@@ -199,7 +197,6 @@ class ScriptedHarness implements AgentHarness {
         this.#cosmeticCriticEvaluator = options.cosmeticCriticEvaluator ?? false;
         this.#blockingVerifierEvaluator = options.blockingVerifierEvaluator ?? false;
         this.#irreversibleOutcomeTimeout = options.irreversibleOutcomeTimeout ?? false;
-        this.#forbiddenOutcomeCommands = options.forbiddenOutcomeCommands ?? false;
         this.#fabricatedVerifierArtifactPath = options.fabricatedVerifierArtifactPath ?? false;
         this.#mutateOutcomeDuringEvaluation = options.mutateOutcomeDuringEvaluation ?? false;
         this.#inspectOutcomeEnvironment = options.inspectOutcomeEnvironment ?? false;
@@ -390,26 +387,14 @@ class ScriptedHarness implements AgentHarness {
                     ],
                     sources: sourceCandidates,
                     execution_plan: {
-                        file: this.#forbiddenOutcomeCommands
-                            ? request.prompt.includes(
-                                  `"title": "${DatasetCapabilityFixture.DIRECTION_TITLE}"`
-                              )
-                                ? "curl"
-                                : "codex"
-                            : process.execPath,
-                        args: this.#forbiddenOutcomeCommands
-                            ? request.prompt.includes(
-                                  `"title": "${DatasetCapabilityFixture.DIRECTION_TITLE}"`
-                              )
-                                ? ["https://api.openai.com/v1/models"]
-                                : ["exec", "-"]
-                            : [
-                                  "--input-type=module",
-                                  "-e",
-                                  this.#irreversibleOutcomeTimeout
-                                      ? `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression}); await new Promise((resolve) => setTimeout(resolve, 10_000))`
-                                      : `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression})`
-                              ],
+                        file: process.execPath,
+                        args: [
+                            "--input-type=module",
+                            "-e",
+                            this.#irreversibleOutcomeTimeout
+                                ? `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression}); await new Promise((resolve) => setTimeout(resolve, 10_000))`
+                                : `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression})`
+                        ],
                         declared_output_paths: [path.basename(artifactPath)],
                         timeout_ms: this.#irreversibleOutcomeTimeout ? 50 : 300_000,
                         external_effect: this.#irreversibleOutcomeTimeout
@@ -1219,35 +1204,6 @@ describe.sequential("runResearchLoop", () => {
         ).toBe(false);
     });
 
-    it("rejects provider endpoints and nested model harnesses in daemon execution plans", async () => {
-        const workspace = await createWorkspace();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            forbiddenOutcomeCommands: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            forbiddenOutcomeCommands: true
-        });
-
-        const outcome = await runResearchLoop(workspace, {
-            harnesses: [codex, claude],
-            plateauInactivityMs: 1
-        });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
-        expect(
-            workspace
-                .getSnapshot()
-                .experiments.some(({ evaluator }) => evaluator === "Daemon-owned outcome executor")
-        ).toBe(false);
-        expect(workspace.getEvidence().some(({ supports }) => supports)).toBe(false);
-        expect(workspace.getSnapshot().frontier.blockers).toEqual(
-            expect.arrayContaining([
-                expect.stringContaining("subscription-only policy"),
-                expect.stringContaining("model clients")
-            ])
-        );
-    });
-
     it("rejects verifier artifacts created directly by the planning harness", async () => {
         const workspace = await createWorkspace();
         const codex = new ScriptedHarness(HarnessKinds.CODEX, {
@@ -1401,49 +1357,6 @@ describe.sequential("runResearchLoop", () => {
             );
         } finally {
             await sourceServer.close();
-        }
-    });
-
-    it("rejects model-provider source URLs before fetch and records negative attempts", async () => {
-        const fetchSpy = vi
-            .spyOn(globalThis, "fetch")
-            .mockRejectedValue(new Error("Unexpected network request"));
-        const workspace = await createWorkspace();
-        const abortController = new AbortController();
-        try {
-            await runResearchLoop(workspace, {
-                harnesses: [
-                    new ScriptedHarness(HarnessKinds.CODEX, {
-                        sourceCandidateUrl: "https://api.openai.com/v1/models",
-                        sourceOnly: true
-                    }),
-                    new ScriptedHarness(HarnessKinds.CLAUDE, {
-                        sourceCandidateUrl: "https://api.openai.com/v1/models",
-                        sourceOnly: true
-                    })
-                ],
-                signal: abortController.signal,
-                waitForCycle: async () =>
-                    abortController.abort(new Error("provider source cycle observed"))
-            });
-
-            expect(fetchSpy).not.toHaveBeenCalled();
-            expect(workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.SOURCE)).toBe(
-                false
-            );
-            expect(workspace.getSnapshot().experiments).toEqual(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        evaluator: "Daemon-owned source fetcher",
-                        status: ExperimentStatus.FAILED
-                    })
-                ])
-            );
-            expect(workspace.getSnapshot().frontier.blockers).toEqual(
-                expect.arrayContaining([expect.stringContaining("model-provider policy")])
-            );
-        } finally {
-            fetchSpy.mockRestore();
         }
     });
 

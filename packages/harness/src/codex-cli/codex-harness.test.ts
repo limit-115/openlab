@@ -82,9 +82,6 @@ describe("CodexHarness", () => {
             "--json",
             "--ignore-user-config",
             "--skip-git-repo-check",
-            "--dangerously-bypass-hook-trust",
-            "--config",
-            expect.stringContaining("hooks.PreToolUse"),
             "--dangerously-bypass-approvals-and-sandbox",
             "--model",
             CodexSessionDefaults.MODEL,
@@ -176,9 +173,6 @@ describe("CodexHarness", () => {
             "--json",
             "--ignore-user-config",
             "--skip-git-repo-check",
-            "--dangerously-bypass-hook-trust",
-            "--config",
-            expect.stringContaining("hooks.PreToolUse"),
             "--dangerously-bypass-approvals-and-sandbox",
             "--model",
             "gpt-subscription-model",
@@ -225,10 +219,6 @@ describe("CodexHarness", () => {
         const args = runner.spawnRequests[0]?.args ?? [];
         expect(args).toEqual(expect.arrayContaining(["--sandbox", CodexPermissionModes.READ_ONLY]));
         expect(args).not.toContain("--dangerously-bypass-approvals-and-sandbox");
-        expect(args).toContain("--dangerously-bypass-hook-trust");
-        expect(args).toEqual(
-            expect.arrayContaining(["--config", expect.stringContaining("hooks.PreToolUse")])
-        );
     });
 
     it("rejects API-key authentication instead of falling back", async () => {

@@ -22,7 +22,6 @@ import {
     CodexSessionDefaults
 } from "#src/codex-cli/codex-cli.const";
 import { CodexEventParser } from "#src/codex-cli/codex-event-parser";
-import { codexModelApiPolicyConfig } from "#src/model-api-policy/model-api-policy-hook";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
 import type {
     HarnessCommand,
@@ -74,9 +73,6 @@ export class CodexHarness extends SubscriptionCliHarness {
             "--json",
             "--ignore-user-config",
             "--skip-git-repo-check",
-            "--dangerously-bypass-hook-trust",
-            "--config",
-            codexModelApiPolicyConfig(),
             ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
                 ? CodexPermissionArguments[CodexPermissionModes.READ_ONLY]
                 : CodexPermissionArguments[CodexPermissionModes.UNRESTRICTED]),

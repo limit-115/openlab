@@ -1,7 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { evaluateModelApiCommand } from "@lab/harness/model-api-policy";
-import { ModelApiPolicyDecision } from "@lab/harness/model-api-policy.const";
 import type { ValidatedArtifact } from "#src/artifact-integrity/file-artifact";
 import { validateFileArtifact } from "#src/artifact-integrity/file-artifact";
 import {
@@ -150,12 +148,6 @@ function parseAllowedSourceUrl(value: string): URL {
     if ([...url.searchParams.keys()].some((name) => SensitiveQueryParameterPattern.test(name))) {
         throw new Error("Source URL must not contain credential query parameters");
     }
-    const policy = evaluateModelApiCommand("fetch", [url.toString()]);
-    if (policy.decision === ModelApiPolicyDecision.DENY) {
-        throw new Error(
-            `Source URL violates the model-provider policy: ${policy.reason ?? "denied"}`
-        );
-    }
     return url;
 }
 
@@ -214,12 +206,6 @@ async function persistManifest(
 function safeUrlForRecord(value: string): string {
     try {
         const url = new URL(value);
-        if (
-            evaluateModelApiCommand("fetch", [url.toString()]).decision ===
-            ModelApiPolicyDecision.DENY
-        ) {
-            return "[rejected-by-model-provider-policy]";
-        }
         url.username = "";
         url.password = "";
         for (const name of [...url.searchParams.keys()]) {

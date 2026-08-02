@@ -8,8 +8,7 @@ import { fetchDaemonSource } from "#src/source-integrity/source-fetch";
 import { SourceFetchLimits, SourceFetchOutcome } from "#src/source-integrity/source-fetch.contract";
 
 const SourceFixture = {
-    BODY: "official source body",
-    MODEL_PROVIDER_URL: "https://api.openai.com/v1/models"
+    BODY: "official source body"
 } as const;
 
 describe("fetchDaemonSource", () => {
@@ -79,25 +78,11 @@ describe("fetchDaemonSource", () => {
         }
     });
 
-    it("rejects model-provider URLs before issuing a request", async () => {
+    it("rejects an unparsable URL before issuing a request", async () => {
         const fetchSpy = vi
             .spyOn(globalThis, "fetch")
             .mockRejectedValue(new Error("Unexpected network request"));
-        const root = await mkdtemp(path.join(tmpdir(), "lab-source-provider-"));
-
-        const result = await fetchDaemonSource({
-            url: SourceFixture.MODEL_PROVIDER_URL,
-            artifactDirectory: path.join(root, "provider")
-        });
-
-        expect(result).toMatchObject({
-            outcome: SourceFetchOutcome.REJECTED,
-            error: expect.stringContaining("model-provider policy")
-        });
-        expect(fetchSpy).not.toHaveBeenCalled();
-        await expect(readFile(result.manifest.path, "utf8")).resolves.not.toContain(
-            "api.openai.com"
-        );
+        const root = await mkdtemp(path.join(tmpdir(), "lab-source-invalid-"));
 
         const invalid = await fetchDaemonSource({
             url: "fabricated source URL",

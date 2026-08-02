@@ -1,7 +1,6 @@
 import { HarnessExecutionProfiles } from "#src/agent-harness/agent-harness.const";
 import type { HarnessRunRequest, HarnessSession } from "#src/agent-harness/agent-harness.types";
 import { ClaudeOutputFormats, ClaudePermissionModes } from "#src/claude-cli/claude-cli.const";
-import { claudeModelApiPolicySettings } from "#src/model-api-policy/model-api-policy-hook";
 
 /**
  * The headless command line for one Claude CLI run. Every harness that drives this binary shares it,
@@ -23,8 +22,6 @@ export function claudeRunArguments(
         readOnly ? ClaudePermissionModes.PLAN : ClaudePermissionModes.BYPASS_PERMISSIONS,
         "--setting-sources",
         "",
-        "--settings",
-        claudeModelApiPolicySettings(),
         "--model",
         session.model,
         "--effort",

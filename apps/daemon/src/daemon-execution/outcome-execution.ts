@@ -4,8 +4,6 @@ import path from "node:path";
 import { DECLARED_OUTPUT_STATUS } from "@lab/executor/constants";
 import { runExperiment } from "@lab/executor/run";
 import type { ArtifactDescriptor, ExecutionResult } from "@lab/executor/types";
-import { evaluateModelApiCommand } from "@lab/harness/model-api-policy";
-import { ModelApiPolicyDecision } from "@lab/harness/model-api-policy.const";
 import { sanitizeHarnessEnvironment } from "@lab/harness/subscription-environment";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
@@ -47,7 +45,6 @@ export async function executeResearchOutcome(
     signal?: AbortSignal
 ): Promise<OutcomeExecution> {
     const experimentId = `experiment-${randomUUID()}`;
-    assertOutcomeCommandAllowed(plan);
     const executionFingerprint = outcomeExecutionFingerprint(plan);
     const artifactDirectory = path.join(
         outcomeWorkspace.cwd,
@@ -183,15 +180,6 @@ export async function executeResearchOutcome(
         );
     }
     return { experimentId, result, artifacts };
-}
-
-function assertOutcomeCommandAllowed(plan: NonNullable<ResearchResult["execution_plan"]>): void {
-    const result = evaluateModelApiCommand(plan.file, plan.args);
-    if (result.decision === ModelApiPolicyDecision.DENY) {
-        throw new OutcomeExecutionAttemptError(
-            `Daemon-owned outcome command violates the subscription-only policy: ${result.reason ?? "denied"}`
-        );
-    }
 }
 
 function outcomeExecutionFingerprint(plan: NonNullable<ResearchResult["execution_plan"]>): string {

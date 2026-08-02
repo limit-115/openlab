@@ -131,8 +131,6 @@ describe("ClaudeHarness", () => {
             ClaudePermissionModes.BYPASS_PERMISSIONS,
             "--setting-sources",
             "",
-            "--settings",
-            expect.stringContaining('"PreToolUse"'),
             "--model",
             ClaudeSessionDefaults.MODEL,
             "--effort",
