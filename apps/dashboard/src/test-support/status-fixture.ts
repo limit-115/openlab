@@ -1,3 +1,4 @@
+import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
@@ -46,7 +47,12 @@ export const statusFixture: StatusSnapshot = {
             branch_id: "branch-landmarks",
             role: AgentRole.RESEARCHER,
             status: AgentStatus.WORKING,
-            current_task_id: "task-benchmark"
+            current_task_id: "task-benchmark",
+            execution: {
+                harness: AgentHarnessKind.CODEX,
+                model: "gpt-5.6-sol",
+                effort: AgentEffortLevel.MEDIUM
+            }
         }
     ],
     tasks: [

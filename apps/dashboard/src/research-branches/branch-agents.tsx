@@ -11,6 +11,8 @@ import {
     ItemTitle
 } from "#src/design-system/item";
 import {
+    AGENT_EXECUTION_PENDING,
+    AGENT_HARNESS_LABEL,
     AGENT_PRESENCE,
     AGENT_PRESENCE_TONE,
     AGENT_STATUS
@@ -47,6 +49,11 @@ export function BranchAgents({ agents, tasks }: BranchAgentsProps) {
                                         <ItemTitle className="capitalize">{agent.role}</ItemTitle>
                                         <ItemDescription>
                                             {currentTask?.objective ?? agent.id}
+                                        </ItemDescription>
+                                        <ItemDescription>
+                                            {agent.execution === undefined
+                                                ? AGENT_EXECUTION_PENDING
+                                                : `${AGENT_HARNESS_LABEL[agent.execution.harness]} · ${agent.execution.model} · ${agent.execution.effort} effort`}
                                         </ItemDescription>
                                     </ItemContent>
                                     <ItemActions>

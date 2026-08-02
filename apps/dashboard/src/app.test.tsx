@@ -79,6 +79,13 @@ describe("App", () => {
         );
     });
 
+    it("names the harness, model and effort behind a running agent", async () => {
+        respondWith(statusFixture);
+        render(<App />, { wrapper: wrapper() });
+
+        expect(await screen.findByText("Codex · gpt-5.6-sol · medium effort")).toBeInTheDocument();
+    });
+
     it("shows useful empty states while the lab is still mapping the goal", async () => {
         respondWith({
             ...statusFixture,
