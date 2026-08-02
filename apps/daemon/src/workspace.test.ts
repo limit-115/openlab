@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { WakeTrigger } from "@lab/core/constants";
 import type { RecoverableRuntime } from "@lab/db/runtime";
 import { CapabilityStatus, EventType, EvidenceKind, LabState } from "@lab/protocol/constants";
 import type { TaskInput } from "@lab/protocol/schemas";
@@ -13,9 +14,23 @@ const directories: string[] = [];
 
 const SafeCapabilityReference = {
     DATASET: "dataset://independent/v1",
+    TOOLCHAIN: "toolchain://codex/current",
     KEYCHAIN: "keychain://ai-research-lab/licensed-corpus",
     FILE: "file:///tmp/licensed-corpus"
 } as const;
+
+const AutomaticWakeCapability = [
+    {
+        label: "toolchain",
+        reference: SafeCapabilityReference.TOOLCHAIN,
+        trigger: WakeTrigger.TOOL
+    },
+    {
+        label: "dataset",
+        reference: SafeCapabilityReference.DATASET,
+        trigger: WakeTrigger.CAPABILITY
+    }
+] as const;
 
 const UnsafeCapabilityReference = {
     OPENAI_KEY: "sk-proj-abcdefghijklmnopqrstuvwxyz012345",
@@ -224,6 +239,32 @@ describe("LabWorkspace", () => {
         ).toHaveLength(1);
     });
 
+    it.each(AutomaticWakeCapability)(
+        "wakes a hibernating lab with the exact $label trigger",
+        async ({ reference, trigger }) => {
+            const workspace = await createWorkspace();
+            const request = await workspace.requestCapability({
+                need: `${reference} resource`,
+                reason: "The research branch is blocked on an operator-provided resource",
+                provisioningHint: "Provide an opaque resource handle"
+            });
+            await workspace.hibernateForPlateau("Waiting for a capability");
+
+            await expect(workspace.provideCapability(request.id, reference)).resolves.toBe(true);
+
+            expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+            expect(
+                workspace
+                    .getEvents()
+                    .findLast(
+                        (event) =>
+                            event.type === EventType.LAB_STATE_CHANGED &&
+                            event.payload.state === LabState.RUNNING
+                    )?.payload
+            ).toMatchObject({ wake_trigger: trigger });
+        }
+    );
+
     it("accepts safe dataset, keychain, and file resource handles", async () => {
         const workspace = await createWorkspace();
 
@@ -361,7 +402,41 @@ describe("LabWorkspace", () => {
         });
     });
 
-    it("rejects evidence artifacts outside the isolated run workspace", async () => {
+    it("wakes a hibernating lab after committing valid evidence", async () => {
+        const workspace = await createWorkspace();
+        const artifactPath = path.join(workspace.runDirectory, "new-source.txt");
+        await writeFile(artifactPath, "Independent material evidence");
+        const artifact = await validateFileArtifact(workspace.runDirectory, artifactPath);
+        await workspace.hibernateForPlateau("Waiting for new evidence");
+
+        await workspace.recordEvidence({
+            id: "evidence-new-source",
+            kind: EvidenceKind.ARTIFACT,
+            claim_id: "claim-new-source",
+            artifact_path: artifact.path,
+            artifact_hash: artifact.sha256,
+            summary: "An independent source became available",
+            supports: true,
+            independent: true,
+            created_at: new Date().toISOString()
+        });
+
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(
+            workspace
+                .getEvents()
+                .findLast(
+                    (event) =>
+                        event.type === EventType.LAB_STATE_CHANGED &&
+                        event.payload.state === LabState.RUNNING
+                )?.payload
+        ).toMatchObject({ wake_trigger: WakeTrigger.EVIDENCE });
+        await expect(
+            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8")
+        ).resolves.toContain("evidence-new-source");
+    });
+
+    it("rejects evidence artifacts outside the isolated run workspace without waking", async () => {
         const workspace = await createWorkspace();
         const externalPath = path.join(path.dirname(workspace.runDirectory), "external.txt");
         await writeFile(externalPath, "not contained");
@@ -369,6 +444,8 @@ describe("LabWorkspace", () => {
             path.dirname(workspace.runDirectory),
             externalPath
         );
+        await workspace.hibernateForPlateau("Waiting for valid evidence");
+        const eventsBefore = workspace.getEvents();
 
         await expect(
             workspace.recordEvidence({
@@ -383,6 +460,8 @@ describe("LabWorkspace", () => {
                 created_at: new Date().toISOString()
             })
         ).rejects.toThrow("escapes its isolated workspace");
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
+        expect(workspace.getEvents()).toEqual(eventsBefore);
     });
 
     it("rejects fabricated completion evidence ids", async () => {

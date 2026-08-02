@@ -15,6 +15,7 @@ import {
     AgentStatus,
     BranchStatus,
     CapabilityRequestType,
+    CapabilityResourceScheme,
     CapabilityStatus,
     ClaimStatus,
     EventType,
@@ -471,7 +472,11 @@ export class LabWorkspace {
     ): Promise<StatusSnapshot> {
         const mutation = await this.mutateWithEvent(
             EventType.LAB_STATE_CHANGED,
-            { state, ...(reason === undefined ? {} : { reason }) },
+            {
+                state,
+                ...(reason === undefined ? {} : { reason }),
+                ...(context.wakeTrigger === undefined ? {} : { wake_trigger: context.wakeTrigger })
+            },
             (draft) => {
                 transitionLabState(draft.lab.state, state, context);
                 draft.lab.state = state;
@@ -595,7 +600,7 @@ export class LabWorkspace {
         const evidence = EvidenceSchema.parse(candidate);
         await this.validateStoredEvidenceArtifact(evidence);
 
-        return this.mutex.runExclusive(async () => {
+        const recorded = await this.mutex.runExclusive(async () => {
             const existing = this.evidence.find(({ id }) => id === evidence.id);
             if (existing !== undefined) {
                 if (JSON.stringify(existing) !== JSON.stringify(evidence)) {
@@ -603,17 +608,22 @@ export class LabWorkspace {
                         `Evidence id already exists with different content: ${evidence.id}`
                     );
                 }
-                return structuredClone(existing);
+                return { evidence: structuredClone(existing), shouldWake: false };
             }
             const nextEvidence = [...this.evidence, evidence];
             const draft = structuredClone(this.snapshot);
+            const shouldWake = draft.lab.state === LabState.HIBERNATING;
             this.touch(draft);
             const parsed = StatusSnapshotSchema.parse(draft);
             this.snapshot = await this.commitRuntime(parsed, undefined, nextEvidence);
             this.evidence.splice(0, this.evidence.length, ...nextEvidence);
             await this.persistFilesystemSnapshot();
-            return structuredClone(evidence);
+            return { evidence: structuredClone(evidence), shouldWake };
         });
+        if (recorded.shouldWake) {
+            await this.wakeIfHibernating("Durable evidence recorded", WakeTrigger.EVIDENCE);
+        }
+        return recorded.evidence;
     }
 
     async appendEvent(type: LabEventType, payload: Record<string, unknown>): Promise<LabEvent> {
@@ -660,11 +670,29 @@ export class LabWorkspace {
             }
         );
         if (shouldWake) {
-            await this.transition(LabState.RUNNING, `Capability ${id} provided`, {
-                wakeTrigger: WakeTrigger.CAPABILITY
-            });
+            const wakeTrigger =
+                new URL(normalizedResourceReference).protocol === CapabilityResourceScheme.TOOLCHAIN
+                    ? WakeTrigger.TOOL
+                    : WakeTrigger.CAPABILITY;
+            await this.wakeIfHibernating(`Capability ${id} provided`, wakeTrigger);
         }
         return accepted;
+    }
+
+    private async wakeIfHibernating(reason: string, wakeTrigger: WakeTrigger): Promise<void> {
+        await this.mutateWithEvent(
+            EventType.LAB_STATE_CHANGED,
+            { state: LabState.RUNNING, reason, wake_trigger: wakeTrigger },
+            (draft) => {
+                if (draft.lab.state !== LabState.HIBERNATING) {
+                    return WorkspaceMutationAction.SKIP;
+                }
+                transitionLabState(draft.lab.state, LabState.RUNNING, { wakeTrigger });
+                draft.lab.state = LabState.RUNNING;
+                draft.lab.reason = reason;
+                return WorkspaceMutationAction.COMMIT;
+            }
+        );
     }
 
     async requestCapability(input: {

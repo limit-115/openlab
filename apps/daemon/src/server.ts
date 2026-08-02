@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import path from "node:path";
 import FastifyStatic from "@fastify/static";
 import { WakeTrigger } from "@lab/core/constants";
-import { CapabilityStatus, LabState } from "@lab/protocol/constants";
+import { EventType, LabState } from "@lab/protocol/constants";
 import { ProvideCapabilitySchema } from "@lab/protocol/status";
 import Fastify, { type FastifyInstance } from "fastify";
 import { bootstrapResearch } from "#src/bootstrap";
@@ -34,7 +34,6 @@ export interface RunningDaemon {
 export interface StatusServerOptions {
     dashboardRoot?: string;
     logLevel?: (typeof DaemonLogLevel)[keyof typeof DaemonLogLevel];
-    onWake?: () => void;
     onStop?: () => Promise<void>;
 }
 
@@ -83,7 +82,6 @@ export function createStatusServer(
         const snapshot = await workspace.transition(LabState.RUNNING, "External wake command", {
             wakeTrigger: WakeTrigger.USER
         });
-        options.onWake?.();
         return snapshot;
     });
 
@@ -109,7 +107,6 @@ export function createStatusServer(
             const capability = workspace
                 .getSnapshot()
                 .capability_requests.find(({ id }) => id === request.params.id);
-            const wasOpen = capability?.status === CapabilityStatus.OPEN;
             const provided = await workspace.provideCapability(
                 request.params.id,
                 input.resource_reference
@@ -119,9 +116,6 @@ export function createStatusServer(
                     return reply.code(404).send({ error: "Capability request not found" });
                 }
                 return reply.code(409).send({ error: "Capability request is not open" });
-            }
-            if (wasOpen && workspace.getSnapshot().lab.state === LabState.RUNNING) {
-                options.onWake?.();
             }
             return reply.code(202).send({ accepted: true });
         }
@@ -189,7 +183,6 @@ export async function startDaemon(
         app = createStatusServer(workspace, {
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel,
-            onWake: () => controller?.start(),
             onStop: () =>
                 controller?.cancel(new Error("External stop command")) ?? Promise.resolve()
         });
@@ -228,7 +221,7 @@ async function closeDaemonResources(
     app: FastifyInstance,
     database: DaemonDatabase
 ): Promise<void> {
-    await controller.cancel(new Error("Daemon closing"));
+    await controller.close(new Error("Daemon closing"));
     const results = await Promise.allSettled([app.close(), database.close()]);
     const errors = rejectedReasons(results);
     if (errors.length > 0) {
@@ -246,7 +239,7 @@ async function cleanupFailedStart(
         cleanups.push(app.close());
     }
     if (controller !== undefined) {
-        cleanups.push(controller.cancel(new Error("Daemon start failed")));
+        cleanups.push(controller.close(new Error("Daemon start failed")));
     }
     return rejectedReasons(await Promise.allSettled(cleanups));
 }
@@ -266,6 +259,7 @@ class ResearchLoopController {
     #abortController: AbortController | undefined;
     #running: Promise<ResearchLoopOutcome> | undefined;
     #restartRequested = false;
+    #unsubscribe: (() => void) | undefined;
 
     constructor(
         workspace: LabWorkspace,
@@ -273,6 +267,15 @@ class ResearchLoopController {
     ) {
         this.#workspace = workspace;
         this.#run = run;
+        this.#unsubscribe = workspace.subscribe((event, snapshot) => {
+            if (
+                event.type === EventType.LAB_STATE_CHANGED &&
+                event.payload.state === LabState.RUNNING &&
+                snapshot.lab.state === LabState.RUNNING
+            ) {
+                this.start();
+            }
+        });
     }
 
     start(): void {
@@ -312,6 +315,12 @@ class ResearchLoopController {
         } catch {
             // A daemon shutdown or stop must still close transport and settle lifecycle state.
         }
+    }
+
+    async close(reason: Error): Promise<void> {
+        this.#unsubscribe?.();
+        this.#unsubscribe = undefined;
+        await this.cancel(reason);
     }
 }
 
