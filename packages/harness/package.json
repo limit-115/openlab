@@ -4,13 +4,26 @@
     "private": true,
     "type": "module",
     "exports": {
-        "./claude": "./src/claude.ts",
-        "./codex": "./src/codex.ts",
-        "./contract": "./src/contract.ts",
-        "./environment": "./src/environment.ts",
-        "./errors": "./src/errors.ts",
-        "./model-api-policy": "./src/model-api-policy.ts",
-        "./process": "./src/process.ts"
+        "./agent-harness.const": "./src/agent-harness/agent-harness.const.ts",
+        "./agent-harness.types": "./src/agent-harness/agent-harness.types.ts",
+        "./claude-cli.const": "./src/claude-cli/claude-cli.const.ts",
+        "./claude-harness": "./src/claude-cli/claude-harness.ts",
+        "./cli-process-runner": "./src/cli-execution/cli-process-runner.ts",
+        "./cli-process-runner.types": "./src/cli-execution/cli-process-runner.types.ts",
+        "./codex-cli.const": "./src/codex-cli/codex-cli.const.ts",
+        "./codex-harness": "./src/codex-cli/codex-harness.ts",
+        "./harness-error": "./src/cli-execution/harness-error.ts",
+        "./harness-error.const": "./src/cli-execution/harness-error.const.ts",
+        "./harness-event-parser.types": "./src/agent-harness/harness-event-parser.types.ts",
+        "./harness-event.const": "./src/agent-harness/harness-event.const.ts",
+        "./harness-event.types": "./src/agent-harness/harness-event.types.ts",
+        "./model-api-policy": "./src/model-api-policy/model-api-policy.ts",
+        "./model-api-policy-hook": "./src/model-api-policy/model-api-policy-hook.ts",
+        "./model-api-policy.const": "./src/model-api-policy/model-api-policy.const.ts",
+        "./model-api-policy.types": "./src/model-api-policy/model-api-policy.types.ts",
+        "./subscription-cli-harness": "./src/subscription-cli-harness/subscription-cli-harness.ts",
+        "./subscription-cli-harness.types": "./src/subscription-cli-harness/subscription-cli-harness.types.ts",
+        "./subscription-environment": "./src/cli-execution/subscription-environment.ts"
     },
     "imports": {
         "#src/*": "./src/*.ts"

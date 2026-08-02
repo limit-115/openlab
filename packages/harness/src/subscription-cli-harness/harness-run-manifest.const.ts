@@ -1,0 +1,1 @@
+export const HARNESS_MANIFEST_SCHEMA_VERSION = 1;

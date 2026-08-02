@@ -1,0 +1,318 @@
+import { resolve } from "node:path";
+import { createInterface } from "node:readline";
+import {
+    HarnessInputSources,
+    type HarnessKind,
+    HarnessTimeoutMilliseconds
+} from "#src/agent-harness/agent-harness.const";
+import type {
+    AgentHarness,
+    HarnessAuthentication,
+    HarnessCommandRecord,
+    HarnessPreflight,
+    HarnessRunRequest,
+    HarnessRunResult
+} from "#src/agent-harness/agent-harness.types";
+import { HarnessDiagnosticLevels, HarnessEventTypes } from "#src/agent-harness/harness-event.const";
+import type { HarnessCompletedEvent, HarnessEvent } from "#src/agent-harness/harness-event.types";
+import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
+import { ExecaHarnessProcessRunner } from "#src/cli-execution/cli-process-runner";
+import type {
+    HarnessCaptureResult,
+    HarnessProcessExit,
+    HarnessProcessRunner
+} from "#src/cli-execution/cli-process-runner.types";
+import { HarnessProtocolError, HarnessTimeoutError } from "#src/cli-execution/harness-error";
+import { HarnessTimeoutPhases } from "#src/cli-execution/harness-error.const";
+import {
+    removedHarnessEnvironmentVariables,
+    sanitizeHarnessEnvironment
+} from "#src/cli-execution/subscription-environment";
+import {
+    closeRunFiles,
+    collectArtifacts,
+    createRunFiles,
+    writeStderrArtifact
+} from "#src/subscription-cli-harness/harness-run-artifacts";
+import {
+    appendEvent,
+    appendNativeEventLine,
+    parseNativeEvent,
+    stampEvent
+} from "#src/subscription-cli-harness/harness-run-events";
+import {
+    writeFinishedRunManifest,
+    writeStartedRunManifest
+} from "#src/subscription-cli-harness/harness-run-manifest";
+import type { FinishedRunManifest } from "#src/subscription-cli-harness/harness-run-manifest.types";
+import { validateHarnessRunRequest } from "#src/subscription-cli-harness/harness-run-request-validation";
+import { determineRunStatus } from "#src/subscription-cli-harness/harness-run-status";
+import {
+    createWatchdogSignal,
+    validateTimeoutMilliseconds
+} from "#src/subscription-cli-harness/harness-run-watchdog";
+import { validateStructuredOutput } from "#src/subscription-cli-harness/structured-output-validation";
+import type {
+    HarnessCommand,
+    SubscriptionHarnessOptions
+} from "#src/subscription-cli-harness/subscription-cli-harness.types";
+import { runSubscriptionPreflight } from "#src/subscription-cli-harness/subscription-preflight";
+
+export abstract class SubscriptionCliHarness implements AgentHarness {
+    abstract readonly kind: HarnessKind;
+    readonly #binary: string;
+    readonly #runner: HarnessProcessRunner;
+    readonly #sourceEnvironment: Readonly<NodeJS.ProcessEnv>;
+    readonly #preflightTimeoutMs: number;
+
+    protected constructor(defaultBinary: string, options: SubscriptionHarnessOptions) {
+        this.#binary = options.binary ?? defaultBinary;
+        this.#runner = options.runner ?? new ExecaHarnessProcessRunner();
+        this.#sourceEnvironment = options.environment ?? process.env;
+        this.#preflightTimeoutMs =
+            options.preflightTimeoutMs ?? HarnessTimeoutMilliseconds.PREFLIGHT;
+        validateTimeoutMilliseconds(this.#preflightTimeoutMs, "Preflight timeout");
+    }
+
+    protected abstract authenticationCommand(): readonly string[];
+    protected abstract parseAuthentication(result: HarnessCaptureResult): HarnessAuthentication;
+    protected abstract buildCommand(
+        request: HarnessRunRequest,
+        responseSchemaPath: string | undefined
+    ): HarnessCommand;
+    protected abstract createEventParser(request: HarnessRunRequest): HarnessEventParser;
+
+    async preflight(signal?: AbortSignal): Promise<HarnessPreflight> {
+        return this.preflightInDirectory(process.cwd(), signal);
+    }
+
+    private async preflightInDirectory(
+        cwd: string,
+        signal?: AbortSignal
+    ): Promise<HarnessPreflight> {
+        return runSubscriptionPreflight(
+            {
+                kind: this.kind,
+                binary: this.#binary,
+                runner: this.#runner,
+                environment: sanitizeHarnessEnvironment(this.#sourceEnvironment),
+                cwd,
+                timeoutMs: this.#preflightTimeoutMs,
+                authenticationCommand: this.authenticationCommand(),
+                parseAuthentication: (result) => this.parseAuthentication(result)
+            },
+            signal
+        );
+    }
+
+    async *run(request: HarnessRunRequest, signal?: AbortSignal): AsyncIterable<HarnessEvent> {
+        validateHarnessRunRequest(this.kind, request);
+        const timeoutMs = request.timeoutMs ?? HarnessTimeoutMilliseconds.RUN;
+        const preflight = await this.preflightInDirectory(resolve(request.cwd), signal);
+        const environment = sanitizeHarnessEnvironment(this.#sourceEnvironment);
+        const removedEnvironmentVariables = removedHarnessEnvironmentVariables(
+            this.#sourceEnvironment
+        );
+        const files = await createRunFiles(this.kind, request);
+        const command = this.buildCommand(request, files.responseSchema?.path);
+        const commandRecord: HarnessCommandRecord = {
+            file: this.#binary,
+            args: [...command.args],
+            cwd: resolve(request.cwd),
+            stdin: HarnessInputSources.PROMPT,
+            removedEnvironmentVariables
+        };
+        const startedAt = new Date().toISOString();
+        await writeStartedRunManifest(files.manifestPath, {
+            kind: this.kind,
+            cliVersion: preflight.cliVersion,
+            authentication: preflight.authentication,
+            command: commandRecord,
+            startedAt,
+            timeoutMs,
+            prompt: files.prompt,
+            ...(files.responseSchema === undefined ? {} : { responseSchema: files.responseSchema })
+        });
+
+        const parser = this.createEventParser(request);
+        const internalAbortController = new AbortController();
+        const watchdog = createWatchdogSignal(timeoutMs, [signal, internalAbortController.signal]);
+        let processExit: HarnessProcessExit | undefined;
+        let processCompleted: Promise<HarnessProcessExit> | undefined;
+        let sequence = 0;
+        let streamCompleted = false;
+        let semanticError: Error | undefined;
+        let structuredOutput: unknown;
+        let hasStructuredOutput = false;
+        const tailEvents: HarnessEvent[] = [];
+        let completedEvent: HarnessCompletedEvent | undefined;
+
+        try {
+            const child = this.#runner.spawn({
+                file: this.#binary,
+                args: command.args,
+                cwd: resolve(request.cwd),
+                environment,
+                input: request.prompt,
+                signal: watchdog.signal
+            });
+            processCompleted = child.completed;
+            const lines = createInterface({
+                input: child.stdout,
+                crlfDelay: Number.POSITIVE_INFINITY
+            });
+
+            for await (const line of lines) {
+                if (!line.trim()) {
+                    continue;
+                }
+
+                await appendNativeEventLine(files.nativeEventsHandle, line);
+                const nativeEvent = parseNativeEvent(this.kind, line);
+                for (const parsedEvent of parser.parse(nativeEvent)) {
+                    const event = stampEvent(parsedEvent, ++sequence, this.kind, parser.sessionId);
+                    await appendEvent(files.eventsHandle, event);
+                    yield event;
+                }
+            }
+
+            processExit = await processCompleted;
+            if (watchdog.timedOut()) {
+                throw new HarnessTimeoutError(this.kind, HarnessTimeoutPhases.RUN, timeoutMs);
+            }
+            for (const parsedEvent of parser.finish()) {
+                const event = stampEvent(parsedEvent, ++sequence, this.kind, parser.sessionId);
+                await appendEvent(files.eventsHandle, event);
+                tailEvents.push(event);
+            }
+
+            if (!parser.sessionId) {
+                throw new HarnessProtocolError(
+                    this.kind,
+                    `${this.kind} CLI completed without reporting a session identifier`
+                );
+            }
+
+            if (request.responseSchema) {
+                if (!parser.hasStructuredOutputCandidate) {
+                    throw new HarnessProtocolError(
+                        this.kind,
+                        `${this.kind} CLI did not return the requested structured output`
+                    );
+                }
+
+                structuredOutput = validateStructuredOutput(
+                    this.kind,
+                    parser.structuredOutputCandidate,
+                    request.responseSchema
+                );
+                hasStructuredOutput = true;
+                const structuredEvent = {
+                    type: HarnessEventTypes.STRUCTURED_OUTPUT,
+                    sequence: ++sequence,
+                    occurredAt: new Date().toISOString(),
+                    harness: this.kind,
+                    sessionId: parser.sessionId,
+                    value: structuredOutput
+                };
+                await appendEvent(files.eventsHandle, structuredEvent);
+                tailEvents.push(structuredEvent);
+            }
+
+            streamCompleted = true;
+        } catch (error) {
+            semanticError = watchdog.timedOut()
+                ? new HarnessTimeoutError(this.kind, HarnessTimeoutPhases.RUN, timeoutMs)
+                : error instanceof Error
+                  ? error
+                  : new Error(String(error));
+            internalAbortController.abort(semanticError);
+            const diagnostic = {
+                type: HarnessEventTypes.DIAGNOSTIC,
+                sequence: ++sequence,
+                occurredAt: new Date().toISOString(),
+                harness: this.kind,
+                sessionId: parser.sessionId,
+                level: HarnessDiagnosticLevels.ERROR,
+                message: semanticError.message
+            };
+            await appendEvent(files.eventsHandle, diagnostic);
+            tailEvents.push(diagnostic);
+        } finally {
+            if (!streamCompleted && semanticError === undefined) {
+                internalAbortController.abort(new Error("Harness event consumer stopped early"));
+            }
+
+            if (!processExit && processCompleted) {
+                try {
+                    processExit = await processCompleted;
+                } catch (error) {
+                    semanticError ??= watchdog.timedOut()
+                        ? new HarnessTimeoutError(this.kind, HarnessTimeoutPhases.RUN, timeoutMs)
+                        : error instanceof Error
+                          ? error
+                          : new Error(String(error));
+                }
+            }
+
+            processExit ??= {
+                exitCode: null,
+                signal: null,
+                failed: true,
+                cancelled: signal?.aborted === true || watchdog.timedOut(),
+                stderr: "",
+                error: semanticError?.message ?? "Harness process did not start"
+            };
+
+            await writeStderrArtifact(files.stderrPath, processExit.stderr);
+            await closeRunFiles(files);
+
+            const status = determineRunStatus(
+                processExit,
+                semanticError,
+                streamCompleted,
+                signal?.aborted === true,
+                watchdog.timedOut()
+            );
+            const finishedAt = new Date().toISOString();
+            const artifacts = await collectArtifacts(files);
+            const error = semanticError?.message ?? processExit.error;
+            const finishedManifest: FinishedRunManifest = {
+                kind: this.kind,
+                status,
+                cliVersion: preflight.cliVersion,
+                authentication: preflight.authentication,
+                sessionId: parser.sessionId,
+                ...(hasStructuredOutput ? { structuredOutput } : {}),
+                startedAt,
+                finishedAt,
+                exitCode: processExit.exitCode,
+                signal: processExit.signal,
+                error,
+                timeoutMs,
+                command: commandRecord,
+                artifacts
+            };
+            const manifest = await writeFinishedRunManifest(files.manifestPath, finishedManifest);
+            const result: HarnessRunResult = {
+                ...finishedManifest,
+                artifacts: { ...artifacts, manifest }
+            };
+            completedEvent = {
+                type: HarnessEventTypes.RUN_COMPLETED,
+                sequence: ++sequence,
+                occurredAt: new Date().toISOString(),
+                harness: this.kind,
+                sessionId: parser.sessionId,
+                result
+            };
+        }
+
+        for (const event of tailEvents) {
+            yield event;
+        }
+        if (completedEvent) {
+            yield completedEvent;
+        }
+    }
+}

@@ -1,154 +1,25 @@
-import { z } from "zod";
+import { HarnessKinds } from "#src/agent-harness/agent-harness.const";
 import {
-    type HarnessAuthentication,
-    HarnessAuthenticationMethods,
     HarnessDiagnosticLevels,
     HarnessEventTypes,
-    HarnessExecutionProfiles,
-    HarnessKinds,
     HarnessNativeEventTypes,
-    type HarnessRunRequest,
     HarnessToolPhases
-} from "#src/contract";
-import { HarnessCapabilityError, HarnessProtocolError } from "#src/errors";
-import type { HarnessEventParser, ParsedHarnessEvent } from "#src/event-parser";
-import { claudeModelApiPolicySettings } from "#src/model-api-policy";
-import type { HarnessCaptureResult } from "#src/process";
-import { SubscriptionCliHarness, type SubscriptionHarnessOptions } from "#src/subscription-harness";
+} from "#src/agent-harness/harness-event.const";
+import type {
+    HarnessEventParser,
+    ParsedHarnessEvent
+} from "#src/agent-harness/harness-event-parser.types";
+import {
+    ClaudeContentBlockTypes,
+    ClaudeDeltaTypes,
+    ClaudeNativeEventTypes,
+    ClaudeStreamEventTypes,
+    ClaudeSyntheticToolNames,
+    ClaudeSystemSubtypes
+} from "#src/claude-cli/claude-cli.const";
+import { HarnessProtocolError } from "#src/cli-execution/harness-error";
 
-export const ClaudePermissionModes = {
-    BYPASS_PERMISSIONS: "bypassPermissions",
-    PLAN: "plan"
-} as const;
-
-const ClaudeApiProviders = {
-    FIRST_PARTY: "firstParty"
-} as const;
-
-const ClaudeOutputFormats = {
-    STREAM_JSON: "stream-json"
-} as const;
-
-const ClaudeSyntheticToolNames = {
-    INPUT: "tool_input",
-    TOOL: "claude_tool",
-    RESULT: "tool_result"
-} as const;
-
-const ClaudeNativeEventTypes = {
-    SYSTEM: "system",
-    ASSISTANT: "assistant",
-    USER: "user",
-    STREAM_EVENT: "stream_event",
-    RESULT: "result"
-} as const;
-
-const ClaudeSystemSubtypes = {
-    INIT: "init"
-} as const;
-
-const ClaudeStreamEventTypes = {
-    CONTENT_BLOCK_DELTA: "content_block_delta"
-} as const;
-
-const ClaudeContentBlockTypes = {
-    TEXT: "text",
-    THINKING: "thinking",
-    TOOL_USE: "tool_use",
-    TOOL_RESULT: "tool_result"
-} as const;
-
-const ClaudeDeltaTypes = {
-    TEXT: "text_delta",
-    THINKING: "thinking_delta",
-    INPUT_JSON: "input_json_delta"
-} as const;
-
-const ClaudeAuthStatusSchema = z
-    .object({
-        loggedIn: z.literal(true),
-        authMethod: z.literal(HarnessAuthenticationMethods.CLAUDE_AI),
-        apiProvider: z.literal(ClaudeApiProviders.FIRST_PARTY),
-        subscriptionType: z.string().trim().min(1)
-    })
-    .passthrough();
-
-const CLAUDE_BINARY = "claude";
-
-export class ClaudeHarness extends SubscriptionCliHarness {
-    readonly kind = HarnessKinds.CLAUDE;
-
-    constructor(options: SubscriptionHarnessOptions = {}) {
-        super(CLAUDE_BINARY, options);
-    }
-
-    protected authenticationCommand(): readonly string[] {
-        return ["--setting-sources", "", "auth", "status", "--json"];
-    }
-
-    protected parseAuthentication(result: HarnessCaptureResult): HarnessAuthentication {
-        try {
-            if (result.failed) {
-                throw new Error(result.error ?? (result.stderr || result.stdout));
-            }
-            const auth = ClaudeAuthStatusSchema.parse(JSON.parse(result.stdout));
-            return {
-                method: HarnessAuthenticationMethods.CLAUDE_AI,
-                subscription: auth.subscriptionType
-            };
-        } catch (error) {
-            throw new HarnessCapabilityError(
-                this.kind,
-                "Claude CLI is not authenticated through a claude.ai subscription",
-                {
-                    need: "Claude CLI logged in through an active claude.ai subscription",
-                    reason: "Console, API-key, Bedrock, Vertex, and Foundry billing are forbidden",
-                    provisioningHint: "Run `claude auth login`, choose claude.ai login, and retry"
-                },
-                { cause: error }
-            );
-        }
-    }
-
-    protected buildCommand(
-        request: HarnessRunRequest,
-        _responseSchemaPath: string | undefined
-    ): { readonly args: readonly string[] } {
-        return {
-            args: [
-                "-p",
-                "--output-format",
-                ClaudeOutputFormats.STREAM_JSON,
-                "--verbose",
-                "--include-partial-messages",
-                ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
-                    ? []
-                    : ["--dangerously-skip-permissions"]),
-                "--permission-mode",
-                ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
-                    ? [ClaudePermissionModes.PLAN]
-                    : [ClaudePermissionModes.BYPASS_PERMISSIONS]),
-                "--setting-sources",
-                "",
-                "--settings",
-                claudeModelApiPolicySettings(),
-                ...(request.model === undefined ? [] : ["--model", request.model]),
-                ...(request.resumeSessionId === undefined
-                    ? []
-                    : ["--resume", request.resumeSessionId]),
-                ...(request.responseSchema === undefined
-                    ? []
-                    : ["--json-schema", JSON.stringify(request.responseSchema)])
-            ]
-        };
-    }
-
-    protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
-        return new ClaudeEventParser(request.resumeSessionId);
-    }
-}
-
-class ClaudeEventParser implements HarnessEventParser {
+export class ClaudeEventParser implements HarnessEventParser {
     readonly kind = HarnessKinds.CLAUDE;
     #sessionId: string | null;
     #structuredOutputCandidate: unknown;

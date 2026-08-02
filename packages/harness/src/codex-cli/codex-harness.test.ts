@@ -1,0 +1,235 @@
+import { readFile } from "node:fs/promises";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+    HarnessAuthenticationMethods,
+    HarnessExecutionProfiles,
+    HarnessKinds,
+    HarnessRunStatuses,
+    HarnessTimeoutMilliseconds
+} from "#src/agent-harness/agent-harness.const";
+import { HarnessEventTypes } from "#src/agent-harness/harness-event.const";
+import {
+    captureSuccess,
+    FakeHarnessProcessRunner,
+    streamSuccess
+} from "#src/cli-execution/cli-process-runner.fixture";
+import { HarnessErrorCodes } from "#src/cli-execution/harness-error.const";
+import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
+import { CodexPermissionModes } from "#src/codex-cli/codex-cli.const";
+import {
+    CodexTestCliValues,
+    CodexTestItemTypes,
+    CodexTestLoginMarkers,
+    CodexTestNativeEventTypes
+} from "#src/codex-cli/codex-cli.fixture";
+import { CodexHarness } from "#src/codex-cli/codex-harness";
+import {
+    answerSchema,
+    harnessRequest,
+    lastCompleted,
+    removeHarnessRunDirectories
+} from "#src/subscription-cli-harness/harness-run.fixture";
+
+afterEach(removeHarnessRunDirectories);
+
+describe("CodexHarness", () => {
+    it("builds a subscription-only structured exec command and normalizes JSONL", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess(CodexTestCliValues.VERSION),
+            { ...captureSuccess(""), stderr: CodexTestLoginMarkers.CHATGPT }
+        ]);
+        runner.nextStream = streamSuccess([
+            {
+                type: CodexTestNativeEventTypes.THREAD_STARTED,
+                thread_id: "codex-session"
+            },
+            {
+                type: CodexTestNativeEventTypes.ITEM_COMPLETED,
+                item: {
+                    id: "message-1",
+                    type: CodexTestItemTypes.AGENT_MESSAGE,
+                    text: '{"answer":42}'
+                }
+            },
+            {
+                type: CodexTestNativeEventTypes.TURN_COMPLETED,
+                usage: { input_tokens: 10, output_tokens: 4, cached_input_tokens: 2 }
+            }
+        ]);
+        const environment = testEnvironment();
+        const harness = new CodexHarness({ runner, environment });
+        const request = await harnessRequest("codex-run", {
+            responseSchema: answerSchema()
+        });
+
+        const events = await Array.fromAsync(harness.run(request));
+        const spawn = runner.spawnRequests[0];
+        const completed = lastCompleted(events);
+
+        expect(CodexPermissionModes.UNRESTRICTED).toBeDefined();
+        expect(runner.captureRequests.map((capture) => capture.args)).toEqual([
+            ["--version"],
+            ["login", "status"]
+        ]);
+        expect(spawn?.args).toEqual([
+            "exec",
+            "--color",
+            CodexTestCliValues.COLOR_NEVER,
+            "--json",
+            "--ignore-user-config",
+            "--skip-git-repo-check",
+            "--dangerously-bypass-hook-trust",
+            "--config",
+            expect.stringContaining("hooks.PreToolUse"),
+            "--dangerously-bypass-approvals-and-sandbox",
+            "--output-schema",
+            expect.stringMatching(/response-schema\.json$/),
+            "-"
+        ]);
+        expect(spawn?.input).toBe(request.prompt);
+        expect(spawn?.environment.PATH).toBe("/test/bin");
+        expect(spawn?.environment.OPENAI_API_KEY).toBeUndefined();
+        expect(spawn?.environment.ANTHROPIC_AUTH_TOKEN).toBeUndefined();
+        expect(events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: HarnessEventTypes.SESSION_STARTED,
+                    sessionId: "codex-session",
+                    resumed: false
+                }),
+                expect.objectContaining({
+                    type: HarnessEventTypes.STRUCTURED_OUTPUT,
+                    value: { answer: 42 }
+                }),
+                expect.objectContaining({
+                    type: HarnessEventTypes.USAGE,
+                    inputTokens: 10,
+                    outputTokens: 4,
+                    cachedInputTokens: 2
+                })
+            ])
+        );
+        expect(completed.result).toMatchObject({
+            kind: HarnessKinds.CODEX,
+            status: HarnessRunStatuses.SUCCEEDED,
+            cliVersion: CodexTestCliValues.VERSION,
+            authentication: {
+                method: HarnessAuthenticationMethods.CHATGPT,
+                subscription: null
+            },
+            sessionId: "codex-session",
+            structuredOutput: { answer: 42 },
+            exitCode: 0,
+            timeoutMs: HarnessTimeoutMilliseconds.RUN
+        });
+        await expect(
+            readFile(completed.result.artifacts.nativeEvents.path, "utf8")
+        ).resolves.toContain(CodexTestNativeEventTypes.THREAD_STARTED);
+        await expect(readFile(completed.result.artifacts.manifest.path, "utf8")).resolves.toContain(
+            `"status": "${HarnessRunStatuses.SUCCEEDED}"`
+        );
+    });
+
+    it("constructs resume without exposing the prompt in argv", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess(CodexTestCliValues.VERSION),
+            captureSuccess(CodexTestLoginMarkers.CHATGPT)
+        ]);
+        runner.nextStream = streamSuccess([
+            {
+                type: CodexTestNativeEventTypes.THREAD_STARTED,
+                thread_id: "existing-session"
+            },
+            {
+                type: CodexTestNativeEventTypes.ITEM_COMPLETED,
+                item: {
+                    id: "message-2",
+                    type: CodexTestItemTypes.AGENT_MESSAGE,
+                    text: "continued"
+                }
+            }
+        ]);
+        const harness = new CodexHarness({ runner, environment: testEnvironment() });
+        const request = await harnessRequest("codex-resume", {
+            resumeSessionId: "existing-session",
+            model: "gpt-subscription-model"
+        });
+
+        const events = await Array.fromAsync(harness.run(request));
+
+        expect(runner.spawnRequests[0]?.args).toEqual([
+            "exec",
+            "resume",
+            "--json",
+            "--ignore-user-config",
+            "--skip-git-repo-check",
+            "--dangerously-bypass-hook-trust",
+            "--config",
+            expect.stringContaining("hooks.PreToolUse"),
+            "--dangerously-bypass-approvals-and-sandbox",
+            "--model",
+            "gpt-subscription-model",
+            "existing-session",
+            "-"
+        ]);
+        expect(runner.spawnRequests[0]?.args).not.toContain(request.prompt);
+        expect(events).toContainEqual(
+            expect.objectContaining({ type: HarnessEventTypes.SESSION_STARTED, resumed: true })
+        );
+    });
+
+    it("uses the native read-only sandbox without dangerous bypass flags", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess(CodexTestCliValues.VERSION),
+            captureSuccess(CodexTestLoginMarkers.CHATGPT)
+        ]);
+        runner.nextStream = streamSuccess([
+            {
+                type: CodexTestNativeEventTypes.THREAD_STARTED,
+                thread_id: "read-only-session"
+            },
+            {
+                type: CodexTestNativeEventTypes.ITEM_COMPLETED,
+                item: {
+                    id: "message-read-only",
+                    type: CodexTestItemTypes.AGENT_MESSAGE,
+                    text: "analysis"
+                }
+            }
+        ]);
+        const harness = new CodexHarness({ runner, environment: testEnvironment() });
+
+        await Array.fromAsync(
+            harness.run(
+                await harnessRequest("codex-read-only", {
+                    executionProfile: HarnessExecutionProfiles.READ_ONLY
+                })
+            )
+        );
+
+        const args = runner.spawnRequests[0]?.args ?? [];
+        expect(args).toEqual(expect.arrayContaining(["--sandbox", CodexPermissionModes.READ_ONLY]));
+        expect(args).not.toContain("--dangerously-bypass-approvals-and-sandbox");
+        expect(args).toContain("--dangerously-bypass-hook-trust");
+        expect(args).toEqual(
+            expect.arrayContaining(["--config", expect.stringContaining("hooks.PreToolUse")])
+        );
+    });
+
+    it("rejects API-key authentication instead of falling back", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess(CodexTestCliValues.VERSION),
+            captureSuccess(CodexTestLoginMarkers.API_KEY)
+        ]);
+        const harness = new CodexHarness({ runner, environment: testEnvironment() });
+
+        await expect(harness.preflight()).rejects.toMatchObject({
+            code: HarnessErrorCodes.SUBSCRIPTION_AUTH_REQUIRED,
+            harness: HarnessKinds.CODEX,
+            capabilityRequest: {
+                need: expect.stringContaining("ChatGPT")
+            }
+        });
+        expect(runner.spawnRequests).toHaveLength(0);
+    });
+});

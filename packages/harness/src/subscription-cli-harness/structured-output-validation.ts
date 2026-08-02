@@ -1,6 +1,6 @@
 import { Ajv, type ErrorObject } from "ajv";
-import type { HarnessKind } from "#src/contract";
-import { HarnessProtocolError, HarnessRequestError } from "#src/errors";
+import type { HarnessKind } from "#src/agent-harness/agent-harness.const";
+import { HarnessProtocolError, HarnessRequestError } from "#src/cli-execution/harness-error";
 
 const ajv = new Ajv({
     allErrors: true,

@@ -1,9 +1,9 @@
+import type { HarnessKind } from "#src/agent-harness/agent-harness.const";
 import type {
-    HarnessDiagnosticLevels,
+    HarnessDiagnosticLevel,
     HarnessEventTypes,
-    HarnessKind,
-    HarnessToolPhases
-} from "#src/contract";
+    HarnessToolPhase
+} from "#src/agent-harness/harness-event.const";
 
 export type ParsedHarnessEvent =
     | { readonly type: typeof HarnessEventTypes.SESSION_STARTED; readonly resumed: boolean }
@@ -17,7 +17,7 @@ export type ParsedHarnessEvent =
       }
     | {
           readonly type: typeof HarnessEventTypes.TOOL;
-          readonly phase: (typeof HarnessToolPhases)[keyof typeof HarnessToolPhases];
+          readonly phase: HarnessToolPhase;
           readonly toolName: string;
           readonly callId: string | null;
           readonly payload: unknown;
@@ -30,7 +30,7 @@ export type ParsedHarnessEvent =
       }
     | {
           readonly type: typeof HarnessEventTypes.DIAGNOSTIC;
-          readonly level: (typeof HarnessDiagnosticLevels)[keyof typeof HarnessDiagnosticLevels];
+          readonly level: HarnessDiagnosticLevel;
           readonly message: string;
       }
     | {
