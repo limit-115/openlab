@@ -28,7 +28,7 @@ export const BRANCH_CARD_APPROACH =
 export const BRANCH_CARD_META = "flex gap-[6px] max-[620px]:hidden" as const;
 
 export const BRANCH_CARD_META_ITEM =
-    "inline-flex items-center gap-1 rounded-md border border-line px-[6px] py-1 font-mono text-[9px] text-fg-faint" as const;
+    "inline-flex items-center gap-1 rounded-md border border-line px-[6px] py-1 text-[9px] text-fg-faint" as const;
 
 export const BRANCH_CARD_CHEVRON =
     "text-fg-faint transition-transform duration-[180ms] ease-[ease] group-open:rotate-180 motion-reduce:transition-none" as const;
@@ -42,4 +42,4 @@ export const BRANCH_DETAIL_GRID =
     "grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-5 max-[620px]:grid-cols-1" as const;
 
 export const BRANCH_DETAIL_HEADING =
-    "mt-[10px] mb-2 text-[9px] font-[700] uppercase tracking-[0.08em] text-fg-faint" as const;
+    "mt-[10px] mb-2 text-[9px] font-[700] uppercase text-fg-faint" as const;

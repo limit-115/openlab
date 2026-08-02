@@ -6,7 +6,7 @@ export const BRAND = "flex min-w-0 items-center gap-[11px]" as const;
 export const BRAND_MARK =
     "grid h-[38px] w-[38px] flex-none place-items-center rounded-[10px] border border-green/26 bg-[linear-gradient(145deg,rgba(96,211,148,0.13),rgba(96,211,148,0.03))] text-green" as const;
 
-export const BRAND_NAME = "text-[14px] font-[680] tracking-[0.01em]" as const;
+export const BRAND_NAME = "text-[14px] font-[680]" as const;
 
 export const BRAND_ID =
-    "mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-fg-faint" as const;
+    "mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap text-[10px] text-fg-faint" as const;

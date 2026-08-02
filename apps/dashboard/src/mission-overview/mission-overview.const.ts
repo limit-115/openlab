@@ -8,7 +8,7 @@ export const GOAL_PANEL_BODY =
     "flex min-h-[105px] flex-col justify-center px-5 pt-[19px] pb-[22px] max-[620px]:min-h-[90px]" as const;
 
 export const GOAL_STATEMENT =
-    "max-w-[980px] text-[clamp(19px,1.8vw,27px)] font-[550] leading-[1.28] tracking-[-0.026em]" as const;
+    "max-w-[980px] text-[clamp(19px,1.8vw,27px)] font-[550] leading-[1.28]" as const;
 
 export const GOAL_REASON = "mt-3 text-[12px] leading-[1.55] text-fg-muted" as const;
 

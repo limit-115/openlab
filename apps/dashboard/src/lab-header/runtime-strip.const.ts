@@ -8,10 +8,9 @@ export const RUNTIME_STRIP_ITEM = "flex items-center gap-2" as const;
 export const RUNTIME_STRIP_ICON = "text-fg-faint" as const;
 
 export const RUNTIME_STRIP_LABEL =
-    "text-[9px] font-[650] uppercase leading-[1.25] tracking-[0.08em] text-fg-faint" as const;
+    "text-[9px] font-[650] uppercase leading-[1.25] text-fg-faint" as const;
 
-export const RUNTIME_STRIP_VALUE =
-    "mt-[2px] font-mono text-[11px] font-[600] leading-[1.25]" as const;
+export const RUNTIME_STRIP_VALUE = "mt-[2px] text-[11px] font-[600] leading-[1.25]" as const;
 
 export const STATE_DOT = "h-2 w-2 rounded-full" as const;
 

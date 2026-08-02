@@ -23,13 +23,11 @@ export const CAPABILITY_REASON = "mt-[6px] mb-2 text-[10px] leading-[1.45] text-
 
 export const PROVISIONING_HINT = "grid gap-1 rounded-md bg-black/20 p-[7px]" as const;
 
-export const PROVISIONING_HINT_LABEL =
-    "text-[8px] font-[680] uppercase tracking-[0.06em] text-fg-faint" as const;
+export const PROVISIONING_HINT_LABEL = "text-[8px] font-[680] uppercase text-fg-faint" as const;
 
 export const PROVISIONING_HINT_COMMAND =
-    "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[8px] text-amber" as const;
+    "overflow-hidden text-ellipsis whitespace-nowrap text-[8px] text-amber" as const;
 
 export const PROVISIONING_HINT_NOTE = "text-[8px] leading-[1.4] text-fg-faint" as const;
 
-export const CAPABILITY_FOOTER =
-    "mt-[7px] font-mono text-[8px] leading-[1.4] text-fg-faint" as const;
+export const CAPABILITY_FOOTER = "mt-[7px] text-[8px] leading-[1.4] text-fg-faint" as const;

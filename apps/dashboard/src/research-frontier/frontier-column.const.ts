@@ -19,10 +19,9 @@ export const FRONTIER_COLUMN_ICON_TONE: Record<FrontierTone, string> = {
     [FrontierTone.AMBER]: "text-amber"
 };
 
-export const FRONTIER_COLUMN_TITLE =
-    "flex-1 text-[10px] font-[680] uppercase tracking-[0.055em]" as const;
+export const FRONTIER_COLUMN_TITLE = "flex-1 text-[10px] font-[680] uppercase" as const;
 
-export const FRONTIER_COLUMN_COUNT = "font-mono text-[9px] text-fg-faint" as const;
+export const FRONTIER_COLUMN_COUNT = "text-[9px] text-fg-faint" as const;
 
 export const FRONTIER_ITEM_LIST = "grid gap-2" as const;
 

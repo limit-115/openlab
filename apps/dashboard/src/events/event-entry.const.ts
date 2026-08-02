@@ -1,7 +1,7 @@
 export const EVENT_ENTRY =
     "group grid grid-cols-[68px_12px_minmax(150px,210px)_minmax(0,1fr)] items-start gap-x-[12px] gap-y-[5px] border-b border-line py-[10px] last:border-b-0 max-[820px]:grid-cols-[56px_12px_minmax(0,1fr)]" as const;
 
-export const EVENT_TIME = "pt-[3px] font-mono text-[10px] tabular-nums text-fg-faint" as const;
+export const EVENT_TIME = "pt-[3px] text-[10px] tabular-nums text-fg-faint" as const;
 
 export const EVENT_MARKER = "flex flex-col items-center self-stretch pt-[6px]" as const;
 

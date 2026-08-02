@@ -8,8 +8,7 @@ export const CENTER_STATE_MARK_READY = "border-green/24 bg-green/12 text-green" 
 
 export const CENTER_STATE_MARK_ERROR = "border-red/24 bg-red/11 text-red" as const;
 
-export const CENTER_STATE_TITLE =
-    "mt-[7px] mb-2 text-[24px] font-[580] tracking-[-0.025em]" as const;
+export const CENTER_STATE_TITLE = "mt-[7px] mb-2 text-[24px] font-[580]" as const;
 
 export const CENTER_STATE_TEXT = "max-w-[470px] text-[12px] leading-[1.55] text-fg-muted" as const;
 
