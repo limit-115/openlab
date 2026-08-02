@@ -30,15 +30,27 @@ import {
 } from "@lab/protocol/constants";
 import type { Claim, Evidence, TaskInput } from "@lab/protocol/schemas";
 import type { z } from "zod";
-import { validateFileArtifact } from "#src/artifact";
+import { type ValidatedArtifact, validateFileArtifact } from "#src/artifact";
+import {
+    assertEvaluatorUnchanged,
+    bindEvaluatorInput,
+    type EvaluatorTarget,
+    type FrozenEvaluator,
+    freezeEvaluator,
+    validateEvaluatorVerdict
+} from "#src/evaluator";
 import {
     CRITIC_VERDICT,
     type CriticResult,
     CriticResultSchema,
     type DirectorPlan,
     DirectorPlanSchema,
+    EVALUATOR_VERDICT,
+    type EvaluatorPrecommit,
+    type EvaluatorStructuredVerdict,
     RESEARCH_OUTCOME,
     RESEARCH_TARGET_KIND,
+    ResearchEvaluatorPrecommitSchema,
     type ResearchResult,
     ResearchResultSchema,
     type ResearchTargetKind,
@@ -48,6 +60,7 @@ import {
 import {
     criticPrompt,
     directorPrompt,
+    evaluatorPrecommitPrompt,
     researcherPrompt,
     verifierPrompt
 } from "#src/research-prompts";
@@ -136,6 +149,7 @@ interface MaterialEvidence {
 interface ResearchBranchResult {
     readonly result?: ResearchResult;
     readonly evidence: readonly MaterialEvidence[];
+    readonly evaluatorHashes: readonly string[];
     readonly issues: readonly string[];
 }
 
@@ -373,6 +387,7 @@ async function runResearchCycle(
         }
         return {
             evidence: [],
+            evaluatorHashes: [],
             issues: [result.reason instanceof Error ? result.reason.message : String(result.reason)]
         };
     });
@@ -386,6 +401,9 @@ async function runResearchCycle(
         result === undefined ? [] : [result]
     );
     const issues = branchResults.flatMap(({ issues }) => issues);
+    const researcherEvaluatorHashes = branchResults.flatMap(
+        ({ evaluatorHashes }) => evaluatorHashes
+    );
     if (successfulResults.length === 0) {
         const nextExperiments: string[] = [];
         await updateFrontier(workspace, [], nextExperiments, issues);
@@ -414,6 +432,23 @@ async function runResearchCycle(
         ...(signal === undefined ? {} : { signal })
     });
     const criticism = criticRun.value;
+    const verificationTarget = requiredPlanTarget(
+        planTargets,
+        criticism.verification_evaluator.target_kind,
+        criticism.verification_evaluator.target_index
+    );
+    if (verificationTarget.kind !== RESEARCH_TARGET_KIND.CLAIM) {
+        throw new Error("Independent verification evaluator must target a claim");
+    }
+    const verificationEvaluator = await freezeEvaluator(
+        criticRun.agentWorkspace.cwd,
+        criticism.verification_evaluator,
+        evaluatorTarget(verificationTarget)
+    );
+    if (researcherEvaluatorHashes.includes(verificationEvaluator.fileSha256)) {
+        throw new Error("Independent verification must use an alternate evaluator");
+    }
+    await recordEvaluatorPrecommit(workspace, criticIds, verificationEvaluator);
     await finishRoleTask(workspace, criticIds, BranchStatus.CLOSED);
 
     const verifierIds = roleIdentifiers(ResearchStage.VERIFIER, cycle, 0);
@@ -447,6 +482,8 @@ async function runResearchCycle(
         verifierIds,
         planTargets,
         criticism,
+        verificationEvaluator,
+        criticRun.agentWorkspace,
         signal
     );
 
@@ -544,6 +581,79 @@ async function prepareClaims(
     return targets;
 }
 
+async function freezeResearchEvaluators(
+    workspace: LabWorkspace,
+    ids: RoleIdentifiers,
+    agentWorkspace: ResearchWorkspace,
+    candidates: readonly EvaluatorPrecommit[],
+    planTargets: readonly PlanTarget[]
+): Promise<FrozenEvaluator[]> {
+    const frozen: FrozenEvaluator[] = [];
+    const seenTargets = new Set<string>();
+    for (const candidate of candidates) {
+        const target = requiredPlanTarget(
+            planTargets,
+            candidate.target_kind,
+            candidate.target_index
+        );
+        const targetKey = `${target.kind}\u0000${target.planIndex}`;
+        if (seenTargets.has(targetKey)) {
+            throw new Error(
+                "A research branch cannot precommit multiple evaluators for one target"
+            );
+        }
+        seenTargets.add(targetKey);
+        const evaluator = await freezeEvaluator(
+            agentWorkspace.cwd,
+            candidate,
+            evaluatorTarget(target)
+        );
+        frozen.push(evaluator);
+        await recordEvaluatorPrecommit(workspace, ids, evaluator);
+    }
+    return frozen;
+}
+
+async function recordEvaluatorPrecommit(
+    workspace: LabWorkspace,
+    ids: RoleIdentifiers,
+    evaluator: FrozenEvaluator
+): Promise<void> {
+    await workspace.appendEvent(EventType.EVALUATOR_PRECOMMITTED, {
+        branch_id: ids.branchId,
+        task_id: ids.taskId,
+        target_kind: evaluator.targetKind,
+        target_index: evaluator.targetIndex,
+        target_claim_id: evaluator.targetClaimId,
+        evaluator_path: evaluator.file,
+        evaluator_sha256: evaluator.fileSha256,
+        args: evaluator.args,
+        success_contract: evaluator.successContract
+    });
+}
+
+function requiredPlanTarget(
+    planTargets: readonly PlanTarget[],
+    kind: ResearchTargetKind,
+    planIndex: number
+): PlanTarget {
+    const target = planTargets.find(
+        (candidate) => candidate.kind === kind && candidate.planIndex === planIndex
+    );
+    if (target === undefined) {
+        throw new Error(`Evaluator references unknown ${kind} index ${planIndex}`);
+    }
+    return target;
+}
+
+function evaluatorTarget(target: PlanTarget): EvaluatorTarget {
+    return {
+        kind: target.kind,
+        index: target.planIndex,
+        claim: target.claim
+    };
+}
+
 async function ensureTestingClaim(
     workspace: LabWorkspace,
     statement: string,
@@ -612,16 +722,36 @@ async function runResearchBranch(
         const harness = selectHarness(available, preferredHarnessIndex + offset).harness;
         const agentWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
         const experimentId = `experiment-${randomUUID()}`;
-        await prepareResearchAttempt(
-            workspace,
-            ids,
-            experimentId,
-            direction,
-            harness,
-            agentWorkspace,
-            offset + 1
-        );
+        let attemptPrepared = false;
         try {
+            const precommit = await runStructuredAgent({
+                workspace,
+                harness,
+                stage: ResearchStage.RESEARCHER,
+                branchId: ids.branchId,
+                taskId: ids.taskId,
+                agentWorkspace,
+                prompt: evaluatorPrecommitPrompt(task, plan, direction),
+                schema: ResearchEvaluatorPrecommitSchema,
+                ...(signal === undefined ? {} : { signal })
+            });
+            const frozenEvaluators = await freezeResearchEvaluators(
+                workspace,
+                ids,
+                agentWorkspace,
+                precommit.value.evaluators,
+                planTargets
+            );
+            await prepareResearchAttempt(
+                workspace,
+                ids,
+                experimentId,
+                direction,
+                harness,
+                agentWorkspace,
+                offset + 1
+            );
+            attemptPrepared = true;
             const run = await runStructuredAgent({
                 workspace,
                 harness,
@@ -629,7 +759,7 @@ async function runResearchBranch(
                 branchId: ids.branchId,
                 taskId: ids.taskId,
                 agentWorkspace,
-                prompt: researcherPrompt(task, plan, direction),
+                prompt: researcherPrompt(task, plan, direction, frozenEvaluators),
                 schema: ResearchResultSchema,
                 ...(signal === undefined ? {} : { signal })
             });
@@ -640,6 +770,7 @@ async function runResearchBranch(
                 ids.branchId,
                 agentWorkspace,
                 planTargets,
+                frozenEvaluators,
                 signal
             );
             await finishResearchAttempt(workspace, experimentId, run.result, true);
@@ -647,11 +778,14 @@ async function runResearchBranch(
             return {
                 result: recorded.result,
                 evidence: recorded.evidence,
+                evaluatorHashes: frozenEvaluators.map(({ fileSha256 }) => fileSha256),
                 issues: [...issues, ...recorded.issues]
             };
         } catch (error) {
             const failedRun = error instanceof StructuredAgentRunError ? error.result : undefined;
-            await finishResearchAttempt(workspace, experimentId, failedRun, false);
+            if (attemptPrepared) {
+                await finishResearchAttempt(workspace, experimentId, failedRun, false);
+            }
             issues.push(error instanceof Error ? error.message : String(error));
             if (signal?.aborted) {
                 await failRoleTask(workspace, ids, true);
@@ -664,7 +798,7 @@ async function runResearchBranch(
     }
 
     await failRoleTask(workspace, ids, false);
-    return { evidence: [], issues };
+    return { evidence: [], evaluatorHashes: [], issues };
 }
 
 async function prepareResearchBranch(
@@ -747,6 +881,7 @@ async function recordResearchEvidence(
     branchId: string,
     agentWorkspace: ResearchWorkspace,
     planTargets: readonly PlanTarget[],
+    frozenEvaluators: readonly FrozenEvaluator[],
     signal?: AbortSignal
 ): Promise<{ result: ResearchResult; evidence: MaterialEvidence[]; issues: string[] }> {
     const evidence: MaterialEvidence[] = [];
@@ -762,7 +897,7 @@ async function recordResearchEvidence(
             );
             continue;
         }
-        const validatedPaths: string[] = [];
+        const validatedArtifacts: ValidatedArtifact[] = [];
         for (const artifactPath of item.artifact_paths) {
             try {
                 const artifact = await validateFileArtifact(agentWorkspace.cwd, artifactPath);
@@ -786,7 +921,7 @@ async function recordResearchEvidence(
                     attested_support: false
                 });
                 if (artifact.bytes > 0) {
-                    validatedPaths.push(artifact.path);
+                    validatedArtifacts.push(artifact);
                 } else {
                     issues.push(`Rejected empty artifact ${artifactPath}`);
                 }
@@ -796,10 +931,19 @@ async function recordResearchEvidence(
                 );
             }
         }
-        if (validatedPaths.length === 0) {
+        if (validatedArtifacts.length === 0) {
             issues.push(
                 `${item.target_kind} ${item.target_index} has no non-empty contained artifact`
             );
+            continue;
+        }
+
+        const frozenEvaluator = frozenEvaluators.find(
+            ({ targetKind, targetIndex }) =>
+                targetKind === item.target_kind && targetIndex === item.target_index
+        );
+        if (frozenEvaluator === undefined) {
+            issues.push(`${item.target_kind} ${item.target_index} has no daemon-frozen evaluator`);
             continue;
         }
 
@@ -809,13 +953,30 @@ async function recordResearchEvidence(
             agentWorkspace,
             planTarget.claim,
             planTarget.evaluator,
-            item.evaluator_command,
+            frozenEvaluator,
+            validatedArtifacts,
             signal
         );
         if (evaluation.result.status !== EXECUTION_STATUS.SUCCEEDED) {
             issues.push(
                 `${item.target_kind} ${item.target_index} evaluator ended with ${evaluation.result.status}`
             );
+            continue;
+        }
+        const expectedVerdict = item.contradicts_hypothesis
+            ? EVALUATOR_VERDICT.CONTRADICTS
+            : EVALUATOR_VERDICT.SUPPORTS;
+        if (evaluation.verdict.verdict !== expectedVerdict) {
+            issues.push(
+                `${item.target_kind} ${item.target_index} model outcome disagrees with the frozen evaluator verdict`
+            );
+            continue;
+        }
+        const evaluatedOutcome = item.contradicts_hypothesis
+            ? RESEARCH_OUTCOME.REFUTED
+            : RESEARCH_OUTCOME.SUPPORTED;
+        if (result.outcome !== evaluatedOutcome) {
+            issues.push("Research outcome disagrees with the daemon-validated evaluator verdict");
             continue;
         }
         const recorded: Evidence = {
@@ -825,8 +986,8 @@ async function recordResearchEvidence(
             run_id: evaluation.experimentId,
             artifact_path: evaluation.result.manifest.path,
             artifact_hash: evaluation.result.manifest.sha256,
-            summary: item.summary,
-            supports: !item.contradicts_hypothesis,
+            summary: evaluation.verdict.summary,
+            supports: evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS,
             independent: true,
             created_at: new Date().toISOString()
         };
@@ -842,7 +1003,7 @@ async function recordResearchEvidence(
         });
         evidence.push({
             claimId: recorded.claim_id,
-            outcome: result.outcome,
+            outcome: evaluatedOutcome,
             assessed: {
                 evidence: recorded,
                 origin: EvidenceOrigin.EMPIRICAL,
@@ -854,7 +1015,10 @@ async function recordResearchEvidence(
         });
         normalizedEvidence.push({
             ...item,
-            artifact_paths: [...validatedPaths, evaluation.result.manifest.path]
+            artifact_paths: [
+                ...validatedArtifacts.map(({ path: artifactPath }) => artifactPath),
+                evaluation.result.manifest.path
+            ]
         });
     }
     return {
@@ -925,6 +1089,8 @@ async function recordVerifierEvidence(
     verifierIds: RoleIdentifiers,
     planTargets: readonly PlanTarget[],
     criticism: CriticResult,
+    verificationEvaluator: FrozenEvaluator,
+    evaluatorWorkspace: ResearchWorkspace,
     signal?: AbortSignal
 ): Promise<{ completed: boolean; issues: string[] }> {
     const issues: string[] = [];
@@ -938,72 +1104,67 @@ async function recordVerifierEvidence(
             issues: [`Verifier references unknown claim index ${verdict.claim_index}`]
         };
     }
-    const material: AssessedEvidence[] = [];
-    let evaluatorResult: ExecutionResult | undefined;
-    try {
-        const evaluation = await executeAttestedEvaluator(
-            workspace,
-            verifierIds,
-            verifierWorkspace,
-            planClaim.claim,
-            ExperimentEvaluator.INDEPENDENT_VERIFIER,
-            verdict.evaluator_command,
-            signal
-        );
-        evaluatorResult = evaluation.result;
-        if (evaluatorResult.status !== EXECUTION_STATUS.SUCCEEDED) {
-            throw new Error(
-                `Daemon-attested verifier evaluator ended with ${evaluatorResult.status}`
-            );
-        }
-        const evidence: Evidence = {
-            id: `evidence-${randomUUID()}`,
-            kind: EvidenceKind.VERIFIER_RESULT,
-            claim_id: planClaim.claim.id,
-            run_id: harnessRun.sessionId ?? verifierIds.taskId,
-            artifact_path: evaluatorResult.manifest.path,
-            artifact_hash: evaluatorResult.manifest.sha256,
-            summary: verdict.result_statement,
-            supports: verdict.verdict === VERIFIER_VERDICT.REPRODUCED,
-            independent: true,
-            created_at: new Date().toISOString()
+    if (
+        verificationEvaluator.targetKind !== RESEARCH_TARGET_KIND.CLAIM ||
+        verificationEvaluator.targetIndex !== verdict.claim_index ||
+        verificationEvaluator.targetClaimId !== planClaim.claim.id
+    ) {
+        return {
+            completed: false,
+            issues: ["Verifier verdict does not match the critic-frozen evaluator target"]
         };
-        await workspace.recordEvidence(evidence);
-        await workspace.appendEvent(EventType.EVIDENCE_RECORDED, {
-            evidence_id: evidence.id,
-            claim_id: evidence.claim_id,
-            artifact_path: evidence.artifact_path,
-            artifact_sha256: evidence.artifact_hash,
-            evaluator_command: evaluatorResult.command,
-            evaluator_exit_code: evaluatorResult.exitCode,
-            evaluator_status: evaluatorResult.status
-        });
-        material.push({
-            evidence,
-            origin: EvidenceOrigin.VERIFIER,
-            sourceBranchId: verifierIds.branchId,
-            valid: true,
-            complete: evaluatorResult.manifest.bytes > 0,
-            reproducible: true
-        });
-    } catch (error) {
-        issues.push(
-            `Rejected verifier evaluator: ${error instanceof Error ? error.message : String(error)}`
-        );
     }
-
+    const material: AssessedEvidence[] = [];
+    const validatedArtifacts: ValidatedArtifact[] = [];
     for (const artifactPath of verdict.evidence_artifact_paths) {
         try {
             const artifact = await validateFileArtifact(verifierWorkspace.cwd, artifactPath);
+            if (artifact.bytes === 0) {
+                issues.push(`Rejected empty verifier artifact ${artifactPath}`);
+            } else {
+                validatedArtifacts.push(artifact);
+            }
+        } catch (error) {
+            issues.push(
+                `Rejected verifier artifact ${artifactPath}: ${error instanceof Error ? error.message : String(error)}`
+            );
+        }
+    }
+    let evaluatorResult: ExecutionResult | undefined;
+    if (validatedArtifacts.length > 0) {
+        try {
+            const evaluation = await executeAttestedEvaluator(
+                workspace,
+                verifierIds,
+                evaluatorWorkspace,
+                planClaim.claim,
+                ExperimentEvaluator.INDEPENDENT_VERIFIER,
+                verificationEvaluator,
+                validatedArtifacts,
+                signal
+            );
+            evaluatorResult = evaluation.result;
+            if (evaluatorResult.status !== EXECUTION_STATUS.SUCCEEDED) {
+                throw new Error(
+                    `Daemon-attested verifier evaluator ended with ${evaluatorResult.status}`
+                );
+            }
+            const expectedVerdict = verificationEvaluatorVerdict(verdict.verdict);
+            if (evaluation.verdict.verdict !== expectedVerdict) {
+                throw new Error(
+                    "Verifier model verdict disagrees with the frozen evaluator verdict"
+                );
+            }
+            const supports = evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS;
             const evidence: Evidence = {
                 id: `evidence-${randomUUID()}`,
-                kind: EvidenceKind.ARTIFACT,
+                kind: EvidenceKind.VERIFIER_RESULT,
                 claim_id: planClaim.claim.id,
                 run_id: harnessRun.sessionId ?? verifierIds.taskId,
-                artifact_path: artifact.path,
-                artifact_hash: artifact.sha256,
-                summary: verdict.result_statement,
-                supports: verdict.verdict === VERIFIER_VERDICT.REPRODUCED,
+                artifact_path: evaluatorResult.manifest.path,
+                artifact_hash: evaluatorResult.manifest.sha256,
+                summary: evaluation.verdict.summary,
+                supports,
                 independent: true,
                 created_at: new Date().toISOString()
             };
@@ -1012,19 +1173,51 @@ async function recordVerifierEvidence(
                 evidence_id: evidence.id,
                 claim_id: evidence.claim_id,
                 artifact_path: evidence.artifact_path,
-                artifact_sha256: evidence.artifact_hash
+                artifact_sha256: evidence.artifact_hash,
+                evaluator_command: evaluatorResult.command,
+                evaluator_exit_code: evaluatorResult.exitCode,
+                evaluator_status: evaluatorResult.status
             });
             material.push({
                 evidence,
                 origin: EvidenceOrigin.VERIFIER,
                 sourceBranchId: verifierIds.branchId,
                 valid: true,
-                complete: artifact.bytes > 0,
-                reproducible: false
+                complete: evaluatorResult.manifest.bytes > 0,
+                reproducible: true
             });
+            for (const artifact of validatedArtifacts) {
+                const evidence: Evidence = {
+                    id: `evidence-${randomUUID()}`,
+                    kind: EvidenceKind.ARTIFACT,
+                    claim_id: planClaim.claim.id,
+                    run_id: harnessRun.sessionId ?? verifierIds.taskId,
+                    artifact_path: artifact.path,
+                    artifact_hash: artifact.sha256,
+                    summary: evaluation.verdict.summary,
+                    supports,
+                    independent: true,
+                    created_at: new Date().toISOString()
+                };
+                await workspace.recordEvidence(evidence);
+                await workspace.appendEvent(EventType.EVIDENCE_RECORDED, {
+                    evidence_id: evidence.id,
+                    claim_id: evidence.claim_id,
+                    artifact_path: evidence.artifact_path,
+                    artifact_sha256: evidence.artifact_hash
+                });
+                material.push({
+                    evidence,
+                    origin: EvidenceOrigin.VERIFIER,
+                    sourceBranchId: verifierIds.branchId,
+                    valid: true,
+                    complete: artifact.bytes > 0,
+                    reproducible: false
+                });
+            }
         } catch (error) {
             issues.push(
-                `Rejected verifier artifact ${artifactPath}: ${error instanceof Error ? error.message : String(error)}`
+                `Rejected verifier evaluator: ${error instanceof Error ? error.message : String(error)}`
             );
         }
     }
@@ -1096,6 +1289,19 @@ async function recordVerifierEvidence(
     return { completed: false, issues };
 }
 
+function verificationEvaluatorVerdict(
+    verdict: ReturnType<typeof VerifierResultSchema.parse>["verdict"]
+): EvaluatorStructuredVerdict["verdict"] {
+    switch (verdict) {
+        case VERIFIER_VERDICT.REPRODUCED:
+            return EVALUATOR_VERDICT.SUPPORTS;
+        case VERIFIER_VERDICT.REFUTED:
+            return EVALUATOR_VERDICT.CONTRADICTS;
+        case VERIFIER_VERDICT.INCONCLUSIVE:
+            return EVALUATOR_VERDICT.INCONCLUSIVE;
+    }
+}
+
 async function markDependentClaimsStale(
     workspace: LabWorkspace,
     refutedClaimId: string
@@ -1135,9 +1341,16 @@ async function executeAttestedEvaluator(
     agentWorkspace: ResearchWorkspace,
     claim: Claim,
     evaluator: string,
-    command: ReturnType<typeof VerifierResultSchema.parse>["evaluator_command"],
+    frozenEvaluator: FrozenEvaluator,
+    inputArtifacts: readonly ValidatedArtifact[],
     signal?: AbortSignal
-): Promise<{ result: ExecutionResult; experimentId: string }> {
+): Promise<{
+    result: ExecutionResult;
+    experimentId: string;
+    verdict: EvaluatorStructuredVerdict;
+}> {
+    await assertEvaluatorUnchanged(agentWorkspace.cwd, frozenEvaluator);
+    const evaluatorInput = bindEvaluatorInput(frozenEvaluator, inputArtifacts);
     const experimentId = `experiment-${randomUUID()}`;
     const artifactDirectory = path.join(
         agentWorkspace.cwd,
@@ -1152,7 +1365,7 @@ async function executeAttestedEvaluator(
             branch_id: ids.branchId,
             hypothesis: claim.statement,
             evaluator,
-            command: renderCommand(command.file, command.args),
+            command: renderCommand(frozenEvaluator.file, frozenEvaluator.args),
             cwd: agentWorkspace.cwd,
             status: ExperimentStatus.RUNNING,
             started_at: startedAt
@@ -1165,17 +1378,28 @@ async function executeAttestedEvaluator(
 
     const result = await runExperiment(
         {
-            file: command.file,
-            args: command.args,
+            file: frozenEvaluator.file,
+            args: frozenEvaluator.args,
             cwd: agentWorkspace.cwd,
             artifactDirectory,
             timeoutMs: VERIFIER_EVALUATOR_TIMEOUT_MS,
             env: sanitizeHarnessEnvironment(),
-            inheritEnvironment: false
+            inheritEnvironment: false,
+            input: evaluatorInput.serialized
         },
         signal
     );
-    const status = protocolExperimentStatus(result.status);
+    let status = protocolExperimentStatus(result.status);
+    let verdict: EvaluatorStructuredVerdict | undefined;
+    let validationError: unknown;
+    if (status === ExperimentStatus.SUCCEEDED) {
+        try {
+            verdict = await validateEvaluatorVerdict(result, frozenEvaluator, evaluatorInput);
+        } catch (error) {
+            status = ExperimentStatus.FAILED;
+            validationError = error;
+        }
+    }
     await workspace.update((draft) => {
         const experiment = requiredById(draft.experiments, experimentId);
         experiment.status = status;
@@ -1184,9 +1408,30 @@ async function executeAttestedEvaluator(
         experiment.output_path = result.manifest.path;
         experiment.output_hash = result.manifest.sha256;
     });
-    await workspace.appendEvent(experimentEventType(status), { experiment_id: experimentId });
-    await workspace.appendEvent(attemptEventType(status), { attempt_id: experimentId });
-    return { result, experimentId };
+    const failurePayload =
+        validationError === undefined
+            ? {}
+            : {
+                  validation_error:
+                      validationError instanceof Error
+                          ? validationError.message
+                          : String(validationError)
+              };
+    await workspace.appendEvent(experimentEventType(status), {
+        experiment_id: experimentId,
+        ...failurePayload
+    });
+    await workspace.appendEvent(attemptEventType(status), {
+        attempt_id: experimentId,
+        ...failurePayload
+    });
+    if (validationError !== undefined) {
+        throw validationError;
+    }
+    if (verdict === undefined) {
+        throw new Error(`Daemon-attested evaluator ended with ${result.status}`);
+    }
+    return { result, experimentId, verdict };
 }
 
 async function prepareRoleTask(

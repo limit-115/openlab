@@ -66,8 +66,7 @@ describe("research structured-output contracts", () => {
                     target_index: 0,
                     summary: "A falsification attempt",
                     artifact_paths: ["result.json"],
-                    contradicts_hypothesis: true,
-                    evaluator_command: { file: "node", args: ["evaluate.mjs"] }
+                    contradicts_hypothesis: true
                 }
             ],
             limitations: [],

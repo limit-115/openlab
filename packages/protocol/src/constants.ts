@@ -98,6 +98,7 @@ export const EventType = {
     HARNESS_RUN_TIMED_OUT: "harness.run_timed_out",
     HARNESS_RUN_CANCELLED: "harness.run_cancelled",
     GOAL_OPERATIONALIZED: "goal.operationalized",
+    EVALUATOR_PRECOMMITTED: "evaluator.precommitted",
     BRANCH_CREATED: "branch.created",
     BRANCH_PAUSED: "branch.paused",
     BRANCH_CLOSED: "branch.closed",

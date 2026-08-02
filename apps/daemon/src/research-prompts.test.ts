@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { directorPrompt, researcherPrompt } from "#src/research-prompts";
+import { CRITIC_VERDICT, RESEARCH_OUTCOME, RESEARCH_TARGET_KIND } from "#src/research-contract";
+import {
+    criticPrompt,
+    directorPrompt,
+    evaluatorPrecommitPrompt,
+    researcherPrompt,
+    SUBSCRIPTION_ONLY_POLICY,
+    verifierPrompt
+} from "#src/research-prompts";
 
 const task = {
     goal: "Find a faster algorithm",
@@ -50,11 +58,90 @@ describe("research prompts", () => {
                 approach: "Change lookup structure",
                 rationale: "Lookup dominates runtime",
                 objective: "Measure lookup alternatives"
-            }
+            },
+            [
+                {
+                    targetKind: RESEARCH_TARGET_KIND.CLAIM,
+                    targetIndex: 0,
+                    targetClaimId: "claim-1",
+                    targetStatementSha256: "a".repeat(64),
+                    file: "/tmp/evaluate",
+                    fileSha256: "b".repeat(64),
+                    args: [],
+                    successContract: "Median runtime is lower"
+                }
+            ]
         );
 
         expect(prompt).toContain("Data structure");
         expect(prompt).not.toContain("Vectorization");
         expect(prompt).toContain("target_kind");
+    });
+
+    it("injects the immutable subscription-only policy into every agent prompt", () => {
+        const plan = {
+            operational_goal: "Measure a speedup",
+            assumptions: [],
+            claims: [
+                {
+                    statement: "Candidate is faster",
+                    evaluator: "Benchmark",
+                    success_condition: "Lower runtime"
+                }
+            ],
+            directions: [
+                {
+                    title: "Index",
+                    approach: "Index lookup",
+                    rationale: "Lookup is expensive",
+                    objective: "Measure indexing"
+                },
+                {
+                    title: "Batch",
+                    approach: "Batch lookup",
+                    rationale: "Calls are independent",
+                    objective: "Measure batching"
+                }
+            ]
+        };
+        const criticism = {
+            verdict: CRITIC_VERDICT.CREDIBLE,
+            summary: "Credible",
+            issues: [],
+            counterexamples: [],
+            claims_to_verify: ["Candidate is faster"],
+            next_experiments: [],
+            verification_evaluator: {
+                target_kind: RESEARCH_TARGET_KIND.CLAIM,
+                target_index: 0,
+                evaluator_path: "verify",
+                args: [],
+                success_contract: "Lower runtime"
+            }
+        };
+        const branchResults = [
+            {
+                summary: "Measured",
+                hypothesis: "Faster",
+                outcome: RESEARCH_OUTCOME.SUPPORTED,
+                evidence: [],
+                limitations: [],
+                next_experiments: []
+            }
+        ];
+        const direction = plan.directions[0];
+        if (direction === undefined) {
+            throw new Error("Expected a research direction fixture");
+        }
+
+        const prompts = [
+            directorPrompt(task),
+            evaluatorPrecommitPrompt(task, plan, direction),
+            researcherPrompt(task, plan, direction, []),
+            criticPrompt(task, plan, branchResults),
+            verifierPrompt(task, plan, branchResults, criticism)
+        ];
+
+        expect(prompts.every((prompt) => prompt.includes(SUBSCRIPTION_ONLY_POLICY))).toBe(true);
     });
 });

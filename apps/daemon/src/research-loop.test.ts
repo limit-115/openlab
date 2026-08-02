@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -26,6 +26,7 @@ import {
 import { describe, expect, it } from "vitest";
 import {
     CRITIC_VERDICT,
+    EVALUATOR_VERDICT,
     RESEARCH_OUTCOME,
     RESEARCH_TARGET_KIND,
     VERIFIER_VERDICT
@@ -36,9 +37,15 @@ import { LabWorkspace } from "#src/workspace";
 
 const PromptRole = {
     DIRECTOR: "Director of an autonomous research lab",
+    EVALUATOR_PRECOMMIT: "planning falsifiable evaluation",
     RESEARCHER: "independent researcher",
     CRITIC: "adversarial critic",
     VERIFIER: "independent verifier"
+} as const;
+
+const EvaluatorComparison = {
+    LESS_THAN: "less_than",
+    TRUTHY: "truthy"
 } as const;
 
 class ScriptedHarness implements AgentHarness {
@@ -48,6 +55,8 @@ class ScriptedHarness implements AgentHarness {
     readonly #criticVerdict: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
     readonly #falsifyAssumption: boolean;
     readonly #missingVerifierArtifacts: boolean;
+    readonly #mutateEvaluatorAfterOutcome: boolean;
+    readonly #trivialEvaluator: boolean;
 
     constructor(
         kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
@@ -55,12 +64,16 @@ class ScriptedHarness implements AgentHarness {
             criticVerdict?: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
             falsifyAssumption?: boolean;
             missingVerifierArtifacts?: boolean;
+            mutateEvaluatorAfterOutcome?: boolean;
+            trivialEvaluator?: boolean;
         } = {}
     ) {
         this.kind = kind;
         this.#criticVerdict = options.criticVerdict ?? CRITIC_VERDICT.CREDIBLE;
         this.#falsifyAssumption = options.falsifyAssumption ?? false;
         this.#missingVerifierArtifacts = options.missingVerifierArtifacts ?? false;
+        this.#mutateEvaluatorAfterOutcome = options.mutateEvaluatorAfterOutcome ?? false;
+        this.#trivialEvaluator = options.trivialEvaluator ?? false;
     }
 
     async preflight(): Promise<HarnessPreflight> {
@@ -105,11 +118,53 @@ class ScriptedHarness implements AgentHarness {
                     }
                 ]
             };
+        } else if (request.prompt.includes(PromptRole.EVALUATOR_PRECOMMIT)) {
+            const evaluatorPath = path.join(request.cwd, "evaluate-research");
+            const targetKind = this.#falsifyAssumption
+                ? RESEARCH_TARGET_KIND.ASSUMPTION
+                : RESEARCH_TARGET_KIND.CLAIM;
+            const successContract = this.#falsifyAssumption
+                ? "The held-out workload must be representative"
+                : "Measured elapsed_ms must be below 20";
+            await writeFile(
+                evaluatorPath,
+                this.#trivialEvaluator
+                    ? "#!/usr/bin/env node\nprocess.exit(0);\n"
+                    : evaluatorProgram({
+                          field: this.#falsifyAssumption ? "representative" : "elapsed_ms",
+                          expected: this.#falsifyAssumption ? "true" : "20",
+                          successContract,
+                          supportsWhen: this.#falsifyAssumption
+                              ? EvaluatorComparison.TRUTHY
+                              : EvaluatorComparison.LESS_THAN
+                      })
+            );
+            await chmod(evaluatorPath, 0o755);
+            output = {
+                evaluators: [
+                    {
+                        target_kind: targetKind,
+                        target_index: 0,
+                        evaluator_path: evaluatorPath,
+                        args: ["--structured"],
+                        success_contract: successContract
+                    }
+                ]
+            };
         } else if (request.prompt.includes(PromptRole.RESEARCHER)) {
             const artifactPath = path.join(request.cwd, `measurement-${this.requests.length}.json`);
-            const evaluatorPath = path.join(request.cwd, `evaluate-${this.requests.length}.mjs`);
-            await writeFile(artifactPath, JSON.stringify({ elapsed_ms: 12 }));
-            await writeFile(evaluatorPath, "process.exit(0);\n");
+            await writeFile(
+                artifactPath,
+                JSON.stringify(
+                    this.#falsifyAssumption ? { representative: false } : { elapsed_ms: 12 }
+                )
+            );
+            if (this.#mutateEvaluatorAfterOutcome) {
+                await writeFile(
+                    path.join(request.cwd, "evaluate-research"),
+                    "#!/usr/bin/env node\nprocess.exit(0);\n"
+                );
+            }
             output = {
                 summary: "A recorded benchmark supports the claim",
                 hypothesis: "The candidate lowers elapsed time",
@@ -124,17 +179,25 @@ class ScriptedHarness implements AgentHarness {
                         target_index: 0,
                         summary: "Recorded benchmark samples",
                         artifact_paths: [path.basename(artifactPath)],
-                        contradicts_hypothesis: this.#falsifyAssumption,
-                        evaluator_command: {
-                            file: process.execPath,
-                            args: [evaluatorPath]
-                        }
+                        contradicts_hypothesis: this.#falsifyAssumption
                     }
                 ],
                 limitations: [],
                 next_experiments: []
             };
         } else if (request.prompt.includes(PromptRole.CRITIC)) {
+            const evaluatorPath = path.join(request.cwd, "verify-independent");
+            const successContract = "Independent elapsed_ms must be below 15";
+            await writeFile(
+                evaluatorPath,
+                evaluatorProgram({
+                    field: "elapsed_ms",
+                    expected: "15",
+                    successContract,
+                    supportsWhen: EvaluatorComparison.LESS_THAN
+                })
+            );
+            await chmod(evaluatorPath, 0o755);
             output = {
                 verdict: this.#criticVerdict,
                 summary: "The result is ready for independent reproduction",
@@ -147,24 +210,25 @@ class ScriptedHarness implements AgentHarness {
                         ? []
                         : ["A held-out workload did not improve"],
                 claims_to_verify: ["The candidate is faster"],
-                next_experiments: []
+                next_experiments: [],
+                verification_evaluator: {
+                    target_kind: RESEARCH_TARGET_KIND.CLAIM,
+                    target_index: 0,
+                    evaluator_path: evaluatorPath,
+                    args: ["--independent"],
+                    success_contract: successContract
+                }
             };
         } else if (request.prompt.includes(PromptRole.VERIFIER)) {
             this.verifierInitialEntries.push(await readdir(request.cwd));
             const artifactPath = path.join(request.cwd, "independent-reproduction.json");
-            const evaluatorPath = path.join(request.cwd, "verify-speedup.mjs");
             if (!this.#missingVerifierArtifacts) {
                 await writeFile(artifactPath, JSON.stringify({ elapsed_ms: 11 }));
-                await writeFile(evaluatorPath, "process.exit(0);\n");
             }
             output = {
                 verdict: VERIFIER_VERDICT.REPRODUCED,
                 claim_index: 0,
                 result_statement: "An independent benchmark reproduced the speedup",
-                evaluator_command: {
-                    file: process.execPath,
-                    args: [evaluatorPath]
-                },
                 evidence_artifact_paths: [artifactPath],
                 limitations: [],
                 known_counterexamples: []
@@ -320,7 +384,7 @@ describe.sequential("runResearchLoop", () => {
         expect(
             workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.VERIFIER_RESULT)
         ).toBe(true);
-        expect([...codex.requests, ...claude.requests]).toHaveLength(5);
+        expect([...codex.requests, ...claude.requests]).toHaveLength(7);
         const criticRequest = [...codex.requests, ...claude.requests].find(({ prompt }) =>
             prompt.includes(PromptRole.CRITIC)
         );
@@ -335,15 +399,63 @@ describe.sequential("runResearchLoop", () => {
         expect(workspace.getEvents().map(({ type }) => type)).toEqual(
             expect.arrayContaining([
                 EventType.HARNESS_PREFLIGHT_SUCCEEDED,
+                EventType.EVALUATOR_PRECOMMITTED,
                 EventType.CLAIM_SUPPORTED,
                 EventType.VERIFIER_VERDICT_RECORDED,
                 EventType.CLAIM_REPRODUCED,
                 EventType.LAB_COMPLETED
             ])
         );
+        const evaluatorPrecommits = workspace
+            .getEvents()
+            .filter(({ type }) => type === EventType.EVALUATOR_PRECOMMITTED);
+        expect(evaluatorPrecommits).toHaveLength(3);
+        expect(evaluatorPrecommits).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    payload: expect.objectContaining({
+                        evaluator_sha256: expect.stringMatching(/^[a-f\d]{64}$/),
+                        success_contract: expect.any(String)
+                    })
+                })
+            ])
+        );
         await expect(
             readFile(path.join(workspace.runDirectory, "result.json"), "utf8")
         ).resolves.toContain("independent benchmark reproduced");
+    });
+
+    it("rejects a researcher that replaces its evaluator after the precommit", async () => {
+        const workspace = await createWorkspace();
+        const abortController = new AbortController();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            mutateEvaluatorAfterOutcome: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            mutateEvaluatorAfterOutcome: true
+        });
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            signal: abortController.signal,
+            plateauInactivityMs: 1,
+            waitForPlateau: async () => {
+                const reason = new Error("Evaluator mutation observed");
+                abortController.abort(reason);
+                throw reason;
+            }
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        const claimStatuses = workspace.getSnapshot().claims.map(({ status }) => status);
+        expect(claimStatuses).not.toContain(ClaimStatus.SUPPORTED);
+        expect(claimStatuses).not.toContain(ClaimStatus.REPRODUCED);
+        expect(workspace.getSnapshot().experiments).toEqual(
+            expect.arrayContaining([expect.objectContaining({ status: ExperimentStatus.FAILED })])
+        );
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+            EventType.LAB_COMPLETED
+        );
     });
 
     it("requests capabilities and hibernates without running an unauthenticated harness", async () => {
@@ -585,6 +697,42 @@ describe.sequential("runResearchLoop", () => {
         );
     });
 });
+
+function evaluatorProgram(input: {
+    field: string;
+    expected: string;
+    successContract: string;
+    supportsWhen: (typeof EvaluatorComparison)[keyof typeof EvaluatorComparison];
+}): string {
+    return `#!/usr/bin/env node
+const chunks = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+const daemonInput = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+const artifact = JSON.parse(await (await import("node:fs/promises")).readFile(daemonInput.artifacts[0].path, "utf8"));
+const observed = artifact[${JSON.stringify(input.field)}];
+const passed = ${
+        input.supportsWhen === EvaluatorComparison.LESS_THAN
+            ? `Number.isFinite(observed) && observed < ${Number(input.expected)}`
+            : "Boolean(observed)"
+    };
+const verdict = passed ? ${JSON.stringify(EVALUATOR_VERDICT.SUPPORTS)} : ${JSON.stringify(EVALUATOR_VERDICT.CONTRADICTS)};
+process.stdout.write(JSON.stringify({
+    schema_version: 1,
+    verdict,
+    target_statement_sha256: daemonInput.target.statement_sha256,
+    input_binding_sha256: daemonInput.input_binding_sha256,
+    artifact_sha256s: daemonInput.artifacts.map(({ sha256 }) => sha256),
+    success_contract: daemonInput.evaluator.success_contract,
+    checks: [{
+        name: ${JSON.stringify(`validate ${input.field}`)},
+        passed,
+        observed: String(observed),
+        expected: ${JSON.stringify(input.expected)}
+    }],
+    summary: passed ? "Structured evaluator supports the target" : "Structured evaluator contradicts the target"
+}));
+`;
+}
 
 async function createWorkspace(): Promise<LabWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-research-loop-"));

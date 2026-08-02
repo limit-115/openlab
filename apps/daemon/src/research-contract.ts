@@ -18,6 +18,12 @@ export const VERIFIER_VERDICT = {
     INCONCLUSIVE: "inconclusive"
 } as const;
 
+export const EVALUATOR_VERDICT = {
+    SUPPORTS: "supports",
+    CONTRADICTS: "contradicts",
+    INCONCLUSIVE: "inconclusive"
+} as const;
+
 export const RESEARCH_TARGET_KIND = {
     CLAIM: "claim",
     ASSUMPTION: "assumption"
@@ -67,9 +73,34 @@ function normalizedDirectionKey(direction: z.infer<typeof ResearchDirectionSchem
         .join("\u0000");
 }
 
-const EvaluatorCommandSchema = z.object({
-    file: z.string().min(1),
-    args: z.array(z.string())
+export const EvaluatorPrecommitSchema = z.object({
+    target_kind: z.enum(domainValues(RESEARCH_TARGET_KIND)),
+    target_index: z.number().int().nonnegative(),
+    evaluator_path: z.string().min(1),
+    args: z.array(z.string()),
+    success_contract: z.string().min(1)
+});
+
+export const ResearchEvaluatorPrecommitSchema = z.object({
+    evaluators: z.array(EvaluatorPrecommitSchema).min(1)
+});
+
+const EvaluatorCheckSchema = z.object({
+    name: z.string().min(1),
+    passed: z.boolean(),
+    observed: z.string().min(1),
+    expected: z.string().min(1)
+});
+
+export const EvaluatorStructuredVerdictSchema = z.object({
+    schema_version: z.literal(1),
+    verdict: z.enum(domainValues(EVALUATOR_VERDICT)),
+    target_statement_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
+    input_binding_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
+    artifact_sha256s: z.array(z.string().regex(/^[a-f0-9]{64}$/u)).min(1),
+    success_contract: z.string().min(1),
+    checks: z.array(EvaluatorCheckSchema).min(1),
+    summary: z.string().min(1)
 });
 
 export const DirectorPlanSchema = z
@@ -101,8 +132,7 @@ const ResearchEvidenceSchema = z.object({
     target_index: z.number().int().nonnegative(),
     summary: z.string().min(1),
     artifact_paths: z.array(z.string()),
-    contradicts_hypothesis: z.boolean(),
-    evaluator_command: EvaluatorCommandSchema
+    contradicts_hypothesis: z.boolean()
 });
 
 export const ResearchResultSchema = z.object({
@@ -120,20 +150,22 @@ export const CriticResultSchema = z.object({
     issues: z.array(z.string()),
     counterexamples: z.array(z.string()),
     claims_to_verify: z.array(z.string()),
-    next_experiments: z.array(z.string())
+    next_experiments: z.array(z.string()),
+    verification_evaluator: EvaluatorPrecommitSchema
 });
 
 export const VerifierResultSchema = z.object({
     verdict: z.enum(domainValues(VERIFIER_VERDICT)),
     claim_index: z.number().int().nonnegative(),
     result_statement: z.string().min(1),
-    evaluator_command: EvaluatorCommandSchema,
     evidence_artifact_paths: z.array(z.string()),
     limitations: z.array(z.string()),
     known_counterexamples: z.array(z.string())
 });
 
 export type DirectorPlan = z.infer<typeof DirectorPlanSchema>;
+export type EvaluatorPrecommit = z.infer<typeof EvaluatorPrecommitSchema>;
+export type EvaluatorStructuredVerdict = z.infer<typeof EvaluatorStructuredVerdictSchema>;
 export type ResearchResult = z.infer<typeof ResearchResultSchema>;
 export type CriticResult = z.infer<typeof CriticResultSchema>;
 export type VerifierResult = z.infer<typeof VerifierResultSchema>;
