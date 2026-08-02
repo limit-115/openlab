@@ -4,6 +4,7 @@ import {
     criticPrompt,
     directorPrompt,
     evaluatorPrecommitPrompt,
+    MISSING_CAPABILITY_POLICY,
     researcherPrompt,
     SUBSCRIPTION_ONLY_POLICY,
     verifierPrompt
@@ -51,7 +52,8 @@ describe("research prompts", () => {
                         rationale: "The workload is parallel",
                         objective: "Measure vectorized candidates"
                     }
-                ]
+                ],
+                capability_requests: []
             },
             {
                 title: "Data structure",
@@ -102,7 +104,8 @@ describe("research prompts", () => {
                     rationale: "Calls are independent",
                     objective: "Measure batching"
                 }
-            ]
+            ],
+            capability_requests: []
         };
         const criticism = {
             verdict: CRITIC_VERDICT.CREDIBLE,
@@ -117,7 +120,8 @@ describe("research prompts", () => {
                 evaluator_path: "verify",
                 args: [],
                 success_contract: "Lower runtime"
-            }
+            },
+            capability_requests: []
         };
         const branchResults = [
             {
@@ -126,7 +130,9 @@ describe("research prompts", () => {
                 outcome: RESEARCH_OUTCOME.SUPPORTED,
                 evidence: [],
                 limitations: [],
-                next_experiments: []
+                next_experiments: [],
+                capability_requests: [],
+                capability_blocked: false
             }
         ];
         const direction = plan.directions[0];
@@ -143,5 +149,76 @@ describe("research prompts", () => {
         ];
 
         expect(prompts.every((prompt) => prompt.includes(SUBSCRIPTION_ONLY_POLICY))).toBe(true);
+    });
+
+    it("requires concrete missing-resource requests without stopping available work", () => {
+        const plan = {
+            operational_goal: "Measure a speedup",
+            assumptions: [],
+            claims: [
+                {
+                    statement: "Candidate is faster",
+                    evaluator: "Benchmark",
+                    success_condition: "Lower runtime"
+                }
+            ],
+            directions: [
+                {
+                    title: "Index",
+                    approach: "Index lookup",
+                    rationale: "Lookup is expensive",
+                    objective: "Measure indexing"
+                },
+                {
+                    title: "Batch",
+                    approach: "Batch lookup",
+                    rationale: "Calls are independent",
+                    objective: "Measure batching"
+                }
+            ],
+            capability_requests: []
+        };
+        const result = {
+            summary: "Measured",
+            hypothesis: "Faster",
+            outcome: RESEARCH_OUTCOME.SUPPORTED,
+            evidence: [],
+            limitations: [],
+            next_experiments: [],
+            capability_requests: [],
+            capability_blocked: false
+        };
+        const criticism = {
+            verdict: CRITIC_VERDICT.CREDIBLE,
+            summary: "Credible",
+            issues: [],
+            counterexamples: [],
+            claims_to_verify: ["Candidate is faster"],
+            next_experiments: [],
+            verification_evaluator: {
+                target_kind: RESEARCH_TARGET_KIND.CLAIM,
+                target_index: 0,
+                evaluator_path: "verify",
+                args: [],
+                success_contract: "Lower runtime"
+            },
+            capability_requests: []
+        };
+        const direction = plan.directions[0];
+        if (direction === undefined) {
+            throw new Error("Expected a research direction fixture");
+        }
+
+        const prompts = [
+            directorPrompt(task),
+            researcherPrompt(task, plan, direction, []),
+            criticPrompt(task, plan, [result]),
+            verifierPrompt(task, plan, [result], criticism)
+        ];
+
+        expect(prompts.every((prompt) => prompt.includes(MISSING_CAPABILITY_POLICY))).toBe(true);
+        expect(prompts.every((prompt) => prompt.includes("capability_requests"))).toBe(true);
+        expect(prompts.every((prompt) => prompt.includes("not permission"))).toBe(true);
+        expect(researcherPrompt(task, plan, direction, [])).toContain("capability_blocked");
     });
 });

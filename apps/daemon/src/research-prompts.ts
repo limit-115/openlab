@@ -5,6 +5,9 @@ import type { CriticResult, DirectorPlan, ResearchResult } from "#src/research-c
 export const SUBSCRIPTION_ONLY_POLICY =
     "Never invoke or install a model API, provider SDK, or model endpoint through curl, and never read API credentials; all model work must stay inside the current subscription-authenticated CLI session." as const;
 
+export const MISSING_CAPABILITY_POLICY =
+    "When a credential, tool, dataset, account, or infrastructure resource genuinely required for the mission is unavailable, report it in capability_requests with need, reason, and provisioning_hint, without including secret values. This is a concrete resource request, not permission to proceed. Continue every direction and check that remains possible. Available mission-specific external-service credentials may be used; model-provider API credentials and usage-based model billing remain forbidden." as const;
+
 function taskContext(task: TaskInput): string {
     return JSON.stringify(
         {
@@ -27,6 +30,8 @@ it a concrete falsification test before outcome-bearing work. Consensus and mode
 not evidence.
 
 ${SUBSCRIPTION_ONLY_POLICY}
+
+${MISSING_CAPABILITY_POLICY}
 
 Task:
 ${taskContext(task)}
@@ -80,6 +85,8 @@ research branches.
 
 ${SUBSCRIPTION_ONLY_POLICY}
 
+${MISSING_CAPABILITY_POLICY}
+
 Investigate the direction below autonomously. Inspect existing work, formulate a concrete
 hypothesis, write and run code when useful, preserve failed and negative attempts, and save all
     important artifacts under the current workspace. The daemon has already frozen the evaluators;
@@ -120,6 +127,10 @@ material artifact files that you actually created inside the current isolated wo
     only its frozen evaluator and accept only a structured verdict bound to the target and artifact
     hashes.
 
+Set capability_blocked to true only when this isolated direction cannot produce material evidence
+until one of its reported capability_requests is provisioned. Keep it false when useful evidence is
+available, even if an additional resource request remains open.
+
 Return only the requested structured result.`;
 }
 
@@ -134,6 +145,8 @@ Run additional checks in the current workspace when they are informative. Do not
 between agents.
 
 ${SUBSCRIPTION_ONLY_POLICY}
+
+${MISSING_CAPABILITY_POLICY}
 
 Task:
 ${taskContext(task)}
@@ -167,6 +180,8 @@ artifacts, use an independent evaluator where possible, and actively test the cr
 An ordinary rerun of the researcher's command is not independent reproduction.
 
 ${SUBSCRIPTION_ONLY_POLICY}
+
+${MISSING_CAPABILITY_POLICY}
 
 Task:
 ${taskContext(task)}

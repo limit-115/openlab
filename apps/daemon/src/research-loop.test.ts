@@ -17,10 +17,14 @@ import {
 } from "@lab/harness/contract";
 import { HarnessCapabilityError } from "@lab/harness/errors";
 import {
+    AgentStatus,
+    BranchStatus,
+    CapabilityStatus,
     ClaimStatus,
     EventType,
     EvidenceKind,
     ExperimentStatus,
+    InternalTaskStatus,
     LabState
 } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
@@ -56,6 +60,13 @@ const CapabilityFixture = {
     CONTEXT_TYPE: "provided_capability"
 } as const;
 
+const DatasetCapabilityFixture = {
+    NEED: "Held-out production-shaped benchmark dataset",
+    REASON: "The indexing direction cannot validate representativeness without the dataset",
+    PROVISIONING_HINT: "Attach a read-only dataset snapshot to the research workspace",
+    DIRECTION_TITLE: "Indexing"
+} as const;
+
 class ScriptedHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE;
     readonly requests: HarnessRunRequest[] = [];
@@ -65,6 +76,7 @@ class ScriptedHarness implements AgentHarness {
     readonly #missingVerifierArtifacts: boolean;
     readonly #mutateEvaluatorAfterOutcome: boolean;
     readonly #trivialEvaluator: boolean;
+    readonly #requestDatasetForIndexing: boolean;
 
     constructor(
         kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
@@ -74,6 +86,7 @@ class ScriptedHarness implements AgentHarness {
             missingVerifierArtifacts?: boolean;
             mutateEvaluatorAfterOutcome?: boolean;
             trivialEvaluator?: boolean;
+            requestDatasetForIndexing?: boolean;
         } = {}
     ) {
         this.kind = kind;
@@ -82,6 +95,7 @@ class ScriptedHarness implements AgentHarness {
         this.#missingVerifierArtifacts = options.missingVerifierArtifacts ?? false;
         this.#mutateEvaluatorAfterOutcome = options.mutateEvaluatorAfterOutcome ?? false;
         this.#trivialEvaluator = options.trivialEvaluator ?? false;
+        this.#requestDatasetForIndexing = options.requestDatasetForIndexing ?? false;
     }
 
     async preflight(): Promise<HarnessPreflight> {
@@ -160,39 +174,63 @@ class ScriptedHarness implements AgentHarness {
                 ]
             };
         } else if (request.prompt.includes(PromptRole.RESEARCHER)) {
-            const artifactPath = path.join(request.cwd, `measurement-${this.requests.length}.json`);
-            await writeFile(
-                artifactPath,
-                JSON.stringify(
-                    this.#falsifyAssumption ? { representative: false } : { elapsed_ms: 12 }
-                )
-            );
-            if (this.#mutateEvaluatorAfterOutcome) {
-                await writeFile(
-                    path.join(request.cwd, "evaluate-research"),
-                    "#!/usr/bin/env node\nprocess.exit(0);\n"
+            const datasetBlocked =
+                this.#requestDatasetForIndexing &&
+                request.prompt.includes(`"title": "${DatasetCapabilityFixture.DIRECTION_TITLE}"`);
+            if (datasetBlocked) {
+                const capabilityRequest = {
+                    need: DatasetCapabilityFixture.NEED,
+                    reason: DatasetCapabilityFixture.REASON,
+                    provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT
+                };
+                output = {
+                    summary: "The indexing direction needs a held-out dataset",
+                    hypothesis: "Indexing may lower elapsed time on production-shaped traffic",
+                    outcome: RESEARCH_OUTCOME.INCONCLUSIVE,
+                    evidence: [],
+                    limitations: [DatasetCapabilityFixture.NEED],
+                    next_experiments: [],
+                    capability_requests: [capabilityRequest, capabilityRequest],
+                    capability_blocked: true
+                };
+            } else {
+                const artifactPath = path.join(
+                    request.cwd,
+                    `measurement-${this.requests.length}.json`
                 );
+                await writeFile(
+                    artifactPath,
+                    JSON.stringify(
+                        this.#falsifyAssumption ? { representative: false } : { elapsed_ms: 12 }
+                    )
+                );
+                if (this.#mutateEvaluatorAfterOutcome) {
+                    await writeFile(
+                        path.join(request.cwd, "evaluate-research"),
+                        "#!/usr/bin/env node\nprocess.exit(0);\n"
+                    );
+                }
+                output = {
+                    summary: "A recorded benchmark supports the claim",
+                    hypothesis: "The candidate lowers elapsed time",
+                    outcome: this.#falsifyAssumption
+                        ? RESEARCH_OUTCOME.REFUTED
+                        : RESEARCH_OUTCOME.SUPPORTED,
+                    evidence: [
+                        {
+                            target_kind: this.#falsifyAssumption
+                                ? RESEARCH_TARGET_KIND.ASSUMPTION
+                                : RESEARCH_TARGET_KIND.CLAIM,
+                            target_index: 0,
+                            summary: "Recorded benchmark samples",
+                            artifact_paths: [path.basename(artifactPath)],
+                            contradicts_hypothesis: this.#falsifyAssumption
+                        }
+                    ],
+                    limitations: [],
+                    next_experiments: []
+                };
             }
-            output = {
-                summary: "A recorded benchmark supports the claim",
-                hypothesis: "The candidate lowers elapsed time",
-                outcome: this.#falsifyAssumption
-                    ? RESEARCH_OUTCOME.REFUTED
-                    : RESEARCH_OUTCOME.SUPPORTED,
-                evidence: [
-                    {
-                        target_kind: this.#falsifyAssumption
-                            ? RESEARCH_TARGET_KIND.ASSUMPTION
-                            : RESEARCH_TARGET_KIND.CLAIM,
-                        target_index: 0,
-                        summary: "Recorded benchmark samples",
-                        artifact_paths: [path.basename(artifactPath)],
-                        contradicts_hypothesis: this.#falsifyAssumption
-                    }
-                ],
-                limitations: [],
-                next_experiments: []
-            };
         } else if (request.prompt.includes(PromptRole.CRITIC)) {
             const evaluatorPath = path.join(request.cwd, "verify-independent");
             const successContract = "Independent elapsed_ms must be below 15";
@@ -459,6 +497,56 @@ describe.sequential("runResearchLoop", () => {
         await expect(
             readFile(path.join(workspace.runDirectory, "result.json"), "utf8")
         ).resolves.toContain("independent benchmark reproduced");
+    });
+
+    it("persists a blocked researcher resource request while another branch completes", async () => {
+        const workspace = await createWorkspace();
+        const harness = new ScriptedHarness(HarnessKinds.CODEX, {
+            requestDatasetForIndexing: true
+        });
+
+        const outcome = await runResearchLoop(workspace, { harnesses: [harness] });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
+        const snapshot = workspace.getSnapshot();
+        expect(snapshot.lab.state).toBe(LabState.COMPLETED);
+        expect(snapshot.claims).toEqual([
+            expect.objectContaining({ status: ClaimStatus.REPRODUCED })
+        ]);
+        expect(snapshot.capability_requests).toEqual([
+            expect.objectContaining({
+                need: DatasetCapabilityFixture.NEED,
+                reason: DatasetCapabilityFixture.REASON,
+                provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT,
+                status: CapabilityStatus.OPEN
+            })
+        ]);
+        const capabilityRequest = snapshot.capability_requests[0];
+        if (capabilityRequest === undefined) {
+            throw new Error("Expected a persisted dataset capability request");
+        }
+        const blockedBranch = snapshot.branches.find(
+            ({ title }) => title === DatasetCapabilityFixture.DIRECTION_TITLE
+        );
+        if (blockedBranch === undefined) {
+            throw new Error("Expected the resource-blocked research branch");
+        }
+        expect(blockedBranch.status).toBe(BranchStatus.PAUSED);
+        expect(
+            snapshot.agents.find(({ branch_id }) => branch_id === blockedBranch.id)
+        ).toMatchObject({
+            status: AgentStatus.BLOCKED,
+            current_task_id: expect.any(String)
+        });
+        expect(
+            snapshot.tasks.find(({ branch_id }) => branch_id === blockedBranch.id)
+        ).toMatchObject({
+            status: InternalTaskStatus.QUEUED,
+            context_refs: [capabilityRequest.id]
+        });
+        expect(
+            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_REQUESTED)
+        ).toHaveLength(1);
     });
 
     it("rejects a researcher that replaces its evaluator after the precommit", async () => {

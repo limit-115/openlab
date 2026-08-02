@@ -41,6 +41,7 @@ import {
     validateEvaluatorVerdict
 } from "#src/evaluator";
 import {
+    type CapabilityRequestCandidate,
     CRITIC_VERDICT,
     type CriticResult,
     CriticResultSchema,
@@ -92,7 +93,8 @@ const BranchProgress = {
     RUNNING: "Running",
     FINISHED: "Finished",
     FAILED: "Failed",
-    CANCELLED: "Cancelled"
+    CANCELLED: "Cancelled",
+    CAPABILITY_BLOCKED: "Blocked on a required capability"
 } as const;
 
 const ExperimentEvaluator = {
@@ -174,6 +176,10 @@ type CreateResearchWorkspace = (stage: ResearchStage) => Promise<ResearchWorkspa
 interface StageRunOutput<Output> extends StructuredAgentRunOutput<Output> {
     readonly harness: AgentHarness;
     readonly agentWorkspace: ResearchWorkspace;
+}
+
+interface AgentCapabilityOutput {
+    readonly capability_requests: readonly CapabilityRequestCandidate[];
 }
 
 class StageCapabilityBlockedError extends Error {
@@ -783,6 +789,10 @@ async function runResearchBranch(
                 schema: ResearchResultSchema,
                 ...(signal === undefined ? {} : { signal })
             });
+            const capabilityRequests = await persistAgentCapabilityRequests(
+                workspace,
+                run.value.capability_requests
+            );
             const recorded = await recordResearchEvidence(
                 workspace,
                 run.value,
@@ -794,7 +804,11 @@ async function runResearchBranch(
                 signal
             );
             await finishResearchAttempt(workspace, experimentId, run.result, true);
-            await finishRoleTask(workspace, ids, BranchStatus.CLOSED);
+            if (run.value.capability_blocked && recorded.evidence.length === 0) {
+                await pauseRoleForCapabilities(workspace, ids, capabilityRequests);
+            } else {
+                await finishRoleTask(workspace, ids, BranchStatus.CLOSED);
+            }
             return {
                 result: recorded.result,
                 evidence: recorded.evidence,
@@ -1513,6 +1527,33 @@ async function finishRoleTask(
     );
 }
 
+async function pauseRoleForCapabilities(
+    workspace: LabWorkspace,
+    ids: RoleIdentifiers,
+    capabilityRequests: readonly CapabilityRequest[]
+): Promise<void> {
+    const capabilityRequestIds = capabilityRequests.map(({ id }) => id);
+    await workspace.update((draft) => {
+        const branch = requiredById(draft.branches, ids.branchId);
+        const agent = requiredById(draft.agents, ids.agentId);
+        const task = requiredById(draft.tasks, ids.taskId);
+        branch.status = BranchStatus.PAUSED;
+        branch.progress = BranchProgress.CAPABILITY_BLOCKED;
+        agent.status = AgentStatus.BLOCKED;
+        agent.current_task_id = ids.taskId;
+        task.status = InternalTaskStatus.QUEUED;
+        task.context_refs = uniqueStrings([...task.context_refs, ...capabilityRequestIds]);
+    });
+    await workspace.appendEvent(EventType.TASK_QUEUED, {
+        task_id: ids.taskId,
+        capability_request_ids: capabilityRequestIds
+    });
+    await workspace.appendEvent(EventType.BRANCH_PAUSED, {
+        branch_id: ids.branchId,
+        capability_request_ids: capabilityRequestIds
+    });
+}
+
 async function finishResearchAttempt(
     workspace: LabWorkspace,
     experimentId: string,
@@ -1859,7 +1900,7 @@ function preferredDifferentHarnessIndex(
     return index < 0 ? 0 : index;
 }
 
-async function runStageWithFallback<Output>(input: {
+async function runStageWithFallback<Output extends AgentCapabilityOutput>(input: {
     readonly workspace: LabWorkspace;
     readonly available: readonly AvailableHarness[];
     readonly preferredIndex: number;
@@ -1890,6 +1931,7 @@ async function runStageWithFallback<Output>(input: {
                 schema: input.schema,
                 ...(input.signal === undefined ? {} : { signal: input.signal })
             });
+            await persistAgentCapabilityRequests(input.workspace, run.value.capability_requests);
             return { ...run, harness, agentWorkspace };
         } catch (error) {
             lastError = error;
@@ -1924,6 +1966,23 @@ async function runStageWithFallback<Output>(input: {
         input.signal?.aborted === true
     );
     throw lastError ?? new Error("All subscription CLI harness attempts failed");
+}
+
+async function persistAgentCapabilityRequests(
+    workspace: LabWorkspace,
+    candidates: readonly CapabilityRequestCandidate[]
+): Promise<CapabilityRequest[]> {
+    const requests: CapabilityRequest[] = [];
+    for (const candidate of candidates) {
+        requests.push(
+            await workspace.requestCapability({
+                need: candidate.need,
+                reason: candidate.reason,
+                provisioningHint: candidate.provisioning_hint
+            })
+        );
+    }
+    return [...new Map(requests.map((request) => [request.id, request])).values()];
 }
 
 function workspaceAllocator(factory: ResearchWorkspaceFactory): CreateResearchWorkspace {

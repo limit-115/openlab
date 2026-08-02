@@ -75,6 +75,23 @@ describe("research structured-output contracts", () => {
 
         expect(result.outcome).toBe(RESEARCH_OUTCOME.SUPPORTED);
         expect(result.evidence[0]?.target_kind).toBe(RESEARCH_TARGET_KIND.ASSUMPTION);
+        expect(result.capability_requests).toEqual([]);
+        expect(result.capability_blocked).toBe(false);
+    });
+
+    it("requires a concrete request when a researcher reports a resource block", () => {
+        expect(() =>
+            ResearchResultSchema.parse({
+                summary: "The required dataset is unavailable",
+                hypothesis: "The dataset may contain the needed measurement",
+                outcome: RESEARCH_OUTCOME.INCONCLUSIVE,
+                evidence: [],
+                limitations: ["No dataset"],
+                next_experiments: [],
+                capability_requests: [],
+                capability_blocked: true
+            })
+        ).toThrow(/concrete capability request/);
     });
 
     it("produces a JSON Schema accepted by CLI harnesses", () => {

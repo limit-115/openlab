@@ -61,6 +61,14 @@ const ResearchDirectionSchema = z.object({
     objective: z.string().min(1)
 });
 
+export const CapabilityRequestCandidateSchema = z.object({
+    need: z.string().trim().min(1),
+    reason: z.string().trim().min(1),
+    provisioning_hint: z.string().trim().min(1)
+});
+
+const CapabilityRequestCandidatesSchema = z.array(CapabilityRequestCandidateSchema).default([]);
+
 function normalizedDirectionKey(direction: z.infer<typeof ResearchDirectionSchema>): string {
     return [direction.approach, direction.objective]
         .map((value) =>
@@ -108,7 +116,8 @@ export const DirectorPlanSchema = z
         operational_goal: z.string().min(1),
         assumptions: z.array(AssumptionSchema),
         claims: z.array(ClaimCandidateSchema).min(1),
-        directions: z.array(ResearchDirectionSchema).min(2)
+        directions: z.array(ResearchDirectionSchema).min(2),
+        capability_requests: CapabilityRequestCandidatesSchema
     })
     .superRefine((plan, context) => {
         const firstIndexByDirection = new Map<string, number>();
@@ -135,14 +144,26 @@ const ResearchEvidenceSchema = z.object({
     contradicts_hypothesis: z.boolean()
 });
 
-export const ResearchResultSchema = z.object({
-    summary: z.string().min(1),
-    hypothesis: z.string().min(1),
-    outcome: z.enum(domainValues(RESEARCH_OUTCOME)),
-    evidence: z.array(ResearchEvidenceSchema),
-    limitations: z.array(z.string()),
-    next_experiments: z.array(z.string())
-});
+export const ResearchResultSchema = z
+    .object({
+        summary: z.string().min(1),
+        hypothesis: z.string().min(1),
+        outcome: z.enum(domainValues(RESEARCH_OUTCOME)),
+        evidence: z.array(ResearchEvidenceSchema),
+        limitations: z.array(z.string()),
+        next_experiments: z.array(z.string()),
+        capability_requests: CapabilityRequestCandidatesSchema,
+        capability_blocked: z.boolean().default(false)
+    })
+    .superRefine((result, context) => {
+        if (result.capability_blocked && result.capability_requests.length === 0) {
+            context.addIssue({
+                code: "custom",
+                path: ["capability_blocked"],
+                message: "A resource-blocked result must include a concrete capability request"
+            });
+        }
+    });
 
 export const CriticResultSchema = z.object({
     verdict: z.enum(domainValues(CRITIC_VERDICT)),
@@ -151,7 +172,8 @@ export const CriticResultSchema = z.object({
     counterexamples: z.array(z.string()),
     claims_to_verify: z.array(z.string()),
     next_experiments: z.array(z.string()),
-    verification_evaluator: EvaluatorPrecommitSchema
+    verification_evaluator: EvaluatorPrecommitSchema,
+    capability_requests: CapabilityRequestCandidatesSchema
 });
 
 export const VerifierResultSchema = z.object({
@@ -160,10 +182,12 @@ export const VerifierResultSchema = z.object({
     result_statement: z.string().min(1),
     evidence_artifact_paths: z.array(z.string()),
     limitations: z.array(z.string()),
-    known_counterexamples: z.array(z.string())
+    known_counterexamples: z.array(z.string()),
+    capability_requests: CapabilityRequestCandidatesSchema
 });
 
 export type DirectorPlan = z.infer<typeof DirectorPlanSchema>;
+export type CapabilityRequestCandidate = z.infer<typeof CapabilityRequestCandidateSchema>;
 export type EvaluatorPrecommit = z.infer<typeof EvaluatorPrecommitSchema>;
 export type EvaluatorStructuredVerdict = z.infer<typeof EvaluatorStructuredVerdictSchema>;
 export type ResearchResult = z.infer<typeof ResearchResultSchema>;
