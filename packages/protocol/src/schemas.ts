@@ -123,8 +123,8 @@ export const ClaimSchema = z.object({
     supporting_evidence_ids: z.array(IdentifierSchema).default([]),
     contradicting_evidence_ids: z.array(IdentifierSchema).default([]),
     stale: z.boolean().default(false),
-    created_at: z.string().datetime(),
-    updated_at: z.string().datetime()
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime()
 });
 
 export const EvidenceKindSchema = z.enum(EvidenceKind);
@@ -135,8 +135,8 @@ export const SourceEvidenceMetadataSchema = z.object({
     title: z.string().trim().min(1),
     claimed_classification: z.enum(SourceClassification),
     retrieval_method: z.literal(SourceRetrievalMethod.DAEMON_HTTP),
-    http_status: z.number().int().min(200).max(299),
-    fetched_at: z.string().datetime()
+    http_status: z.int().min(200).max(299),
+    fetched_at: z.iso.datetime()
 });
 
 export const EvidenceSchema = z
@@ -151,7 +151,7 @@ export const EvidenceSchema = z
         supports: z.boolean(),
         independent: z.boolean().default(false),
         source: SourceEvidenceMetadataSchema.optional(),
-        created_at: z.string().datetime()
+        created_at: z.iso.datetime()
     })
     .superRefine((evidence, context) => {
         if (evidence.kind === EvidenceKind.SOURCE && evidence.source === undefined) {
@@ -185,7 +185,7 @@ export const InternalTaskSchema = z.object({
     objective: z.string().trim().min(1),
     context_refs: z.array(z.string()).default([]),
     status: InternalTaskStatusSchema.default(InternalTaskStatus.QUEUED),
-    attempt: z.number().int().positive().default(1),
+    attempt: z.int().positive().default(1),
     role: AgentRoleSchema
 });
 
@@ -200,9 +200,9 @@ export const ExperimentSchema = z.object({
     command: z.string().trim().min(1),
     cwd: z.string(),
     status: ExperimentStatusSchema,
-    exit_code: z.number().int().nullable().optional(),
-    started_at: z.string().datetime().optional(),
-    finished_at: z.string().datetime().optional(),
+    exit_code: z.int().nullable().optional(),
+    started_at: z.iso.datetime().optional(),
+    finished_at: z.iso.datetime().optional(),
     output_path: z.string().optional(),
     output_hash: z.string().optional(),
     external_effect: z.enum(ExternalEffect).optional(),
@@ -222,15 +222,15 @@ export const CapabilityRequestSchema = z
         provisioning_hint: z.string().trim().min(1),
         status: z.enum(CapabilityStatus).default(CapabilityStatus.OPEN),
         resource_reference: CapabilityResourceReferenceSchema.optional(),
-        provided_at: z.string().datetime().optional(),
-        created_at: z.string().datetime()
+        provided_at: z.iso.datetime().optional(),
+        created_at: z.iso.datetime()
     })
     .refine(
         (request) =>
             request.status !== CapabilityStatus.PROVIDED ||
             (request.resource_reference !== undefined && request.provided_at !== undefined),
         {
-            message: "A provided capability requires its resource reference and timestamp"
+            error: "A provided capability requires its resource reference and timestamp"
         }
     );
 
@@ -238,7 +238,7 @@ export const LabEventSchema = z.object({
     id: IdentifierSchema,
     lab_id: IdentifierSchema,
     type: z.enum(EventType),
-    occurred_at: z.string().datetime(),
+    occurred_at: z.iso.datetime(),
     payload: z.record(z.string(), z.unknown())
 });
 

@@ -33,7 +33,7 @@ export const FrontierSnapshotSchema = z.object({
     open_questions: z.array(z.string()).default([]),
     blockers: z.array(z.string()).default([]),
     next_experiments: z.array(z.string()).default([]),
-    updated_at: z.string().datetime()
+    updated_at: z.iso.datetime()
 });
 
 export const ResultSummarySchema = z.object({
@@ -48,8 +48,8 @@ export const StatusSnapshotSchema = z.object({
         id: IdentifierSchema,
         state: LabStateSchema,
         goal: z.string().min(1),
-        started_at: z.string().datetime(),
-        updated_at: z.string().datetime(),
+        started_at: z.iso.datetime(),
+        updated_at: z.iso.datetime(),
         uptime_ms: z.number().nonnegative(),
         reason: z.string().optional()
     }),
