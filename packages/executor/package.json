@@ -1,0 +1,27 @@
+{
+    "name": "@lab/executor",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./errors": "./src/errors.ts",
+        "./run": "./src/run.ts",
+        "./types": "./src/types.ts"
+    },
+    "imports": {
+        "#src/*": "./src/*.ts"
+    },
+    "scripts": {
+        "typecheck": "tsc -p tsconfig.json",
+        "test": "vitest run",
+        "lint": "biome lint .",
+        "format": "biome format --write ."
+    },
+    "dependencies": {
+        "execa": "10.0.1",
+        "write-file-atomic": "8.0.0"
+    },
+    "devDependencies": {
+        "@types/write-file-atomic": "4.0.3"
+    }
+}
