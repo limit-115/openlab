@@ -71,11 +71,11 @@ export function App() {
                         <ClaimsPanel claims={snapshot.claims} />
                         <ExperimentsPanel experiments={snapshot.experiments} />
                     </div>
-                    <aside className={CONTENT_GRID_ASIDE} aria-label="Blockers and activity">
+                    <aside className={CONTENT_GRID_ASIDE} aria-label="Blockers">
                         <CapabilitiesPanel requests={snapshot.capability_requests} />
-                        <EventsPanel events={snapshot.recent_events} />
                     </aside>
                 </div>
+                <EventsPanel events={snapshot.recent_events} />
             </main>
             <footer className={APP_FOOTER}>
                 <span>AI Research Lab · Observer mode</span>
