@@ -1,6 +1,6 @@
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import { ChevronRightIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useStickToBottom } from "use-stick-to-bottom";
 import { cn } from "#src/design-system/class-names";
 import {
     Collapsible,
@@ -19,6 +19,8 @@ import {
     NO_ACTIVITY_YET,
     TOOL_PHASE_MARK,
     TRANSCRIPT_DETAIL,
+    TRANSCRIPT_ENTRIES,
+    TRANSCRIPT_INITIAL_SCROLL,
     TRANSCRIPT_TEXT,
     TRANSCRIPT_THINKING_TRIGGER,
     TRANSCRIPT_TOOL
@@ -28,54 +30,29 @@ interface AgentTranscriptProps {
     entries: readonly TranscriptEntry[];
 }
 
+/**
+ * Follows the newest words, unless the operator has scrolled up to read something, in which case the
+ * stream is left alone until they come back to the bottom.
+ *
+ * The follower watches the lines resize rather than counting them, because a turn being written
+ * grows the last line instead of adding one.
+ */
 export function AgentTranscript({ entries }: AgentTranscriptProps) {
-    const scroller = useFollowingScroller(entries);
+    const { scrollRef, contentRef } = useStickToBottom({ initial: TRANSCRIPT_INITIAL_SCROLL });
 
     if (entries.length === 0) {
         return <p className="text-sm text-muted-foreground">{NO_ACTIVITY_YET}</p>;
     }
 
     return (
-        <div className={AGENT_TRANSCRIPT} ref={scroller}>
-            {entries.map((entry) => (
-                <TranscriptLine key={entry.id} entry={entry} />
-            ))}
+        <div className={AGENT_TRANSCRIPT} ref={scrollRef}>
+            <div className={TRANSCRIPT_ENTRIES} ref={contentRef}>
+                {entries.map((entry) => (
+                    <TranscriptLine key={entry.id} entry={entry} />
+                ))}
+            </div>
         </div>
     );
-}
-
-/**
- * Follows the newest words, unless the operator has scrolled up to read something, in which case the
- * stream is left alone until they come back to the bottom.
- *
- * It follows the entries themselves rather than how many there are, because a turn being written
- * grows the last line instead of adding one.
- */
-function useFollowingScroller(entries: readonly TranscriptEntry[]) {
-    const scroller = useRef<HTMLDivElement>(null);
-    const following = useRef(true);
-
-    useEffect(() => {
-        const element = scroller.current;
-        if (element === null) {
-            return;
-        }
-        const watch = () => {
-            const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
-            following.current = distance < 32;
-        };
-        element.addEventListener("scroll", watch);
-        return () => element.removeEventListener("scroll", watch);
-    }, []);
-
-    useEffect(() => {
-        const element = scroller.current;
-        if (element !== null && following.current && entries.length > 0) {
-            element.scrollTop = element.scrollHeight;
-        }
-    }, [entries]);
-
-    return scroller;
 }
 
 function TranscriptLine({ entry }: { entry: TranscriptEntry }) {

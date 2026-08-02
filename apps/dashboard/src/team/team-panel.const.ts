@@ -20,7 +20,16 @@ export const AGENT_STATUS_GROUP = "flex flex-wrap items-center gap-2" as const;
 export const AGENT_EXECUTION = "text-sm text-muted-foreground" as const;
 
 /** The transcript scrolls on its own so a talkative agent cannot push the roster off the page. */
-export const AGENT_TRANSCRIPT = "flex max-h-96 flex-col gap-2 overflow-y-auto" as const;
+export const AGENT_TRANSCRIPT = "max-h-96 overflow-y-auto" as const;
+
+/** The lines sit in their own element because the follower measures them apart from the viewport. */
+export const TRANSCRIPT_ENTRIES = "flex flex-col gap-2" as const;
+
+/**
+ * A card that mounts with history behind it opens at the newest line instead of animating down to
+ * it: the operator asked for this agent, not for a scroll.
+ */
+export const TRANSCRIPT_INITIAL_SCROLL = "instant" as const;
 
 export const TRANSCRIPT_TEXT = "border-l-2 pl-3 text-sm whitespace-pre-wrap break-words" as const;
 
