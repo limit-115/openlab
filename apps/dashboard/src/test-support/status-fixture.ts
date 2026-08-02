@@ -1,16 +1,16 @@
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import {
-    AgentRole,
-    AgentStatus,
-    BranchStatus,
     CapabilityRequestType,
-    CapabilityStatus,
-    ClaimStatus,
-    EventType,
-    ExperimentStatus,
-    InternalTaskStatus,
-    LabState
-} from "@lab/protocol/constants";
-import type { StatusSnapshot } from "@lab/protocol/status";
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 
 const now = "2026-08-02T10:00:00.000Z";
 

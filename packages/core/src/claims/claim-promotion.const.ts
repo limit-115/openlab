@@ -1,4 +1,7 @@
-import { ClaimStatus, type ClaimStatus as ClaimStatusValue } from "@lab/protocol/constants";
+import {
+    ClaimStatus,
+    type ClaimStatus as ClaimStatusValue
+} from "@lab/protocol/claims/claim-status.const";
 
 export const legalClaimTransitions: Readonly<
     Record<ClaimStatusValue, ReadonlySet<ClaimStatusValue>>

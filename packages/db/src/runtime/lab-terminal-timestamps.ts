@@ -1,5 +1,5 @@
-import { LabState } from "@lab/protocol/constants";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 
 export function terminalTimestamps(snapshot: StatusSnapshot, updatedAt: Date) {
     switch (snapshot.lab.state) {

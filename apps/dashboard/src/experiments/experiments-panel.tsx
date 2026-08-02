@@ -1,5 +1,5 @@
-import { ExperimentStatus } from "@lab/protocol/constants";
-import type { Experiment } from "@lab/protocol/schemas";
+import type { Experiment } from "@lab/protocol/experiments/experiment.types";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { Microscope } from "lucide-react";
 import { ExperimentCard } from "#src/experiments/experiment-card";
 import { EXPERIMENT_LIST } from "#src/experiments/experiment-card.const";

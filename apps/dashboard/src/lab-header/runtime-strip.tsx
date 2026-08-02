@@ -1,5 +1,6 @@
-import { AgentStatus, LabState } from "@lab/protocol/constants";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { Activity } from "lucide-react";
 import { useElapsedTime } from "#src/lab-header/lab-uptime";
 import {

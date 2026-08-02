@@ -1,7 +1,9 @@
 import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
-import { AgentRole, EvidenceKind, SourceRetrievalMethod } from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { SourceRetrievalMethod } from "@lab/protocol/evidence/source-evidence.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { EvidenceRelationship } from "#src/claims/evidence-relationship.const";
 import { claimEvidence, evidence } from "#src/lab-database/lab-schema";

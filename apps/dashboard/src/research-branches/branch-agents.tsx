@@ -1,5 +1,5 @@
-import type { InternalTask } from "@lab/protocol/schemas";
-import type { AgentSummary } from "@lab/protocol/status";
+import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
+import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { QUIET_NOTE } from "#src/panel/panel-empty-state.const";
 import {
     AGENT_LIST,

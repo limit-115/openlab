@@ -22,20 +22,18 @@ import type {
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
-import {
-    AgentRole,
-    AgentStatus,
-    BranchStatus,
-    CapabilityStatus,
-    ClaimStatus,
-    EventType,
-    EvidenceKind,
-    ExperimentStatus,
-    ExternalEffect,
-    InternalTaskStatus,
-    LabState,
-    SourceClassification
-} from "@lab/protocol/constants";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { describe, expect, it, vi } from "vitest";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import {

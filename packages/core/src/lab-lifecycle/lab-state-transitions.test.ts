@@ -1,4 +1,4 @@
-import { LabState } from "@lab/protocol/constants";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { describe, expect, it } from "vitest";
 import type { CompletionEvidence } from "#src/lab-lifecycle/completion-evidence.types";
 import { assessLifecycleTransition } from "#src/lab-lifecycle/lab-state-transitions";

@@ -2,13 +2,10 @@ import {
     SchedulerLane,
     type SchedulerLane as SchedulerLaneValue
 } from "@lab/core/scheduling/scheduler-lane.const";
-import {
-    AgentRole,
-    type AgentRole as AgentRoleValue,
-    AgentStatus,
-    BranchStatus,
-    InternalTaskStatus
-} from "@lab/protocol/constants";
+import { AgentRole, type AgentRole as AgentRoleValue } from "@lab/protocol/agents/agent-role.const";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {

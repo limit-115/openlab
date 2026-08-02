@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/status";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { FlaskConical } from "lucide-react";
 import { BRAND, BRAND_ID, BRAND_MARK, BRAND_NAME, TOPBAR } from "#src/lab-header/lab-header.const";
 import { RuntimeStrip } from "#src/lab-header/runtime-strip";

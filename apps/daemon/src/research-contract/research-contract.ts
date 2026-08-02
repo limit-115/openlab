@@ -1,5 +1,6 @@
-import { ExternalEffect, SourceClassification } from "@lab/protocol/constants";
-import type { TaskInput } from "@lab/protocol/schemas";
+import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
+import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { z } from "zod";
 import { evaluateDormantCapabilityDirection } from "#src/research-contract/director-direction-policy";
 import { DormantCapabilityPolicyDecision } from "#src/research-contract/director-direction-policy.const";

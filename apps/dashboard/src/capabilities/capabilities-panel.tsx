@@ -1,5 +1,5 @@
-import { CapabilityStatus } from "@lab/protocol/constants";
-import type { CapabilityRequest } from "@lab/protocol/schemas";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { KeyRound } from "lucide-react";
 import { CapabilityCard } from "#src/capabilities/capability-card";
 import { CAPABILITY_LIST } from "#src/capabilities/capability-card.const";

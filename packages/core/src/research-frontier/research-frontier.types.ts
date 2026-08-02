@@ -1,4 +1,4 @@
-import type { ClaimStatus } from "@lab/protocol/constants";
+import type { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import type { ProgressKind } from "#src/research-frontier/progress-kind.const";
 import type { SchedulerLane } from "#src/scheduling/scheduler-lane.const";
 

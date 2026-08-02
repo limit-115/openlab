@@ -1,5 +1,5 @@
-import { EvidenceKind } from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { describe, expect, it } from "vitest";
 import { deduplicateEvidence } from "#src/claims/claim-evidence";
 import type { AssessedEvidence } from "#src/claims/claim-evidence.types";

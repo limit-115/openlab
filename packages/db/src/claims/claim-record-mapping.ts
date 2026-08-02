@@ -1,5 +1,6 @@
 import type { AssessedEvidence } from "@lab/core/claims/claim-evidence.types";
-import type { Claim, Evidence } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import type { claims, evidence } from "#src/lab-database/lab-schema";
 
 export function toClaim(

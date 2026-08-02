@@ -1,4 +1,4 @@
-import type { TaskInput } from "@lab/protocol/schemas";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
 import type {
     CriticResult,

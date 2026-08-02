@@ -1,4 +1,5 @@
-import { ExternalEffect, SourceClassification } from "@lab/protocol/constants";
+import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
+import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
 import { describe, expect, it } from "vitest";
 import {
     DirectorPlanSchema,

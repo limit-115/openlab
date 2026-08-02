@@ -1,5 +1,7 @@
-import { ClaimStatus, EvidenceKind } from "@lab/protocol/constants";
-import type { Claim, Evidence } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { describe, expect, it } from "vitest";
 import type { AssessedEvidence } from "#src/claims/claim-evidence.types";
 import { assessClaimPromotion, transitionClaim } from "#src/claims/claim-promotion";

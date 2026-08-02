@@ -1,5 +1,5 @@
 import type { AgentHarness, HarnessPreflight } from "@lab/harness/agent-harness.types";
-import type { CapabilityRequest } from "@lab/protocol/schemas";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
 import type {
     CapabilityRequestCandidate,

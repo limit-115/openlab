@@ -2,8 +2,8 @@ import {
     EvidenceOrigin,
     type EvidenceOrigin as EvidenceOriginValue
 } from "@lab/core/claims/evidence-origin.const";
-import { EvidenceKind } from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 
 export const UnboundEvidenceOrigin = {
     [EvidenceKind.EXPERIMENT]: EvidenceOrigin.MODEL_JUDGEMENT,

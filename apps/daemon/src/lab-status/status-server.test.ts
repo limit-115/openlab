@@ -1,7 +1,8 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { CapabilityStatus, EventType } from "@lab/protocol/constants";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { describe, expect, it } from "vitest";
 import { createStatusServer } from "#src/lab-status/status-server";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";

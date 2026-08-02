@@ -1,4 +1,4 @@
-import { CapabilityStatus } from "@lab/protocol/constants";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 
 export const CAPABILITY_LIST = "grid gap-2" as const;
 

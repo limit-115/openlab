@@ -1,4 +1,4 @@
-import type { LabEvent } from "@lab/protocol/schemas";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import { and, desc, eq, lt } from "drizzle-orm";
 import { EventPageSize } from "#src/events/event-repository.const";
 import type { AppendEventInput } from "#src/events/event-repository.types";

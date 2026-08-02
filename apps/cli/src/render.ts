@@ -1,6 +1,8 @@
-import { BranchStatus, InternalTaskStatus } from "@lab/protocol/constants";
-import type { CapabilityRequest } from "@lab/protocol/schemas";
-import type { FrontierSnapshot, StatusSnapshot } from "@lab/protocol/status";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { FrontierSnapshot } from "@lab/protocol/research-frontier/frontier-snapshot.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import Table from "cli-table3";
 
 function lines(items: string[]): string {

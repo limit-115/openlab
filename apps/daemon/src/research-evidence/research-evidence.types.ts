@@ -1,5 +1,5 @@
 import type { AssessedEvidence } from "@lab/core/claims/claim-evidence.types";
-import type { Claim } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
 import type { ResearchResult } from "#src/research-contract/research-contract";
 import type { ResearchTargetKind } from "#src/research-contract/research-contract.const";
 

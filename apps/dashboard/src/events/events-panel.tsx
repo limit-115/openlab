@@ -1,4 +1,4 @@
-import type { LabEvent } from "@lab/protocol/schemas";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import { Activity, Radio } from "lucide-react";
 import { EventEntry } from "#src/events/event-entry";
 import { LIVE_LABEL } from "#src/events/events-panel.const";

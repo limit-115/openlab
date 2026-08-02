@@ -1,9 +1,9 @@
+import type { Claim } from "@lab/protocol/claims/claim.types";
 import {
     ClaimStatus,
-    type ClaimStatus as ClaimStatusValue,
-    EvidenceKind
-} from "@lab/protocol/constants";
-import type { Claim } from "@lab/protocol/schemas";
+    type ClaimStatus as ClaimStatusValue
+} from "@lab/protocol/claims/claim-status.const";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import {
     deduplicateEvidence,
     isContradictingEvidence,

@@ -1,5 +1,5 @@
-import { EventType } from "@lab/protocol/constants";
-import type { LabEvent } from "@lab/protocol/schemas";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";

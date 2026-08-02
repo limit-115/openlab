@@ -1,4 +1,7 @@
-import { LabState, type LabState as LabStateValue } from "@lab/protocol/constants";
+import {
+    LabState,
+    type LabState as LabStateValue
+} from "@lab/protocol/lab-lifecycle/lab-state.const";
 
 export const legalLabStateTransitions: Readonly<Record<LabStateValue, ReadonlySet<LabStateValue>>> =
     {

@@ -1,5 +1,5 @@
-import type { LabEvent } from "@lab/protocol/schemas";
-import { LabEventSchema } from "@lab/protocol/schemas";
+import { LabEventSchema } from "@lab/protocol/lab-events/lab-event.schema";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events } from "#src/lab-database/lab-schema";
 import { parseTimestamp } from "#src/runtime/runtime-metadata-validation";

@@ -1,4 +1,5 @@
-import { type StatusSnapshot, StatusSnapshotSchema } from "@lab/protocol/status";
+import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 
 export const statusQueryKey = ["lab", "status"] as const;
 

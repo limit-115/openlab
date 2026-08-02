@@ -1,4 +1,5 @@
-import { EventType, LabState } from "@lab/protocol/constants";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import type {
     ResearchLoopOptions,

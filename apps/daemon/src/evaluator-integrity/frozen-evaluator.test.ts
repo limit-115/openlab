@@ -1,7 +1,7 @@
 import { chmod, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ClaimStatus } from "@lab/protocol/constants";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { describe, expect, it } from "vitest";
 import {
     assertEvaluatorUnchanged,

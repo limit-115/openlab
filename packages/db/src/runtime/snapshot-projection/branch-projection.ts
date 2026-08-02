@@ -1,5 +1,5 @@
 import type { SchedulerLane as SchedulerLaneValue } from "@lab/core/scheduling/scheduler-lane.const";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { and, eq, notInArray } from "drizzle-orm";
 import { branches } from "#src/lab-database/lab-schema";
 import { AgentRoleSchedulerLane } from "#src/runtime/snapshot-projection/agent-role-scheduler-lane.const";

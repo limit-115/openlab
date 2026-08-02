@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/status";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { eq, inArray } from "drizzle-orm";
 import { attempts } from "#src/lab-database/lab-schema";
 import {

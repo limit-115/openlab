@@ -1,4 +1,4 @@
-import { ExperimentStatus } from "@lab/protocol/constants";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 
 export const EXPERIMENT_LIST = "grid gap-[7px]" as const;
 

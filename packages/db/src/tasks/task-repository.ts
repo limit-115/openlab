@@ -1,4 +1,4 @@
-import { InternalTaskStatus } from "@lab/protocol/constants";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { attempts, tasks } from "#src/lab-database/lab-schema";

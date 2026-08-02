@@ -2,7 +2,7 @@ import {
     SchedulerLane,
     type SchedulerLane as SchedulerLaneValue
 } from "@lab/core/scheduling/scheduler-lane.const";
-import { AgentRole, type AgentRole as AgentRoleValue } from "@lab/protocol/constants";
+import { AgentRole, type AgentRole as AgentRoleValue } from "@lab/protocol/agents/agent-role.const";
 
 export const AgentRoleSchedulerLane = {
     [AgentRole.DIRECTOR]: SchedulerLane.EXPLORATION,

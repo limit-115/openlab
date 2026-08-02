@@ -1,5 +1,7 @@
-import type { Evidence, LabEvent, TaskInput } from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 
 export interface PersistedLabEvent extends LabEvent {
     readonly sequence: number;

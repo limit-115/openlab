@@ -1,6 +1,9 @@
 import { transitionClaim } from "@lab/core/claims/claim-promotion";
-import { ClaimStatus, type ClaimStatus as ClaimStatusValue } from "@lab/protocol/constants";
-import type { Claim } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
+import {
+    ClaimStatus,
+    type ClaimStatus as ClaimStatusValue
+} from "@lab/protocol/claims/claim-status.const";
 import { and, eq, sql } from "drizzle-orm";
 import { toAssessedEvidence, toClaim } from "#src/claims/claim-record-mapping";
 import type { AddEvidenceInput, CreateClaimInput } from "#src/claims/claim-repository.types";

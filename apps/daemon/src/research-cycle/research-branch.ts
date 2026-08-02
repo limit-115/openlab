@@ -2,15 +2,13 @@ import { randomUUID } from "node:crypto";
 import { HarnessExecutionProfiles, HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import type { AgentHarness, HarnessRunResult } from "@lab/harness/agent-harness.types";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
-import {
-    AgentRole,
-    AgentStatus,
-    BranchStatus,
-    EventType,
-    ExperimentStatus,
-    InternalTaskStatus
-} from "@lab/protocol/constants";
-import type { TaskInput } from "@lab/protocol/schemas";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { renderHarnessCommand } from "#src/daemon-execution/experiment-record";
 import { ExperimentEvaluator } from "#src/daemon-execution/experiment-record.const";
 import {

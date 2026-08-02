@@ -1,6 +1,8 @@
-import { BranchStatus, InternalTaskStatus } from "@lab/protocol/constants";
-import type { InternalTask } from "@lab/protocol/schemas";
-import type { AgentSummary, BranchSummary } from "@lab/protocol/status";
+import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import type { BranchSummary } from "@lab/protocol/branches/branch-summary.types";
+import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { Bot, ChevronDown, CircleCheck, ListTodo, Pause, Play } from "lucide-react";
 import { BranchAgents } from "#src/research-branches/branch-agents";
 import {

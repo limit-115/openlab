@@ -1,18 +1,17 @@
 import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
 import { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
-import {
-    AgentRole,
-    BranchStatus,
-    CapabilityStatus,
-    ClaimStatus,
-    domainValues,
-    EventType,
-    EvidenceKind,
-    InternalTaskStatus,
-    LabState
-} from "@lab/protocol/constants";
-import type { Evidence, TaskInput } from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { domainValues } from "@lab/protocol/finite-domain/finite-domain-values";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import {
     bigint,
     boolean,

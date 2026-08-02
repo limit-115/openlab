@@ -2,14 +2,12 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
 import { EXECUTION_STATUS } from "@lab/executor/constants";
-import {
-    EventType,
-    EvidenceKind,
-    ExperimentStatus,
-    ExternalEffect,
-    SourceRetrievalMethod
-} from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { SourceRetrievalMethod } from "@lab/protocol/evidence/source-evidence.const";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import {
     type ValidatedArtifact,
     validateFileArtifact

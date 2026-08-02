@@ -1,10 +1,8 @@
-import {
-    AgentStatus,
-    BranchStatus,
-    EventType,
-    ExperimentStatus,
-    InternalTaskStatus
-} from "@lab/protocol/constants";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { BranchProgress } from "#src/research-cycle/research-loop.const";
 

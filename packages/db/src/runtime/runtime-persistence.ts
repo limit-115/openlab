@@ -1,6 +1,6 @@
-import { LabState } from "@lab/protocol/constants";
-import { TaskInputSchema } from "@lab/protocol/schemas";
-import { StatusSnapshotSchema } from "@lab/protocol/status";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
+import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events, labs, runtimeCheckpoints } from "#src/lab-database/lab-schema";

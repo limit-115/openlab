@@ -1,4 +1,4 @@
-import type { LabEvent } from "@lab/protocol/schemas";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import {
     EVENT_ENTRY,
     EVENT_MARKER,

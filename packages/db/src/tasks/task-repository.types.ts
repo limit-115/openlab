@@ -1,5 +1,5 @@
 import type { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
-import type { AgentRole } from "@lab/protocol/constants";
+import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import type { attempts, tasks } from "#src/lab-database/lab-schema";
 import type {
     AttemptStatus,

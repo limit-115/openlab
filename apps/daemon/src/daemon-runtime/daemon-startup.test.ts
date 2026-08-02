@@ -11,8 +11,10 @@ import type {
     RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime/runtime-persistence.types";
-import { EventType, EvidenceKind, LabState } from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { describe, expect, it } from "vitest";
 import { validateFileArtifact } from "#src/artifact-integrity/file-artifact";
 import { startDaemon } from "#src/daemon-runtime/daemon-startup";

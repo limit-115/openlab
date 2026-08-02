@@ -1,4 +1,4 @@
-import type { Claim } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
 import { CircleDot } from "lucide-react";
 import {
     CLAIM_CELL,

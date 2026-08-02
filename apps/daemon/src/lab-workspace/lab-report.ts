@@ -1,7 +1,8 @@
 import path from "node:path";
-import { ClaimStatus, EvidenceKind } from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 
 const EvidenceDisposition = {
     CITATION: "citation",

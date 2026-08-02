@@ -1,5 +1,5 @@
 import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
-import { EvidenceKind } from "@lab/protocol/constants";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { describe, expect, it } from "vitest";
 import type { AddEvidenceInput } from "#src/claims/claim-repository.types";
 import { assertEvidenceIntegrity } from "#src/claims/evidence-integrity";

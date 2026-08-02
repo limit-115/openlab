@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Evidence } from "@lab/protocol/schemas";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 
 export function evidenceFingerprint(candidate: Evidence): string {
     const serialized = JSON.stringify([

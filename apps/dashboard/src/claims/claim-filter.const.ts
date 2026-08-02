@@ -1,4 +1,4 @@
-import { ClaimStatus } from "@lab/protocol/constants";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 
 export const ClaimFilter = {
     ALL: "all",

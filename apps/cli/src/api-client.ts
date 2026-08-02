@@ -1,5 +1,6 @@
-import type { CapabilityRequest } from "@lab/protocol/schemas";
-import type { FrontierSnapshot, StatusSnapshot } from "@lab/protocol/status";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { FrontierSnapshot } from "@lab/protocol/research-frontier/frontier-snapshot.types";
 
 export class LabApiError extends Error {
     readonly status: number;

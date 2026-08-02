@@ -1,4 +1,4 @@
-import type { Claim } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
 import type { ResearchTargetKind } from "#src/research-contract/research-contract.const";
 
 export interface EvaluatorTarget {

@@ -1,4 +1,4 @@
-import type { Evidence } from "@lab/protocol/schemas";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import type { EvidenceOrigin } from "#src/claims/evidence-origin.const";
 
 export interface AssessedEvidence {

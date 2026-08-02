@@ -1,5 +1,5 @@
-import { CapabilityStatus } from "@lab/protocol/constants";
-import type { CapabilityRequest } from "@lab/protocol/schemas";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { LockKeyhole, Wrench } from "lucide-react";
 import {
     CAPABILITY_CARD,

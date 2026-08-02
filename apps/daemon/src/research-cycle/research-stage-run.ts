@@ -1,8 +1,8 @@
 import type { HarnessExecutionProfile } from "@lab/harness/agent-harness.const";
 import type { AgentHarness } from "@lab/harness/agent-harness.types";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
-import { EventType } from "@lab/protocol/constants";
-import type { CapabilityRequest } from "@lab/protocol/schemas";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import type { z } from "zod";
 import { freezeEvaluator } from "#src/evaluator-integrity/frozen-evaluator";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";

@@ -1,4 +1,5 @@
-import { EventType, LabState } from "@lab/protocol/constants";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";
 import { migrateDatabase } from "#src/lab-database/lab-schema-migration";

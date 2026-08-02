@@ -1,4 +1,4 @@
-import { AgentStatus } from "@lab/protocol/constants";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 
 export const AGENT_LIST = "grid gap-[5px]" as const;
 

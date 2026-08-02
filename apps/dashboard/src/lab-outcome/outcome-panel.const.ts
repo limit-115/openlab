@@ -1,4 +1,4 @@
-import { LabState } from "@lab/protocol/constants";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 
 const PENDING_OUTCOME =
     "border-violet/23 bg-surface/94 bg-[linear-gradient(110deg,rgba(174,141,245,0.11),transparent_58%)]";

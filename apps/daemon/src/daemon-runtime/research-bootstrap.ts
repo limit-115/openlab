@@ -1,4 +1,4 @@
-import { EventType } from "@lab/protocol/constants";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { initialResearchIdentifiers } from "#src/research-cycle/research-identifiers";
 

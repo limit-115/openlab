@@ -1,11 +1,9 @@
 import { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
-import {
-    BranchStatus,
-    CapabilityStatus,
-    ClaimStatus,
-    EventType,
-    InternalTaskStatus
-} from "@lab/protocol/constants";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";

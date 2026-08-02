@@ -1,5 +1,5 @@
 import { transitionLabState } from "@lab/core/lab-lifecycle/lab-state-transitions";
-import { LabState } from "@lab/protocol/constants";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { and, eq } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { labs } from "#src/lab-database/lab-schema";

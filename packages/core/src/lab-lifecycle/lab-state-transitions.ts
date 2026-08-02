@@ -1,4 +1,7 @@
-import { LabState, type LabState as LabStateValue } from "@lab/protocol/constants";
+import {
+    LabState,
+    type LabState as LabStateValue
+} from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { validateCompletion } from "#src/lab-lifecycle/completion-evidence";
 import { legalLabStateTransitions } from "#src/lab-lifecycle/lab-state-transitions.const";
 import type {

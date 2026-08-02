@@ -1,5 +1,5 @@
-import type { Evidence } from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { assertUniqueEvidenceFingerprints } from "#src/runtime/snapshot-projection/evidence-fingerprint";
 import { idsOf } from "#src/runtime/snapshot-projection/projected-entity-record";
 

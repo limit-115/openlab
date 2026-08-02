@@ -1,6 +1,6 @@
 import type { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
-import type { LabEvent } from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import type { WorkspaceMutationAction } from "#src/lab-workspace/lab-workspace.const";
 
 export type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;

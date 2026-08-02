@@ -2,7 +2,7 @@ import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import type { HarnessRunResult } from "@lab/harness/agent-harness.types";
 import { HarnessAbortedError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
-import { EventType } from "@lab/protocol/constants";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { structuredOutputSchema } from "#src/research-contract/research-contract";
 import type {
     StructuredAgentRunInput,

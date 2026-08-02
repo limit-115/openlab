@@ -1,6 +1,7 @@
-import { BranchStatus } from "@lab/protocol/constants";
-import type { InternalTask } from "@lab/protocol/schemas";
-import type { AgentSummary, BranchSummary } from "@lab/protocol/status";
+import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import type { BranchSummary } from "@lab/protocol/branches/branch-summary.types";
+import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { GitBranch } from "lucide-react";
 import { Panel } from "#src/panel/panel";
 import { PANEL_COUNT_BADGE } from "#src/panel/panel.const";

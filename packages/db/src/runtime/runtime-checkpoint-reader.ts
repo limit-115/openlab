@@ -1,7 +1,8 @@
-import type { Evidence, TaskInput } from "@lab/protocol/schemas";
-import { TaskInputSchema } from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
-import { StatusSnapshotSchema } from "@lab/protocol/status";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { desc, eq } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events, runtimeCheckpoints } from "#src/lab-database/lab-schema";

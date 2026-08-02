@@ -1,5 +1,5 @@
-import { LabState } from "@lab/protocol/constants";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { Bed, CircleCheckBig, CircleStop, FileText, OctagonX } from "lucide-react";
 import {
     ARTIFACT_LINK,

@@ -7,7 +7,9 @@ import type { ArtifactDescriptor, ExecutionResult } from "@lab/executor/types";
 import { evaluateModelApiCommand } from "@lab/harness/model-api-policy";
 import { ModelApiPolicyDecision } from "@lab/harness/model-api-policy.const";
 import { sanitizeHarnessEnvironment } from "@lab/harness/subscription-environment";
-import { EventType, ExperimentStatus, ExternalEffect } from "@lab/protocol/constants";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import {
     type ValidatedArtifact,
     validateFileArtifact

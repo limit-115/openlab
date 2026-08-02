@@ -1,5 +1,6 @@
 import { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
-import { AgentRole, InternalTaskStatus } from "@lab/protocol/constants";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { BranchRepository } from "#src/branches/branch-repository";

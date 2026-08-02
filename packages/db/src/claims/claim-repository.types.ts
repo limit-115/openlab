@@ -1,5 +1,5 @@
 import type { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
-import type { EvidenceKind } from "@lab/protocol/constants";
+import type { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 
 export interface CreateClaimInput {
     readonly id: string;

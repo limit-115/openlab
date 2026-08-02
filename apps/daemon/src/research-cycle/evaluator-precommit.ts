@@ -1,4 +1,4 @@
-import { EventType } from "@lab/protocol/constants";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { freezeEvaluator } from "#src/evaluator-integrity/frozen-evaluator";
 import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";

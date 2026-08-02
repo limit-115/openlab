@@ -1,4 +1,4 @@
-import { BranchStatus } from "@lab/protocol/constants";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 
 export const BRANCH_LIST = "grid gap-2" as const;
 

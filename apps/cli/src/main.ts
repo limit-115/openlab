@@ -3,7 +3,7 @@ import { access } from "node:fs/promises";
 import { resolve } from "node:path";
 import { cancel, intro, isCancel, outro, text } from "@clack/prompts";
 import { startDaemon } from "@lab/daemon/server";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { Command, InvalidArgumentError } from "commander";
 import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";

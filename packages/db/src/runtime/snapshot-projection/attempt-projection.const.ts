@@ -1,7 +1,7 @@
 import {
     ExperimentStatus,
     type ExperimentStatus as ExperimentStatusValue
-} from "@lab/protocol/constants";
+} from "@lab/protocol/experiments/experiment-status.const";
 import {
     AttemptStatus,
     type AttemptStatus as AttemptStatusValue

@@ -1,4 +1,4 @@
-import { LabState } from "@lab/protocol/constants";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 
 export const RUNTIME_STRIP =
     "flex items-center justify-end gap-[18px] max-[820px]:justify-start max-[820px]:border-t max-[820px]:border-line max-[820px]:pt-[9px] max-[620px]:grid max-[620px]:grid-cols-2 max-[620px]:gap-3" as const;

@@ -1,10 +1,8 @@
-import {
-    BranchStatus,
-    ClaimStatus,
-    ExperimentStatus,
-    InternalTaskStatus
-} from "@lab/protocol/constants";
-import type { StatusSnapshot } from "@lab/protocol/status";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { CircleDot, GitBranch, ListChecks, Microscope, Target } from "lucide-react";
 import {
     GOAL_PANEL_BODY,

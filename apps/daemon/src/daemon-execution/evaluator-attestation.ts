@@ -4,8 +4,9 @@ import path from "node:path";
 import { runExperiment } from "@lab/executor/run";
 import type { ExecutionResult } from "@lab/executor/types";
 import { sanitizeHarnessEnvironment } from "@lab/harness/subscription-environment";
-import { EventType, ExperimentStatus } from "@lab/protocol/constants";
-import type { Claim } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import {
     type ValidatedArtifact,
     validateFileArtifact

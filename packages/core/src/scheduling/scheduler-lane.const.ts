@@ -1,4 +1,4 @@
-import { domainValues } from "@lab/protocol/constants";
+import { domainValues } from "@lab/protocol/finite-domain/finite-domain-values";
 
 export const SchedulerLane = {
     PROMISING: "promising",

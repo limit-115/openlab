@@ -1,4 +1,4 @@
-import type { FrontierSnapshot } from "@lab/protocol/status";
+import type { FrontierSnapshot } from "@lab/protocol/research-frontier/frontier-snapshot.types";
 import { Ban, CircleCheck, CircleHelp, Compass, FlaskConical } from "lucide-react";
 import { Panel } from "#src/panel/panel";
 import { PANEL_UPDATED_AT } from "#src/panel/panel.const";

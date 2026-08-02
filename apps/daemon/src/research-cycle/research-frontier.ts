@@ -1,5 +1,9 @@
-import { CapabilityStatus, ClaimStatus, EventType } from "@lab/protocol/constants";
-import type { CapabilityRequest, Claim, TaskInput } from "@lab/protocol/schemas";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import type { Claim } from "@lab/protocol/claims/claim.types";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import {
     ResearchContextEntryType,

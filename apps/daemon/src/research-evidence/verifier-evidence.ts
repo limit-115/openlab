@@ -4,8 +4,10 @@ import { transitionClaim } from "@lab/core/claims/claim-promotion";
 import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
 import { EXECUTION_STATUS } from "@lab/executor/constants";
 import type { ExecutionResult } from "@lab/executor/types";
-import { ClaimStatus, EventType, EvidenceKind } from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import type { ValidatedArtifact } from "#src/artifact-integrity/file-artifact";
 import {
     assertEvaluatorRejectsNegativeControl,

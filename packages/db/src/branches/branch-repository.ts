@@ -1,4 +1,4 @@
-import { BranchStatus } from "@lab/protocol/constants";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import { and, asc, eq } from "drizzle-orm";
 import type { BranchRecord, CreateBranchInput } from "#src/branches/branch-repository.types";
 import type { Database } from "#src/lab-database/lab-database-client";

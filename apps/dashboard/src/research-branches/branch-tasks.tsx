@@ -1,5 +1,5 @@
-import { InternalTaskStatus } from "@lab/protocol/constants";
-import type { InternalTask } from "@lab/protocol/schemas";
+import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { CircleCheck, CircleDashed } from "lucide-react";
 import { QUIET_NOTE } from "#src/panel/panel-empty-state.const";
 import { BRANCH_DETAIL_HEADING } from "#src/research-branches/branch-card.const";

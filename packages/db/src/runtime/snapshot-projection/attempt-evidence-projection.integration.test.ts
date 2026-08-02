@@ -1,11 +1,9 @@
 import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
-import {
-    AgentRole,
-    BranchStatus,
-    ExperimentStatus,
-    InternalTaskStatus
-} from "@lab/protocol/constants";
-import type { Evidence } from "@lab/protocol/schemas";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EvidenceRelationship } from "#src/claims/evidence-relationship.const";

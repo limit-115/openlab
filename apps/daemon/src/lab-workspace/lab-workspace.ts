@@ -9,30 +9,35 @@ import type {
     PersistedRuntime,
     RecoverableRuntime
 } from "@lab/db/runtime/runtime-persistence.types";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import {
-    AgentRole,
-    AgentStatus,
-    BranchStatus,
     CapabilityRequestType,
-    CapabilityResourceScheme,
-    CapabilityStatus,
-    ClaimStatus,
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { CapabilityResourceScheme } from "@lab/protocol/capabilities/capability-resource-reference.const";
+import { CapabilityResourceReferenceSchema } from "@lab/protocol/capabilities/capability-resource-reference.schema";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { EvidenceSchema } from "@lab/protocol/evidence/evidence.schema";
+import type { Evidence } from "@lab/protocol/evidence/evidence.types";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import {
     EventType,
-    EvidenceKind,
-    InternalTaskStatus,
-    type EventType as LabEventType,
+    type EventType as LabEventType
+} from "@lab/protocol/lab-events/event-type.const";
+import { LabEventSchema } from "@lab/protocol/lab-events/lab-event.schema";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import {
     LabState,
     type LabState as LabStateValue
-} from "@lab/protocol/constants";
-import type { CapabilityRequest, Evidence, LabEvent, TaskInput } from "@lab/protocol/schemas";
-import {
-    CapabilityResourceReferenceSchema,
-    EvidenceSchema,
-    LabEventSchema,
-    TaskInputSchema
-} from "@lab/protocol/schemas";
-import type { StatusSnapshot } from "@lab/protocol/status";
-import { StatusSnapshotSchema } from "@lab/protocol/status";
+} from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { Mutex } from "async-mutex";
 import writeFileAtomic from "write-file-atomic";
 import { validateFileArtifact } from "#src/artifact-integrity/file-artifact";

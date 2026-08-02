@@ -1,5 +1,5 @@
-import { ClaimStatus } from "@lab/protocol/constants";
-import type { Claim } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ClaimFilterGroup } from "#src/claims/claim-filter";

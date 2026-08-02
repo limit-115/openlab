@@ -1,4 +1,4 @@
-import type { Experiment } from "@lab/protocol/schemas";
+import type { Experiment } from "@lab/protocol/experiments/experiment.types";
 import { formatDuration } from "#src/value-display/duration-display";
 
 export function experimentDuration(experiment: Experiment): string {

@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { transitionClaim } from "@lab/core/claims/claim-promotion";
 import { collectStaleDependents } from "@lab/core/claims/claim-staleness";
-import { ClaimStatus, EventType } from "@lab/protocol/constants";
-import type { Claim } from "@lab/protocol/schemas";
+import type { Claim } from "@lab/protocol/claims/claim.types";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import type { EvaluatorTarget } from "#src/evaluator-integrity/frozen-evaluator.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { replaceById } from "#src/lab-workspace/snapshot-entities";

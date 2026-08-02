@@ -1,5 +1,8 @@
-import { CapabilityRequestType, CapabilityStatus } from "@lab/protocol/constants";
-import type { CapabilityRequest } from "@lab/protocol/schemas";
+import {
+    CapabilityRequestType,
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
+import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { and, eq } from "drizzle-orm";
 import type { CreateCapabilityRequestInput } from "#src/capabilities/capability-request-repository.types";
 import type { Database } from "#src/lab-database/lab-database-client";

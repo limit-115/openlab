@@ -2,8 +2,8 @@ import { assessPlateau } from "@lab/core/research-frontier/plateau-assessment";
 import { ProgressKind } from "@lab/core/research-frontier/progress-kind.const";
 import type { ResearchFrontier } from "@lab/core/research-frontier/research-frontier.types";
 import { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
-import { BranchStatus } from "@lab/protocol/constants";
-import type { Claim } from "@lab/protocol/schemas";
+import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import type { Claim } from "@lab/protocol/claims/claim.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 
 export async function waitForConfirmedPlateau(

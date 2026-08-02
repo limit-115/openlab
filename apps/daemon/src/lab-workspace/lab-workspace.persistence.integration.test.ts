@@ -9,13 +9,11 @@ import { branches, labs, tasks } from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "@lab/db/runtime/runtime-revision-conflict";
-import {
-    CapabilityStatus,
-    ClaimStatus,
-    EventType,
-    EvidenceKind,
-    LabState
-} from "@lab/protocol/constants";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { initialResearchIdentifiers } from "#src/research-cycle/research-identifiers";

@@ -1,5 +1,7 @@
-import { type LabEvent, LabEventSchema } from "@lab/protocol/schemas";
-import { type StatusSnapshot, StatusSnapshotSchema } from "@lab/protocol/status";
+import { LabEventSchema } from "@lab/protocol/lab-events/lab-event.schema";
+import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { statusQueryKey } from "#src/live-status/status-client";

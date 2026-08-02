@@ -1,9 +1,7 @@
-import {
-    CapabilityStatus,
-    ClaimStatus,
-    ExperimentStatus,
-    InternalTaskStatus
-} from "@lab/protocol/constants";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import type { TaggedStatus } from "#src/status-tag/status-tag.types";
 
 export const STATUS_TAG =

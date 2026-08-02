@@ -1,5 +1,5 @@
-import { ExperimentStatus } from "@lab/protocol/constants";
-import type { Experiment } from "@lab/protocol/schemas";
+import type { Experiment } from "@lab/protocol/experiments/experiment.types";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { CircleCheck, CircleX, Clock3, Play, TerminalSquare } from "lucide-react";
 import {
     EXPERIMENT_CARD,

@@ -1,6 +1,7 @@
 import { EXECUTION_STATUS, type ExecutionStatus } from "@lab/executor/constants";
 import type { HarnessRunResult } from "@lab/harness/agent-harness.types";
-import { EventType, ExperimentStatus } from "@lab/protocol/constants";
+import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
+import { EventType } from "@lab/protocol/lab-events/event-type.const";
 
 export function renderHarnessCommand(run: HarnessRunResult): string {
     return renderCommand(run.command.file, run.command.args);
