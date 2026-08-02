@@ -6,6 +6,7 @@ import type {
     CommitRuntimeResult,
     InitializeRuntimeInput,
     PersistedLabEvent,
+    RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime";
 import { CapabilityStatus, LabState } from "@lab/protocol/constants";
@@ -20,12 +21,16 @@ const TestDatabase = {
 
 class InMemoryRuntimePersistence {
     #checkpoint: RuntimeCheckpoint | undefined;
+    #task: InitializeRuntimeInput["task"] | undefined;
+    #workspacePath: string | undefined;
     readonly #events: PersistedLabEvent[] = [];
 
     async initialize(input: InitializeRuntimeInput): Promise<CommitRuntimeResult> {
         if (this.#checkpoint !== undefined) {
             throw new Error(`Runtime ${input.snapshot.lab.id} is already initialized`);
         }
+        this.#task = structuredClone(input.task);
+        this.#workspacePath = input.workspacePath;
         return this.#store(input.snapshot, 1, input.event);
     }
 
@@ -48,6 +53,26 @@ class InMemoryRuntimePersistence {
                 .filter((event) => event.lab_id === labId && event.sequence > afterSequence)
                 .slice(0, limit)
         );
+    }
+
+    async listRecoverable(): Promise<RecoverableRuntime[]> {
+        if (
+            this.#checkpoint === undefined ||
+            this.#task === undefined ||
+            this.#workspacePath === undefined ||
+            (this.#checkpoint.snapshot.lab.state !== LabState.RUNNING &&
+                this.#checkpoint.snapshot.lab.state !== LabState.HIBERNATING)
+        ) {
+            return [];
+        }
+        return [
+            {
+                task: structuredClone(this.#task),
+                workspacePath: this.#workspacePath,
+                checkpoint: structuredClone(this.#checkpoint),
+                persistedAt: this.#checkpoint.snapshot.lab.updated_at
+            }
+        ];
     }
 
     #store(

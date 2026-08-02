@@ -1,10 +1,13 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import type { RecoverableRuntime } from "@lab/db/runtime";
 import { CapabilityStatus, EventType, EvidenceKind, LabState } from "@lab/protocol/constants";
+import type { TaskInput } from "@lab/protocol/schemas";
+import type { StatusSnapshot } from "@lab/protocol/status";
 import { afterEach, describe, expect, it } from "vitest";
 import { validateFileArtifact } from "#src/artifact";
-import { LabWorkspace } from "#src/workspace";
+import { LabWorkspace, type WorkspaceRuntimePersistence } from "#src/workspace";
 
 const directories: string[] = [];
 
@@ -52,6 +55,110 @@ describe("LabWorkspace", () => {
 
         expect(recovered.labId).toBe(workspace.labId);
         expect(recovered.recovered).toBe(true);
+    });
+
+    it("selects the latest matching database runtime when the pointer is corrupt", async () => {
+        const workspace = await createWorkspace();
+        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
+        const taskPath = path.join(workspaceRoot, "task.json");
+        const task = await workspace.getTask();
+        const older = makeRecoverableRuntime(
+            task,
+            workspace.getSnapshot(),
+            workspace.runDirectory,
+            "2026-08-02T00:00:00.000Z"
+        );
+        const latest = makeRecoverableRuntime(
+            task,
+            workspace.getSnapshot(),
+            path.join(workspaceRoot, "runs", "lab-latest"),
+            "2026-08-02T00:01:00.000Z",
+            "lab-latest"
+        );
+        await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
+
+        const recovered = await LabWorkspace.openOrCreate(
+            workspaceRoot,
+            taskPath,
+            recoveryOnlyPersistence([older, latest])
+        );
+
+        expect(recovered.labId).toBe("lab-latest");
+        expect(recovered.runDirectory).toBe(latest.workspacePath);
+    });
+
+    it("rejects a matching database runtime outside LAB_HOME", async () => {
+        const workspace = await createWorkspace();
+        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
+        const taskPath = path.join(workspaceRoot, "task.json");
+        const task = await workspace.getTask();
+        const escaped = makeRecoverableRuntime(
+            task,
+            workspace.getSnapshot(),
+            path.join(workspaceRoot, "..", "escaped-run"),
+            "2026-08-02T00:00:00.000Z"
+        );
+        await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
+
+        await expect(
+            LabWorkspace.openOrCreate(workspaceRoot, taskPath, recoveryOnlyPersistence([escaped]))
+        ).rejects.toThrow("escapes LAB_HOME");
+    });
+
+    it("rejects a recoverable task whose reused id has different input", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-workspace-task-mismatch-"));
+        const taskPath = path.join(directory, "task.json");
+        const requestedTask = {
+            id: "task-stable-id",
+            goal: "Requested goal",
+            context: [],
+            success_criteria: []
+        };
+        await writeFile(taskPath, JSON.stringify(requestedTask));
+        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const storedTask = { ...requestedTask, goal: "Different stored goal" };
+        const snapshot = workspace.getSnapshot();
+        snapshot.lab.goal = storedTask.goal;
+        const mismatched = makeRecoverableRuntime(
+            storedTask,
+            snapshot,
+            workspace.runDirectory,
+            "2026-08-02T00:00:00.000Z"
+        );
+        await writeFile(path.join(directory, "current.json"), "{corrupt");
+
+        await expect(
+            LabWorkspace.openOrCreate(directory, taskPath, recoveryOnlyPersistence([mismatched]))
+        ).rejects.toThrow("does not match the requested task input");
+    });
+
+    it("rejects recoverable runtimes tied for the latest checkpoint", async () => {
+        const workspace = await createWorkspace();
+        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
+        const taskPath = path.join(workspaceRoot, "task.json");
+        const task = await workspace.getTask();
+        const first = makeRecoverableRuntime(
+            task,
+            workspace.getSnapshot(),
+            workspace.runDirectory,
+            "2026-08-02T00:00:00.000Z"
+        );
+        const second = makeRecoverableRuntime(
+            task,
+            workspace.getSnapshot(),
+            path.join(workspaceRoot, "runs", "lab-tied"),
+            first.persistedAt,
+            "lab-tied"
+        );
+        await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
+
+        await expect(
+            LabWorkspace.openOrCreate(
+                workspaceRoot,
+                taskPath,
+                recoveryOnlyPersistence([first, second])
+            )
+        ).rejects.toThrow("share the latest checkpoint timestamp");
     });
 
     it("deduplicates open capability requests", async () => {
@@ -222,3 +329,36 @@ describe("LabWorkspace", () => {
         ).rejects.toThrow("unknown evidence");
     });
 });
+
+function makeRecoverableRuntime(
+    task: TaskInput,
+    sourceSnapshot: StatusSnapshot,
+    workspacePath: string,
+    persistedAt: string,
+    labId: string = sourceSnapshot.lab.id
+): RecoverableRuntime {
+    const snapshot = structuredClone(sourceSnapshot);
+    snapshot.lab.id = labId;
+    return {
+        task: structuredClone(task),
+        workspacePath,
+        checkpoint: { snapshot, revision: 1 },
+        persistedAt
+    };
+}
+
+function recoveryOnlyPersistence(
+    recoverable: readonly RecoverableRuntime[]
+): WorkspaceRuntimePersistence {
+    return {
+        initialize: async () => {
+            throw new Error("Unexpected runtime initialization");
+        },
+        load: async () => undefined,
+        commit: async () => {
+            throw new Error("Unexpected runtime commit");
+        },
+        eventsAfter: async () => [],
+        listRecoverable: async () => [...structuredClone(recoverable)]
+    };
+}

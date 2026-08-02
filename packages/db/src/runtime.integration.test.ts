@@ -318,9 +318,21 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         });
 
         const recoverable = await persistence.listRecoverable();
-        const recoverableIds = recoverable.map(({ snapshot }) => snapshot.lab.id);
+        const recoverableIds = recoverable.map(({ checkpoint }) => checkpoint.snapshot.lab.id);
         expect(recoverableIds).toContain(runningSnapshot.lab.id);
         expect(recoverableIds).not.toContain(completedSnapshot.lab.id);
+        expect(recoverable).toContainEqual(
+            expect.objectContaining({
+                task: runningTask,
+                workspacePath: "/tmp/lab-running",
+                checkpoint: expect.objectContaining({
+                    snapshot: expect.objectContaining({
+                        lab: expect.objectContaining({ id: runningSnapshot.lab.id })
+                    })
+                }),
+                persistedAt: expect.any(String)
+            })
+        );
 
         const noReplay = await persistence.eventsAfter(
             runningSnapshot.lab.id,

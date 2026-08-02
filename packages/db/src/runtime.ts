@@ -24,6 +24,13 @@ export interface RuntimeCheckpoint {
     readonly lastEventSequence?: number;
 }
 
+export interface RecoverableRuntime {
+    readonly task: TaskInput;
+    readonly workspacePath: string;
+    readonly checkpoint: RuntimeCheckpoint;
+    readonly persistedAt: string;
+}
+
 export interface InitializeRuntimeInput {
     readonly task: TaskInput;
     readonly workspacePath: string;
@@ -185,13 +192,17 @@ export class RuntimePersistence {
         return checkpointResult(canonicalSnapshot, checkpoint);
     }
 
-    async listRecoverable(limit = 100): Promise<RuntimeCheckpoint[]> {
+    async listRecoverable(limit = 100): Promise<RecoverableRuntime[]> {
         assertPageSize(limit, RuntimePersistenceLimit.MAX_RECOVERABLE_LABS);
         const records = await this.#database
             .select({
+                labId: labs.id,
+                task: labs.input,
+                workspacePath: labs.workspacePath,
                 snapshot: runtimeCheckpoints.snapshot,
                 revision: runtimeCheckpoints.revision,
-                lastEventSequence: runtimeCheckpoints.lastEventSequence
+                lastEventSequence: runtimeCheckpoints.lastEventSequence,
+                persistedAt: runtimeCheckpoints.persistedAt
             })
             .from(runtimeCheckpoints)
             .innerJoin(labs, eq(labs.id, runtimeCheckpoints.labId))
@@ -201,15 +212,22 @@ export class RuntimePersistence {
 
         return Promise.all(
             records.map(async (record) => {
+                const task = TaskInputSchema.parse(record.task);
                 const snapshot = StatusSnapshotSchema.parse(record.snapshot);
-                return checkpointResult(
-                    await withRecentEvents(
-                        this.#database,
-                        snapshot,
-                        RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
+                assertRecoverableMetadata(record.labId, task, record.workspacePath, snapshot);
+                return {
+                    task,
+                    workspacePath: record.workspacePath,
+                    checkpoint: checkpointResult(
+                        await withRecentEvents(
+                            this.#database,
+                            snapshot,
+                            RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
+                        ),
+                        record
                     ),
-                    record
-                );
+                    persistedAt: record.persistedAt.toISOString()
+                };
             })
         );
     }
@@ -354,6 +372,21 @@ function assertPageSize(limit: number, maximum: number): void {
 function assertNonEmptyWorkspacePath(workspacePath: string): void {
     if (workspacePath.trim().length === 0) {
         throw new Error("Workspace path must not be empty");
+    }
+}
+
+function assertRecoverableMetadata(
+    labId: string,
+    task: TaskInput,
+    workspacePath: string,
+    snapshot: StatusSnapshot
+): void {
+    assertNonEmptyWorkspacePath(workspacePath);
+    if (snapshot.lab.id !== labId) {
+        throw new Error(`Runtime checkpoint lab id does not match lab record ${labId}`);
+    }
+    if (snapshot.lab.goal !== task.goal) {
+        throw new Error(`Runtime checkpoint goal does not match task input for ${labId}`);
     }
 }
 

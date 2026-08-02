@@ -4,7 +4,7 @@ import path from "node:path";
 import { WakeTrigger } from "@lab/core/constants";
 import type { LifecycleContext } from "@lab/core/lifecycle";
 import { transitionLabState } from "@lab/core/lifecycle";
-import type { PersistedLabEvent, RuntimePersistence } from "@lab/db/runtime";
+import type { PersistedLabEvent, RecoverableRuntime, RuntimePersistence } from "@lab/db/runtime";
 import {
     AgentRole,
     AgentStatus,
@@ -35,6 +35,26 @@ const EvidenceDisposition = {
     CONTRADICTS: "contradicts"
 } as const;
 
+const CurrentPointerStatus = {
+    VALID: "valid",
+    MISSING: "missing",
+    INVALID: "invalid"
+} as const;
+
+const WorkspaceRecoveryLimit = {
+    MAX_RECORDS: 1_000
+} as const;
+
+interface CurrentPointer {
+    readonly lab_id: string;
+    readonly run_directory: string;
+}
+
+type CurrentPointerResult =
+    | { readonly status: typeof CurrentPointerStatus.VALID; readonly pointer: CurrentPointer }
+    | { readonly status: typeof CurrentPointerStatus.MISSING }
+    | { readonly status: typeof CurrentPointerStatus.INVALID; readonly error: Error };
+
 interface ReportDetails {
     readonly supportingEvidenceIds?: readonly string[];
     readonly limitations?: readonly string[];
@@ -43,7 +63,7 @@ interface ReportDetails {
 }
 export type WorkspaceRuntimePersistence = Pick<
     RuntimePersistence,
-    "initialize" | "load" | "commit" | "eventsAfter"
+    "initialize" | "load" | "commit" | "eventsAfter" | "listRecoverable"
 >;
 
 export interface VerifiedResult {
@@ -93,13 +113,13 @@ export class LabWorkspace {
     ): Promise<LabWorkspace> {
         const requestedTask = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
         const current = await LabWorkspace.readCurrentPointer(workspaceRoot);
-        if (current !== undefined) {
+        if (current.status === CurrentPointerStatus.VALID) {
             const workspace =
                 runtimePersistence === undefined
-                    ? await LabWorkspace.load(workspaceRoot, current.run_directory)
+                    ? await LabWorkspace.load(workspaceRoot, current.pointer.run_directory)
                     : await LabWorkspace.loadFromRuntime(
                           workspaceRoot,
-                          current,
+                          current.pointer,
                           runtimePersistence
                       );
             const existingTask = await workspace.getTask();
@@ -108,6 +128,22 @@ export class LabWorkspace {
             if (recoverable && LabWorkspace.tasksMatch(existingTask, requestedTask)) {
                 return workspace;
             }
+        }
+        if (runtimePersistence !== undefined) {
+            const recoverable = await LabWorkspace.selectRecoverableRuntime(
+                workspaceRoot,
+                requestedTask,
+                runtimePersistence
+            );
+            if (recoverable !== undefined) {
+                return LabWorkspace.loadRecoverableRuntime(
+                    workspaceRoot,
+                    recoverable,
+                    runtimePersistence
+                );
+            }
+        } else if (current.status === CurrentPointerStatus.INVALID) {
+            throw current.error;
         }
         return LabWorkspace.initialize(workspaceRoot, taskPath, runtimePersistence);
     }
@@ -178,10 +214,10 @@ export class LabWorkspace {
         if (runtimePersistence !== undefined) {
             await workspace.attachRuntimePersistence(runtimePersistence, task);
         }
-        await writeFileAtomic(
-            path.join(workspaceRoot, "current.json"),
-            `${JSON.stringify({ lab_id: labId, run_directory: runDirectory }, null, 4)}\n`
-        );
+        await LabWorkspace.writeCurrentPointer(workspaceRoot, {
+            lab_id: labId,
+            run_directory: runDirectory
+        });
 
         return workspace;
     }
@@ -200,7 +236,7 @@ export class LabWorkspace {
 
     private static async loadFromRuntime(
         workspaceRoot: string,
-        current: { lab_id: string; run_directory: string },
+        current: CurrentPointer,
         runtimePersistence: WorkspaceRuntimePersistence
     ): Promise<LabWorkspace> {
         const runDirectory = LabWorkspace.resolveRunDirectory(workspaceRoot, current.run_directory);
@@ -229,6 +265,89 @@ export class LabWorkspace {
         );
         await workspace.persistFilesystemSnapshot();
         return workspace;
+    }
+
+    private static async loadRecoverableRuntime(
+        workspaceRoot: string,
+        recoverable: RecoverableRuntime,
+        runtimePersistence: WorkspaceRuntimePersistence
+    ): Promise<LabWorkspace> {
+        const runDirectory = LabWorkspace.resolveRunDirectory(
+            workspaceRoot,
+            recoverable.workspacePath
+        );
+        const labId = recoverable.checkpoint.snapshot.lab.id;
+        const [storedEvidence, events] = await Promise.all([
+            LabWorkspace.readOptionalEvidence(runDirectory),
+            LabWorkspace.readAllRuntimeEvents(runtimePersistence, labId)
+        ]);
+        await mkdir(runDirectory, { recursive: true });
+        const workspace = new LabWorkspace(
+            runDirectory,
+            recoverable.checkpoint.snapshot,
+            events,
+            storedEvidence,
+            true,
+            runtimePersistence,
+            recoverable.checkpoint.revision
+        );
+        await workspace.writeJson("task.json", recoverable.task);
+        await workspace.persistFilesystemSnapshot();
+        await LabWorkspace.writeCurrentPointer(workspaceRoot, {
+            lab_id: labId,
+            run_directory: runDirectory
+        });
+        return workspace;
+    }
+
+    private static async selectRecoverableRuntime(
+        workspaceRoot: string,
+        requestedTask: TaskInput,
+        runtimePersistence: WorkspaceRuntimePersistence
+    ): Promise<RecoverableRuntime | undefined> {
+        const recoverable = await runtimePersistence.listRecoverable(
+            WorkspaceRecoveryLimit.MAX_RECORDS
+        );
+        const identifierMismatch = recoverable.find(
+            ({ task }) =>
+                requestedTask.id !== undefined &&
+                task.id === requestedTask.id &&
+                !LabWorkspace.tasksMatch(task, requestedTask)
+        );
+        if (identifierMismatch !== undefined) {
+            throw new Error(
+                `Recoverable task ${requestedTask.id} does not match the requested task input`
+            );
+        }
+
+        const matching = recoverable
+            .filter(({ task }) => LabWorkspace.tasksMatch(task, requestedTask))
+            .map((candidate) => {
+                LabWorkspace.validateRecoverableRuntime(workspaceRoot, candidate);
+                return candidate;
+            })
+            .sort((left, right) => Date.parse(right.persistedAt) - Date.parse(left.persistedAt));
+        const latest = matching[0];
+        const next = matching[1];
+        if (latest !== undefined && next?.persistedAt === latest.persistedAt) {
+            throw new Error("Multiple recoverable runtimes share the latest checkpoint timestamp");
+        }
+        return latest;
+    }
+
+    private static validateRecoverableRuntime(
+        workspaceRoot: string,
+        recoverable: RecoverableRuntime
+    ): void {
+        const snapshot = StatusSnapshotSchema.parse(recoverable.checkpoint.snapshot);
+        const task = TaskInputSchema.parse(recoverable.task);
+        if (snapshot.lab.goal !== task.goal) {
+            throw new Error("Recoverable runtime checkpoint does not match its task input");
+        }
+        if (Number.isNaN(Date.parse(recoverable.persistedAt))) {
+            throw new Error("Recoverable runtime checkpoint timestamp is invalid");
+        }
+        LabWorkspace.resolveRunDirectory(workspaceRoot, recoverable.workspacePath);
     }
 
     getTask(): Promise<TaskInput> {
@@ -725,7 +844,13 @@ export class LabWorkspace {
     private static resolveRunDirectory(workspaceRoot: string, runDirectory: string): string {
         const root = path.resolve(workspaceRoot);
         const resolvedRunDirectory = path.resolve(runDirectory);
-        if (!resolvedRunDirectory.startsWith(`${root}${path.sep}`)) {
+        const relativeRunDirectory = path.relative(root, resolvedRunDirectory);
+        if (
+            relativeRunDirectory.length === 0 ||
+            relativeRunDirectory === ".." ||
+            relativeRunDirectory.startsWith(`..${path.sep}`) ||
+            path.isAbsolute(relativeRunDirectory)
+        ) {
             throw new Error("Current run directory escapes LAB_HOME");
         }
         return resolvedRunDirectory;
@@ -797,9 +922,7 @@ ${markdownList([...new Set(nextExperiments)], "No informative experiment remains
 `;
     }
 
-    private static async readCurrentPointer(
-        workspaceRoot: string
-    ): Promise<{ lab_id: string; run_directory: string } | undefined> {
+    private static async readCurrentPointer(workspaceRoot: string): Promise<CurrentPointerResult> {
         try {
             const source = await readFile(path.join(workspaceRoot, "current.json"), "utf8");
             const value: unknown = JSON.parse(source);
@@ -813,19 +936,32 @@ ${markdownList([...new Set(nextExperiments)], "No informative experiment remains
             ) {
                 throw new Error("Invalid current.json pointer");
             }
-            return { lab_id: value.lab_id, run_directory: value.run_directory };
+            return {
+                status: CurrentPointerStatus.VALID,
+                pointer: { lab_id: value.lab_id, run_directory: value.run_directory }
+            };
         } catch (error) {
             if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-                return undefined;
+                return { status: CurrentPointerStatus.MISSING };
             }
-            throw error;
+            return {
+                status: CurrentPointerStatus.INVALID,
+                error: error instanceof Error ? error : new Error("Invalid current.json pointer")
+            };
         }
     }
 
+    private static writeCurrentPointer(
+        workspaceRoot: string,
+        pointer: CurrentPointer
+    ): Promise<void> {
+        return writeFileAtomic(
+            path.join(workspaceRoot, "current.json"),
+            `${JSON.stringify(pointer, null, 4)}\n`
+        );
+    }
+
     private static tasksMatch(left: TaskInput, right: TaskInput): boolean {
-        if (left.id !== undefined || right.id !== undefined) {
-            return left.id !== undefined && left.id === right.id;
-        }
         return JSON.stringify(left) === JSON.stringify(right);
     }
 }
