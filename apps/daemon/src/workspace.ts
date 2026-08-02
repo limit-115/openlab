@@ -1,9 +1,22 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { WakeTrigger } from "@lab/core/constants";
 import type { LifecycleContext } from "@lab/core/lifecycle";
 import { transitionLabState } from "@lab/core/lifecycle";
-import type { CapabilityRequest, LabEvent, LabState, TaskInput } from "@lab/protocol/schemas";
+import {
+    AgentRole,
+    AgentStatus,
+    BranchStatus,
+    CapabilityRequestType,
+    CapabilityStatus,
+    EventType,
+    InternalTaskStatus,
+    LabState,
+    type EventType as LabEventType,
+    type LabState as LabStateValue
+} from "@lab/protocol/constants";
+import type { CapabilityRequest, LabEvent, TaskInput } from "@lab/protocol/schemas";
 import { LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { StatusSnapshotSchema } from "@lab/protocol/status";
@@ -51,7 +64,7 @@ export class LabWorkspace {
             const workspace = await LabWorkspace.load(workspaceRoot, current.run_directory);
             const existingTask = await workspace.getTask();
             const state = workspace.getSnapshot().lab.state;
-            const recoverable = state === "RUNNING" || state === "HIBERNATING";
+            const recoverable = state === LabState.RUNNING || state === LabState.HIBERNATING;
             if (recoverable && LabWorkspace.tasksMatch(existingTask, requestedTask)) {
                 return workspace;
             }
@@ -67,7 +80,7 @@ export class LabWorkspace {
         const snapshot = StatusSnapshotSchema.parse({
             lab: {
                 id: labId,
-                state: "RUNNING",
+                state: LabState.RUNNING,
                 goal: task.goal,
                 started_at: now,
                 updated_at: now,
@@ -88,7 +101,7 @@ export class LabWorkspace {
                     id: "branch-director",
                     title: "Goal operationalization",
                     approach: "Clarify claims, evaluators, and independent research directions",
-                    status: "active",
+                    status: BranchStatus.ACTIVE,
                     progress: "Queued"
                 }
             ],
@@ -96,8 +109,8 @@ export class LabWorkspace {
                 {
                     id: "agent-director",
                     branch_id: "branch-director",
-                    role: "director",
-                    status: "working",
+                    role: AgentRole.DIRECTOR,
+                    status: AgentStatus.WORKING,
                     current_task_id: "task-understand"
                 }
             ],
@@ -107,9 +120,9 @@ export class LabWorkspace {
                     branch_id: "branch-director",
                     objective: "Turn the goal into testable claims without prescribing a method",
                     context_refs: [],
-                    status: "queued",
+                    status: InternalTaskStatus.QUEUED,
                     attempt: 1,
-                    role: "director"
+                    role: AgentRole.DIRECTOR
                 }
             ]
         });
@@ -184,7 +197,7 @@ export class LabWorkspace {
     }
 
     async transition(
-        state: LabState,
+        state: LabStateValue,
         reason?: string,
         context: LifecycleContext = {}
     ): Promise<StatusSnapshot> {
@@ -197,7 +210,7 @@ export class LabWorkspace {
                 draft.lab.reason = reason;
             }
         });
-        await this.appendEvent("lab.state_changed", { state, reason });
+        await this.appendEvent(EventType.LAB_STATE_CHANGED, { state, reason });
         return snapshot;
     }
 
@@ -205,8 +218,8 @@ export class LabWorkspace {
         const reportPath = path.join(this.runDirectory, "report.md");
         await writeFileAtomic(reportPath, this.renderReport("Plateau report", reason));
         const snapshot = await this.update((draft) => {
-            transitionLabState(draft.lab.state, "HIBERNATING", { plateauConfirmed: true });
-            draft.lab.state = "HIBERNATING";
+            transitionLabState(draft.lab.state, LabState.HIBERNATING, { plateauConfirmed: true });
+            draft.lab.state = LabState.HIBERNATING;
             draft.lab.reason = reason;
             draft.result = {
                 summary: reason,
@@ -214,7 +227,10 @@ export class LabWorkspace {
                 limitations: [...draft.frontier.blockers]
             };
         });
-        await this.appendEvent("lab.state_changed", { state: "HIBERNATING", reason });
+        await this.appendEvent(EventType.LAB_STATE_CHANGED, {
+            state: LabState.HIBERNATING,
+            reason
+        });
         return snapshot;
     }
 
@@ -223,7 +239,7 @@ export class LabWorkspace {
         const resultPath = path.join(this.runDirectory, "result.json");
         const resultFile = {
             lab_id: this.labId,
-            status: "COMPLETED",
+            status: LabState.COMPLETED,
             result: result.summary,
             supporting_evidence_ids: result.supportingEvidenceIds,
             independent_verifier_verdict_id: result.independentVerifierVerdictId,
@@ -242,13 +258,13 @@ export class LabWorkspace {
                 resultPath
             }
         };
-        transitionLabState(this.snapshot.lab.state, "COMPLETED", context);
+        transitionLabState(this.snapshot.lab.state, LabState.COMPLETED, context);
         await Promise.all([
             writeFileAtomic(reportPath, this.renderReport("Verified result", result.summary)),
             this.writeJson("result.json", resultFile)
         ]);
         const snapshot = await this.update((draft) => {
-            draft.lab.state = "COMPLETED";
+            draft.lab.state = LabState.COMPLETED;
             delete draft.lab.reason;
             draft.result = {
                 summary: result.summary,
@@ -257,14 +273,14 @@ export class LabWorkspace {
                 limitations: [...result.limitations]
             };
         });
-        await this.appendEvent("lab.state_changed", {
-            state: "COMPLETED",
+        await this.appendEvent(EventType.LAB_STATE_CHANGED, {
+            state: LabState.COMPLETED,
             verifier_verdict_id: result.independentVerifierVerdictId
         });
         return snapshot;
     }
 
-    async appendEvent(type: string, payload: Record<string, unknown>): Promise<LabEvent> {
+    async appendEvent(type: LabEventType, payload: Record<string, unknown>): Promise<LabEvent> {
         const event = await this.mutex.runExclusive(async () => {
             const event: LabEvent = {
                 id: `event-${randomUUID()}`,
@@ -295,17 +311,17 @@ export class LabWorkspace {
             if (request === undefined) {
                 return;
             }
-            request.status = "provided";
+            request.status = CapabilityStatus.PROVIDED;
             provided = true;
         });
         if (provided) {
-            await this.appendEvent("capability.provided", {
+            await this.appendEvent(EventType.CAPABILITY_PROVIDED, {
                 request_id: id,
                 resource_reference: resourceReference
             });
-            if (this.snapshot.lab.state === "HIBERNATING") {
-                await this.transition("RUNNING", `Capability ${id} provided`, {
-                    wakeTrigger: "capability"
+            if (this.snapshot.lab.state === LabState.HIBERNATING) {
+                await this.transition(LabState.RUNNING, `Capability ${id} provided`, {
+                    wakeTrigger: WakeTrigger.CAPABILITY
                 });
             }
         }
@@ -319,17 +335,18 @@ export class LabWorkspace {
     }): Promise<CapabilityRequest> {
         const request: CapabilityRequest = {
             id: `capability-${randomUUID()}`,
-            type: "capability_request",
+            type: CapabilityRequestType.CAPABILITY_REQUEST,
             need: input.need,
             reason: input.reason,
             provisioning_hint: input.provisioningHint,
-            status: "open",
+            status: CapabilityStatus.OPEN,
             created_at: new Date().toISOString()
         };
         let selected: CapabilityRequest = request;
         await this.update((draft) => {
             const existing = draft.capability_requests.find(
-                (candidate) => candidate.status === "open" && candidate.need === input.need
+                (candidate) =>
+                    candidate.status === CapabilityStatus.OPEN && candidate.need === input.need
             );
             if (existing !== undefined) {
                 selected = existing;
@@ -343,7 +360,7 @@ export class LabWorkspace {
         if (selected.id !== request.id) {
             return structuredClone(selected);
         }
-        await this.appendEvent("capability.requested", {
+        await this.appendEvent(EventType.CAPABILITY_REQUESTED, {
             request_id: request.id,
             need: request.need,
             reason: request.reason

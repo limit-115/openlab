@@ -1,3 +1,4 @@
+import { BranchStatus, InternalTaskStatus } from "@lab/protocol/constants";
 import type { CapabilityRequest } from "@lab/protocol/schemas";
 import type { FrontierSnapshot, StatusSnapshot } from "@lab/protocol/status";
 import Table from "cli-table3";
@@ -16,8 +17,14 @@ export function renderStatus(status: StatusSnapshot): string {
         ["State", status.lab.state],
         ["Lab", status.lab.id],
         ["Goal", status.lab.goal],
-        ["Branches", String(status.branches.filter((branch) => branch.status === "active").length)],
-        ["Tasks", `${status.tasks.filter((task) => task.status === "running").length} running`],
+        [
+            "Branches",
+            String(status.branches.filter((branch) => branch.status === BranchStatus.ACTIVE).length)
+        ],
+        [
+            "Tasks",
+            `${status.tasks.filter((task) => task.status === InternalTaskStatus.RUNNING).length} running`
+        ],
         ["Claims", `${status.claims.length} total`],
         ["Experiments", `${status.experiments.length} total`],
         ["Blockers", lines(status.frontier.blockers)]

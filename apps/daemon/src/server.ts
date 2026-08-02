@@ -1,6 +1,8 @@
 import { stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import FastifyStatic from "@fastify/static";
+import { WakeTrigger } from "@lab/core/constants";
+import { LabState } from "@lab/protocol/constants";
 import { ProvideCapabilitySchema } from "@lab/protocol/status";
 import Fastify, { type FastifyInstance } from "fastify";
 import { bootstrapResearch } from "#src/bootstrap";
@@ -49,13 +51,17 @@ export function createStatusServer(
 
     app.post("/api/wake", async (_request, reply) => {
         const current = workspace.getSnapshot();
-        if (current.lab.state !== "HIBERNATING") {
+        if (current.lab.state !== LabState.HIBERNATING) {
             return reply.code(409).send({ error: `Cannot wake lab from ${current.lab.state}` });
         }
-        return workspace.transition("RUNNING", "External wake command", { wakeTrigger: "user" });
+        return workspace.transition(LabState.RUNNING, "External wake command", {
+            wakeTrigger: WakeTrigger.USER
+        });
     });
 
-    app.post("/api/stop", async () => workspace.transition("STOPPED", "External stop command"));
+    app.post("/api/stop", async () =>
+        workspace.transition(LabState.STOPPED, "External stop command")
+    );
 
     app.post<{ Params: { id: string } }>(
         "/api/capabilities/:id/provide",

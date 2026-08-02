@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { EventType, LabState } from "@lab/protocol/constants";
 import { afterEach, describe, expect, it } from "vitest";
 import { LabWorkspace } from "#src/workspace";
 
@@ -22,7 +23,7 @@ describe("LabWorkspace", () => {
     it("creates canonical protocol snapshots", async () => {
         const workspace = await createWorkspace();
 
-        expect(workspace.getSnapshot().lab.state).toBe("RUNNING");
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
         const claims = JSON.parse(
             await readFile(path.join(workspace.runDirectory, "claims.json"), "utf8")
         );
@@ -34,10 +35,10 @@ describe("LabWorkspace", () => {
         const observed: string[] = [];
         workspace.subscribe((event) => observed.push(event.type));
 
-        await workspace.transition("STOPPED", "test");
+        await workspace.transition(LabState.STOPPED, "test");
 
-        expect(workspace.getSnapshot().lab.state).toBe("STOPPED");
-        expect(observed).toContain("lab.state_changed");
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.STOPPED);
+        expect(observed).toContain(EventType.LAB_STATE_CHANGED);
     });
 
     it("recovers an unfinished run for the same task", async () => {
@@ -73,7 +74,7 @@ describe("LabWorkspace", () => {
 
         await workspace.hibernateForPlateau("No informative experiments remain");
 
-        expect(workspace.getSnapshot().lab.state).toBe("HIBERNATING");
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
         await expect(
             readFile(path.join(workspace.runDirectory, "report.md"), "utf8")
         ).resolves.toContain("Plateau report");
