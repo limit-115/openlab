@@ -75,6 +75,24 @@ export function streamSuccess(
     };
 }
 
+export function streamFailure(
+    events: readonly Readonly<Record<string, unknown>>[],
+    stderr = ""
+): HarnessStreamingProcess {
+    const exit: HarnessProcessExit = {
+        exitCode: 1,
+        signal: null,
+        failed: true,
+        cancelled: false,
+        stderr,
+        error: null
+    };
+    return {
+        stdout: Readable.from(events.map((event) => `${JSON.stringify(event)}\n`)),
+        completed: Promise.resolve(exit)
+    };
+}
+
 export function captureCancellationOnAbort(
     request: HarnessProcessRequest
 ): Promise<HarnessCaptureResult> {

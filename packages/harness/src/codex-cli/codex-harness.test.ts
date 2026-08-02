@@ -9,9 +9,11 @@ import {
     HarnessTimeoutMilliseconds
 } from "#src/agent-harness/agent-harness.const";
 import { HarnessEventTypes } from "#src/agent-harness/harness-event.const";
+import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import {
     captureSuccess,
     FakeHarnessProcessRunner,
+    streamFailure,
     streamSuccess
 } from "#src/cli-execution/cli-process-runner.fixture";
 import { HarnessErrorCodes } from "#src/cli-execution/harness-error.const";
@@ -21,7 +23,8 @@ import {
     CodexTestCliValues,
     CodexTestItemTypes,
     CodexTestLoginMarkers,
-    CodexTestNativeEventTypes
+    CodexTestNativeEventTypes,
+    CodexTestUsageLimitMessage
 } from "#src/codex-cli/codex-cli.fixture";
 import { CodexHarness } from "#src/codex-cli/codex-harness";
 import {
@@ -243,5 +246,42 @@ describe("CodexHarness", () => {
             }
         });
         expect(runner.spawnRequests).toHaveLength(0);
+    });
+
+    it("blames the spent subscription rather than the truncated event stream", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess(CodexTestCliValues.VERSION),
+            { ...captureSuccess(""), stderr: CodexTestLoginMarkers.CHATGPT }
+        ]);
+        runner.nextStream = streamFailure([
+            {
+                type: CodexTestNativeEventTypes.THREAD_STARTED,
+                thread_id: "codex-session"
+            },
+            {
+                type: CodexTestNativeEventTypes.ERROR,
+                message: CodexTestUsageLimitMessage
+            }
+        ]);
+        const harness = new CodexHarness({ runner, environment: testEnvironment() });
+        const request = await harnessRequest("codex-usage-limit", {
+            responseSchema: answerSchema()
+        });
+        const events: HarnessEvent[] = [];
+
+        const drain = async () => {
+            for await (const event of harness.run(request)) {
+                events.push(event);
+            }
+        };
+
+        await expect(drain()).rejects.toMatchObject({
+            code: HarnessErrorCodes.SUBSCRIPTION_AUTH_REQUIRED,
+            harness: HarnessKinds.CODEX,
+            capabilityRequest: { reason: CodexTestUsageLimitMessage }
+        });
+        const completed = lastCompleted(events);
+        expect(completed.result.status).toBe(HarnessRunStatuses.FAILED);
+        expect(completed.result.error).toContain("subscription usage limit reached");
     });
 });

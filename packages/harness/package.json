@@ -27,7 +27,9 @@
         "./model-api-policy.types": "./src/model-api-policy/model-api-policy.types.ts",
         "./subscription-cli-harness": "./src/subscription-cli-harness/subscription-cli-harness.ts",
         "./subscription-cli-harness.types": "./src/subscription-cli-harness/subscription-cli-harness.types.ts",
-        "./subscription-environment": "./src/cli-execution/subscription-environment.ts"
+        "./subscription-environment": "./src/cli-execution/subscription-environment.ts",
+        "./subscription-usage-limit": "./src/subscription-usage-limit/subscription-usage-limit.ts",
+        "./subscription-usage-limit.const": "./src/subscription-usage-limit/subscription-usage-limit.const.ts"
     },
     "imports": {
         "#src/*": "./src/*.ts"

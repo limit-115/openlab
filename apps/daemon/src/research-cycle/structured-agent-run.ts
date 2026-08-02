@@ -5,7 +5,7 @@ import type {
     HarnessRunRequest,
     HarnessRunResult
 } from "@lab/harness/agent-harness.types";
-import { HarnessAbortedError } from "@lab/harness/harness-error";
+import { HarnessAbortedError, HarnessCapabilityError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
 import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
@@ -154,7 +154,11 @@ export async function runStructuredAgent<Output>(
                       })
             });
         }
-        if (error instanceof StructuredAgentRunError || completed === undefined) {
+        if (
+            error instanceof StructuredAgentRunError ||
+            error instanceof HarnessCapabilityError ||
+            completed === undefined
+        ) {
             throw error;
         }
         throw new StructuredAgentRunError(
