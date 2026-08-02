@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -12,7 +12,8 @@ import {
     type HarnessPreflight,
     type HarnessRunRequest,
     type HarnessRunResult,
-    HarnessRunStatuses
+    HarnessRunStatuses,
+    HarnessTimeoutMilliseconds
 } from "@lab/harness/contract";
 import { HarnessCapabilityError } from "@lab/harness/errors";
 import {
@@ -195,7 +196,7 @@ class UnavailableHarness implements AgentHarness {
         });
     }
 
-    async *run(): AsyncIterable<HarnessEvent> {
+    run(): AsyncIterable<HarnessEvent> {
         throw new Error("Unavailable harness must never run");
     }
 }
@@ -418,6 +419,7 @@ async function harnessResult(
         finishedAt: now,
         exitCode: status === HarnessRunStatuses.SUCCEEDED ? 0 : 1,
         signal: null,
+        timeoutMs: request.timeoutMs ?? HarnessTimeoutMilliseconds.RUN,
         error: status === HarnessRunStatuses.SUCCEEDED ? null : "scripted harness failure",
         command: {
             file: `test-${kind}`,

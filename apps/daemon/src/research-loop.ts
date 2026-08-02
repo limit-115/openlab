@@ -15,8 +15,8 @@ import {
     type HarnessRunResult,
     HarnessRunStatuses
 } from "@lab/harness/contract";
-import { HarnessCapabilityError } from "@lab/harness/errors";
 import { sanitizeHarnessEnvironment } from "@lab/harness/environment";
+import { HarnessCapabilityError } from "@lab/harness/errors";
 import {
     AgentRole,
     AgentStatus,
@@ -33,15 +33,15 @@ import type { z } from "zod";
 import { validateFileArtifact } from "#src/artifact";
 import {
     CRITIC_VERDICT,
+    type CriticResult,
     CriticResultSchema,
+    type DirectorPlan,
     DirectorPlanSchema,
     RESEARCH_OUTCOME,
+    type ResearchResult,
     ResearchResultSchema,
     VERIFIER_VERDICT,
-    VerifierResultSchema,
-    type CriticResult,
-    type DirectorPlan,
-    type ResearchResult
+    VerifierResultSchema
 } from "#src/research-contract";
 import {
     criticPrompt,

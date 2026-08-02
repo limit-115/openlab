@@ -1,8 +1,8 @@
 import {
     type AgentHarness,
+    HarnessEventTypes,
     type HarnessRunResult,
-    HarnessRunStatuses,
-    HarnessEventTypes
+    HarnessRunStatuses
 } from "@lab/harness/contract";
 import { HarnessAbortedError } from "@lab/harness/errors";
 import { EventType } from "@lab/protocol/constants";
