@@ -108,7 +108,10 @@ const PromiseSettlement = {
 } as const;
 
 const ResearchContextEntryType = {
-    PROVIDED_CAPABILITY: "provided_capability"
+    PROVIDED_CAPABILITY: "provided_capability",
+    OPEN_CLAIM: "open_claim",
+    OPEN_QUESTION: "open_question",
+    BLOCKER: "blocker"
 } as const;
 
 const ResearchContextPrefix = {
@@ -228,7 +231,7 @@ export async function runResearchLoop(
         }
 
         const task = await workspace.getTask();
-        let cycle = 0;
+        let cycle = workspace.recovered ? 1 : 0;
         while (workspace.getSnapshot().lab.state === LabState.RUNNING) {
             throwIfAborted(signal);
             const cycleStartedAt = new Date();
@@ -1843,6 +1846,26 @@ function taskForCycle(task: TaskInput, workspace: LabWorkspace, cycle: number): 
             ? []
             : [
                   ...snapshot.frontier.known,
+                  ...snapshot.frontier.open_questions.map((question) =>
+                      JSON.stringify({
+                          type: ResearchContextEntryType.OPEN_QUESTION,
+                          question
+                      })
+                  ),
+                  ...snapshot.frontier.blockers.map((blocker) =>
+                      JSON.stringify({
+                          type: ResearchContextEntryType.BLOCKER,
+                          blocker
+                      })
+                  ),
+                  ...snapshot.claims.filter(isOpenClaim).map((claim) =>
+                      JSON.stringify({
+                          type: ResearchContextEntryType.OPEN_CLAIM,
+                          claim_id: claim.id,
+                          statement: claim.statement,
+                          status: claim.status
+                      })
+                  ),
                   ...snapshot.frontier.next_experiments.map(
                       (experiment) => `${ResearchContextPrefix.NEXT_EXPERIMENT} ${experiment}`
                   )
@@ -1851,6 +1874,14 @@ function taskForCycle(task: TaskInput, workspace: LabWorkspace, cycle: number): 
         ...task,
         context: uniqueStrings([...task.context, ...capabilityContext, ...frontierContext])
     };
+}
+
+function isOpenClaim(claim: Claim): boolean {
+    return (
+        claim.status === ClaimStatus.PROPOSED ||
+        claim.status === ClaimStatus.TESTING ||
+        claim.status === ClaimStatus.SUPPORTED
+    );
 }
 
 function providedCapabilityContext(request: CapabilityRequest): string {

@@ -35,6 +35,7 @@ import {
     RESEARCH_TARGET_KIND,
     VERIFIER_VERDICT
 } from "#src/research-contract";
+import { initialResearchIdentifiers } from "#src/research-identifiers";
 import { ResearchLoopOutcomeStatus, runResearchLoop } from "#src/research-loop";
 import { ResearchStage } from "#src/research-workspace";
 import { LabWorkspace } from "#src/workspace";
@@ -65,6 +66,19 @@ const DatasetCapabilityFixture = {
     REASON: "The indexing direction cannot validate representativeness without the dataset",
     PROVISIONING_HINT: "Attach a read-only dataset snapshot to the research workspace",
     DIRECTION_TITLE: "Indexing"
+} as const;
+
+const RecoveryContextFixture = {
+    KNOWN: "The persisted baseline uses a B-tree index",
+    OPEN_QUESTION: "Does batching preserve tail latency?",
+    BLOCKER: "A previous branch could not access held-out traffic",
+    NEXT_EXPERIMENT: "Benchmark a production-shaped workload",
+    CLAIM_ID: "claim-recovered-open",
+    CLAIM_STATEMENT: "Batching may reduce median latency",
+    CAPABILITY_NEED: "Recovered production-shaped dataset",
+    CAPABILITY_REASON: "The recovered frontier references held-out traffic",
+    CAPABILITY_HINT: "Attach the persisted dataset snapshot",
+    RESOURCE_REFERENCE: "dataset://recovered/production-v1"
 } as const;
 
 class ScriptedHarness implements AgentHarness {
@@ -635,6 +649,67 @@ describe.sequential("runResearchLoop", () => {
             expect(run.prompt).toContain("provided_at");
             expect(run.prompt).toContain(provided.provided_at);
         }
+    });
+
+    it("continues a recovered frontier in a fresh cycle with persisted context", async () => {
+        const workspace = await createWorkspace();
+        const initialIds = initialResearchIdentifiers(workspace.labId);
+        await workspace.update((draft) => {
+            draft.frontier.known.push(RecoveryContextFixture.KNOWN);
+            draft.frontier.open_questions.push(RecoveryContextFixture.OPEN_QUESTION);
+            draft.frontier.blockers.push(RecoveryContextFixture.BLOCKER);
+            draft.frontier.next_experiments.push(RecoveryContextFixture.NEXT_EXPERIMENT);
+            draft.claims.push({
+                id: RecoveryContextFixture.CLAIM_ID,
+                branch_id: initialIds.branchId,
+                statement: RecoveryContextFixture.CLAIM_STATEMENT,
+                status: ClaimStatus.TESTING,
+                assumption_ids: [],
+                supporting_evidence_ids: [],
+                contradicting_evidence_ids: [],
+                stale: false,
+                created_at: draft.lab.updated_at,
+                updated_at: draft.lab.updated_at
+            });
+        });
+        const request = await workspace.requestCapability({
+            need: RecoveryContextFixture.CAPABILITY_NEED,
+            reason: RecoveryContextFixture.CAPABILITY_REASON,
+            provisioningHint: RecoveryContextFixture.CAPABILITY_HINT
+        });
+        await workspace.provideCapability(request.id, RecoveryContextFixture.RESOURCE_REFERENCE);
+        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
+        const recovered = await LabWorkspace.openOrCreate(
+            workspaceRoot,
+            path.join(workspaceRoot, "task.json")
+        );
+        const codex = new CapabilityLossHarness(HarnessKinds.CODEX, PromptRole.DIRECTOR);
+        const claude = new CapabilityLossHarness(HarnessKinds.CLAUDE, PromptRole.DIRECTOR);
+
+        const outcome = await runResearchLoop(recovered, { harnesses: [codex, claude] });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        const directorRequests = [...codex.requests, ...claude.requests];
+        expect(directorRequests).toHaveLength(2);
+        for (const run of directorRequests) {
+            expect(run.prompt).toContain(RecoveryContextFixture.KNOWN);
+            expect(run.prompt).toContain(RecoveryContextFixture.OPEN_QUESTION);
+            expect(run.prompt).toContain(RecoveryContextFixture.BLOCKER);
+            expect(run.prompt).toContain(RecoveryContextFixture.NEXT_EXPERIMENT);
+            expect(run.prompt).toContain(RecoveryContextFixture.CLAIM_STATEMENT);
+            expect(run.prompt).toContain(CapabilityFixture.CONTEXT_TYPE);
+            expect(run.prompt).toContain(RecoveryContextFixture.RESOURCE_REFERENCE);
+        }
+        const recoveredDirectorBranchIds = recovered
+            .getEvents()
+            .filter(
+                ({ type, payload }) =>
+                    type === EventType.HARNESS_RUN_STARTED &&
+                    payload.stage === ResearchStage.DIRECTOR
+            )
+            .map(({ payload }) => payload.branch_id);
+        expect(new Set(recoveredDirectorBranchIds).size).toBe(1);
+        expect(recoveredDirectorBranchIds).not.toContain(initialIds.branchId);
     });
 
     it("hibernates when every preflighted harness loses a critical-stage capability", async () => {
