@@ -9,6 +9,9 @@ export const ClaimFilter = {
 } as const;
 export type ClaimFilter = (typeof ClaimFilter)[keyof typeof ClaimFilter];
 
+/** Narrow panels scroll the filter rather than clipping the statuses off the card edge. */
+export const CLAIM_FILTER_SCROLLER = "overflow-x-auto" as const;
+
 export const CLAIM_FILTERS: Array<{ value: ClaimFilter; label: string }> = [
     { value: ClaimFilter.ALL, label: "All" },
     { value: ClaimFilter.OPEN, label: "Open" },

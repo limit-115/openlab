@@ -9,13 +9,20 @@ import {
     CardTitle
 } from "#src/design-system/card";
 import { cn } from "#src/design-system/class-names";
+import {
+    PANEL_ACTION,
+    PANEL_FRAME,
+    PANEL_HEADER,
+    PANEL_ICON,
+    PANEL_TITLE
+} from "#src/panel/panel.const";
 
 interface PanelProps {
     title: string;
     /** A short line under the title naming what the panel reports on. */
     description?: string;
     icon: LucideIcon;
-    /** Rendered at the top right of the panel header. */
+    /** Rendered beside the title on wide panels and below it on narrow ones. */
     action?: ReactNode;
     children: ReactNode;
     /** Anchor target for the header section navigation. */
@@ -35,19 +42,16 @@ export function Panel({
     contentClassName
 }: PanelProps) {
     return (
-        <Card id={id} className={cn("scroll-mt-24", className)}>
-            <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-3">
-                    <span
-                        className="grid size-8 flex-none place-items-center rounded-xl bg-muted text-muted-foreground"
-                        aria-hidden="true"
-                    >
+        <Card id={id} className={cn(PANEL_FRAME, className)}>
+            <CardHeader className={PANEL_HEADER}>
+                <CardTitle className={PANEL_TITLE}>
+                    <span className={PANEL_ICON} aria-hidden="true">
                         <Icon className="size-4" />
                     </span>
                     {title}
                 </CardTitle>
                 {description ? <CardDescription>{description}</CardDescription> : null}
-                {action ? <CardAction>{action}</CardAction> : null}
+                {action ? <CardAction className={PANEL_ACTION}>{action}</CardAction> : null}
             </CardHeader>
             <CardContent className={contentClassName}>{children}</CardContent>
         </Card>
