@@ -1,12 +1,11 @@
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import { Activity } from "lucide-react";
+import { ActivityIcon } from "lucide-react";
+import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/lab-header/lab-uptime";
 import {
     RUNTIME_STRIP,
-    RUNTIME_STRIP_ICON,
-    RUNTIME_STRIP_ITEM,
     RUNTIME_STRIP_LABEL,
     RUNTIME_STRIP_VALUE,
     STATE_DOT,
@@ -33,15 +32,21 @@ export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
 
     return (
         <div className={RUNTIME_STRIP} role="status" aria-label="Lab runtime status">
-            <div className={RUNTIME_STRIP_ITEM}>
-                <span className={`${STATE_DOT} ${STATE_DOT_TONE[snapshot.lab.state]}`} />
+            <div className="flex items-center gap-2.5">
+                <span
+                    className={cn(STATE_DOT, STATE_DOT_TONE[snapshot.lab.state])}
+                    aria-hidden="true"
+                />
                 <div className="flex flex-col">
                     <span className={RUNTIME_STRIP_LABEL}>State</span>
                     <strong className={RUNTIME_STRIP_VALUE}>{snapshot.lab.state}</strong>
                 </div>
             </div>
-            <div className={RUNTIME_STRIP_ITEM}>
-                <Activity size={15} className={RUNTIME_STRIP_ICON} aria-hidden="true" />
+            <div className="flex items-center gap-2.5">
+                <ActivityIcon
+                    className="size-4 flex-none text-muted-foreground"
+                    aria-hidden="true"
+                />
                 <div className="flex flex-col">
                     <span className={RUNTIME_STRIP_LABEL}>Runtime · {activeAgents} active</span>
                     <strong className={RUNTIME_STRIP_VALUE}>{formatDuration(uptime)}</strong>

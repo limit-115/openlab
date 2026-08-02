@@ -1,10 +1,12 @@
 import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
-import { Activity, Radio } from "lucide-react";
+import { ActivityIcon, RadioIcon } from "lucide-react";
+import { Badge } from "#src/design-system/badge";
+import { cn } from "#src/design-system/class-names";
 import { EventEntry } from "#src/events/event-entry";
-import { EVENT_COUNT, EVENTS_BODY, LIVE_LABEL } from "#src/events/events-panel.const";
+import { EVENT_STREAM, EVENTS_BODY, LIVE_LABEL } from "#src/events/events-panel.const";
 import { SIGNAL_PULSE } from "#src/live-status/connection-badge.const";
 import { Panel } from "#src/panel/panel";
-import { EmptyState } from "#src/panel/panel-empty-state";
+import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface EventsPanelProps {
     events: LabEvent[];
@@ -19,26 +21,24 @@ export function EventsPanel({ events }: EventsPanelProps) {
         <Panel
             id="events"
             title="Event stream"
-            eyebrow="Significant activity"
-            icon={Activity}
-            body={EVENTS_BODY}
+            description="Significant activity"
+            icon={ActivityIcon}
+            contentClassName={cn(ordered.length > 0 && EVENTS_BODY)}
             action={
                 <span className={LIVE_LABEL}>
-                    {ordered.length > 0 ? (
-                        <span className={EVENT_COUNT}>{ordered.length}</span>
-                    ) : null}
-                    <Radio size={12} className={SIGNAL_PULSE} aria-hidden="true" /> Live
+                    {ordered.length > 0 ? <Badge variant="outline">{ordered.length}</Badge> : null}
+                    <RadioIcon className={cn("size-4", SIGNAL_PULSE)} aria-hidden="true" /> Live
                 </span>
             }
         >
             {ordered.length > 0 ? (
-                <ol>
+                <ol className={EVENT_STREAM}>
                     {ordered.map((event) => (
                         <EventEntry key={event.id} event={event} />
                     ))}
                 </ol>
             ) : (
-                <EmptyState
+                <PanelEmptyState
                     title="Waiting for significant events"
                     description="Research decisions, experiments and lifecycle changes will stream here."
                 />

@@ -1,8 +1,4 @@
-export const SECTION_NAV =
-    "flex gap-[3px] rounded-[9px] border border-line bg-[rgba(16,21,19,0.7)] p-1 max-[1240px]:hidden" as const;
-
-export const SECTION_NAV_LINK =
-    "rounded-md px-[9px] py-[6px] text-sm font-[620] text-fg-muted transition-colors duration-150 ease-[ease] hover:bg-surface-raised hover:text-fg motion-reduce:transition-none" as const;
+export const SECTION_NAV = "hidden items-center gap-1 rounded-4xl border p-1 xl:flex" as const;
 
 export const SECTION_LINKS = [
     { href: "#frontier", label: "Frontier" },

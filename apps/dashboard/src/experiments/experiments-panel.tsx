@@ -1,11 +1,12 @@
 import type { Experiment } from "@lab/protocol/experiments/experiment.types";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
-import { Microscope } from "lucide-react";
+import { MicroscopeIcon } from "lucide-react";
+import { Badge } from "#src/design-system/badge";
+import { ItemGroup } from "#src/design-system/item";
 import { ExperimentCard } from "#src/experiments/experiment-card";
 import { EXPERIMENT_LIST } from "#src/experiments/experiment-card.const";
 import { Panel } from "#src/panel/panel";
-import { PANEL_COUNT_BADGE } from "#src/panel/panel.const";
-import { EmptyState } from "#src/panel/panel-empty-state";
+import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface ExperimentsPanelProps {
     experiments: Experiment[];
@@ -21,18 +22,18 @@ export function ExperimentsPanel({ experiments }: ExperimentsPanelProps) {
     return (
         <Panel
             title="Experiments"
-            eyebrow="Recent & running"
-            icon={Microscope}
-            action={<span className={PANEL_COUNT_BADGE}>{experiments.length} runs</span>}
+            description="Recent & running"
+            icon={MicroscopeIcon}
+            action={<Badge variant="outline">{experiments.length} runs</Badge>}
         >
             {ordered.length > 0 ? (
-                <div className={EXPERIMENT_LIST}>
-                    {ordered.slice(0, 8).map((experiment) => (
+                <ItemGroup className={EXPERIMENT_LIST}>
+                    {ordered.map((experiment) => (
                         <ExperimentCard key={experiment.id} experiment={experiment} />
                     ))}
-                </div>
+                </ItemGroup>
             ) : (
-                <EmptyState
+                <PanelEmptyState
                     title="No experiments yet"
                     description="Planned and executed software experiments will be tracked here."
                 />

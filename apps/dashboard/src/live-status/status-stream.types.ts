@@ -2,6 +2,6 @@ import type { StreamState } from "#src/live-status/status-stream.const";
 
 export interface LiveStatus {
     state: StreamState;
-    lastEventAt?: Date;
+    /** Why the last frame could not be read, when the stream delivered something unparseable. */
     protocolError?: string;
 }

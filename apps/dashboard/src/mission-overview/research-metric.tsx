@@ -1,12 +1,12 @@
 import type { LucideIcon } from "lucide-react";
+import { Card, CardContent } from "#src/design-system/card";
 import {
-    METRIC,
+    METRIC_CARD,
     METRIC_ICON,
-    METRIC_ICON_TONE,
     METRIC_LABEL,
+    METRIC_ROW,
     METRIC_TOTAL,
-    METRIC_VALUE,
-    type MetricTone
+    METRIC_VALUE
 } from "#src/mission-overview/research-metric.const";
 
 interface ResearchMetricProps {
@@ -14,22 +14,25 @@ interface ResearchMetricProps {
     label: string;
     value: number;
     total: number;
-    tone: MetricTone;
 }
 
-export function ResearchMetric({ icon: Icon, label, value, total, tone }: ResearchMetricProps) {
+export function ResearchMetric({ icon: Icon, label, value, total }: ResearchMetricProps) {
     return (
-        <li className={METRIC}>
-            <span className={`${METRIC_ICON} ${METRIC_ICON_TONE[tone]}`} aria-hidden="true">
-                <Icon size={18} strokeWidth={1.8} />
-            </span>
-            <div>
-                <span className={METRIC_LABEL}>{label}</span>
-                <p className={METRIC_VALUE}>
-                    {value}
-                    <span className={METRIC_TOTAL}> / {total}</span>
-                </p>
-            </div>
+        <li>
+            <Card size="sm" className={METRIC_CARD}>
+                <CardContent className={METRIC_ROW}>
+                    <span className={METRIC_ICON} aria-hidden="true">
+                        <Icon className="size-5" />
+                    </span>
+                    <div className="flex flex-col gap-1.5">
+                        <span className={METRIC_LABEL}>{label}</span>
+                        <p className={METRIC_VALUE}>
+                            {value}
+                            <span className={METRIC_TOTAL}> / {total}</span>
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
         </li>
     );
 }

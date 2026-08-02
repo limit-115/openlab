@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "#src/app";
+import { TooltipProvider } from "#src/design-system/tooltip";
 import "#src/tailwind.css";
 
 const rootElement = document.getElementById("root");
@@ -22,7 +23,9 @@ const queryClient = new QueryClient({
 createRoot(rootElement).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
-            <App />
+            <TooltipProvider>
+                <App />
+            </TooltipProvider>
         </QueryClientProvider>
     </StrictMode>
 );

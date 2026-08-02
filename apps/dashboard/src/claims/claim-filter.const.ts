@@ -16,12 +16,3 @@ export const CLAIM_FILTERS: Array<{ value: ClaimFilter; label: string }> = [
     { value: ClaimFilter.REPRODUCED, label: "Reproduced" },
     { value: ClaimFilter.REFUTED, label: "Refuted" }
 ];
-
-export const FILTER_GROUP =
-    "flex gap-[3px] rounded-[7px] border border-line bg-surface-soft p-[3px] max-[620px]:max-w-[160px] max-[620px]:overflow-x-auto" as const;
-
-export const FILTER_BUTTON = "cursor-pointer rounded px-[7px] py-1 text-sm" as const;
-
-export const FILTER_BUTTON_ACTIVE = "bg-line text-fg" as const;
-
-export const FILTER_BUTTON_IDLE = "text-fg-faint hover:text-fg-muted" as const;

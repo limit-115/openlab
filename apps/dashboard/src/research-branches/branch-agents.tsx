@@ -1,14 +1,19 @@
 import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
-import { QUIET_NOTE } from "#src/panel/panel-empty-state.const";
+import { cn } from "#src/design-system/class-names";
 import {
-    AGENT_LIST,
+    Item,
+    ItemActions,
+    ItemContent,
+    ItemDescription,
+    ItemGroup,
+    ItemMedia,
+    ItemTitle
+} from "#src/design-system/item";
+import {
     AGENT_PRESENCE,
     AGENT_PRESENCE_TONE,
-    AGENT_ROLE,
-    AGENT_ROW,
-    AGENT_STATUS,
-    AGENT_TASK
+    AGENT_STATUS
 } from "#src/research-branches/branch-agents.const";
 import { BRANCH_DETAIL_HEADING } from "#src/research-branches/branch-card.const";
 
@@ -22,29 +27,38 @@ export function BranchAgents({ agents, tasks }: BranchAgentsProps) {
         <div>
             <h3 className={BRANCH_DETAIL_HEADING}>Agents</h3>
             {agents.length > 0 ? (
-                <ul className={AGENT_LIST}>
+                <ItemGroup className="gap-2">
                     {agents.map((agent) => {
                         const currentTask = tasks.find((task) => task.id === agent.current_task_id);
 
                         return (
-                            <li key={agent.id} className={AGENT_ROW}>
-                                <span
-                                    className={`${AGENT_PRESENCE} ${AGENT_PRESENCE_TONE[agent.status]}`}
-                                    aria-hidden="true"
-                                />
-                                <div className="flex min-w-0 flex-col">
-                                    <strong className={AGENT_ROLE}>{agent.role}</strong>
-                                    <span className={AGENT_TASK}>
-                                        {currentTask?.objective ?? agent.id}
-                                    </span>
-                                </div>
-                                <small className={AGENT_STATUS}>{agent.status}</small>
-                            </li>
+                            <Item key={agent.id} asChild variant="muted" size="sm">
+                                <li>
+                                    <ItemMedia>
+                                        <span
+                                            className={cn(
+                                                AGENT_PRESENCE,
+                                                AGENT_PRESENCE_TONE[agent.status]
+                                            )}
+                                            aria-hidden="true"
+                                        />
+                                    </ItemMedia>
+                                    <ItemContent>
+                                        <ItemTitle className="capitalize">{agent.role}</ItemTitle>
+                                        <ItemDescription>
+                                            {currentTask?.objective ?? agent.id}
+                                        </ItemDescription>
+                                    </ItemContent>
+                                    <ItemActions>
+                                        <span className={AGENT_STATUS}>{agent.status}</span>
+                                    </ItemActions>
+                                </li>
+                            </Item>
                         );
                     })}
-                </ul>
+                </ItemGroup>
             ) : (
-                <p className={QUIET_NOTE}>No agents assigned</p>
+                <p className="text-sm text-muted-foreground">No agents assigned</p>
             )}
         </div>
     );

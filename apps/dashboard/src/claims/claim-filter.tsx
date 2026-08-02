@@ -1,11 +1,5 @@
-import {
-    CLAIM_FILTERS,
-    type ClaimFilter,
-    FILTER_BUTTON,
-    FILTER_BUTTON_ACTIVE,
-    FILTER_BUTTON_IDLE,
-    FILTER_GROUP
-} from "#src/claims/claim-filter.const";
+import { CLAIM_FILTERS, type ClaimFilter } from "#src/claims/claim-filter.const";
+import { ToggleGroup, ToggleGroupItem } from "#src/design-system/toggle-group";
 
 interface ClaimFilterGroupProps {
     filter: ClaimFilter;
@@ -14,23 +8,24 @@ interface ClaimFilterGroupProps {
 
 export function ClaimFilterGroup({ filter, onSelect }: ClaimFilterGroupProps) {
     return (
-        <fieldset className={FILTER_GROUP}>
-            <legend className="sr-only">Filter claims</legend>
-            {CLAIM_FILTERS.map((item) => {
-                const active = filter === item.value;
-
-                return (
-                    <button
-                        key={item.value}
-                        type="button"
-                        className={`${FILTER_BUTTON} ${active ? FILTER_BUTTON_ACTIVE : FILTER_BUTTON_IDLE}`}
-                        aria-pressed={active}
-                        onClick={() => onSelect(item.value)}
-                    >
-                        {item.label}
-                    </button>
-                );
-            })}
-        </fieldset>
+        <ToggleGroup
+            type="single"
+            size="sm"
+            variant="outline"
+            spacing={0}
+            value={filter}
+            aria-label="Filter claims"
+            onValueChange={(value) => {
+                if (value) {
+                    onSelect(value as ClaimFilter);
+                }
+            }}
+        >
+            {CLAIM_FILTERS.map((item) => (
+                <ToggleGroupItem key={item.value} value={item.value}>
+                    {item.label}
+                </ToggleGroupItem>
+            ))}
+        </ToggleGroup>
     );
 }

@@ -1,2 +1,1 @@
-export const FRONTIER_GRID =
-    "grid grid-cols-4 gap-[9px] max-[820px]:grid-cols-2 max-[620px]:grid-cols-1" as const;
+export const FRONTIER_GRID = "grid gap-4 sm:grid-cols-2 xl:grid-cols-4" as const;

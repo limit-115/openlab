@@ -1,11 +1,15 @@
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import { Bed, CircleCheckBig, CircleStop, FileText, OctagonX } from "lucide-react";
+import {
+    BedIcon,
+    CircleCheckBigIcon,
+    CircleStopIcon,
+    FileTextIcon,
+    OctagonXIcon
+} from "lucide-react";
 import {
     ARTIFACT_LINK,
     ARTIFACT_LINKS,
-    ARTIFACT_PATH,
-    OUTCOME_LIMITATIONS,
     OUTCOME_LIMITATIONS_HEADING,
     OUTCOME_LIMITATIONS_LIST,
     OUTCOME_SUMMARY,
@@ -32,19 +36,19 @@ export function OutcomePanel({ snapshot }: OutcomePanelProps) {
 
     const Icon =
         state === LabState.COMPLETED
-            ? CircleCheckBig
+            ? CircleCheckBigIcon
             : state === LabState.HIBERNATING
-              ? Bed
+              ? BedIcon
               : state === LabState.FAILED
-                ? OctagonX
-                : CircleStop;
+                ? OctagonXIcon
+                : CircleStopIcon;
 
     return (
         <Panel
             title={state === LabState.COMPLETED ? "Verified result" : `${state.toLowerCase()} lab`}
-            eyebrow="Lifecycle outcome"
+            description="Lifecycle outcome"
             icon={Icon}
-            surface={OUTCOME_SURFACE[state]}
+            className={OUTCOME_SURFACE[state]}
         >
             <p className={OUTCOME_SUMMARY}>
                 {snapshot.result?.summary ??
@@ -52,7 +56,7 @@ export function OutcomePanel({ snapshot }: OutcomePanelProps) {
                     "The lab changed lifecycle state without a reason."}
             </p>
             {snapshot.result?.limitations.length ? (
-                <div className={OUTCOME_LIMITATIONS}>
+                <div className="mt-6">
                     <h3 className={OUTCOME_LIMITATIONS_HEADING}>Known limitations</h3>
                     <ul className={OUTCOME_LIMITATIONS_LIST}>
                         {snapshot.result.limitations.map((limitation) => (
@@ -65,14 +69,14 @@ export function OutcomePanel({ snapshot }: OutcomePanelProps) {
                 <ul className={ARTIFACT_LINKS} aria-label="Result artifacts">
                     {snapshot.result.report_path ? (
                         <li className={ARTIFACT_LINK}>
-                            <FileText size={14} aria-hidden="true" />
-                            <code className={ARTIFACT_PATH}>{snapshot.result.report_path}</code>
+                            <FileTextIcon className="size-4 flex-none" aria-hidden="true" />
+                            {snapshot.result.report_path}
                         </li>
                     ) : null}
                     {snapshot.result.result_path ? (
                         <li className={ARTIFACT_LINK}>
-                            <FileText size={14} aria-hidden="true" />
-                            <code className={ARTIFACT_PATH}>{snapshot.result.result_path}</code>
+                            <FileTextIcon className="size-4 flex-none" aria-hidden="true" />
+                            {snapshot.result.result_path}
                         </li>
                     ) : null}
                 </ul>

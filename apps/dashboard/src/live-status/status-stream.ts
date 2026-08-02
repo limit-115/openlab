@@ -46,7 +46,7 @@ export function useLiveStatus(enabled = true): LiveStatus {
                     readPayload(event as MessageEvent<string>)
                 );
                 queryClient.setQueryData(statusQueryKey, snapshot);
-                setStatus({ state: StreamState.LIVE, lastEventAt: new Date() });
+                setStatus({ state: StreamState.LIVE });
             } catch (error) {
                 markProtocolError(error);
             }
@@ -58,7 +58,7 @@ export function useLiveStatus(enabled = true): LiveStatus {
                 queryClient.setQueryData<StatusSnapshot>(statusQueryKey, (snapshot) =>
                     snapshot ? prependEvent(snapshot, labEvent) : snapshot
                 );
-                setStatus({ state: StreamState.LIVE, lastEventAt: new Date() });
+                setStatus({ state: StreamState.LIVE });
                 void queryClient.invalidateQueries({ queryKey: statusQueryKey });
             } catch (error) {
                 markProtocolError(error);

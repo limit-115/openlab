@@ -1,9 +1,15 @@
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
-import { CircleCheck, CircleDashed } from "lucide-react";
-import { QUIET_NOTE } from "#src/panel/panel-empty-state.const";
+import { CircleCheckIcon, CircleDashedIcon } from "lucide-react";
+import {
+    Item,
+    ItemActions,
+    ItemContent,
+    ItemGroup,
+    ItemMedia,
+    ItemTitle
+} from "#src/design-system/item";
 import { BRANCH_DETAIL_HEADING } from "#src/research-branches/branch-card.const";
-import { TASK_LIST, TASK_OBJECTIVE, TASK_ROW } from "#src/research-branches/branch-tasks.const";
 import { StatusTag } from "#src/status-tag/status-tag";
 
 interface BranchTasksProps {
@@ -15,21 +21,29 @@ export function BranchTasks({ tasks }: BranchTasksProps) {
         <div>
             <h3 className={BRANCH_DETAIL_HEADING}>Tasks</h3>
             {tasks.length > 0 ? (
-                <ul className={TASK_LIST}>
+                <ItemGroup className="gap-2">
                     {tasks.map((task) => (
-                        <li key={task.id} className={TASK_ROW}>
-                            {task.status === InternalTaskStatus.SUCCEEDED ? (
-                                <CircleCheck size={14} aria-hidden="true" />
-                            ) : (
-                                <CircleDashed size={14} aria-hidden="true" />
-                            )}
-                            <span className={TASK_OBJECTIVE}>{task.objective}</span>
-                            <StatusTag status={task.status} />
-                        </li>
+                        <Item key={task.id} asChild variant="muted" size="sm">
+                            <li>
+                                <ItemMedia variant="icon" className="text-muted-foreground">
+                                    {task.status === InternalTaskStatus.SUCCEEDED ? (
+                                        <CircleCheckIcon aria-hidden="true" />
+                                    ) : (
+                                        <CircleDashedIcon aria-hidden="true" />
+                                    )}
+                                </ItemMedia>
+                                <ItemContent>
+                                    <ItemTitle className="font-normal">{task.objective}</ItemTitle>
+                                </ItemContent>
+                                <ItemActions>
+                                    <StatusTag status={task.status} />
+                                </ItemActions>
+                            </li>
+                        </Item>
                     ))}
-                </ul>
+                </ItemGroup>
             ) : (
-                <p className={QUIET_NOTE}>No tasks created</p>
+                <p className="text-sm text-muted-foreground">No tasks created</p>
             )}
         </div>
     );

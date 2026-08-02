@@ -1,12 +1,14 @@
 import type { Claim } from "@lab/protocol/claims/claim.types";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheckIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ClaimFilterGroup } from "#src/claims/claim-filter";
 import { ClaimFilter } from "#src/claims/claim-filter.const";
 import { ClaimsTable } from "#src/claims/claims-table";
+import { CLAIMS_TABLE_BODY } from "#src/claims/claims-table.const";
+import { cn } from "#src/design-system/class-names";
 import { Panel } from "#src/panel/panel";
-import { EmptyState } from "#src/panel/panel-empty-state";
+import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface ClaimsPanelProps {
     claims: Claim[];
@@ -27,21 +29,24 @@ export function ClaimsPanel({ claims }: ClaimsPanelProps) {
         return claims.filter((claim) => claim.status === filter);
     }, [claims, filter]);
 
+    const hasTable = claims.length > 0 && visibleClaims.length > 0;
+
     return (
         <Panel
             id="evidence"
             title="Claims"
-            eyebrow="Evidence ledger"
-            icon={ShieldCheck}
+            description="Evidence ledger"
+            icon={ShieldCheckIcon}
             action={<ClaimFilterGroup filter={filter} onSelect={setFilter} />}
+            contentClassName={cn(hasTable && CLAIMS_TABLE_BODY)}
         >
             {claims.length === 0 ? (
-                <EmptyState
+                <PanelEmptyState
                     title="No claims recorded"
                     description="Testable claims will appear after the research goal is operationalized."
                 />
             ) : visibleClaims.length === 0 ? (
-                <EmptyState
+                <PanelEmptyState
                     compact
                     title="No matching claims"
                     description="Select another evidence status."

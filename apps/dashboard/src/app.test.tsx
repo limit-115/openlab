@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "#src/app";
+import { TooltipProvider } from "#src/design-system/tooltip";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
 
@@ -15,7 +16,11 @@ function wrapper() {
     });
 
     return function QueryWrapper({ children }: { children: ReactNode }) {
-        return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+        return (
+            <QueryClientProvider client={client}>
+                <TooltipProvider>{children}</TooltipProvider>
+            </QueryClientProvider>
+        );
     };
 }
 
@@ -49,8 +54,29 @@ describe("App", () => {
         expect(screen.getByText("Independent road-network benchmark dataset")).toBeInTheDocument();
         expect(screen.getByText("Held-out benchmark started")).toBeInTheDocument();
 
-        await user.click(screen.getByRole("button", { name: "Refuted" }));
+        await user.click(screen.getByRole("radio", { name: "Refuted" }));
         expect(screen.getByText("No matching claims")).toBeInTheDocument();
+    });
+
+    it("puts the whole event payload and the provisioning command on the clipboard", async () => {
+        respondWith(statusFixture);
+        const user = userEvent.setup();
+        const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+        render(<App />, { wrapper: wrapper() });
+
+        const [copyPayload] = await screen.findAllByRole("button", {
+            name: "Copy the event payload"
+        });
+        await user.click(copyPayload as HTMLElement);
+        const newestEvent = [...statusFixture.recent_events].sort((left, right) =>
+            right.occurred_at.localeCompare(left.occurred_at)
+        )[0];
+        expect(writeText).toHaveBeenLastCalledWith(JSON.stringify(newestEvent?.payload, null, 4));
+
+        await user.click(screen.getByRole("button", { name: "Copy the provisioning command" }));
+        expect(writeText).toHaveBeenLastCalledWith(
+            `lab provide ${statusFixture.capability_requests[0]?.id} <resource-reference>`
+        );
     });
 
     it("shows useful empty states while the lab is still mapping the goal", async () => {

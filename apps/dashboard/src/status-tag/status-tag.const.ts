@@ -2,31 +2,32 @@ import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
-import type { TaggedStatus } from "#src/status-tag/status-tag.types";
+import type { BadgeVariant, TaggedStatus } from "#src/status-tag/status-tag.types";
 
-export const STATUS_TAG =
-    "inline-flex whitespace-nowrap rounded-full border px-[6px] py-[3px] text-sm font-[680] uppercase" as const;
+/**
+ * Emphasis follows attention, not sentiment: what is happening now reads loudest, what went wrong
+ * reads as a warning, settled work recedes, and work that has not started stays quiet.
+ */
+const RUNNING_TONE: BadgeVariant = "default";
+const ADVERSE_TONE: BadgeVariant = "destructive";
+const SETTLED_TONE: BadgeVariant = "secondary";
+const PENDING_TONE: BadgeVariant = "outline";
 
-const NEUTRAL_TONE = "border-line bg-surface-soft text-fg-muted" as const;
-const ACTIVE_TONE = "border-cyan/19 bg-cyan/10 text-cyan" as const;
-const RESOLVED_TONE = "border-green/19 bg-green/12 text-green" as const;
-const ADVERSE_TONE = "border-red/20 bg-red/11 text-red" as const;
-
-export const STATUS_TAG_TONE: Record<TaggedStatus, string> = {
-    [InternalTaskStatus.QUEUED]: NEUTRAL_TONE,
-    [InternalTaskStatus.LEASED]: NEUTRAL_TONE,
-    [InternalTaskStatus.RUNNING]: ACTIVE_TONE,
-    [InternalTaskStatus.SUCCEEDED]: RESOLVED_TONE,
+export const STATUS_TAG_TONE: Record<TaggedStatus, BadgeVariant> = {
+    [InternalTaskStatus.QUEUED]: PENDING_TONE,
+    [InternalTaskStatus.LEASED]: PENDING_TONE,
+    [InternalTaskStatus.RUNNING]: RUNNING_TONE,
+    [InternalTaskStatus.SUCCEEDED]: SETTLED_TONE,
     [InternalTaskStatus.FAILED]: ADVERSE_TONE,
     [InternalTaskStatus.CANCELLED]: ADVERSE_TONE,
-    [ClaimStatus.PROPOSED]: NEUTRAL_TONE,
-    [ClaimStatus.TESTING]: ACTIVE_TONE,
-    [ClaimStatus.SUPPORTED]: RESOLVED_TONE,
+    [ClaimStatus.PROPOSED]: PENDING_TONE,
+    [ClaimStatus.TESTING]: RUNNING_TONE,
+    [ClaimStatus.SUPPORTED]: SETTLED_TONE,
     [ClaimStatus.REFUTED]: ADVERSE_TONE,
-    [ClaimStatus.REPRODUCED]: RESOLVED_TONE,
-    [ExperimentStatus.PLANNED]: NEUTRAL_TONE,
+    [ClaimStatus.REPRODUCED]: SETTLED_TONE,
+    [ExperimentStatus.PLANNED]: PENDING_TONE,
     [ExperimentStatus.TIMED_OUT]: ADVERSE_TONE,
-    [CapabilityStatus.OPEN]: ACTIVE_TONE,
-    [CapabilityStatus.PROVIDED]: RESOLVED_TONE,
-    [CapabilityStatus.OBSOLETE]: NEUTRAL_TONE
+    [CapabilityStatus.OPEN]: RUNNING_TONE,
+    [CapabilityStatus.PROVIDED]: SETTLED_TONE,
+    [CapabilityStatus.OBSOLETE]: PENDING_TONE
 };

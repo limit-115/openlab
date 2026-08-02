@@ -3,19 +3,21 @@ import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
-import { CircleDot, GitBranch, ListChecks, Microscope, Target } from "lucide-react";
 import {
-    GOAL_PANEL_BODY,
-    GOAL_PANEL_SURFACE,
+    CircleDotIcon,
+    GitBranchIcon,
+    ListChecksIcon,
+    MicroscopeIcon,
+    TargetIcon
+} from "lucide-react";
+import {
     GOAL_REASON,
     GOAL_STATEMENT,
     METRIC_GRID,
     OVERVIEW
 } from "#src/mission-overview/mission-overview.const";
 import { ResearchMetric } from "#src/mission-overview/research-metric";
-import { MetricTone } from "#src/mission-overview/research-metric.const";
 import { Panel } from "#src/panel/panel";
-import { PANEL_UPDATED_AT } from "#src/panel/panel.const";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 interface MissionOverviewProps {
@@ -43,12 +45,10 @@ export function MissionOverview({ snapshot }: MissionOverviewProps) {
         <section className={OVERVIEW} aria-labelledby="goal-heading">
             <Panel
                 title="Mission goal"
-                eyebrow="Active objective"
-                icon={Target}
-                surface={GOAL_PANEL_SURFACE}
-                body={GOAL_PANEL_BODY}
+                description="Active objective"
+                icon={TargetIcon}
                 action={
-                    <span className={PANEL_UPDATED_AT}>
+                    <span className="text-sm whitespace-nowrap text-muted-foreground">
                         Updated {formatDate(snapshot.lab.updated_at)}
                     </span>
                 }
@@ -61,32 +61,28 @@ export function MissionOverview({ snapshot }: MissionOverviewProps) {
 
             <ul className={METRIC_GRID} aria-label="Research metrics">
                 <ResearchMetric
-                    icon={GitBranch}
+                    icon={GitBranchIcon}
                     label="Active branches"
                     value={activeBranches}
                     total={snapshot.branches.length}
-                    tone={MetricTone.CYAN}
                 />
                 <ResearchMetric
-                    icon={ListChecks}
+                    icon={ListChecksIcon}
                     label="Open tasks"
                     value={activeTasks}
                     total={snapshot.tasks.length}
-                    tone={MetricTone.VIOLET}
                 />
                 <ResearchMetric
-                    icon={CircleDot}
+                    icon={CircleDotIcon}
                     label="Strong claims"
                     value={supportedClaims}
                     total={snapshot.claims.length}
-                    tone={MetricTone.GREEN}
                 />
                 <ResearchMetric
-                    icon={Microscope}
+                    icon={MicroscopeIcon}
                     label="Experiments live"
                     value={runningExperiments}
                     total={snapshot.experiments.length}
-                    tone={MetricTone.AMBER}
                 />
             </ul>
         </section>

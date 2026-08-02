@@ -1,20 +1,22 @@
 import type { Claim } from "@lab/protocol/claims/claim.types";
-import { CircleDot } from "lucide-react";
+import { CircleDotIcon } from "lucide-react";
 import {
     CLAIM_CELL,
-    CLAIM_CELL_ICON,
     CLAIM_IDENTIFIER,
+    CLAIM_ROW_STALE,
     CLAIM_STATEMENT,
     CLAIMS_TABLE,
-    EVIDENCE_COUNT_NEGATIVE,
-    EVIDENCE_COUNT_POSITIVE,
-    TABLE_CELL,
-    TABLE_CELL_NOWRAP,
-    TABLE_HEAD_CELL,
-    TABLE_ROW,
-    TABLE_ROW_STALE,
-    TABLE_SCROLL
+    EVIDENCE_COUNTS
 } from "#src/claims/claims-table.const";
+import { cn } from "#src/design-system/class-names";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from "#src/design-system/table";
 import { StatusTag } from "#src/status-tag/status-tag";
 import { formatDate } from "#src/value-display/timestamp-display";
 
@@ -24,53 +26,52 @@ interface ClaimsTableProps {
 
 export function ClaimsTable({ claims }: ClaimsTableProps) {
     return (
-        <div className={TABLE_SCROLL}>
-            <table className={CLAIMS_TABLE}>
-                <thead>
-                    <tr>
-                        <th className={TABLE_HEAD_CELL}>Claim</th>
-                        <th className={TABLE_HEAD_CELL}>Status</th>
-                        <th className={TABLE_HEAD_CELL}>Evidence</th>
-                        <th className={TABLE_HEAD_CELL}>Updated</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {claims.map((claim) => (
-                        <tr key={claim.id} className={claim.stale ? TABLE_ROW_STALE : TABLE_ROW}>
-                            <td className={TABLE_CELL}>
-                                <div className={CLAIM_CELL}>
-                                    <CircleDot
-                                        size={14}
-                                        className={CLAIM_CELL_ICON}
-                                        aria-hidden="true"
-                                    />
-                                    <div className="flex flex-col">
-                                        <strong className={CLAIM_STATEMENT}>
-                                            {claim.statement}
-                                        </strong>
-                                        <span className={CLAIM_IDENTIFIER} title={claim.id}>
-                                            {claim.id} · {claim.branch_id}
-                                            {claim.stale ? " · stale" : ""}
-                                        </span>
-                                    </div>
+        <Table className={CLAIMS_TABLE}>
+            <TableHeader>
+                <TableRow>
+                    <TableHead className="pl-6">Claim</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Evidence</TableHead>
+                    <TableHead className="pr-6">Updated</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {claims.map((claim) => (
+                    <TableRow key={claim.id} className={cn(claim.stale && CLAIM_ROW_STALE)}>
+                        <TableCell className="pl-6 whitespace-normal">
+                            <div className={CLAIM_CELL}>
+                                <CircleDotIcon
+                                    className="mt-0.5 size-4 flex-none text-muted-foreground"
+                                    aria-hidden="true"
+                                />
+                                <div className="flex flex-col gap-1">
+                                    <strong className={CLAIM_STATEMENT}>{claim.statement}</strong>
+                                    <span className={CLAIM_IDENTIFIER}>
+                                        {claim.id} · {claim.branch_id}
+                                        {claim.stale ? " · stale" : ""}
+                                    </span>
                                 </div>
-                            </td>
-                            <td className={TABLE_CELL}>
-                                <StatusTag status={claim.status} />
-                            </td>
-                            <td className={TABLE_CELL}>
-                                <span className={EVIDENCE_COUNT_POSITIVE}>
+                            </div>
+                        </TableCell>
+                        <TableCell>
+                            <StatusTag status={claim.status} />
+                        </TableCell>
+                        <TableCell>
+                            <span className={EVIDENCE_COUNTS}>
+                                <span className="text-primary">
                                     +{claim.supporting_evidence_ids.length}
                                 </span>
-                                <span className={EVIDENCE_COUNT_NEGATIVE}>
+                                <span className="text-destructive">
                                     −{claim.contradicting_evidence_ids.length}
                                 </span>
-                            </td>
-                            <td className={TABLE_CELL_NOWRAP}>{formatDate(claim.updated_at)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                            </span>
+                        </TableCell>
+                        <TableCell className="pr-6 text-muted-foreground">
+                            {formatDate(claim.updated_at)}
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
     );
 }

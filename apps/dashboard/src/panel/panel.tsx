@@ -1,55 +1,55 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import {
-    EYEBROW,
-    PANEL_ACTION,
-    PANEL_BODY,
-    PANEL_FRAME,
-    PANEL_HEADER,
-    PANEL_ICON,
-    PANEL_TITLE,
-    PANEL_TITLE_GROUP,
-    SURFACE_SKIN
-} from "#src/panel/panel.const";
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle
+} from "#src/design-system/card";
+import { cn } from "#src/design-system/class-names";
 
 interface PanelProps {
     title: string;
-    eyebrow?: string;
+    /** A short line under the title naming what the panel reports on. */
+    description?: string;
     icon: LucideIcon;
+    /** Rendered at the top right of the panel header. */
     action?: ReactNode;
     children: ReactNode;
-    /** Border colour and background of the panel surface. */
-    surface?: string;
-    /** Layout of the panel body. */
-    body?: string;
+    /** Anchor target for the header section navigation. */
     id?: string;
+    className?: string;
+    contentClassName?: string;
 }
 
 export function Panel({
     title,
-    eyebrow,
+    description,
     icon: Icon,
     action,
     children,
-    surface = SURFACE_SKIN,
-    body = PANEL_BODY,
-    id
+    id,
+    className,
+    contentClassName
 }: PanelProps) {
     return (
-        <section className={`${PANEL_FRAME} ${surface}`} id={id}>
-            <header className={PANEL_HEADER}>
-                <div className={PANEL_TITLE_GROUP}>
-                    <span className={PANEL_ICON} aria-hidden="true">
-                        <Icon size={17} strokeWidth={1.8} />
+        <Card id={id} className={cn("scroll-mt-24", className)}>
+            <CardHeader className="border-b">
+                <CardTitle className="flex items-center gap-3">
+                    <span
+                        className="grid size-8 flex-none place-items-center rounded-xl bg-muted text-muted-foreground"
+                        aria-hidden="true"
+                    >
+                        <Icon className="size-4" />
                     </span>
-                    <div>
-                        {eyebrow ? <p className={EYEBROW}>{eyebrow}</p> : null}
-                        <h2 className={PANEL_TITLE}>{title}</h2>
-                    </div>
-                </div>
-                {action ? <div className={PANEL_ACTION}>{action}</div> : null}
-            </header>
-            <div className={body}>{children}</div>
-        </section>
+                    {title}
+                </CardTitle>
+                {description ? <CardDescription>{description}</CardDescription> : null}
+                {action ? <CardAction>{action}</CardAction> : null}
+            </CardHeader>
+            <CardContent className={contentClassName}>{children}</CardContent>
+        </Card>
     );
 }

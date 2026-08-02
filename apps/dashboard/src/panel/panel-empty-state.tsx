@@ -1,25 +1,30 @@
-import { Inbox } from "lucide-react";
+import { InboxIcon } from "lucide-react";
+import { cn } from "#src/design-system/class-names";
 import {
-    EMPTY_STATE,
-    EMPTY_STATE_COMPACT,
-    EMPTY_STATE_DESCRIPTION,
-    EMPTY_STATE_TITLE
-} from "#src/panel/panel-empty-state.const";
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle
+} from "#src/design-system/empty";
 
-interface EmptyStateProps {
+interface PanelEmptyStateProps {
     title: string;
     description: string;
+    /** Shrinks the state for panels that only ever hold a short list. */
     compact?: boolean;
 }
 
-export function EmptyState({ title, description, compact = false }: EmptyStateProps) {
+export function PanelEmptyState({ title, description, compact = false }: PanelEmptyStateProps) {
     return (
-        <div className={compact ? EMPTY_STATE_COMPACT : EMPTY_STATE}>
-            <Inbox size={20} className="flex-none" aria-hidden="true" />
-            <div>
-                <strong className={EMPTY_STATE_TITLE}>{title}</strong>
-                <p className={EMPTY_STATE_DESCRIPTION}>{description}</p>
-            </div>
-        </div>
+        <Empty className={cn("border", compact && "p-6")}>
+            <EmptyHeader>
+                <EmptyMedia variant="icon">
+                    <InboxIcon />
+                </EmptyMedia>
+                <EmptyTitle>{title}</EmptyTitle>
+                <EmptyDescription>{description}</EmptyDescription>
+            </EmptyHeader>
+        </Empty>
     );
 }

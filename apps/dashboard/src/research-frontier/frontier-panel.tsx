@@ -1,10 +1,14 @@
 import type { FrontierSnapshot } from "@lab/protocol/research-frontier/frontier-snapshot.types";
-import { Ban, CircleCheck, CircleHelp, Compass, FlaskConical } from "lucide-react";
+import {
+    BanIcon,
+    CircleCheckIcon,
+    CircleHelpIcon,
+    CompassIcon,
+    FlaskConicalIcon
+} from "lucide-react";
 import { Panel } from "#src/panel/panel";
-import { PANEL_UPDATED_AT } from "#src/panel/panel.const";
-import { EmptyState } from "#src/panel/panel-empty-state";
+import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { FrontierColumn } from "#src/research-frontier/frontier-column";
-import { FrontierTone } from "#src/research-frontier/frontier-column.const";
 import { FRONTIER_GRID } from "#src/research-frontier/frontier-panel.const";
 import { formatDate } from "#src/value-display/timestamp-display";
 
@@ -24,41 +28,31 @@ export function FrontierPanel({ frontier }: FrontierPanelProps) {
         <Panel
             id="frontier"
             title="Research frontier"
-            eyebrow="Current knowledge boundary"
-            icon={Compass}
+            description="Current knowledge boundary"
+            icon={CompassIcon}
             action={
-                <span className={PANEL_UPDATED_AT}>Mapped {formatDate(frontier.updated_at)}</span>
+                <span className="text-sm whitespace-nowrap text-muted-foreground">
+                    Mapped {formatDate(frontier.updated_at)}
+                </span>
             }
         >
             {hasItems ? (
                 <div className={FRONTIER_GRID}>
-                    <FrontierColumn
-                        title="Known"
-                        icon={CircleCheck}
-                        items={frontier.known}
-                        tone={FrontierTone.GREEN}
-                    />
+                    <FrontierColumn title="Known" icon={CircleCheckIcon} items={frontier.known} />
                     <FrontierColumn
                         title="Open questions"
-                        icon={CircleHelp}
+                        icon={CircleHelpIcon}
                         items={frontier.open_questions}
-                        tone={FrontierTone.VIOLET}
                     />
-                    <FrontierColumn
-                        title="Blockers"
-                        icon={Ban}
-                        items={frontier.blockers}
-                        tone={FrontierTone.RED}
-                    />
+                    <FrontierColumn title="Blockers" icon={BanIcon} items={frontier.blockers} />
                     <FrontierColumn
                         title="Next experiments"
-                        icon={FlaskConical}
+                        icon={FlaskConicalIcon}
                         items={frontier.next_experiments}
-                        tone={FrontierTone.AMBER}
                     />
                 </div>
             ) : (
-                <EmptyState
+                <PanelEmptyState
                     title="Frontier is being mapped"
                     description="Known facts, open questions, blockers and next experiments will appear here."
                 />

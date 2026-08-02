@@ -3,16 +3,28 @@ import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import type { BranchSummary } from "@lab/protocol/branches/branch-summary.types";
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
-import { Bot, ChevronDown, CircleCheck, ListTodo, Pause, Play } from "lucide-react";
+import {
+    BotIcon,
+    ChevronDownIcon,
+    CircleCheckIcon,
+    ListTodoIcon,
+    PauseIcon,
+    PlayIcon
+} from "lucide-react";
+import { Badge } from "#src/design-system/badge";
+import { cn } from "#src/design-system/class-names";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger
+} from "#src/design-system/collapsible";
 import { BranchAgents } from "#src/research-branches/branch-agents";
 import {
     BRANCH_CARD,
     BRANCH_CARD_APPROACH,
     BRANCH_CARD_CHEVRON,
     BRANCH_CARD_CONTENT,
-    BRANCH_CARD_HEADING,
     BRANCH_CARD_META,
-    BRANCH_CARD_META_ITEM,
     BRANCH_CARD_STATUS,
     BRANCH_CARD_STATUS_TONE,
     BRANCH_CARD_SUMMARY,
@@ -36,38 +48,47 @@ export function BranchCard({ branch, agents, tasks, initiallyOpen }: BranchCardP
     ).length;
     const StatusIcon =
         branch.status === BranchStatus.ACTIVE
-            ? Play
+            ? PlayIcon
             : branch.status === BranchStatus.PAUSED
-              ? Pause
-              : CircleCheck;
+              ? PauseIcon
+              : CircleCheckIcon;
 
     return (
-        <details className={BRANCH_CARD} open={initiallyOpen}>
-            <summary className={BRANCH_CARD_SUMMARY}>
-                <span className={`${BRANCH_CARD_STATUS} ${BRANCH_CARD_STATUS_TONE[branch.status]}`}>
-                    <StatusIcon size={13} fill="currentColor" aria-hidden="true" />
-                </span>
-                <span className={BRANCH_CARD_HEADING}>
-                    <strong className={BRANCH_CARD_TITLE}>{branch.title}</strong>
-                    <span className={BRANCH_CARD_APPROACH}>{branch.approach}</span>
-                </span>
-                <span className={BRANCH_CARD_META}>
-                    <span className={BRANCH_CARD_META_ITEM}>
-                        <Bot size={13} aria-hidden="true" /> {agents.length}
+        <Collapsible asChild defaultOpen={initiallyOpen}>
+            <li className={BRANCH_CARD}>
+                <CollapsibleTrigger className={BRANCH_CARD_SUMMARY}>
+                    <span
+                        className={cn(BRANCH_CARD_STATUS, BRANCH_CARD_STATUS_TONE[branch.status])}
+                        aria-hidden="true"
+                    >
+                        <StatusIcon className="size-3.5" />
                     </span>
-                    <span className={BRANCH_CARD_META_ITEM}>
-                        <ListTodo size={13} aria-hidden="true" /> {runningTasks}/{tasks.length}
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                        <strong className={BRANCH_CARD_TITLE}>{branch.title}</strong>
+                        <span className={BRANCH_CARD_APPROACH}>{branch.approach}</span>
                     </span>
-                </span>
-                <ChevronDown className={BRANCH_CARD_CHEVRON} size={16} aria-hidden="true" />
-            </summary>
-            <div className={BRANCH_CARD_CONTENT}>
-                {branch.progress ? <p className={BRANCH_PROGRESS}>{branch.progress}</p> : null}
-                <div className={BRANCH_DETAIL_GRID}>
-                    <BranchAgents agents={agents} tasks={tasks} />
-                    <BranchTasks tasks={tasks} />
-                </div>
-            </div>
-        </details>
+                    <span className={BRANCH_CARD_META}>
+                        <Badge variant="outline">
+                            <BotIcon aria-hidden="true" /> {agents.length}
+                        </Badge>
+                        <Badge variant="outline">
+                            <ListTodoIcon aria-hidden="true" /> {runningTasks}/{tasks.length}
+                        </Badge>
+                    </span>
+                    <ChevronDownIcon className={BRANCH_CARD_CHEVRON} aria-hidden="true" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                    <div className={BRANCH_CARD_CONTENT}>
+                        {branch.progress ? (
+                            <p className={BRANCH_PROGRESS}>{branch.progress}</p>
+                        ) : null}
+                        <div className={BRANCH_DETAIL_GRID}>
+                            <BranchAgents agents={agents} tasks={tasks} />
+                            <BranchTasks tasks={tasks} />
+                        </div>
+                    </div>
+                </CollapsibleContent>
+            </li>
+        </Collapsible>
     );
 }

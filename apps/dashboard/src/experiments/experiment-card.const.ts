@@ -1,30 +1,24 @@
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 
-export const EXPERIMENT_LIST = "grid gap-[7px]" as const;
+export const EXPERIMENT_LIST = "gap-3" as const;
 
-export const EXPERIMENT_CARD =
-    "grid grid-cols-[auto_minmax(0,1fr)] gap-[10px] rounded-lg border border-line bg-[rgba(8,12,10,0.25)] p-[11px]" as const;
-
-export const EXPERIMENT_STATUS =
-    "grid h-[25px] w-[25px] place-items-center rounded-[7px] border" as const;
+export const EXPERIMENT_STATUS = "size-8 rounded-xl border" as const;
 
 export const EXPERIMENT_STATUS_TONE: Record<ExperimentStatus, string> = {
-    [ExperimentStatus.PLANNED]: "border-line text-fg-faint",
-    [ExperimentStatus.RUNNING]: "border-cyan/20 bg-cyan/10 text-cyan",
-    [ExperimentStatus.SUCCEEDED]: "border-line text-green",
-    [ExperimentStatus.FAILED]: "border-line text-red",
-    [ExperimentStatus.TIMED_OUT]: "border-line text-red",
-    [ExperimentStatus.CANCELLED]: "border-line text-red"
+    [ExperimentStatus.PLANNED]: "text-muted-foreground",
+    [ExperimentStatus.RUNNING]: "border-primary/40 bg-primary/10 text-primary",
+    [ExperimentStatus.SUCCEEDED]: "text-foreground",
+    [ExperimentStatus.FAILED]: "border-destructive/40 text-destructive",
+    [ExperimentStatus.TIMED_OUT]: "border-destructive/40 text-destructive",
+    [ExperimentStatus.CANCELLED]: "border-destructive/40 text-destructive"
 };
 
-export const EXPERIMENT_HEADER = "flex items-start justify-between gap-3" as const;
-
-export const EXPERIMENT_HYPOTHESIS = "text-sm font-[570] leading-[1.4]" as const;
+export const EXPERIMENT_HYPOTHESIS = "text-base" as const;
 
 export const EXPERIMENT_COMMAND =
-    "my-2 flex min-w-0 items-center gap-[7px] rounded-[5px] bg-black/22 px-2 py-[6px] text-fg-faint" as const;
+    "mt-2 flex min-w-0 items-center gap-2 rounded-xl bg-muted/50 px-3 py-2" as const;
 
-export const EXPERIMENT_COMMAND_TEXT = "break-words text-sm text-[#99a69f]" as const;
+export const EXPERIMENT_COMMAND_TEXT = "font-mono text-sm break-all" as const;
 
 export const EXPERIMENT_FOOTER =
-    "flex flex-wrap gap-x-[13px] gap-y-[6px] text-sm text-fg-faint" as const;
+    "flex-wrap justify-start gap-x-4 gap-y-1 text-sm text-muted-foreground" as const;

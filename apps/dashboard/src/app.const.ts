@@ -1,7 +1,9 @@
+/** The horizontal frame shared by the header, the dashboard grid and the footer. */
+export const PAGE_FRAME = "mx-auto w-full max-w-420 px-4 sm:px-6 lg:px-12" as const;
+
 export const APP_SHELL = "min-h-screen" as const;
 
-export const DASHBOARD =
-    "mx-auto grid w-[min(1680px,100%)] gap-[14px] px-[clamp(18px,3vw,48px)] pt-6 pb-12 max-[620px]:pt-[14px]" as const;
+export const DASHBOARD = "grid gap-4 pt-6 pb-12" as const;
 
 export const APP_FOOTER =
-    "mx-auto flex w-[min(1680px,100%)] justify-between px-[clamp(18px,3vw,48px)] pb-7 text-sm text-fg-faint max-[620px]:flex-col max-[620px]:gap-[5px]" as const;
+    "flex flex-col gap-1 pb-8 text-sm text-muted-foreground sm:flex-row sm:justify-between" as const;

@@ -1,11 +1,11 @@
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import { KeyRound } from "lucide-react";
+import { KeyRoundIcon } from "lucide-react";
 import { CapabilityCard } from "#src/capabilities/capability-card";
-import { CAPABILITY_LIST } from "#src/capabilities/capability-card.const";
+import { Badge } from "#src/design-system/badge";
+import { ItemGroup } from "#src/design-system/item";
 import { Panel } from "#src/panel/panel";
-import { PANEL_COUNT_BADGE_ALERT } from "#src/panel/panel.const";
-import { EmptyState } from "#src/panel/panel-empty-state";
+import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface CapabilitiesPanelProps {
     requests: CapabilityRequest[];
@@ -17,25 +17,21 @@ export function CapabilitiesPanel({ requests }: CapabilitiesPanelProps) {
     return (
         <Panel
             title="Capabilities"
-            eyebrow="External blockers"
-            icon={KeyRound}
-            action={
-                openCount > 0 ? (
-                    <span className={PANEL_COUNT_BADGE_ALERT}>{openCount} needed</span>
-                ) : null
-            }
+            description="External blockers"
+            icon={KeyRoundIcon}
+            action={openCount > 0 ? <Badge>{openCount} needed</Badge> : null}
         >
             {requests.length > 0 ? (
-                <div className={CAPABILITY_LIST}>
+                <ItemGroup className="gap-3">
                     {requests.map((request) => (
                         <CapabilityCard key={request.id} request={request} />
                     ))}
-                </div>
+                </ItemGroup>
             ) : (
-                <EmptyState
+                <PanelEmptyState
                     compact
                     title="All capabilities available"
-                    description="There are no access, tool or infrastructure requests."
+                    description="No credential, account, private data, hardware or authorization is waiting on the operator."
                 />
             )}
         </Panel>
