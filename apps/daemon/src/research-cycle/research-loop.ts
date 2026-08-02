@@ -2,6 +2,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { HarnessExecutionProfiles } from "@lab/harness/agent-harness.const";
 import { ClaudeHarness } from "@lab/harness/claude-harness";
 import { CodexHarness } from "@lab/harness/codex-harness";
+import { GlmHarness } from "@lab/harness/glm-harness";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
@@ -73,7 +74,11 @@ export async function runResearchLoop(
         return { status: ResearchLoopOutcomeStatus.CANCELLED };
     }
 
-    const harnesses = options.harnesses ?? [new CodexHarness(), new ClaudeHarness()];
+    const harnesses = options.harnesses ?? [
+        new CodexHarness(),
+        new ClaudeHarness(),
+        new GlmHarness()
+    ];
     const workspaceFactory =
         options.workspaceFactory ?? new GitResearchWorkspaceFactory(workspace.runDirectory);
     const createAgentWorkspace = workspaceAllocator(workspaceFactory);
@@ -89,10 +94,10 @@ export async function runResearchLoop(
         const available = await preflightHarnesses(workspace, harnesses, signal);
         throwIfAborted(signal);
         if (available.length === 0) {
-            const reason = "No subscription-authenticated Codex or Claude CLI harness is available";
+            const reason = "No subscription-authenticated agent CLI harness is available";
             if (workspace.getSnapshot().capability_requests.length === 0) {
                 await workspace.requestCapability({
-                    need: "A responsive Codex or Claude CLI with an active product subscription",
+                    need: "A responsive Codex, Claude or GLM CLI with an active product subscription",
                     resourceClass: CapabilityResourceClass.ACCOUNT,
                     reason,
                     provisioningHint:

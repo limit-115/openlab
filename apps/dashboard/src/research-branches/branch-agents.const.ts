@@ -14,7 +14,8 @@ export const AGENT_STATUS = "text-sm text-muted-foreground" as const;
 
 export const AGENT_HARNESS_LABEL: Record<AgentHarnessKind, string> = {
     [AgentHarnessKind.CODEX]: "Codex",
-    [AgentHarnessKind.CLAUDE]: "Claude"
+    [AgentHarnessKind.CLAUDE]: "Claude",
+    [AgentHarnessKind.GLM]: "GLM"
 };
 
 /** Shown until the agent's first harness run starts and reports what it runs on. */
