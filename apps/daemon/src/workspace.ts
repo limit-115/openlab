@@ -10,18 +10,21 @@ import {
     BranchStatus,
     CapabilityRequestType,
     CapabilityStatus,
+    ClaimStatus,
     EventType,
+    EvidenceKind,
     InternalTaskStatus,
     type EventType as LabEventType,
     LabState,
     type LabState as LabStateValue
 } from "@lab/protocol/constants";
-import type { CapabilityRequest, LabEvent, TaskInput } from "@lab/protocol/schemas";
-import { LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
+import type { CapabilityRequest, Evidence, LabEvent, TaskInput } from "@lab/protocol/schemas";
+import { EvidenceSchema, LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { StatusSnapshotSchema } from "@lab/protocol/status";
 import { Mutex } from "async-mutex";
 import writeFileAtomic from "write-file-atomic";
+import { validateFileArtifact } from "#src/artifact";
 
 type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;
 type SnapshotUpdater = (draft: StatusSnapshot) => void;
@@ -42,18 +45,21 @@ export class LabWorkspace {
     private readonly mutex = new Mutex();
     private readonly listeners = new Set<StatusListener>();
     private readonly events: LabEvent[];
+    private readonly evidence: Evidence[];
     private snapshot: StatusSnapshot;
 
     private constructor(
         runDirectory: string,
         snapshot: StatusSnapshot,
         events: LabEvent[],
+        evidence: Evidence[],
         recovered: boolean
     ) {
         this.runDirectory = runDirectory;
         this.labId = snapshot.lab.id;
         this.snapshot = snapshot;
         this.events = events;
+        this.evidence = evidence;
         this.recovered = recovered;
     }
 
@@ -128,7 +134,7 @@ export class LabWorkspace {
         });
 
         await mkdir(runDirectory, { recursive: true });
-        const workspace = new LabWorkspace(runDirectory, snapshot, [], false);
+        const workspace = new LabWorkspace(runDirectory, snapshot, [], [], false);
         await Promise.all([
             workspace.writeJson("task.json", task),
             workspace.persistSnapshot(),
@@ -147,13 +153,14 @@ export class LabWorkspace {
         if (!resolvedRunDirectory.startsWith(`${root}${path.sep}`)) {
             throw new Error("Current run directory escapes LAB_HOME");
         }
-        const [snapshotSource, eventsSource] = await Promise.all([
+        const [snapshotSource, eventsSource, storedEvidence] = await Promise.all([
             readFile(path.join(resolvedRunDirectory, "status.json"), "utf8"),
-            readFile(path.join(resolvedRunDirectory, "events.json"), "utf8")
+            readFile(path.join(resolvedRunDirectory, "events.json"), "utf8"),
+            LabWorkspace.readOptionalEvidence(resolvedRunDirectory)
         ]);
         const snapshot = StatusSnapshotSchema.parse(JSON.parse(snapshotSource));
         const events = LabEventSchema.array().parse(JSON.parse(eventsSource));
-        return new LabWorkspace(resolvedRunDirectory, snapshot, events, true);
+        return new LabWorkspace(resolvedRunDirectory, snapshot, events, storedEvidence, true);
     }
 
     getTask(): Promise<TaskInput> {
@@ -170,10 +177,15 @@ export class LabWorkspace {
         return structuredClone(this.events);
     }
 
+    getEvidence(): Evidence[] {
+        return structuredClone(this.evidence);
+    }
+
     inspect(id: string): unknown | undefined {
         const snapshot = this.snapshot;
         return (
             snapshot.claims.find((claim) => claim.id === id) ??
+            this.evidence.find((evidence) => evidence.id === id) ??
             snapshot.experiments.find((experiment) => experiment.id === id) ??
             snapshot.tasks.find((task) => task.id === id) ??
             snapshot.branches.find((branch) => branch.id === id)
@@ -231,10 +243,13 @@ export class LabWorkspace {
             state: LabState.HIBERNATING,
             reason
         });
+        await this.appendEvent(EventType.REPORT_GENERATED, { report_path: reportPath });
+        await this.appendEvent(EventType.LAB_HIBERNATED, { reason });
         return snapshot;
     }
 
     async complete(result: VerifiedResult): Promise<StatusSnapshot> {
+        const supportingEvidence = await this.validateCompletionEvidence(result);
         const reportPath = path.join(this.runDirectory, "report.md");
         const resultPath = path.join(this.runDirectory, "result.json");
         const resultFile = {
@@ -277,7 +292,35 @@ export class LabWorkspace {
             state: LabState.COMPLETED,
             verifier_verdict_id: result.independentVerifierVerdictId
         });
+        await this.appendEvent(EventType.REPORT_GENERATED, { report_path: reportPath });
+        await this.appendEvent(EventType.RESULT_GENERATED, {
+            result_path: resultPath,
+            supporting_evidence_ids: supportingEvidence.map(({ id }) => id)
+        });
+        await this.appendEvent(EventType.LAB_COMPLETED, {
+            verifier_verdict_id: result.independentVerifierVerdictId
+        });
         return snapshot;
+    }
+
+    async recordEvidence(candidate: Evidence): Promise<Evidence> {
+        const evidence = EvidenceSchema.parse(candidate);
+        await this.validateStoredEvidenceArtifact(evidence);
+
+        return this.mutex.runExclusive(async () => {
+            const existing = this.evidence.find(({ id }) => id === evidence.id);
+            if (existing !== undefined) {
+                if (JSON.stringify(existing) !== JSON.stringify(evidence)) {
+                    throw new Error(
+                        `Evidence id already exists with different content: ${evidence.id}`
+                    );
+                }
+                return structuredClone(existing);
+            }
+            this.evidence.push(evidence);
+            await this.writeJson("evidence.json", this.evidence);
+            return structuredClone(evidence);
+        });
     }
 
     async appendEvent(type: LabEventType, payload: Record<string, unknown>): Promise<LabEvent> {
@@ -383,8 +426,83 @@ export class LabWorkspace {
             this.writeJson("status.json", this.snapshot),
             this.writeJson("events.json", this.events),
             this.writeJson("claims.json", this.snapshot.claims),
-            this.writeJson("experiments.json", this.snapshot.experiments)
+            this.writeJson("experiments.json", this.snapshot.experiments),
+            this.writeJson("evidence.json", this.evidence)
         ]);
+    }
+
+    private async validateCompletionEvidence(result: VerifiedResult): Promise<Evidence[]> {
+        if (result.supportingEvidenceIds.length === 0) {
+            throw new Error("Completion requires supporting evidence");
+        }
+        const requestedIds = [...new Set(result.supportingEvidenceIds)];
+        if (requestedIds.length !== result.supportingEvidenceIds.length) {
+            throw new Error("Completion evidence ids must be unique");
+        }
+        const selected = requestedIds.map((id) => {
+            const evidence = this.evidence.find((candidate) => candidate.id === id);
+            if (evidence === undefined) {
+                throw new Error(`Completion references unknown evidence: ${id}`);
+            }
+            return evidence;
+        });
+        const verifier = selected.find(({ id }) => id === result.independentVerifierVerdictId);
+        if (
+            verifier === undefined ||
+            verifier.kind !== EvidenceKind.VERIFIER_RESULT ||
+            !verifier.independent ||
+            !verifier.supports
+        ) {
+            throw new Error("Completion requires material evidence from an independent verifier");
+        }
+        if (
+            !selected.some(
+                ({ kind, supports }) => kind !== EvidenceKind.VERIFIER_RESULT && supports
+            )
+        ) {
+            throw new Error("Completion requires supporting material evidence before verification");
+        }
+        if (
+            selected.some(({ supports, claim_id }) => !supports || claim_id !== verifier.claim_id)
+        ) {
+            throw new Error("Completion evidence must support the independently verified claim");
+        }
+
+        const claim = this.snapshot.claims.find(({ id }) => id === verifier.claim_id);
+        if (claim === undefined || claim.status !== ClaimStatus.REPRODUCED) {
+            throw new Error("Completion requires a reproduced claim");
+        }
+        if (selected.some(({ id }) => !claim.supporting_evidence_ids.includes(id))) {
+            throw new Error("Completion evidence is not linked to the reproduced claim");
+        }
+
+        await Promise.all(
+            selected.map((evidence) => this.validateStoredEvidenceArtifact(evidence))
+        );
+        return selected;
+    }
+
+    private async validateStoredEvidenceArtifact(evidence: Evidence) {
+        if (evidence.artifact_path === undefined || evidence.artifact_hash === undefined) {
+            throw new Error(`Evidence must reference a hashed material artifact: ${evidence.id}`);
+        }
+        const artifact = await validateFileArtifact(this.runDirectory, evidence.artifact_path);
+        if (artifact.sha256 !== evidence.artifact_hash) {
+            throw new Error(`Evidence artifact changed after recording: ${evidence.id}`);
+        }
+        return artifact;
+    }
+
+    private static async readOptionalEvidence(runDirectory: string): Promise<Evidence[]> {
+        try {
+            const source = await readFile(path.join(runDirectory, "evidence.json"), "utf8");
+            return EvidenceSchema.array().parse(JSON.parse(source));
+        } catch (error) {
+            if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+                return [];
+            }
+            throw error;
+        }
     }
 
     private writeJson(fileName: string, value: unknown): Promise<void> {

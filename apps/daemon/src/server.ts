@@ -81,7 +81,14 @@ export function createStatusServer(
     app.get("/api/export", async () => ({
         lab_id: workspace.labId,
         run_directory: workspace.runDirectory,
-        files: ["task.json", "events.json", "claims.json", "experiments.json", "status.json"]
+        files: [
+            "task.json",
+            "events.json",
+            "claims.json",
+            "evidence.json",
+            "experiments.json",
+            "status.json"
+        ]
     }));
 
     app.get("/api/events", async (request, reply) => {

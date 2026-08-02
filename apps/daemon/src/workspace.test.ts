@@ -1,8 +1,9 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { EventType, LabState } from "@lab/protocol/constants";
+import { EventType, EvidenceKind, LabState } from "@lab/protocol/constants";
 import { afterEach, describe, expect, it } from "vitest";
+import { validateFileArtifact } from "#src/artifact";
 import { LabWorkspace } from "#src/workspace";
 
 const directories: string[] = [];
@@ -92,5 +93,70 @@ describe("LabWorkspace", () => {
                 knownCounterexamples: []
             })
         ).rejects.toThrow("supporting evidence");
+    });
+
+    it("persists only hashed artifacts contained by the run workspace", async () => {
+        const workspace = await createWorkspace();
+        const artifactPath = path.join(workspace.runDirectory, "measurement.json");
+        await writeFile(artifactPath, JSON.stringify({ elapsed_ms: 12 }));
+        const artifact = await validateFileArtifact(workspace.runDirectory, artifactPath);
+
+        await workspace.recordEvidence({
+            id: "evidence-measurement",
+            kind: EvidenceKind.ARTIFACT,
+            claim_id: "claim-speed",
+            artifact_path: artifact.path,
+            artifact_hash: artifact.sha256,
+            summary: "Measured elapsed time",
+            supports: true,
+            independent: false,
+            created_at: new Date().toISOString()
+        });
+
+        const persisted = JSON.parse(
+            await readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8")
+        );
+        expect(persisted).toHaveLength(1);
+        expect(workspace.inspect("evidence-measurement")).toMatchObject({
+            artifact_hash: artifact.sha256
+        });
+    });
+
+    it("rejects evidence artifacts outside the isolated run workspace", async () => {
+        const workspace = await createWorkspace();
+        const externalPath = path.join(path.dirname(workspace.runDirectory), "external.txt");
+        await writeFile(externalPath, "not contained");
+        const artifact = await validateFileArtifact(
+            path.dirname(workspace.runDirectory),
+            externalPath
+        );
+
+        await expect(
+            workspace.recordEvidence({
+                id: "evidence-external",
+                kind: EvidenceKind.ARTIFACT,
+                claim_id: "claim-speed",
+                artifact_path: artifact.path,
+                artifact_hash: artifact.sha256,
+                summary: "External result",
+                supports: true,
+                independent: false,
+                created_at: new Date().toISOString()
+            })
+        ).rejects.toThrow("escapes its isolated workspace");
+    });
+
+    it("rejects fabricated completion evidence ids", async () => {
+        const workspace = await createWorkspace();
+
+        await expect(
+            workspace.complete({
+                summary: "A fabricated result",
+                supportingEvidenceIds: ["evidence-missing"],
+                independentVerifierVerdictId: "evidence-missing",
+                limitations: [],
+                knownCounterexamples: []
+            })
+        ).rejects.toThrow("unknown evidence");
     });
 });
