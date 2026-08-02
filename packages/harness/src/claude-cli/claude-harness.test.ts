@@ -17,6 +17,7 @@ import {
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import {
+    AnswerJsonSchema,
     answerSchema,
     harnessRequest,
     lastCompleted,
@@ -136,8 +137,9 @@ describe("ClaudeHarness", () => {
             "--effort",
             ClaudeSessionDefaults.EFFORT,
             "--json-schema",
-            JSON.stringify(answerSchema())
+            expect.any(String)
         ]);
+        expect(JSON.parse(String(spawn?.args.at(-1)))).toEqual(AnswerJsonSchema);
         expect(spawn?.args).not.toContain("--fallback-model");
         expect(spawn?.input).toBe(request.prompt);
         expect(events).toEqual(

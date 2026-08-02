@@ -56,7 +56,7 @@ import {
     createWatchdogSignal,
     validateTimeoutMilliseconds
 } from "#src/subscription-cli-harness/harness-run-watchdog";
-import { validateStructuredOutput } from "#src/subscription-cli-harness/structured-output-validation";
+import { parseStructuredOutput } from "#src/subscription-cli-harness/response-schema";
 import type {
     HarnessCommand,
     SubscriptionHarnessOptions
@@ -252,7 +252,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                     );
                 }
 
-                structuredOutput = validateStructuredOutput(
+                structuredOutput = parseStructuredOutput(
                     this.kind,
                     parser.structuredOutputCandidate,
                     request.responseSchema

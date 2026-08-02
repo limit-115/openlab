@@ -10,7 +10,6 @@ import { HarnessEventTypes } from "@lab/harness/harness-event.const";
 import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { requiredById } from "#src/lab-workspace/snapshot-entities";
-import { structuredOutputSchema } from "#src/research-contract/research-contract";
 import {
     SnapshotAgentRole,
     SnapshotEffortLevel,
@@ -49,7 +48,7 @@ export async function runStructuredAgent<Output>(
         prompt: input.prompt,
         cwd: agentWorkspace.cwd,
         artifactDirectory: agentWorkspace.artifactDirectory,
-        responseSchema: structuredOutputSchema(input.schema),
+        responseSchema: input.schema,
         ...(input.executionProfile === undefined
             ? {}
             : { executionProfile: input.executionProfile })

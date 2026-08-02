@@ -1,3 +1,4 @@
+import { responseJsonSchema } from "@lab/harness/response-schema";
 import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
 import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
@@ -6,7 +7,6 @@ import {
     DirectorPlanSchema,
     directorPlanSchema,
     ResearchResultSchema,
-    structuredOutputSchema,
     VerifierResultSchema
 } from "#src/research-contract/research-contract";
 import {
@@ -69,8 +69,8 @@ describe("research structured-output contracts", () => {
         ).toEqual([]);
     });
 
-    it("publishes the task-dependent assumption minimum to harness JSON Schema", () => {
-        expect(structuredOutputSchema(directorPlanSchema({ success_criteria: [] }))).toMatchObject({
+    it("publishes the task-dependent assumption minimum to the schema the CLI receives", () => {
+        expect(responseJsonSchema(directorPlanSchema({ success_criteria: [] }))).toMatchObject({
             properties: {
                 assumptions: {
                     minItems: 1
@@ -289,9 +289,5 @@ describe("research structured-output contracts", () => {
                 }
             })
         ).toThrow(/cannot request outcome execution/);
-    });
-
-    it("produces a JSON Schema accepted by CLI harnesses", () => {
-        expect(structuredOutputSchema(DirectorPlanSchema)).toMatchObject({ type: "object" });
     });
 });

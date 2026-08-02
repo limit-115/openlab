@@ -13,6 +13,7 @@ import type {
     HarnessRunFiles,
     NonManifestArtifacts
 } from "#src/subscription-cli-harness/harness-run-artifacts.types";
+import { responseJsonSchema } from "#src/subscription-cli-harness/response-schema";
 
 export async function createRunFiles(
     kind: HarnessKind,
@@ -42,7 +43,7 @@ export async function createRunFiles(
         const responseSchemaPath = resolve(artifactDirectory, HarnessArtifactFiles.RESPONSE_SCHEMA);
         await writeFile(
             responseSchemaPath,
-            `${JSON.stringify(request.responseSchema, null, 4)}\n`,
+            `${JSON.stringify(responseJsonSchema(request.responseSchema), null, 4)}\n`,
             {
                 encoding: "utf8",
                 flag: "wx",

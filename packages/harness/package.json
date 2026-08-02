@@ -21,6 +21,7 @@
         "./harness-run-artifacts.const": "./src/subscription-cli-harness/harness-run-artifacts.const.ts",
         "./harness-event.const": "./src/agent-harness/harness-event.const.ts",
         "./harness-event.types": "./src/agent-harness/harness-event.types.ts",
+        "./response-schema": "./src/subscription-cli-harness/response-schema.ts",
         "./subscription-cli-harness": "./src/subscription-cli-harness/subscription-cli-harness.ts",
         "./subscription-cli-harness.types": "./src/subscription-cli-harness/subscription-cli-harness.types.ts",
         "./subscription-environment": "./src/cli-execution/subscription-environment.ts",
@@ -39,8 +40,6 @@
         "format": "biome format --write ."
     },
     "dependencies": {
-        "ajv": "8.20.0",
-        "ajv-formats": "3.0.1",
         "execa": "10.0.1",
         "write-file-atomic": "8.0.0",
         "zod": "4.4.3"

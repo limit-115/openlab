@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import type {
     HarnessAuthenticationMethod,
     HarnessEffortLevel,
@@ -35,7 +36,12 @@ export interface HarnessRunRequest {
     readonly artifactDirectory: string;
     readonly model?: string;
     readonly effort?: HarnessEffortLevel;
-    readonly responseSchema?: Readonly<Record<string, unknown>>;
+    /**
+     * The schema a structured run must answer with. It arrives as Zod rather than JSON Schema so the
+     * document handed to the CLI and the check applied to its answer are derived from one definition
+     * and cannot drift; a caller therefore cannot hand over a schema that fails to compile.
+     */
+    readonly responseSchema?: z.ZodType;
     readonly resumeSessionId?: string;
     readonly timeoutMs?: number;
     readonly executionProfile?: HarnessExecutionProfile;

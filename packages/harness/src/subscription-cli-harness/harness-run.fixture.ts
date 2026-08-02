@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "vitest";
+import { z } from "zod";
 import type { HarnessRunRequest } from "#src/agent-harness/agent-harness.types";
 import { HarnessEventTypes } from "#src/agent-harness/harness-event.const";
 import type { HarnessCompletedEvent, HarnessEvent } from "#src/agent-harness/harness-event.types";
@@ -33,14 +34,18 @@ export async function removeHarnessRunDirectories(): Promise<void> {
     );
 }
 
-export function answerSchema(): Readonly<Record<string, unknown>> {
-    return {
-        type: "object",
-        properties: { answer: { type: "number" } },
-        required: ["answer"],
-        additionalProperties: false
-    };
+export function answerSchema(): z.ZodType {
+    return z.object({ answer: z.number() });
 }
+
+/** The document a CLI must be handed for {@link answerSchema}, spelled out rather than derived. */
+export const AnswerJsonSchema = {
+    $schema: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: { answer: { type: "number" } },
+    required: ["answer"],
+    additionalProperties: false
+} as const;
 
 export function lastCompleted(events: readonly HarnessEvent[]): HarnessCompletedEvent {
     const event = events.at(-1);

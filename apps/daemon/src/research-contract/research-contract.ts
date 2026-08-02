@@ -306,7 +306,3 @@ export type EvaluatorStructuredVerdict = z.infer<typeof EvaluatorStructuredVerdi
 export type ResearchResult = z.infer<typeof ResearchResultSchema>;
 export type CriticResult = z.infer<typeof CriticResultSchema>;
 export type VerifierResult = z.infer<typeof VerifierResultSchema>;
-
-export function structuredOutputSchema(schema: z.ZodType): Readonly<Record<string, unknown>> {
-    return z.toJSONSchema(schema, { target: "draft-7" }) as Readonly<Record<string, unknown>>;
-}
