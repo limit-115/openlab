@@ -24,7 +24,12 @@ import {
     LabState
 } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
-import { CRITIC_VERDICT, RESEARCH_OUTCOME, VERIFIER_VERDICT } from "#src/research-contract";
+import {
+    CRITIC_VERDICT,
+    RESEARCH_OUTCOME,
+    RESEARCH_TARGET_KIND,
+    VERIFIER_VERDICT
+} from "#src/research-contract";
 import { ResearchLoopOutcomeStatus, runResearchLoop } from "#src/research-loop";
 import { ResearchStage } from "#src/research-workspace";
 import { LabWorkspace } from "#src/workspace";
@@ -41,17 +46,20 @@ class ScriptedHarness implements AgentHarness {
     readonly requests: HarnessRunRequest[] = [];
     readonly verifierInitialEntries: string[][] = [];
     readonly #criticVerdict: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
+    readonly #falsifyAssumption: boolean;
     readonly #missingVerifierArtifacts: boolean;
 
     constructor(
         kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
         options: {
             criticVerdict?: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
+            falsifyAssumption?: boolean;
             missingVerifierArtifacts?: boolean;
         } = {}
     ) {
         this.kind = kind;
         this.#criticVerdict = options.criticVerdict ?? CRITIC_VERDICT.CREDIBLE;
+        this.#falsifyAssumption = options.falsifyAssumption ?? false;
         this.#missingVerifierArtifacts = options.missingVerifierArtifacts ?? false;
     }
 
@@ -65,7 +73,16 @@ class ScriptedHarness implements AgentHarness {
         if (request.prompt.includes(PromptRole.DIRECTOR)) {
             output = {
                 operational_goal: "Measure and independently reproduce a speedup",
-                assumptions: [],
+                assumptions: this.#falsifyAssumption
+                    ? [
+                          {
+                              statement: "The benchmark workload represents production traffic",
+                              reason: "The result is intended for production",
+                              risk: "A biased workload can reverse the result",
+                              falsification_test: "Evaluate a held-out production-shaped workload"
+                          }
+                      ]
+                    : [],
                 claims: [
                     {
                         statement: "The candidate is faster",
@@ -96,13 +113,18 @@ class ScriptedHarness implements AgentHarness {
             output = {
                 summary: "A recorded benchmark supports the claim",
                 hypothesis: "The candidate lowers elapsed time",
-                outcome: RESEARCH_OUTCOME.SUPPORTED,
+                outcome: this.#falsifyAssumption
+                    ? RESEARCH_OUTCOME.REFUTED
+                    : RESEARCH_OUTCOME.SUPPORTED,
                 evidence: [
                     {
-                        claim_index: 0,
+                        target_kind: this.#falsifyAssumption
+                            ? RESEARCH_TARGET_KIND.ASSUMPTION
+                            : RESEARCH_TARGET_KIND.CLAIM,
+                        target_index: 0,
                         summary: "Recorded benchmark samples",
                         artifact_paths: [path.basename(artifactPath)],
-                        contradicts_hypothesis: false,
+                        contradicts_hypothesis: this.#falsifyAssumption,
                         evaluator_command: {
                             file: process.execPath,
                             args: [evaluatorPath]
@@ -444,6 +466,55 @@ describe.sequential("runResearchLoop", () => {
         );
         expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
             EventType.LAB_COMPLETED
+        );
+    });
+
+    it("tests an explicit assumption and marks every dependent claim stale when falsified", async () => {
+        const workspace = await createWorkspace();
+        const abortController = new AbortController();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            falsifyAssumption: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            falsifyAssumption: true
+        });
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            signal: abortController.signal,
+            waitForCycle: async () => abortController.abort(new Error("test cycle observed"))
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
+        const assumption = workspace
+            .getSnapshot()
+            .claims.find(
+                ({ statement }) =>
+                    statement === "The benchmark workload represents production traffic"
+            );
+        const dependentClaim = workspace
+            .getSnapshot()
+            .claims.find(({ statement }) => statement === "The candidate is faster");
+        expect(assumption).toMatchObject({
+            status: ClaimStatus.REFUTED,
+            stale: false,
+            contradicting_evidence_ids: expect.arrayContaining([expect.any(String)])
+        });
+        expect(dependentClaim).toMatchObject({
+            status: ClaimStatus.TESTING,
+            stale: true,
+            assumption_ids: [assumption?.id]
+        });
+        expect(workspace.getEvents()).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: EventType.CLAIM_STALE,
+                    payload: expect.objectContaining({
+                        claim_id: dependentClaim?.id,
+                        refuted_assumption_id: assumption?.id
+                    })
+                })
+            ])
         );
     });
 

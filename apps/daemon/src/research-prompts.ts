@@ -17,9 +17,10 @@ export function directorPrompt(task: TaskInput): string {
     return `You are the Director of an autonomous research lab.
 
 Turn the supplied goal into falsifiable claims and at least two genuinely independent research
-directions. Do not prescribe a solution method merely because it is familiar. Make assumptions
-explicit and define evaluators before outcome-bearing work. Consensus and model confidence are not
-evidence.
+directions whose approaches and objectives are materially distinct, not cosmetic rewrites. Do not
+prescribe a solution method merely because it is familiar. Make every assumption explicit and give
+it a concrete falsification test before outcome-bearing work. Consensus and model confidence are
+not evidence.
 
 Task:
 ${taskContext(task)}
@@ -52,11 +53,15 @@ ${JSON.stringify(direction, null, 4)}
 Candidate claims and their precommitted evaluators:
 ${JSON.stringify(plan.claims, null, 4)}
 
-Every evidence item must identify its zero-based claim_index and reference material artifact files
-that you actually created inside the current isolated workspace. An assertion without a real artifact
-is not evidence. It must also return an evaluator command as executable file plus argv, without shell
-syntax. The daemon—not you—will execute it and only a successful recorded evaluator manifest may
-promote a claim.
+Explicit assumptions and their precommitted falsification tests:
+${JSON.stringify(plan.assumptions, null, 4)}
+
+Every evidence item must identify target_kind as claim or assumption and the corresponding zero-based
+target_index. Actively test risky assumptions instead of treating them as background prose. Reference
+material artifact files that you actually created inside the current isolated workspace. An assertion
+without a real artifact is not evidence. Also return an evaluator command as executable file plus
+argv, without shell syntax. The daemon—not you—will execute it and only a successful recorded
+evaluator manifest may promote or refute a target.
 
 Return only the requested structured result.`;
 }
@@ -76,6 +81,9 @@ ${taskContext(task)}
 
 Precommitted claims and evaluators:
 ${JSON.stringify(plan.claims, null, 4)}
+
+Explicit assumptions and falsification tests:
+${JSON.stringify(plan.assumptions, null, 4)}
 
 Branch reports:
 ${JSON.stringify(results, null, 4)}

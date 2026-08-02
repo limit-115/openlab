@@ -13,6 +13,8 @@ describe("research prompts", () => {
 
         expect(prompt).toContain("falsifiable claims");
         expect(prompt).toContain("independent research");
+        expect(prompt).toContain("materially distinct");
+        expect(prompt).toContain("concrete falsification test");
     });
 
     it("gives a researcher only its isolated direction", () => {
@@ -53,5 +55,6 @@ describe("research prompts", () => {
 
         expect(prompt).toContain("Data structure");
         expect(prompt).not.toContain("Vectorization");
+        expect(prompt).toContain("target_kind");
     });
 });

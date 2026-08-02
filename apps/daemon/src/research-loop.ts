@@ -38,8 +38,10 @@ import {
     type DirectorPlan,
     DirectorPlanSchema,
     RESEARCH_OUTCOME,
+    RESEARCH_TARGET_KIND,
     type ResearchResult,
     ResearchResultSchema,
+    type ResearchTargetKind,
     VERIFIER_VERDICT,
     VerifierResultSchema
 } from "#src/research-contract";
@@ -118,8 +120,10 @@ interface AvailableHarness {
     readonly preflight: HarnessPreflight;
 }
 
-interface PlanClaim {
+interface PlanTarget {
     readonly claim: Claim;
+    readonly evaluator: string;
+    readonly kind: ResearchTargetKind;
     readonly planIndex: number;
 }
 
@@ -339,7 +343,7 @@ async function runResearchCycle(
         directions: plan.directions.length
     });
 
-    const planClaims = await prepareClaims(workspace, plan, directorIds.branchId);
+    const planTargets = await prepareClaims(workspace, plan, directorIds.branchId);
     const settledBranches = await Promise.allSettled(
         plan.directions.map((direction, index) =>
             runResearchBranch(
@@ -349,7 +353,7 @@ async function runResearchCycle(
                 direction,
                 index,
                 cycle,
-                planClaims,
+                planTargets,
                 available,
                 cycle + index + 1,
                 createAgentWorkspace,
@@ -376,7 +380,7 @@ async function runResearchCycle(
     if (materialEvidence.length > 0) {
         progress.push(new Date());
     }
-    await promoteClaimsFromMaterialEvidence(workspace, planClaims, materialEvidence, progress);
+    await promoteClaimsFromMaterialEvidence(workspace, planTargets, materialEvidence, progress);
 
     const successfulResults = branchResults.flatMap(({ result }) =>
         result === undefined ? [] : [result]
@@ -441,7 +445,7 @@ async function runResearchCycle(
         verifierRun.result,
         verifierRun.agentWorkspace,
         verifierIds,
-        planClaims,
+        planTargets,
         criticism,
         signal
     );
@@ -509,14 +513,20 @@ async function prepareClaims(
     workspace: LabWorkspace,
     plan: DirectorPlan,
     branchId: string
-): Promise<PlanClaim[]> {
+): Promise<PlanTarget[]> {
     const assumptionIds: string[] = [];
-    for (const assumption of plan.assumptions) {
+    const targets: PlanTarget[] = [];
+    for (const [planIndex, assumption] of plan.assumptions.entries()) {
         const claim = await ensureTestingClaim(workspace, assumption.statement, branchId, []);
         assumptionIds.push(claim.id);
+        targets.push({
+            claim,
+            evaluator: assumption.falsification_test,
+            kind: RESEARCH_TARGET_KIND.ASSUMPTION,
+            planIndex
+        });
     }
 
-    const claims: PlanClaim[] = [];
     for (const [planIndex, candidate] of plan.claims.entries()) {
         const claim = await ensureTestingClaim(
             workspace,
@@ -524,9 +534,14 @@ async function prepareClaims(
             branchId,
             assumptionIds
         );
-        claims.push({ claim, planIndex });
+        targets.push({
+            claim,
+            evaluator: candidate.evaluator,
+            kind: RESEARCH_TARGET_KIND.CLAIM,
+            planIndex
+        });
     }
-    return claims;
+    return targets;
 }
 
 async function ensureTestingClaim(
@@ -580,15 +595,14 @@ async function runResearchBranch(
     direction: DirectorPlan["directions"][number],
     directionIndex: number,
     cycle: number,
-    planClaims: readonly PlanClaim[],
+    planTargets: readonly PlanTarget[],
     available: readonly AvailableHarness[],
     preferredHarnessIndex: number,
     createAgentWorkspace: CreateResearchWorkspace,
     signal?: AbortSignal
 ): Promise<ResearchBranchResult> {
     const ids = roleIdentifiers(ResearchStage.RESEARCHER, cycle, directionIndex);
-    const defaultClaim = planClaims[directionIndex % planClaims.length];
-    if (defaultClaim === undefined) {
+    if (!planTargets.some(({ kind }) => kind === RESEARCH_TARGET_KIND.CLAIM)) {
         throw new Error("Director plan unexpectedly contains no claims");
     }
     await prepareResearchBranch(workspace, ids, direction);
@@ -625,8 +639,7 @@ async function runResearchBranch(
                 ids,
                 ids.branchId,
                 agentWorkspace,
-                planClaims,
-                plan,
+                planTargets,
                 signal
             );
             await finishResearchAttempt(workspace, experimentId, run.result, true);
@@ -733,17 +746,20 @@ async function recordResearchEvidence(
     ids: RoleIdentifiers,
     branchId: string,
     agentWorkspace: ResearchWorkspace,
-    planClaims: readonly PlanClaim[],
-    plan: DirectorPlan,
+    planTargets: readonly PlanTarget[],
     signal?: AbortSignal
 ): Promise<{ result: ResearchResult; evidence: MaterialEvidence[]; issues: string[] }> {
     const evidence: MaterialEvidence[] = [];
     const issues: string[] = [];
     const normalizedEvidence: ResearchResult["evidence"] = [];
     for (const item of result.evidence) {
-        const planClaim = planClaims.find(({ planIndex }) => planIndex === item.claim_index);
-        if (planClaim === undefined) {
-            issues.push(`Evidence references unknown claim index ${item.claim_index}`);
+        const planTarget = planTargets.find(
+            ({ kind, planIndex }) => kind === item.target_kind && planIndex === item.target_index
+        );
+        if (planTarget === undefined) {
+            issues.push(
+                `Evidence references unknown ${item.target_kind} index ${item.target_index}`
+            );
             continue;
         }
         const validatedPaths: string[] = [];
@@ -753,7 +769,7 @@ async function recordResearchEvidence(
                 const rawArtifact: Evidence = {
                     id: `evidence-${randomUUID()}`,
                     kind: EvidenceKind.ARTIFACT,
-                    claim_id: planClaim.claim.id,
+                    claim_id: planTarget.claim.id,
                     artifact_path: artifact.path,
                     artifact_hash: artifact.sha256,
                     summary: item.summary,
@@ -781,34 +797,31 @@ async function recordResearchEvidence(
             }
         }
         if (validatedPaths.length === 0) {
-            issues.push(`Claim ${item.claim_index} has no non-empty contained artifact`);
+            issues.push(
+                `${item.target_kind} ${item.target_index} has no non-empty contained artifact`
+            );
             continue;
         }
 
-        const candidate = plan.claims[item.claim_index];
-        if (candidate === undefined) {
-            issues.push(`Evaluator references unknown claim index ${item.claim_index}`);
-            continue;
-        }
         const evaluation = await executeAttestedEvaluator(
             workspace,
             ids,
             agentWorkspace,
-            planClaim.claim,
-            candidate.evaluator,
+            planTarget.claim,
+            planTarget.evaluator,
             item.evaluator_command,
             signal
         );
         if (evaluation.result.status !== EXECUTION_STATUS.SUCCEEDED) {
             issues.push(
-                `Claim ${item.claim_index} evaluator ended with ${evaluation.result.status}`
+                `${item.target_kind} ${item.target_index} evaluator ended with ${evaluation.result.status}`
             );
             continue;
         }
         const recorded: Evidence = {
             id: `evidence-${randomUUID()}`,
             kind: EvidenceKind.EXPERIMENT,
-            claim_id: planClaim.claim.id,
+            claim_id: planTarget.claim.id,
             run_id: evaluation.experimentId,
             artifact_path: evaluation.result.manifest.path,
             artifact_hash: evaluation.result.manifest.sha256,
@@ -853,11 +866,11 @@ async function recordResearchEvidence(
 
 async function promoteClaimsFromMaterialEvidence(
     workspace: LabWorkspace,
-    planClaims: readonly PlanClaim[],
+    planTargets: readonly PlanTarget[],
     materialEvidence: readonly MaterialEvidence[],
     progress: Date[]
 ): Promise<void> {
-    for (const { claim: plannedClaim } of planClaims) {
+    for (const { claim: plannedClaim } of planTargets) {
         let claim = workspace.getSnapshot().claims.find(({ id }) => id === plannedClaim.id);
         if (claim === undefined) {
             throw new Error(`Claim disappeared from workspace: ${plannedClaim.id}`);
@@ -874,7 +887,7 @@ async function promoteClaimsFromMaterialEvidence(
 
         let target: typeof ClaimStatus.SUPPORTED | typeof ClaimStatus.REFUTED | undefined;
         let selected: readonly MaterialEvidence[] = [];
-        if (contradictions.length > 0) {
+        if (contradictions.length > 0 && claim.status !== ClaimStatus.REFUTED) {
             target = ClaimStatus.REFUTED;
             selected = contradictions;
         } else if (support.length > 0 && claim.status === ClaimStatus.TESTING) {
@@ -910,12 +923,15 @@ async function recordVerifierEvidence(
     harnessRun: HarnessRunResult,
     verifierWorkspace: ResearchWorkspace,
     verifierIds: RoleIdentifiers,
-    planClaims: readonly PlanClaim[],
+    planTargets: readonly PlanTarget[],
     criticism: CriticResult,
     signal?: AbortSignal
 ): Promise<{ completed: boolean; issues: string[] }> {
     const issues: string[] = [];
-    const planClaim = planClaims.find(({ planIndex }) => planIndex === verdict.claim_index);
+    const planClaim = planTargets.find(
+        ({ kind, planIndex }) =>
+            kind === RESEARCH_TARGET_KIND.CLAIM && planIndex === verdict.claim_index
+    );
     if (planClaim === undefined) {
         return {
             completed: false,
