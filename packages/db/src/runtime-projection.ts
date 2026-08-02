@@ -233,12 +233,18 @@ async function upsertAttempts(
                 status: ExperimentAttemptStatus[experiment.status],
                 command: experiment.command,
                 cwd: experiment.cwd,
-                inputs: { hypothesis: experiment.hypothesis },
+                inputs: {
+                    hypothesis: experiment.hypothesis,
+                    ...(experiment.execution_fingerprint === undefined
+                        ? {}
+                        : { execution_fingerprint: experiment.execution_fingerprint })
+                },
                 environment: {},
                 stdoutPath: experiment.output_path,
                 outputHash: experiment.output_hash,
                 exitCode: experiment.exit_code,
-                externalEffect: ExternalEffect.NONE,
+                externalEffect: experiment.external_effect ?? ExternalEffect.NONE,
+                reconciliationKey: experiment.reconciliation_key,
                 startedAt,
                 finishedAt,
                 createdAt: startedAt ?? projectionAt,
@@ -254,6 +260,14 @@ async function upsertAttempts(
                     stdoutPath: experiment.output_path ?? null,
                     outputHash: experiment.output_hash ?? null,
                     exitCode: experiment.exit_code ?? null,
+                    inputs: {
+                        hypothesis: experiment.hypothesis,
+                        ...(experiment.execution_fingerprint === undefined
+                            ? {}
+                            : { execution_fingerprint: experiment.execution_fingerprint })
+                    },
+                    externalEffect: experiment.external_effect ?? ExternalEffect.NONE,
+                    reconciliationKey: experiment.reconciliation_key ?? null,
                     startedAt: startedAt ?? null,
                     finishedAt: finishedAt ?? null,
                     updatedAt: projectionAt

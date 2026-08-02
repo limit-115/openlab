@@ -1,3 +1,4 @@
+import { ExternalEffect } from "@lab/protocol/constants";
 import type { TaskInput } from "@lab/protocol/schemas";
 import { z } from "zod";
 
@@ -164,9 +165,31 @@ const ResearchEvidenceSchema = z.object({
     target_kind: z.enum(domainValues(RESEARCH_TARGET_KIND)),
     target_index: z.number().int().nonnegative(),
     summary: z.string().min(1),
-    artifact_paths: z.array(z.string()),
+    artifact_paths: z.array(z.string()).max(0),
     contradicts_hypothesis: z.boolean()
 });
+
+const ResearchExecutionPlanSchema = z
+    .object({
+        file: z.string().trim().min(1),
+        args: z.array(z.string()).default([]),
+        declared_output_paths: z.array(z.string().trim().min(1)).min(1),
+        timeout_ms: z.number().int().positive().max(3_600_000).default(300_000),
+        external_effect: z.enum(domainValues(ExternalEffect)).default(ExternalEffect.NONE),
+        reconciliation_key: z.string().trim().min(1).optional()
+    })
+    .superRefine((plan, context) => {
+        if (
+            plan.external_effect === ExternalEffect.IRREVERSIBLE &&
+            plan.reconciliation_key === undefined
+        ) {
+            context.addIssue({
+                code: "custom",
+                path: ["reconciliation_key"],
+                message: "An irreversible execution requires a stable reconciliation key"
+            });
+        }
+    });
 
 export const ResearchResultSchema = z
     .object({
@@ -174,6 +197,7 @@ export const ResearchResultSchema = z
         hypothesis: z.string().min(1),
         outcome: z.enum(domainValues(RESEARCH_OUTCOME)),
         evidence: z.array(ResearchEvidenceSchema),
+        execution_plan: ResearchExecutionPlanSchema.optional(),
         limitations: z.array(z.string()),
         next_experiments: z.array(z.string()),
         capability_requests: CapabilityRequestCandidatesSchema,
@@ -185,6 +209,27 @@ export const ResearchResultSchema = z
                 code: "custom",
                 path: ["capability_blocked"],
                 message: "A resource-blocked result must include a concrete capability request"
+            });
+        }
+        if (!result.capability_blocked && result.execution_plan === undefined) {
+            context.addIssue({
+                code: "custom",
+                path: ["execution_plan"],
+                message: "An evidence-bearing result requires a daemon execution plan"
+            });
+        }
+        if (!result.capability_blocked && result.evidence.length === 0) {
+            context.addIssue({
+                code: "custom",
+                path: ["evidence"],
+                message: "An evidence-bearing result requires at least one evidence target"
+            });
+        }
+        if (result.capability_blocked && result.execution_plan !== undefined) {
+            context.addIssue({
+                code: "custom",
+                path: ["execution_plan"],
+                message: "A blocked result cannot request outcome execution"
             });
         }
     });
@@ -200,15 +245,41 @@ export const CriticResultSchema = z.object({
     capability_requests: CapabilityRequestCandidatesSchema
 });
 
-export const VerifierResultSchema = z.object({
-    verdict: z.enum(domainValues(VERIFIER_VERDICT)),
-    claim_index: z.number().int().nonnegative(),
-    result_statement: z.string().min(1),
-    evidence_artifact_paths: z.array(z.string()),
-    limitations: z.array(z.string()),
-    known_counterexamples: z.array(z.string()),
-    capability_requests: CapabilityRequestCandidatesSchema
-});
+export const VerifierResultSchema = z
+    .object({
+        verdict: z.enum(domainValues(VERIFIER_VERDICT)),
+        claim_index: z.number().int().nonnegative(),
+        result_statement: z.string().min(1),
+        evidence_artifact_paths: z.array(z.string()).max(0),
+        execution_plan: ResearchExecutionPlanSchema.optional(),
+        limitations: z.array(z.string()),
+        known_counterexamples: z.array(z.string()),
+        capability_requests: CapabilityRequestCandidatesSchema,
+        capability_blocked: z.boolean().default(false)
+    })
+    .superRefine((result, context) => {
+        if (result.capability_blocked && result.capability_requests.length === 0) {
+            context.addIssue({
+                code: "custom",
+                path: ["capability_blocked"],
+                message: "A blocked verifier requires a concrete capability request"
+            });
+        }
+        if (result.capability_blocked && result.execution_plan !== undefined) {
+            context.addIssue({
+                code: "custom",
+                path: ["execution_plan"],
+                message: "A blocked verifier cannot request outcome execution"
+            });
+        }
+        if (!result.capability_blocked && result.execution_plan === undefined) {
+            context.addIssue({
+                code: "custom",
+                path: ["execution_plan"],
+                message: "An unblocked verifier requires a daemon execution plan"
+            });
+        }
+    });
 
 export type DirectorPlan = z.infer<typeof DirectorPlanSchema>;
 export type CapabilityRequestCandidate = z.infer<typeof CapabilityRequestCandidateSchema>;

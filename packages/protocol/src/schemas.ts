@@ -8,6 +8,7 @@ import {
     EventType,
     EvidenceKind,
     ExperimentStatus,
+    ExternalEffect,
     InternalTaskStatus,
     LabState
 } from "#src/constants";
@@ -166,7 +167,13 @@ export const ExperimentSchema = z.object({
     started_at: z.string().datetime().optional(),
     finished_at: z.string().datetime().optional(),
     output_path: z.string().optional(),
-    output_hash: z.string().optional()
+    output_hash: z.string().optional(),
+    external_effect: z.enum(ExternalEffect).optional(),
+    reconciliation_key: z.string().trim().min(1).optional(),
+    execution_fingerprint: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/u)
+        .optional()
 });
 
 export const CapabilityRequestSchema = z

@@ -32,11 +32,11 @@ const ForbiddenModelApiPattern = {
     RAW_PROVIDER_SECRET:
         /(?:\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{16,}|\bBearer\s+[A-Za-z0-9._~+/-]{20,})/u,
     MODEL_SDK_IMPORT:
-        /(?:from\s+["'](?:openai|@anthropic-ai\/sdk|anthropic|@google\/genai|google-generativeai|@aws-sdk\/client-bedrock-runtime)["']|require\s*\(\s*["'](?:openai|@anthropic-ai\/sdk|anthropic|@google\/genai|google-generativeai|@aws-sdk\/client-bedrock-runtime)["']\s*\)|(?:^|\s)(?:import|from)\s+(?:openai|anthropic)(?:\s|$))/imu,
+        /(?:from\s+["'](?:openai|@anthropic-ai\/sdk|anthropic|@google\/genai|google-generativeai|@aws-sdk\/client-bedrock-runtime)["']|(?:require|import)\s*\(\s*["'](?:openai|@anthropic-ai\/sdk|anthropic|@google\/genai|google-generativeai|@aws-sdk\/client-bedrock-runtime)["']\s*\)|(?:^|\s)(?:import|from)\s+(?:openai|anthropic)(?:\s|$))/imu,
     MODEL_SDK_INSTALL:
         /(?:(?:npm|pnpm|yarn|bun|pip|pipx)\s+(?:install|add|i)|uv\s+(?:pip\s+)?install)\b[^\n;&|]*(?:@anthropic-ai\/sdk|openai|anthropic|@google\/genai|google-generativeai|@aws-sdk\/client-bedrock-runtime)/iu,
     NESTED_MODEL_HARNESS:
-        /(?:^|[;&|]\s*|\b(?:sudo|env|command|exec)\s+)(?:[^\s;&|]*\/)?(?:codex|claude)(?:\s|$)/iu
+        /(?:^|[\s'"`(=,;&|])(?:[^\s'"`;|()]*[/\\])?(?:codex|claude)(?:$|[\s'"`),;&|])/iu
 } as const;
 
 const HookInputSchema = z
@@ -93,6 +93,17 @@ export function evaluateModelApiToolInput(input: unknown): ModelApiPolicyResult 
     }
 
     return { decision: ModelApiPolicyDecision.ALLOW };
+}
+
+export function evaluateModelApiCommand(
+    file: string,
+    args: readonly string[]
+): ModelApiPolicyResult {
+    return evaluateModelApiToolInput({
+        hook_event_name: ModelApiPolicyHookEvent.PRE_TOOL_USE,
+        tool_name: ModelApiPolicyToolName.BASH,
+        tool_input: { command: [file, ...args].join(" ") }
+    });
 }
 
 export function modelApiPolicyHookCommand(): string {

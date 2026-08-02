@@ -1,4 +1,4 @@
-import type { EXECUTION_STATUS, ExecutionStatus } from "#src/constants";
+import type { DECLARED_OUTPUT_STATUS, EXECUTION_STATUS, ExecutionStatus } from "#src/constants";
 
 export interface ExplicitShellOptions {
     readonly enabled: true;
@@ -16,6 +16,7 @@ export interface ExecutionRequest {
     readonly timeoutMs?: number;
     readonly forceKillAfterMs?: number;
     readonly shell?: ExplicitShellOptions;
+    readonly declaredOutputPaths?: readonly string[];
 }
 
 export interface ArtifactDescriptor {
@@ -49,6 +50,20 @@ export interface RecordedCommand {
     readonly shell: false | { readonly executable: string | null };
 }
 
+export interface RecordedDeclaredOutput {
+    readonly requestedPath: string;
+    readonly status: typeof DECLARED_OUTPUT_STATUS.RECORDED;
+    readonly artifact: ArtifactDescriptor;
+}
+
+export interface UnavailableDeclaredOutput {
+    readonly requestedPath: string;
+    readonly status: typeof DECLARED_OUTPUT_STATUS.MISSING | typeof DECLARED_OUTPUT_STATUS.INVALID;
+    readonly error: string;
+}
+
+export type DeclaredOutputRecord = RecordedDeclaredOutput | UnavailableDeclaredOutput;
+
 export interface RunningExecutionRecord {
     readonly schemaVersion: 1;
     readonly status: typeof EXECUTION_STATUS.RUNNING;
@@ -73,6 +88,7 @@ export interface CompletedExecutionRecord {
     readonly error: string | null;
     readonly stdout: ArtifactDescriptor;
     readonly stderr: ArtifactDescriptor;
+    readonly declaredOutputs: readonly DeclaredOutputRecord[];
     readonly input?: ArtifactDescriptor;
 }
 

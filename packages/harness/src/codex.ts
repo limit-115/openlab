@@ -3,6 +3,7 @@ import {
     HarnessAuthenticationMethods,
     HarnessDiagnosticLevels,
     HarnessEventTypes,
+    HarnessExecutionProfiles,
     type HarnessKind,
     HarnessKinds,
     HarnessNativeEventTypes,
@@ -16,11 +17,13 @@ import type { HarnessCaptureResult } from "#src/process";
 import { SubscriptionCliHarness, type SubscriptionHarnessOptions } from "#src/subscription-harness";
 
 export const CodexPermissionModes = {
-    UNRESTRICTED: "unrestricted"
+    UNRESTRICTED: "unrestricted",
+    READ_ONLY: "read-only"
 } as const;
 
 const CodexPermissionArguments = {
-    [CodexPermissionModes.UNRESTRICTED]: ["--dangerously-bypass-approvals-and-sandbox"]
+    [CodexPermissionModes.UNRESTRICTED]: ["--dangerously-bypass-approvals-and-sandbox"],
+    [CodexPermissionModes.READ_ONLY]: ["--sandbox", CodexPermissionModes.READ_ONLY]
 } as const;
 
 const CodexNativeEventTypes = {
@@ -96,7 +99,9 @@ export class CodexHarness extends SubscriptionCliHarness {
             "--dangerously-bypass-hook-trust",
             "--config",
             codexModelApiPolicyConfig(),
-            ...CodexPermissionArguments[CodexPermissionModes.UNRESTRICTED],
+            ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
+                ? CodexPermissionArguments[CodexPermissionModes.READ_ONLY]
+                : CodexPermissionArguments[CodexPermissionModes.UNRESTRICTED]),
             ...(request.model === undefined ? [] : ["--model", request.model]),
             ...(responseSchemaPath === undefined ? [] : ["--output-schema", responseSchemaPath])
         ];

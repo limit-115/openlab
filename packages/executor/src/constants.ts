@@ -8,3 +8,11 @@ export const EXECUTION_STATUS = {
 } as const;
 
 export type ExecutionStatus = (typeof EXECUTION_STATUS)[keyof typeof EXECUTION_STATUS];
+
+export const DECLARED_OUTPUT_STATUS = {
+    RECORDED: "recorded",
+    MISSING: "missing",
+    INVALID: "invalid"
+} as const;
+export type DeclaredOutputStatus =
+    (typeof DECLARED_OUTPUT_STATUS)[keyof typeof DECLARED_OUTPUT_STATUS];

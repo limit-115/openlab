@@ -3,11 +3,13 @@ import { chmod, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/pro
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
+import { WakeTrigger } from "@lab/core/constants";
 import {
     type AgentHarness,
     HarnessAuthenticationMethods,
     type HarnessEvent,
     HarnessEventTypes,
+    HarnessExecutionProfiles,
     HarnessInputSources,
     HarnessKinds,
     type HarnessPreflight,
@@ -26,6 +28,7 @@ import {
     EventType,
     EvidenceKind,
     ExperimentStatus,
+    ExternalEffect,
     InternalTaskStatus,
     LabState
 } from "@lab/protocol/constants";
@@ -100,6 +103,12 @@ class ScriptedHarness implements AgentHarness {
     readonly #trivialCriticEvaluator: boolean;
     readonly #cosmeticCriticEvaluator: boolean;
     readonly #blockingVerifierEvaluator: boolean;
+    readonly #irreversibleOutcomeTimeout: boolean;
+    readonly #forbiddenOutcomeCommands: boolean;
+    readonly #fabricatedVerifierArtifactPath: boolean;
+    readonly #mutateOutcomeDuringEvaluation: boolean;
+    readonly #inspectOutcomeEnvironment: boolean;
+    readonly #requestVerifierCapability: boolean;
     readonly #researchEvaluatorPaths: string[] = [];
     readonly #precomputedArtifactPaths: string[] = [];
 
@@ -118,6 +127,12 @@ class ScriptedHarness implements AgentHarness {
             trivialCriticEvaluator?: boolean;
             cosmeticCriticEvaluator?: boolean;
             blockingVerifierEvaluator?: boolean;
+            irreversibleOutcomeTimeout?: boolean;
+            forbiddenOutcomeCommands?: boolean;
+            fabricatedVerifierArtifactPath?: boolean;
+            mutateOutcomeDuringEvaluation?: boolean;
+            inspectOutcomeEnvironment?: boolean;
+            requestVerifierCapability?: boolean;
         } = {}
     ) {
         this.kind = kind;
@@ -133,6 +148,12 @@ class ScriptedHarness implements AgentHarness {
         this.#trivialCriticEvaluator = options.trivialCriticEvaluator ?? false;
         this.#cosmeticCriticEvaluator = options.cosmeticCriticEvaluator ?? false;
         this.#blockingVerifierEvaluator = options.blockingVerifierEvaluator ?? false;
+        this.#irreversibleOutcomeTimeout = options.irreversibleOutcomeTimeout ?? false;
+        this.#forbiddenOutcomeCommands = options.forbiddenOutcomeCommands ?? false;
+        this.#fabricatedVerifierArtifactPath = options.fabricatedVerifierArtifactPath ?? false;
+        this.#mutateOutcomeDuringEvaluation = options.mutateOutcomeDuringEvaluation ?? false;
+        this.#inspectOutcomeEnvironment = options.inspectOutcomeEnvironment ?? false;
+        this.#requestVerifierCapability = options.requestVerifierCapability ?? false;
     }
 
     async preflight(): Promise<HarnessPreflight> {
@@ -196,7 +217,8 @@ class ScriptedHarness implements AgentHarness {
                         successContract,
                         supportsWhen: this.#falsifyAssumption
                             ? EvaluatorComparison.TRUTHY
-                            : EvaluatorComparison.LESS_THAN
+                            : EvaluatorComparison.LESS_THAN,
+                        mutateArtifact: this.#mutateOutcomeDuringEvaluation
                     });
             await writeFile(evaluatorPath, evaluatorSource);
             await chmod(evaluatorPath, 0o755);
@@ -248,15 +270,18 @@ class ScriptedHarness implements AgentHarness {
             } else {
                 const artifactPath = this.#precommitOutcomeOnly
                     ? (this.#precomputedArtifactPaths.shift() ?? "missing-precomputed-artifact")
-                    : path.join(request.cwd, `measurement-${this.requests.length}.json`);
-                if (!this.#precommitOutcomeOnly) {
-                    await writeFile(
-                        artifactPath,
-                        JSON.stringify(
-                            this.#falsifyAssumption ? { representative: false } : { elapsed_ms: 12 }
-                        )
-                    );
-                }
+                    : path.join(
+                          request.cwd,
+                          this.#irreversibleOutcomeTimeout
+                              ? "irreversible-result.json"
+                              : `measurement-${this.requests.length}.json`
+                      );
+                const outputContent = JSON.stringify(
+                    this.#falsifyAssumption ? { representative: false } : { elapsed_ms: 12 }
+                );
+                const outputExpression = this.#inspectOutcomeEnvironment
+                    ? `JSON.stringify({ elapsed_ms: 12, outcome_env: { home: process.env.HOME, codex_home: process.env.CODEX_HOME, claude_config_dir: process.env.CLAUDE_CONFIG_DIR, provider_api_keys_absent: [["OPENAI", "API", "KEY"], ["ANTHROPIC", "API", "KEY"], [["CO", "DEX"].join(""), "API", "KEY"]].map((parts) => parts.join("_")).every((name) => process.env[name] === undefined), auth_marker_visible: await (async () => { try { await (await import("node:fs/promises")).access((await import("node:path")).join(process.env.CODEX_HOME, "auth-marker")); return true; } catch { return false; } })() } })`
+                    : JSON.stringify(outputContent);
                 output = {
                     summary: "A recorded benchmark supports the claim",
                     hypothesis: "The candidate lowers elapsed time",
@@ -270,14 +295,40 @@ class ScriptedHarness implements AgentHarness {
                                 : RESEARCH_TARGET_KIND.CLAIM,
                             target_index: 0,
                             summary: "Recorded benchmark samples",
-                            artifact_paths: [
-                                this.#precommitOutcomeOnly
-                                    ? artifactPath
-                                    : path.basename(artifactPath)
-                            ],
+                            artifact_paths: this.#precommitOutcomeOnly ? [artifactPath] : [],
                             contradicts_hypothesis: this.#falsifyAssumption
                         }
                     ],
+                    execution_plan: {
+                        file: this.#forbiddenOutcomeCommands
+                            ? request.prompt.includes(
+                                  `"title": "${DatasetCapabilityFixture.DIRECTION_TITLE}"`
+                              )
+                                ? "curl"
+                                : "codex"
+                            : process.execPath,
+                        args: this.#forbiddenOutcomeCommands
+                            ? request.prompt.includes(
+                                  `"title": "${DatasetCapabilityFixture.DIRECTION_TITLE}"`
+                              )
+                                ? ["https://api.openai.com/v1/models"]
+                                : ["exec", "-"]
+                            : [
+                                  "--input-type=module",
+                                  "-e",
+                                  this.#irreversibleOutcomeTimeout
+                                      ? `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression}); await new Promise((resolve) => setTimeout(resolve, 10_000))`
+                                      : `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression})`
+                              ],
+                        declared_output_paths: [path.basename(artifactPath)],
+                        timeout_ms: this.#irreversibleOutcomeTimeout ? 50 : 300_000,
+                        external_effect: this.#irreversibleOutcomeTimeout
+                            ? ExternalEffect.IRREVERSIBLE
+                            : ExternalEffect.NONE,
+                        ...(this.#irreversibleOutcomeTimeout
+                            ? { reconciliation_key: "irreversible-operation" }
+                            : {})
+                    },
                     limitations: [],
                     next_experiments: []
                 };
@@ -335,8 +386,36 @@ class ScriptedHarness implements AgentHarness {
             };
         } else if (request.prompt.includes(PromptRole.VERIFIER)) {
             this.verifierInitialEntries.push(await readdir(request.cwd));
+            if (this.#requestVerifierCapability) {
+                output = {
+                    verdict: VERIFIER_VERDICT.INCONCLUSIVE,
+                    claim_index: 0,
+                    result_statement: "Independent reproduction requires held-out input",
+                    evidence_artifact_paths: [],
+                    limitations: [DatasetCapabilityFixture.NEED],
+                    known_counterexamples: [],
+                    capability_requests: [
+                        {
+                            need: DatasetCapabilityFixture.NEED,
+                            reason: DatasetCapabilityFixture.REASON,
+                            provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT
+                        }
+                    ],
+                    capability_blocked: true
+                };
+                const result = await harnessResult(this.kind, request, output);
+                yield {
+                    type: HarnessEventTypes.RUN_COMPLETED,
+                    sequence: 1,
+                    occurredAt: new Date().toISOString(),
+                    harness: this.kind,
+                    sessionId: result.sessionId,
+                    result
+                };
+                return;
+            }
             const artifactPath = path.join(request.cwd, "independent-reproduction.json");
-            if (!this.#missingVerifierArtifacts) {
+            if (this.#fabricatedVerifierArtifactPath) {
                 await writeFile(
                     artifactPath,
                     JSON.stringify({ elapsed_ms: this.#copiedVerifierArtifact ? 12 : 11 })
@@ -346,7 +425,19 @@ class ScriptedHarness implements AgentHarness {
                 verdict: VERIFIER_VERDICT.REPRODUCED,
                 claim_index: 0,
                 result_statement: "An independent benchmark reproduced the speedup",
-                evidence_artifact_paths: [artifactPath],
+                evidence_artifact_paths: this.#fabricatedVerifierArtifactPath ? [artifactPath] : [],
+                execution_plan: {
+                    file: process.execPath,
+                    args: this.#missingVerifierArtifacts
+                        ? ["-e", "process.exit(0)"]
+                        : [
+                              "--input-type=module",
+                              "-e",
+                              `await (await import("node:fs/promises")).writeFile("independent-reproduction.json", ${JSON.stringify(JSON.stringify({ elapsed_ms: this.#copiedVerifierArtifact ? 12 : 11 }))})`
+                          ],
+                    declared_output_paths: ["independent-reproduction.json"],
+                    external_effect: ExternalEffect.NONE
+                },
                 limitations: [],
                 known_counterexamples: []
             };
@@ -519,7 +610,7 @@ describe.sequential("runResearchLoop", () => {
         expect(workspace.getSnapshot().claims).toEqual([
             expect.objectContaining({ status: ClaimStatus.REPRODUCED })
         ]);
-        expect(workspace.getSnapshot().experiments).toHaveLength(8);
+        expect(workspace.getSnapshot().experiments).toHaveLength(11);
         expect(
             workspace
                 .getSnapshot()
@@ -556,12 +647,23 @@ describe.sequential("runResearchLoop", () => {
         const verifierRequest = [...codex.requests, ...claude.requests].find(({ prompt }) =>
             prompt.includes(PromptRole.VERIFIER)
         );
+        expect(verifierRequest?.executionProfile).toBe(HarnessExecutionProfiles.READ_ONLY);
         expect(verifierRequest?.prompt).not.toContain('"artifact_paths"');
         for (const request of [...codex.requests, ...claude.requests].filter(({ prompt }) =>
             prompt.includes(PromptRole.RESEARCHER)
         )) {
+            expect(request.executionProfile).toBe(HarnessExecutionProfiles.READ_ONLY);
             expect(verifierRequest?.prompt).not.toContain(request.cwd);
         }
+        expect(workspace.getSnapshot().experiments).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    evaluator: "Daemon-owned outcome executor",
+                    external_effect: ExternalEffect.NONE,
+                    output_hash: expect.stringMatching(/^[a-f\d]{64}$/u)
+                })
+            ])
+        );
         expect(workspace.getEvents().map(({ type }) => type)).toEqual(
             expect.arrayContaining([
                 EventType.HARNESS_PREFLIGHT_SUCCEEDED,
@@ -721,6 +823,27 @@ describe.sequential("runResearchLoop", () => {
         );
     });
 
+    it("rejects an evaluator that mutates an immutable outcome snapshot", async () => {
+        const workspace = await createWorkspace();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            mutateOutcomeDuringEvaluation: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            mutateOutcomeDuringEvaluation: true
+        });
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            plateauInactivityMs: 1
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        expect(workspace.getEvidence()).toHaveLength(0);
+        expect(workspace.getSnapshot().frontier.blockers).toEqual(
+            expect.arrayContaining([expect.stringContaining("changed across evaluator boundary")])
+        );
+    });
+
     it("rejects verifier artifacts copied byte-for-byte from a research branch", async () => {
         const workspace = await createWorkspace();
         const abortController = new AbortController();
@@ -812,7 +935,6 @@ describe.sequential("runResearchLoop", () => {
 
     it("does not accept outcome artifacts created in the separate precommit workspace", async () => {
         const workspace = await createWorkspace();
-        const abortController = new AbortController();
         const codex = new ScriptedHarness(HarnessKinds.CODEX, {
             precommitOutcomeOnly: true
         });
@@ -822,19 +944,157 @@ describe.sequential("runResearchLoop", () => {
 
         const outcome = await runResearchLoop(workspace, {
             harnesses: [codex, claude],
-            signal: abortController.signal,
-            waitForCycle: async () => abortController.abort(new Error("test cycle observed"))
+            plateauInactivityMs: 1
         });
 
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
         expect(workspace.getSnapshot().claims.map(({ status }) => status)).not.toContain(
             ClaimStatus.SUPPORTED
         );
         expect([...codex.researcherInitialEntries, ...claude.researcherInitialEntries]).toEqual(
             expect.arrayContaining([[".git"]])
         );
+        expect(
+            workspace
+                .getSnapshot()
+                .experiments.some(({ evaluator }) => evaluator === "Daemon-owned outcome executor")
+        ).toBe(false);
+    });
+
+    it("rejects provider endpoints and nested model harnesses in daemon execution plans", async () => {
+        const workspace = await createWorkspace();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            forbiddenOutcomeCommands: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            forbiddenOutcomeCommands: true
+        });
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            plateauInactivityMs: 1
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        expect(
+            workspace
+                .getSnapshot()
+                .experiments.some(({ evaluator }) => evaluator === "Daemon-owned outcome executor")
+        ).toBe(false);
+        expect(workspace.getEvidence().some(({ supports }) => supports)).toBe(false);
         expect(workspace.getSnapshot().frontier.blockers).toEqual(
-            expect.arrayContaining([expect.stringContaining("escapes its isolated workspace")])
+            expect.arrayContaining([
+                expect.stringContaining("subscription-only policy"),
+                expect.stringContaining("model clients")
+            ])
+        );
+    });
+
+    it("rejects verifier artifacts created directly by the planning harness", async () => {
+        const workspace = await createWorkspace();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            fabricatedVerifierArtifactPath: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            fabricatedVerifierArtifactPath: true
+        });
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            plateauInactivityMs: 1
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.FAILED);
+        expect(workspace.getSnapshot().claims.map(({ status }) => status)).not.toContain(
+            ClaimStatus.REPRODUCED
+        );
+        expect(
+            workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.VERIFIER_RESULT)
+        ).toBe(false);
+    });
+
+    it("isolates daemon outcome processes from provider credentials and subscription homes", async () => {
+        const workspace = await createWorkspace();
+        const markerRoot = await mkdtemp(path.join(tmpdir(), "lab-outcome-auth-marker-"));
+        await writeFile(path.join(markerRoot, "auth-marker"), "must not be visible");
+        const previousCodexHome = process.env.CODEX_HOME;
+        const previousOpenAiKey = process.env.OPENAI_API_KEY;
+        const previousAnthropicKey = process.env.ANTHROPIC_API_KEY;
+        process.env.CODEX_HOME = markerRoot;
+        process.env.OPENAI_API_KEY = "test-provider-key";
+        process.env.ANTHROPIC_API_KEY = "test-provider-key";
+
+        try {
+            const outcome = await runResearchLoop(workspace, {
+                harnesses: [
+                    new ScriptedHarness(HarnessKinds.CODEX, {
+                        inspectOutcomeEnvironment: true
+                    }),
+                    new ScriptedHarness(HarnessKinds.CLAUDE, {
+                        inspectOutcomeEnvironment: true
+                    })
+                ],
+                plateauInactivityMs: 1
+            });
+
+            expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
+            const observation = await findOutcomeEnvironmentObservation(workspace);
+            expect(observation.provider_api_keys_absent).toBe(true);
+            expect(observation.auth_marker_visible).toBe(false);
+            expect(observation.home).toBe(observation.codex_home);
+            expect(observation.home).toBe(observation.claude_config_dir);
+            expect(path.basename(observation.home)).toBe(".lab-empty-model-auth");
+            expect(observation.home).not.toBe(markerRoot);
+        } finally {
+            restoreEnvironmentVariable("CODEX_HOME", previousCodexHome);
+            restoreEnvironmentVariable("OPENAI_API_KEY", previousOpenAiKey);
+            restoreEnvironmentVariable("ANTHROPIC_API_KEY", previousAnthropicKey);
+        }
+    });
+
+    it("pauses a capability-blocked verifier without executing a fabricated plan", async () => {
+        const workspace = await createWorkspace();
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [
+                new ScriptedHarness(HarnessKinds.CODEX, {
+                    requestVerifierCapability: true
+                }),
+                new ScriptedHarness(HarnessKinds.CLAUDE, {
+                    requestVerifierCapability: true
+                })
+            ],
+            plateauInactivityMs: 1
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        const snapshot = workspace.getSnapshot();
+        const verifierTask = snapshot.tasks.find(({ role }) => role === AgentRole.VERIFIER);
+        if (verifierTask === undefined) {
+            throw new Error("Expected a capability-blocked verifier task");
+        }
+        expect(verifierTask).toMatchObject({
+            status: InternalTaskStatus.QUEUED,
+            context_refs: [expect.any(String)]
+        });
+        expect(
+            snapshot.agents.find(({ branch_id }) => branch_id === verifierTask.branch_id)
+        ).toMatchObject({ status: AgentStatus.BLOCKED });
+        expect(snapshot.branches.find(({ id }) => id === verifierTask.branch_id)).toMatchObject({
+            status: BranchStatus.PAUSED
+        });
+        expect(
+            snapshot.experiments.some(
+                ({ task_id: taskId, evaluator }) =>
+                    taskId === verifierTask.id && evaluator === "Daemon-owned outcome executor"
+            )
+        ).toBe(false);
+        expect(snapshot.capability_requests).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    need: DatasetCapabilityFixture.NEED,
+                    status: CapabilityStatus.OPEN
+                })
+            ])
         );
     });
 
@@ -1130,6 +1390,80 @@ describe.sequential("runResearchLoop", () => {
         );
     });
 
+    it("does not automatically retry an interrupted irreversible outcome attempt", async () => {
+        const workspace = await createWorkspace();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            irreversibleOutcomeTimeout: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            irreversibleOutcomeTimeout: true
+        });
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            plateauInactivityMs: 1
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        expect(
+            claude.requests.filter(({ prompt }) => prompt.includes(PromptRole.RESEARCHER))
+        ).toHaveLength(1);
+        expect(
+            codex.requests.filter(({ prompt }) => prompt.includes(PromptRole.RESEARCHER))
+        ).toHaveLength(1);
+        expect(workspace.getSnapshot().experiments).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    evaluator: "Daemon-owned outcome executor",
+                    status: ExperimentStatus.TIMED_OUT,
+                    external_effect: ExternalEffect.IRREVERSIBLE,
+                    reconciliation_key: expect.stringMatching(/^irreversible-/u),
+                    output_path: expect.any(String),
+                    output_hash: expect.stringMatching(/^[a-f\d]{64}$/u)
+                })
+            ])
+        );
+        expect(
+            workspace
+                .getSnapshot()
+                .experiments.filter(
+                    ({ evaluator, external_effect: externalEffect }) =>
+                        evaluator === "Daemon-owned outcome executor" &&
+                        externalEffect === ExternalEffect.IRREVERSIBLE
+                )
+        ).toHaveLength(1);
+
+        await workspace.transition(LabState.RUNNING, "retry-safety audit", {
+            wakeTrigger: WakeTrigger.USER
+        });
+        const recoveredWorkspace = await LabWorkspace.load(
+            path.dirname(path.dirname(workspace.runDirectory)),
+            workspace.runDirectory
+        );
+        const recovered = await runResearchLoop(recoveredWorkspace, {
+            harnesses: [
+                new ScriptedHarness(HarnessKinds.CODEX, {
+                    irreversibleOutcomeTimeout: true
+                }),
+                new ScriptedHarness(HarnessKinds.CLAUDE, {
+                    irreversibleOutcomeTimeout: true
+                })
+            ],
+            plateauInactivityMs: 1
+        });
+
+        expect(recovered.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        expect(
+            recoveredWorkspace
+                .getSnapshot()
+                .experiments.filter(
+                    ({ evaluator, external_effect: externalEffect }) =>
+                        evaluator === "Daemon-owned outcome executor" &&
+                        externalEffect === ExternalEffect.IRREVERSIBLE
+                )
+        ).toHaveLength(1);
+    });
+
     it("does not complete when the critic refutes the candidate", async () => {
         const workspace = await createWorkspace();
         const abortController = new AbortController();
@@ -1327,18 +1661,22 @@ function evaluatorProgram(input: {
     successContract: string;
     supportsWhen: (typeof EvaluatorComparison)[keyof typeof EvaluatorComparison];
     delayMs?: number;
+    mutateArtifact?: boolean;
 }): string {
     return `#!/usr/bin/env node
 const chunks = [];
 for await (const chunk of process.stdin) chunks.push(chunk);
 const daemonInput = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-const artifact = JSON.parse(await (await import("node:fs/promises")).readFile(daemonInput.artifacts[0].path, "utf8"));
+const fs = await import("node:fs/promises");
+const artifactPath = daemonInput.artifacts[0].path;
+const artifact = JSON.parse(await fs.readFile(artifactPath, "utf8"));
 const observed = artifact[${JSON.stringify(input.field)}];
 const passed = ${
         input.supportsWhen === EvaluatorComparison.LESS_THAN
             ? `Number.isFinite(observed) && observed < ${Number(input.expected)}`
             : "Boolean(observed)"
     };
+${input.mutateArtifact === true ? 'await fs.chmod(artifactPath, 0o600); await fs.writeFile(artifactPath, "{\\"elapsed_ms\\":999}");' : ""}
 const verdict = passed ? ${JSON.stringify(EVALUATOR_VERDICT.SUPPORTS)} : ${JSON.stringify(EVALUATOR_VERDICT.CONTRADICTS)};
 ${input.delayMs === undefined ? "" : `await new Promise((resolve) => setTimeout(resolve, ${input.delayMs}));`}
 process.stdout.write(JSON.stringify({
@@ -1385,6 +1723,66 @@ async function waitUntil(predicate: () => boolean): Promise<void> {
         }
         await delay(10);
     }
+}
+
+interface OutcomeEnvironmentObservation {
+    readonly home: string;
+    readonly codex_home: string;
+    readonly claude_config_dir: string;
+    readonly provider_api_keys_absent: boolean;
+    readonly auth_marker_visible: boolean;
+}
+
+async function findOutcomeEnvironmentObservation(
+    workspace: LabWorkspace
+): Promise<OutcomeEnvironmentObservation> {
+    for (const evidence of workspace.getEvidence()) {
+        if (evidence.kind !== EvidenceKind.ARTIFACT || evidence.artifact_path === undefined) {
+            continue;
+        }
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(await readFile(evidence.artifact_path, "utf8"));
+        } catch {
+            continue;
+        }
+        if (typeof parsed !== "object" || parsed === null || !("outcome_env" in parsed)) {
+            continue;
+        }
+        const outcomeEnvironment = parsed.outcome_env;
+        if (
+            typeof outcomeEnvironment !== "object" ||
+            outcomeEnvironment === null ||
+            !("home" in outcomeEnvironment) ||
+            typeof outcomeEnvironment.home !== "string" ||
+            !("codex_home" in outcomeEnvironment) ||
+            typeof outcomeEnvironment.codex_home !== "string" ||
+            !("claude_config_dir" in outcomeEnvironment) ||
+            typeof outcomeEnvironment.claude_config_dir !== "string" ||
+            !("provider_api_keys_absent" in outcomeEnvironment) ||
+            typeof outcomeEnvironment.provider_api_keys_absent !== "boolean" ||
+            !("auth_marker_visible" in outcomeEnvironment) ||
+            typeof outcomeEnvironment.auth_marker_visible !== "boolean"
+        ) {
+            continue;
+        }
+        return {
+            home: outcomeEnvironment.home,
+            codex_home: outcomeEnvironment.codex_home,
+            claude_config_dir: outcomeEnvironment.claude_config_dir,
+            provider_api_keys_absent: outcomeEnvironment.provider_api_keys_absent,
+            auth_marker_visible: outcomeEnvironment.auth_marker_visible
+        };
+    }
+    throw new Error("Expected a daemon outcome environment observation artifact");
+}
+
+function restoreEnvironmentVariable(name: string, value: string | undefined): void {
+    if (value === undefined) {
+        delete process.env[name];
+        return;
+    }
+    process.env[name] = value;
 }
 
 async function createWorkspace(

@@ -53,6 +53,13 @@ export const ExperimentStatus = {
 } as const;
 export type ExperimentStatus = (typeof ExperimentStatus)[keyof typeof ExperimentStatus];
 
+export const ExternalEffect = {
+    NONE: "none",
+    REVERSIBLE: "reversible",
+    IRREVERSIBLE: "irreversible"
+} as const;
+export type ExternalEffect = (typeof ExternalEffect)[keyof typeof ExternalEffect];
+
 export const CapabilityRequestType = {
     CAPABILITY_REQUEST: "capability_request"
 } as const;

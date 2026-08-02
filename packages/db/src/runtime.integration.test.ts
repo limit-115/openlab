@@ -229,7 +229,10 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             command: "node evaluator.ts",
             cwd: "/tmp/research-branch",
             status: ExperimentStatus.RUNNING,
-            started_at: "2026-08-02T00:01:00.000Z"
+            started_at: "2026-08-02T00:01:00.000Z",
+            external_effect: ExternalEffect.IRREVERSIBLE,
+            reconciliation_key: "external-operation-primary",
+            execution_fingerprint: "c".repeat(64)
         });
         const evidenceRecords = makeEvidence(
             snapshot.lab.id,
@@ -257,10 +260,13 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             status: AttemptStatus.RUNNING,
             command: "node evaluator.ts",
             cwd: "/tmp/research-branch",
-            inputs: { hypothesis: "The measured result is stable" },
+            inputs: {
+                hypothesis: "The measured result is stable",
+                execution_fingerprint: "c".repeat(64)
+            },
             environment: {},
-            externalEffect: ExternalEffect.NONE,
-            reconciliationKey: null
+            externalEffect: ExternalEffect.IRREVERSIBLE,
+            reconciliationKey: "external-operation-primary"
         });
         expect(
             await client.db.query.evidence.findMany({
@@ -353,7 +359,8 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                 stdoutPath: "artifacts/evaluator.stdout",
                 outputHash: "b".repeat(64),
                 exitCode: 0,
-                externalEffect: ExternalEffect.NONE
+                externalEffect: ExternalEffect.IRREVERSIBLE,
+                reconciliationKey: "external-operation-primary"
             }),
             expect.objectContaining({
                 id: `${snapshot.lab.id}-experiment-follow-up`,

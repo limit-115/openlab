@@ -9,6 +9,7 @@
         "./contract": "./src/contract.ts",
         "./environment": "./src/environment.ts",
         "./errors": "./src/errors.ts",
+        "./model-api-policy": "./src/model-api-policy.ts",
         "./process": "./src/process.ts"
     },
     "imports": {

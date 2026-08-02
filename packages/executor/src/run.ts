@@ -1,14 +1,15 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdir, open, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { mkdir, open, realpath, stat, writeFile } from "node:fs/promises";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { execa } from "execa";
 import writeFileAtomic from "write-file-atomic";
-import { EXECUTION_STATUS, type ExecutionStatus } from "#src/constants";
+import { DECLARED_OUTPUT_STATUS, EXECUTION_STATUS, type ExecutionStatus } from "#src/constants";
 import { ArtifactDirectoryExistsError, ExecutionRequestError } from "#src/errors";
 import type {
     ArtifactDescriptor,
     CompletedExecutionRecord,
+    DeclaredOutputRecord,
     ExecutionRequest,
     ExecutionResult,
     RecordedCommand,
@@ -86,9 +87,10 @@ export async function runExperiment(
         unexpectedError = error;
     }
 
-    const [stdout, stderr] = await Promise.all([
+    const [stdout, stderr, declaredOutputs] = await Promise.all([
         hashArtifact(stdoutPath),
-        hashArtifact(stderrPath)
+        hashArtifact(stderrPath),
+        recordDeclaredOutputs(cwd, request.declaredOutputPaths ?? [])
     ]);
     const finishedAt = new Date().toISOString();
     const completedRecord: CompletedExecutionRecord = {
@@ -104,6 +106,7 @@ export async function runExperiment(
         error: errorMessage(processResult, unexpectedError),
         stdout,
         stderr,
+        declaredOutputs,
         ...(input === undefined ? {} : { input })
     };
 
@@ -113,6 +116,47 @@ export async function runExperiment(
         ...completedRecord,
         manifest
     };
+}
+
+async function recordDeclaredOutputs(
+    cwd: string,
+    requestedPaths: readonly string[]
+): Promise<DeclaredOutputRecord[]> {
+    const canonicalCwd = await realpath(cwd);
+    return Promise.all(
+        requestedPaths.map(async (requestedPath) => {
+            try {
+                const candidate = resolve(canonicalCwd, requestedPath);
+                const canonicalPath = await realpath(candidate);
+                const relativePath = relative(canonicalCwd, canonicalPath);
+                if (
+                    relativePath === ".." ||
+                    relativePath.startsWith(`..${sep}`) ||
+                    isAbsolute(relativePath)
+                ) {
+                    throw new Error("declared output escapes the execution workspace");
+                }
+                const metadata = await stat(canonicalPath);
+                if (!metadata.isFile()) {
+                    throw new Error("declared output is not a regular file");
+                }
+                return {
+                    requestedPath,
+                    status: DECLARED_OUTPUT_STATUS.RECORDED,
+                    artifact: await hashArtifact(canonicalPath)
+                };
+            } catch (error) {
+                const missing = isNodeError(error) && error.code === "ENOENT";
+                return {
+                    requestedPath,
+                    status: missing
+                        ? DECLARED_OUTPUT_STATUS.MISSING
+                        : DECLARED_OUTPUT_STATUS.INVALID,
+                    error: error instanceof Error ? error.message : String(error)
+                };
+            }
+        })
+    );
 }
 
 function validateRequest(request: ExecutionRequest): void {
@@ -140,6 +184,20 @@ function validateRequest(request: ExecutionRequest): void {
         (!Number.isFinite(request.forceKillAfterMs) || request.forceKillAfterMs < 0)
     ) {
         throw new ExecutionRequestError("forceKillAfterMs must be a non-negative finite number");
+    }
+
+    for (const declaredOutputPath of request.declaredOutputPaths ?? []) {
+        if (!declaredOutputPath.trim()) {
+            throw new ExecutionRequestError("Declared output path cannot be empty");
+        }
+        if (isAbsolute(declaredOutputPath)) {
+            throw new ExecutionRequestError("Declared output path must be relative to cwd");
+        }
+        const resolvedPath = resolve(request.cwd, declaredOutputPath);
+        const relativePath = relative(resolve(request.cwd), resolvedPath);
+        if (relativePath === ".." || relativePath.startsWith(`..${sep}`)) {
+            throw new ExecutionRequestError("Declared output path cannot escape cwd");
+        }
     }
 }
 

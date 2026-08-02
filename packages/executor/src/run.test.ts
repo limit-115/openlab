@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EXECUTION_STATUS } from "#src/constants";
+import { DECLARED_OUTPUT_STATUS, EXECUTION_STATUS } from "#src/constants";
 import { ArtifactDirectoryExistsError } from "#src/errors";
 import { runExperiment } from "#src/run";
 
@@ -73,15 +73,27 @@ describe("runExperiment", () => {
             file: process.execPath,
             args: [
                 "-e",
-                "process.stdout.write('partial result'); process.stderr.write('failure details'); process.exit(7)"
+                "require('node:fs').writeFileSync('partial.json', '{\"complete\":false}'); process.stdout.write('partial result'); process.stderr.write('failure details'); process.exit(7)"
             ],
             cwd: root,
-            artifactDirectory: join(root, "failed-attempt")
+            artifactDirectory: join(root, "failed-attempt"),
+            declaredOutputPaths: ["partial.json", "missing.json"]
         });
 
         expect(result).toMatchObject({ status: EXECUTION_STATUS.FAILED, exitCode: 7 });
         await expect(readFile(result.stdout.path, "utf8")).resolves.toBe("partial result");
         await expect(readFile(result.stderr.path, "utf8")).resolves.toBe("failure details");
+        expect(result.declaredOutputs).toEqual([
+            expect.objectContaining({
+                requestedPath: "partial.json",
+                status: DECLARED_OUTPUT_STATUS.RECORDED,
+                artifact: expect.objectContaining({ sha256: sha256('{"complete":false}') })
+            }),
+            expect.objectContaining({
+                requestedPath: "missing.json",
+                status: DECLARED_OUTPUT_STATUS.MISSING
+            })
+        ]);
     });
 
     it("retains partial artifacts and marks a timed-out command", async () => {

@@ -4,6 +4,7 @@ import {
     HarnessAuthenticationMethods,
     HarnessDiagnosticLevels,
     HarnessEventTypes,
+    HarnessExecutionProfiles,
     HarnessKinds,
     HarnessNativeEventTypes,
     type HarnessRunRequest,
@@ -16,7 +17,8 @@ import type { HarnessCaptureResult } from "#src/process";
 import { SubscriptionCliHarness, type SubscriptionHarnessOptions } from "#src/subscription-harness";
 
 export const ClaudePermissionModes = {
-    BYPASS_PERMISSIONS: "bypassPermissions"
+    BYPASS_PERMISSIONS: "bypassPermissions",
+    PLAN: "plan"
 } as const;
 
 const ClaudeApiProviders = {
@@ -119,9 +121,13 @@ export class ClaudeHarness extends SubscriptionCliHarness {
                 ClaudeOutputFormats.STREAM_JSON,
                 "--verbose",
                 "--include-partial-messages",
-                "--dangerously-skip-permissions",
+                ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
+                    ? []
+                    : ["--dangerously-skip-permissions"]),
                 "--permission-mode",
-                ClaudePermissionModes.BYPASS_PERMISSIONS,
+                ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
+                    ? [ClaudePermissionModes.PLAN]
+                    : [ClaudePermissionModes.BYPASS_PERMISSIONS]),
                 "--setting-sources",
                 "",
                 "--settings",

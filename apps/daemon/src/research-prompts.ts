@@ -92,10 +92,11 @@ ${SUBSCRIPTION_ONLY_POLICY}
 
 ${MISSING_CAPABILITY_POLICY}
 
-Investigate the direction below autonomously. Inspect existing work, formulate a concrete
-hypothesis, write and run code when useful, preserve failed and negative attempts, and save all
-    important artifacts under the current workspace. The daemon has already frozen the evaluators;
-    do not edit, replace, or run them. Do not claim support based only on your judgement.
+Investigate the direction below as a read-only planner. Formulate a concrete hypothesis and return
+one explicit execution_plan. Do not run commands, write files, edit the repository, or create outcome
+artifacts yourself. The daemon alone executes the plan and records every attempt. The daemon has
+already frozen the evaluators; do not edit, replace, or run them. Do not claim support based only on
+your judgement.
 
 Task:
 ${taskContext(task)}
@@ -126,11 +127,12 @@ ${JSON.stringify(
 )}
 
 Every evidence item must identify target_kind as claim or assumption and the corresponding zero-based
-target_index. Actively test risky assumptions instead of treating them as background prose. Reference
-material artifact files that you actually created inside the current isolated workspace. An assertion
-    without a real artifact is not evidence. Do not return an evaluator command. The daemon will run
-    only its frozen evaluator and accept only a structured verdict bound to the target and artifact
-    hashes.
+target_index. Actively test risky assumptions instead of treating them as background prose. Keep
+artifact_paths empty: model-created paths and JSON are never empirical evidence. Instead declare every
+expected relative artifact path in execution_plan.declared_output_paths. Use no shell indirection; file
+and args are passed directly to the process. Classify external_effect accurately and include a stable
+reconciliation_key when one exists. Do not return an evaluator command. The daemon will run the plan,
+snapshot and re-hash declared outputs, then run only its frozen evaluator against those outputs.
 
 Set capability_blocked to true only when this isolated direction cannot produce material evidence
 until one of its reported capability_requests is provisioned. Keep it false when useful evidence is
@@ -199,9 +201,10 @@ export function verifierPrompt(
     const safeBranchReports = redactArtifactPaths(branchReports, researchArtifactPaths);
     const safeCriticism = redactArtifactPaths(redactedCriticism, researchArtifactPaths);
     return `You are an independent verifier in a clean session and workspace. Treat every supplied
-claim as untrusted. Reproduce the strongest claimed result from original inputs or reconstructed
-artifacts, use an independent evaluator where possible, and actively test the critic's concerns.
-An ordinary rerun of the researcher's command is not independent reproduction.
+claim as untrusted. Plan an independent reproduction of the strongest result from original inputs or
+reconstructed artifacts and actively test the critic's concerns. Do not run commands or write files;
+the daemon alone executes your structured execution_plan. An ordinary rerun of the researcher's
+command is not independent reproduction.
 
 ${SUBSCRIPTION_ONLY_POLICY}
 
@@ -219,12 +222,16 @@ ${JSON.stringify(safeBranchReports, null, 4)}
 Adversarial review:
 ${JSON.stringify(safeCriticism, null, 4)}
 
-Select the zero-based claim_index you independently tested. A reproduced verdict must reference
-material artifact files created by your own reproduction inside this clean workspace. Paths copied
-from a research branch are not independent verifier evidence. Do not create, select, edit, or return
-an evaluator command. The daemon already froze the critic-authored alternate evaluator before this
-reproduction began and will accept only its bound structured verdict. A self-written claim that the
-evaluator passed is not evidence.
+Select the zero-based claim_index you will independently test. Keep evidence_artifact_paths empty:
+model-created paths and JSON are never verifier evidence. Declare each relative output in
+execution_plan.declared_output_paths and accurately classify external_effect. Do not create, select,
+edit, or return an evaluator command. The daemon executes the plan, snapshots and re-hashes its
+outputs, then runs the frozen critic-authored evaluator. A self-written claim that the evaluator
+passed is not evidence.
+
+Set capability_blocked to true only when independent reproduction cannot run until a reported
+capability_request is provisioned. In that case return no execution_plan; the daemon will persist the
+request and pause this verifier role without fabricating a command.
 
 Return only the requested structured verdict.`;
 }

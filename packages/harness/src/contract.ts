@@ -61,6 +61,13 @@ export const HarnessInputSources = {
     PROMPT: "prompt"
 } as const;
 
+export const HarnessExecutionProfiles = {
+    UNRESTRICTED: "unrestricted",
+    READ_ONLY: "read_only"
+} as const;
+export type HarnessExecutionProfile =
+    (typeof HarnessExecutionProfiles)[keyof typeof HarnessExecutionProfiles];
+
 export const HarnessNativeEventTypes = {
     UNKNOWN: "unknown"
 } as const;
@@ -84,6 +91,7 @@ export interface HarnessRunRequest {
     readonly responseSchema?: Readonly<Record<string, unknown>>;
     readonly resumeSessionId?: string;
     readonly timeoutMs?: number;
+    readonly executionProfile?: HarnessExecutionProfile;
 }
 
 export interface HarnessArtifact {

@@ -9,6 +9,7 @@ import {
     HarnessAuthenticationMethods,
     type HarnessEvent,
     HarnessEventTypes,
+    HarnessExecutionProfiles,
     HarnessKinds,
     type HarnessRunRequest,
     HarnessRunStatuses,
@@ -243,6 +244,44 @@ describe("CodexHarness", () => {
         );
     });
 
+    it("uses the native read-only sandbox without dangerous bypass flags", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess("codex-cli 0.146.0"),
+            captureSuccess(TestLoginMarkers.CHATGPT)
+        ]);
+        runner.nextStream = streamSuccess([
+            {
+                type: TestNativeEventTypes.CODEX_THREAD_STARTED,
+                thread_id: "read-only-session"
+            },
+            {
+                type: TestNativeEventTypes.CODEX_ITEM_COMPLETED,
+                item: {
+                    id: "message-read-only",
+                    type: TestItemTypes.CODEX_AGENT_MESSAGE,
+                    text: "analysis"
+                }
+            }
+        ]);
+        const harness = new CodexHarness({ runner, environment: testEnvironment() });
+
+        await Array.fromAsync(
+            harness.run(
+                await harnessRequest("codex-read-only", {
+                    executionProfile: HarnessExecutionProfiles.READ_ONLY
+                })
+            )
+        );
+
+        const args = runner.spawnRequests[0]?.args ?? [];
+        expect(args).toEqual(expect.arrayContaining(["--sandbox", CodexPermissionModes.READ_ONLY]));
+        expect(args).not.toContain("--dangerously-bypass-approvals-and-sandbox");
+        expect(args).toContain("--dangerously-bypass-hook-trust");
+        expect(args).toEqual(
+            expect.arrayContaining(["--config", expect.stringContaining("hooks.PreToolUse")])
+        );
+    });
+
     it("rejects API-key authentication instead of falling back", async () => {
         const runner = new FakeHarnessProcessRunner([
             captureSuccess("codex-cli 0.146.0"),
@@ -379,6 +418,48 @@ describe("ClaudeHarness", () => {
 
         await expect(harness.preflight()).rejects.toBeInstanceOf(HarnessCapabilityError);
         expect(runner.spawnRequests).toHaveLength(0);
+    });
+
+    it("uses native plan mode without permission bypass for read-only analysis", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess("2.1.220 (Claude Code)"),
+            captureSuccess(
+                JSON.stringify({
+                    loggedIn: true,
+                    authMethod: HarnessAuthenticationMethods.CLAUDE_AI,
+                    apiProvider: TestApiProviders.FIRST_PARTY,
+                    subscriptionType: TestSubscriptionTypes.MAX
+                })
+            )
+        ]);
+        runner.nextStream = streamSuccess([
+            {
+                type: TestNativeEventTypes.CLAUDE_SYSTEM,
+                subtype: TestNativeSubtypes.CLAUDE_INIT,
+                session_id: "read-only-session"
+            },
+            {
+                type: TestNativeEventTypes.CLAUDE_RESULT,
+                subtype: TestResultSubtypes.SUCCESS,
+                is_error: false,
+                session_id: "read-only-session"
+            }
+        ]);
+        const harness = new ClaudeHarness({ runner, environment: testEnvironment() });
+
+        await Array.fromAsync(
+            harness.run(
+                await harnessRequest("claude-read-only", {
+                    executionProfile: HarnessExecutionProfiles.READ_ONLY
+                })
+            )
+        );
+
+        const args = runner.spawnRequests[0]?.args ?? [];
+        expect(args).toEqual(
+            expect.arrayContaining(["--permission-mode", ClaudePermissionModes.PLAN])
+        );
+        expect(args).not.toContain("--dangerously-skip-permissions");
     });
 });
 

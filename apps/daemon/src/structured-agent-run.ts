@@ -1,6 +1,7 @@
 import {
     type AgentHarness,
     HarnessEventTypes,
+    type HarnessExecutionProfile,
     type HarnessRunResult,
     HarnessRunStatuses
 } from "@lab/harness/contract";
@@ -21,6 +22,7 @@ export interface StructuredAgentRunInput<Output> {
     readonly prompt: string;
     readonly schema: z.ZodType<Output>;
     readonly signal?: AbortSignal;
+    readonly executionProfile?: HarnessExecutionProfile;
 }
 
 export interface StructuredAgentRunOutput<Output> {
@@ -58,7 +60,10 @@ export async function runStructuredAgent<Output>(
                 prompt: input.prompt,
                 cwd: agentWorkspace.cwd,
                 artifactDirectory: agentWorkspace.artifactDirectory,
-                responseSchema: structuredOutputSchema(input.schema)
+                responseSchema: structuredOutputSchema(input.schema),
+                ...(input.executionProfile === undefined
+                    ? {}
+                    : { executionProfile: input.executionProfile })
             },
             signal
         )) {

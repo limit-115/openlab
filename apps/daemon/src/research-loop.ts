@@ -1,23 +1,30 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { type AssessedEvidence, collectStaleDependents, transitionClaim } from "@lab/core/claims";
 import { EvidenceOrigin, ProgressKind, SchedulerLane } from "@lab/core/constants";
 import { assessPlateau, type ResearchFrontier } from "@lab/core/frontier";
-import { EXECUTION_STATUS, type ExecutionStatus } from "@lab/executor/constants";
+import {
+    DECLARED_OUTPUT_STATUS,
+    EXECUTION_STATUS,
+    type ExecutionStatus
+} from "@lab/executor/constants";
 import { runExperiment } from "@lab/executor/run";
-import type { ExecutionResult } from "@lab/executor/types";
+import type { ArtifactDescriptor, ExecutionResult } from "@lab/executor/types";
 import { ClaudeHarness } from "@lab/harness/claude";
 import { CodexHarness } from "@lab/harness/codex";
 import {
     type AgentHarness,
+    type HarnessExecutionProfile,
+    HarnessExecutionProfiles,
     type HarnessPreflight,
     type HarnessRunResult,
     HarnessRunStatuses
 } from "@lab/harness/contract";
 import { sanitizeHarnessEnvironment } from "@lab/harness/environment";
 import { HarnessCapabilityError } from "@lab/harness/errors";
+import { evaluateModelApiCommand, ModelApiPolicyDecision } from "@lab/harness/model-api-policy";
 import {
     AgentRole,
     AgentStatus,
@@ -27,6 +34,7 @@ import {
     EventType,
     EvidenceKind,
     ExperimentStatus,
+    ExternalEffect,
     InternalTaskStatus,
     LabState
 } from "@lab/protocol/constants";
@@ -100,12 +108,32 @@ const BranchProgress = {
 
 const ExperimentEvaluator = {
     AGENT_HARNESS: "Subscription CLI research agent",
+    OUTCOME_EXECUTOR: "Daemon-owned outcome executor",
     INDEPENDENT_VERIFIER: "Daemon-attested independent evaluator",
     NEGATIVE_CONTROL: "Daemon-owned negative control"
 } as const;
 
+class OutcomeExecutionAttemptError extends Error {
+    constructor(message: string, options?: ErrorOptions) {
+        super(message, options);
+        this.name = "OutcomeExecutionAttemptError";
+    }
+}
+
+interface OutcomeExecution {
+    readonly experimentId: string;
+    readonly result: ExecutionResult;
+    readonly artifacts: readonly ValidatedArtifact[];
+}
+
 const CleanWorkspaceEntry = {
     GIT: ".git"
+} as const;
+
+const OutcomeAuthenticationEnvironment = {
+    HOME: "HOME",
+    CODEX_HOME: "CODEX_HOME",
+    CLAUDE_CONFIG_DIR: "CLAUDE_CONFIG_DIR"
 } as const;
 
 const PromiseSettlement = {
@@ -186,6 +214,7 @@ type CreateResearchWorkspace = (stage: ResearchStage) => Promise<ResearchWorkspa
 interface StageRunOutput<Output> extends StructuredAgentRunOutput<Output> {
     readonly harness: AgentHarness;
     readonly agentWorkspace: ResearchWorkspace;
+    readonly capabilityRequests: readonly CapabilityRequest[];
 }
 
 interface AgentCapabilityOutput {
@@ -496,14 +525,39 @@ async function runResearchCycle(
         createAgentWorkspace,
         prompt: verifierPrompt(task, plan, successfulResults, criticism),
         schema: VerifierResultSchema,
+        executionProfile: HarnessExecutionProfiles.READ_ONLY,
         ...(signal === undefined ? {} : { signal })
     });
+    if (verifierRun.value.capability_blocked) {
+        await pauseRoleForCapabilities(workspace, verifierIds, verifierRun.capabilityRequests);
+        const capabilityIssues = verifierRun.capabilityRequests.map(
+            ({ need }) => `Verifier capability required: ${need}`
+        );
+        await updateFrontier(
+            workspace,
+            [verifierRun.value.result_statement],
+            [],
+            [...issues, ...criticism.issues, ...capabilityIssues]
+        );
+        return { completed: false, nextExperiments: [], progress };
+    }
+    const verifierExecutionPlan = verifierRun.value.execution_plan;
+    if (verifierExecutionPlan === undefined) {
+        throw new Error("Unblocked verifier unexpectedly has no daemon execution plan");
+    }
     let verification: Awaited<ReturnType<typeof recordVerifierEvidence>>;
     try {
+        const verifierOutcome = await executeResearchOutcome(
+            workspace,
+            verifierIds,
+            verifierRun.agentWorkspace,
+            verifierExecutionPlan,
+            signal
+        );
         verification = await recordVerifierEvidence(
             workspace,
             verifierRun.value,
-            verifierRun.result,
+            verifierOutcome,
             verifierRun.agentWorkspace,
             verifierIds,
             planTargets,
@@ -514,10 +568,14 @@ async function runResearchCycle(
             signal
         );
     } catch (error) {
-        if (!signal?.aborted) {
-            await failRoleTask(workspace, verifierIds, false);
+        if (signal?.aborted) {
+            throw error;
         }
-        throw error;
+        verification = {
+            accepted: false,
+            completed: false,
+            issues: [error instanceof Error ? error.message : String(error)]
+        };
     }
     if (verification.accepted) {
         await finishRoleTask(workspace, verifierIds, BranchStatus.CLOSED);
@@ -779,6 +837,7 @@ async function runResearchBranch(
         const evaluatorWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
         const experimentId = `experiment-${randomUUID()}`;
         let attemptPrepared = false;
+        let outcomeAttemptStarted = false;
         try {
             const precommit = await runStructuredAgent({
                 workspace,
@@ -819,21 +878,47 @@ async function runResearchBranch(
                 agentWorkspace: outcomeWorkspace,
                 prompt: researcherPrompt(task, plan, direction, frozenEvaluators),
                 schema: ResearchResultSchema,
+                executionProfile: HarnessExecutionProfiles.READ_ONLY,
                 ...(signal === undefined ? {} : { signal })
             });
             const capabilityRequests = await persistAgentCapabilityRequests(
                 workspace,
                 run.value.capability_requests
             );
+            const executionPlan = run.value.execution_plan;
+            let outcomeExecution: OutcomeExecution | undefined;
+            if (executionPlan !== undefined) {
+                outcomeAttemptStarted = true;
+                outcomeExecution = await executeResearchOutcome(
+                    workspace,
+                    ids,
+                    outcomeWorkspace,
+                    executionPlan,
+                    signal
+                );
+            }
+            const attestedResult =
+                outcomeExecution === undefined
+                    ? run.value
+                    : {
+                          ...run.value,
+                          evidence: run.value.evidence.map((item) => ({
+                              ...item,
+                              artifact_paths: outcomeExecution.artifacts.map(
+                                  ({ path: artifactPath }) => artifactPath
+                              )
+                          }))
+                      };
             const recorded = await recordResearchEvidence(
                 workspace,
-                run.value,
+                attestedResult,
                 ids,
                 ids.branchId,
                 outcomeWorkspace,
                 evaluatorWorkspace,
                 planTargets,
                 frozenEvaluators,
+                outcomeExecution,
                 signal
             );
             await finishResearchAttempt(workspace, experimentId, run.result, true);
@@ -863,6 +948,9 @@ async function runResearchBranch(
             }
             if (error instanceof HarnessCapabilityError) {
                 await workspace.requestCapability(error.capabilityRequest);
+            }
+            if (outcomeAttemptStarted) {
+                break;
             }
         }
     }
@@ -944,6 +1032,226 @@ async function prepareResearchAttempt(
     await workspace.appendEvent(EventType.EXPERIMENT_STARTED, { experiment_id: experimentId });
 }
 
+async function executeResearchOutcome(
+    workspace: LabWorkspace,
+    ids: RoleIdentifiers,
+    outcomeWorkspace: ResearchWorkspace,
+    plan: NonNullable<ResearchResult["execution_plan"]>,
+    signal?: AbortSignal
+): Promise<OutcomeExecution> {
+    const experimentId = `experiment-${randomUUID()}`;
+    assertOutcomeCommandAllowed(plan);
+    const executionFingerprint = outcomeExecutionFingerprint(plan);
+    const artifactDirectory = path.join(
+        outcomeWorkspace.cwd,
+        ".lab-outcome-executions",
+        `run-${randomUUID()}`
+    );
+    const startedAt = new Date().toISOString();
+    await workspace.mutateWithEvent(
+        EventType.EXPERIMENT_PLANNED,
+        {
+            experiment_id: experimentId,
+            external_effect: plan.external_effect,
+            reconciliation_key: plan.reconciliation_key ?? null,
+            execution_fingerprint: executionFingerprint
+        },
+        (draft) => {
+            if (plan.external_effect === ExternalEffect.IRREVERSIBLE) {
+                const priorAttempt = draft.experiments.find(
+                    (experiment) =>
+                        experiment.external_effect === ExternalEffect.IRREVERSIBLE &&
+                        ((plan.reconciliation_key !== undefined &&
+                            experiment.reconciliation_key === plan.reconciliation_key) ||
+                            experiment.execution_fingerprint === executionFingerprint)
+                );
+                if (priorAttempt !== undefined) {
+                    throw new OutcomeExecutionAttemptError(
+                        `Irreversible outcome execution is blocked by prior attempt ${priorAttempt.id} (${priorAttempt.status}); reconciliation is required`
+                    );
+                }
+            }
+            draft.experiments.push({
+                id: experimentId,
+                task_id: ids.taskId,
+                branch_id: ids.branchId,
+                hypothesis: "Execute the researcher-declared outcome computation",
+                evaluator: ExperimentEvaluator.OUTCOME_EXECUTOR,
+                command: renderCommand(plan.file, plan.args),
+                cwd: outcomeWorkspace.cwd,
+                status: ExperimentStatus.RUNNING,
+                started_at: startedAt,
+                external_effect: plan.external_effect,
+                execution_fingerprint: executionFingerprint,
+                ...(plan.reconciliation_key === undefined
+                    ? {}
+                    : { reconciliation_key: plan.reconciliation_key })
+            });
+        }
+    );
+    await workspace.appendEvent(EventType.EXPERIMENT_STARTED, { experiment_id: experimentId });
+    await workspace.appendEvent(EventType.ATTEMPT_PLANNED, {
+        attempt_id: experimentId,
+        external_effect: plan.external_effect,
+        reconciliation_key: plan.reconciliation_key ?? null
+    });
+    await workspace.appendEvent(EventType.ATTEMPT_STARTED, { attempt_id: experimentId });
+
+    let result: ExecutionResult;
+    try {
+        result = await runExperiment(
+            {
+                file: plan.file,
+                args: plan.args,
+                cwd: outcomeWorkspace.cwd,
+                artifactDirectory,
+                timeoutMs: plan.timeout_ms,
+                env: await outcomeExecutionEnvironment(outcomeWorkspace.cwd),
+                inheritEnvironment: false,
+                input: `${JSON.stringify({ execution_plan: plan }, null, 4)}\n`,
+                declaredOutputPaths: plan.declared_output_paths
+            },
+            signal
+        );
+    } catch (error) {
+        const finishedAt = new Date().toISOString();
+        await workspace.update((draft) => {
+            const experiment = requiredById(draft.experiments, experimentId);
+            experiment.status = ExperimentStatus.FAILED;
+            experiment.finished_at = finishedAt;
+        });
+        await workspace.appendEvent(EventType.EXPERIMENT_FAILED, {
+            experiment_id: experimentId
+        });
+        await workspace.appendEvent(EventType.ATTEMPT_FAILED, { attempt_id: experimentId });
+        throw new OutcomeExecutionAttemptError(
+            `Daemon-owned outcome execution could not start: ${error instanceof Error ? error.message : String(error)}`,
+            { cause: error }
+        );
+    }
+
+    let status = protocolExperimentStatus(result.status);
+    let artifacts: readonly ValidatedArtifact[] = [];
+    let validationError: unknown;
+    if (status === ExperimentStatus.SUCCEEDED) {
+        try {
+            const unavailable = result.declaredOutputs.filter(
+                ({ status: outputStatus }) => outputStatus !== DECLARED_OUTPUT_STATUS.RECORDED
+            );
+            if (unavailable.length > 0) {
+                throw new Error(
+                    `Outcome command did not produce every declared output: ${unavailable
+                        .map(({ requestedPath }) => requestedPath)
+                        .join(", ")}`
+                );
+            }
+            const recorded = result.declaredOutputs.flatMap((output) =>
+                output.status === DECLARED_OUTPUT_STATUS.RECORDED ? [output.artifact] : []
+            );
+            artifacts = await snapshotOutcomeArtifacts(outcomeWorkspace, recorded);
+        } catch (error) {
+            status = ExperimentStatus.FAILED;
+            validationError = error;
+        }
+    }
+    await workspace.update((draft) => {
+        const experiment = requiredById(draft.experiments, experimentId);
+        experiment.status = status;
+        experiment.exit_code = result.exitCode;
+        experiment.finished_at = result.finishedAt;
+        experiment.output_path = result.manifest.path;
+        experiment.output_hash = result.manifest.sha256;
+    });
+    await workspace.appendEvent(experimentEventType(status), { experiment_id: experimentId });
+    await workspace.appendEvent(attemptEventType(status), { attempt_id: experimentId });
+
+    if (status !== ExperimentStatus.SUCCEEDED || validationError !== undefined) {
+        const reason =
+            validationError instanceof Error
+                ? validationError.message
+                : (result.error ?? `execution ended with ${result.status}`);
+        throw new OutcomeExecutionAttemptError(
+            `Daemon-owned outcome execution failed: ${reason}`,
+            validationError === undefined ? undefined : { cause: validationError }
+        );
+    }
+    return { experimentId, result, artifacts };
+}
+
+function assertOutcomeCommandAllowed(plan: NonNullable<ResearchResult["execution_plan"]>): void {
+    const result = evaluateModelApiCommand(plan.file, plan.args);
+    if (result.decision === ModelApiPolicyDecision.DENY) {
+        throw new OutcomeExecutionAttemptError(
+            `Daemon-owned outcome command violates the subscription-only policy: ${result.reason ?? "denied"}`
+        );
+    }
+}
+
+function outcomeExecutionFingerprint(plan: NonNullable<ResearchResult["execution_plan"]>): string {
+    return createHash("sha256")
+        .update(
+            JSON.stringify({
+                file: plan.file,
+                args: plan.args,
+                declared_output_paths: [...plan.declared_output_paths].sort()
+            })
+        )
+        .digest("hex");
+}
+
+async function outcomeExecutionEnvironment(cwd: string): Promise<Record<string, string>> {
+    const environment = sanitizeHarnessEnvironment();
+    const emptyAuthenticationRoot = path.join(cwd, ".lab-empty-model-auth");
+    await mkdir(emptyAuthenticationRoot, { recursive: true, mode: 0o700 });
+    environment[OutcomeAuthenticationEnvironment.HOME] = emptyAuthenticationRoot;
+    environment[OutcomeAuthenticationEnvironment.CODEX_HOME] = emptyAuthenticationRoot;
+    environment[OutcomeAuthenticationEnvironment.CLAUDE_CONFIG_DIR] = emptyAuthenticationRoot;
+    return environment;
+}
+
+async function snapshotOutcomeArtifacts(
+    workspace: ResearchWorkspace,
+    artifacts: readonly ArtifactDescriptor[]
+): Promise<ValidatedArtifact[]> {
+    const snapshotDirectory = path.join(
+        workspace.cwd,
+        ".lab-outcome-snapshots",
+        `snapshot-${randomUUID()}`
+    );
+    await mkdir(snapshotDirectory, { recursive: true });
+    return Promise.all(
+        artifacts.map(async (artifact, index) => {
+            const snapshotPath = path.join(
+                snapshotDirectory,
+                `artifact-${String(index).padStart(3, "0")}${path.extname(artifact.path)}`
+            );
+            await writeFile(snapshotPath, await readFile(artifact.path), {
+                flag: "wx",
+                mode: 0o400
+            });
+            const snapshot = await validateFileArtifact(workspace.cwd, snapshotPath);
+            if (snapshot.sha256 !== artifact.sha256 || snapshot.bytes !== artifact.bytes) {
+                throw new Error(
+                    `Outcome artifact changed while being snapshotted: ${artifact.path}`
+                );
+            }
+            return snapshot;
+        })
+    );
+}
+
+async function assertArtifactsUnchanged(
+    workspace: ResearchWorkspace,
+    artifacts: readonly ValidatedArtifact[]
+): Promise<void> {
+    for (const artifact of artifacts) {
+        const rehashed = await validateFileArtifact(workspace.cwd, artifact.path);
+        if (rehashed.sha256 !== artifact.sha256 || rehashed.bytes !== artifact.bytes) {
+            throw new Error(`Outcome snapshot changed across evaluator boundary: ${artifact.path}`);
+        }
+    }
+}
+
 async function recordResearchEvidence(
     workspace: LabWorkspace,
     result: ResearchResult,
@@ -953,6 +1261,7 @@ async function recordResearchEvidence(
     evaluatorWorkspace: ResearchWorkspace,
     planTargets: readonly PlanTarget[],
     frozenEvaluators: readonly FrozenEvaluator[],
+    outcomeExecution: OutcomeExecution | undefined,
     signal?: AbortSignal
 ): Promise<{
     result: ResearchResult;
@@ -1006,6 +1315,12 @@ async function recordResearchEvidence(
             continue;
         }
 
+        if (outcomeExecution === undefined) {
+            issues.push(`${item.target_kind} ${item.target_index} has no daemon-owned outcome run`);
+            continue;
+        }
+        await assertArtifactsUnchanged(outcomeWorkspace, validatedArtifacts);
+
         const evaluation = await executeAttestedEvaluator(
             workspace,
             ids,
@@ -1055,9 +1370,9 @@ async function recordResearchEvidence(
             id: `evidence-${randomUUID()}`,
             kind: EvidenceKind.EXPERIMENT,
             claim_id: planTarget.claim.id,
-            run_id: evaluation.experimentId,
-            artifact_path: evaluation.result.manifest.path,
-            artifact_hash: evaluation.result.manifest.sha256,
+            run_id: outcomeExecution.experimentId,
+            artifact_path: outcomeExecution.result.manifest.path,
+            artifact_hash: outcomeExecution.result.manifest.sha256,
             summary: evaluation.verdict.summary,
             supports: evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS,
             independent: true,
@@ -1078,7 +1393,7 @@ async function recordResearchEvidence(
                 id: `evidence-${randomUUID()}`,
                 kind: EvidenceKind.ARTIFACT,
                 claim_id: planTarget.claim.id,
-                run_id: evaluation.experimentId,
+                run_id: outcomeExecution.experimentId,
                 artifact_path: artifact.path,
                 artifact_hash: artifact.sha256,
                 summary: evaluation.verdict.summary,
@@ -1112,6 +1427,7 @@ async function recordResearchEvidence(
             ...item,
             artifact_paths: [
                 ...validatedArtifacts.map(({ path: artifactPath }) => artifactPath),
+                outcomeExecution.result.manifest.path,
                 evaluation.result.manifest.path
             ]
         });
@@ -1180,7 +1496,7 @@ async function promoteClaimsFromMaterialEvidence(
 async function recordVerifierEvidence(
     workspace: LabWorkspace,
     verdict: ReturnType<typeof VerifierResultSchema.parse>,
-    harnessRun: HarnessRunResult,
+    outcomeExecution: OutcomeExecution,
     verifierWorkspace: ResearchWorkspace,
     verifierIds: RoleIdentifiers,
     planTargets: readonly PlanTarget[],
@@ -1214,23 +1530,17 @@ async function recordVerifierEvidence(
         };
     }
     const material: AssessedEvidence[] = [];
+    await assertArtifactsUnchanged(verifierWorkspace, outcomeExecution.artifacts);
     const validatedArtifacts: ValidatedArtifact[] = [];
-    for (const artifactPath of verdict.evidence_artifact_paths) {
-        try {
-            const artifact = await validateFileArtifact(verifierWorkspace.cwd, artifactPath);
-            if (artifact.bytes === 0) {
-                issues.push(`Rejected empty verifier artifact ${artifactPath}`);
-            } else if (researcherArtifactSha256s.includes(artifact.sha256)) {
-                issues.push(
-                    `Rejected verifier artifact copied from a research branch: ${artifactPath}`
-                );
-            } else {
-                validatedArtifacts.push(artifact);
-            }
-        } catch (error) {
+    for (const artifact of outcomeExecution.artifacts) {
+        if (artifact.bytes === 0) {
+            issues.push(`Rejected empty verifier artifact ${artifact.path}`);
+        } else if (researcherArtifactSha256s.includes(artifact.sha256)) {
             issues.push(
-                `Rejected verifier artifact ${artifactPath}: ${error instanceof Error ? error.message : String(error)}`
+                `Rejected verifier artifact copied from a research branch: ${artifact.path}`
             );
+        } else {
+            validatedArtifacts.push(artifact);
         }
     }
     let evaluatorResult: ExecutionResult | undefined;
@@ -1277,9 +1587,9 @@ async function recordVerifierEvidence(
                 id: `evidence-${randomUUID()}`,
                 kind: EvidenceKind.VERIFIER_RESULT,
                 claim_id: planClaim.claim.id,
-                run_id: harnessRun.sessionId ?? verifierIds.taskId,
-                artifact_path: evaluatorResult.manifest.path,
-                artifact_hash: evaluatorResult.manifest.sha256,
+                run_id: outcomeExecution.experimentId,
+                artifact_path: outcomeExecution.result.manifest.path,
+                artifact_hash: outcomeExecution.result.manifest.sha256,
                 summary: evaluation.verdict.summary,
                 supports,
                 independent: true,
@@ -1300,7 +1610,7 @@ async function recordVerifierEvidence(
                 origin: EvidenceOrigin.VERIFIER,
                 sourceBranchId: verifierIds.branchId,
                 valid: true,
-                complete: evaluatorResult.manifest.bytes > 0,
+                complete: outcomeExecution.result.manifest.bytes > 0,
                 reproducible: true
             });
             for (const artifact of validatedArtifacts) {
@@ -1308,7 +1618,7 @@ async function recordVerifierEvidence(
                     id: `evidence-${randomUUID()}`,
                     kind: EvidenceKind.ARTIFACT,
                     claim_id: planClaim.claim.id,
-                    run_id: harnessRun.sessionId ?? verifierIds.taskId,
+                    run_id: outcomeExecution.experimentId,
                     artifact_path: artifact.path,
                     artifact_hash: artifact.sha256,
                     summary: evaluation.verdict.summary,
@@ -1602,6 +1912,7 @@ async function executeAttestedEvaluator(
     let validationError: unknown;
     if (status === ExperimentStatus.SUCCEEDED) {
         try {
+            await assertArtifactsUnchanged(executionWorkspace, inputArtifacts);
             verdict = await validateEvaluatorVerdict(result, frozenEvaluator, evaluatorInput);
         } catch (error) {
             status = ExperimentStatus.FAILED;
@@ -2131,7 +2442,10 @@ async function runCriticStageWithFallback(input: {
                 schema: CriticResultSchema,
                 ...(input.signal === undefined ? {} : { signal: input.signal })
             });
-            await persistAgentCapabilityRequests(input.workspace, run.value.capability_requests);
+            const capabilityRequests = await persistAgentCapabilityRequests(
+                input.workspace,
+                run.value.capability_requests
+            );
             const target = requiredPlanTarget(
                 input.planTargets,
                 run.value.verification_evaluator.target_kind,
@@ -2151,7 +2465,7 @@ async function runCriticStageWithFallback(input: {
                 );
             }
             await recordEvaluatorPrecommit(input.workspace, input.ids, evaluator);
-            return { ...run, harness, agentWorkspace, evaluator };
+            return { ...run, harness, agentWorkspace, capabilityRequests, evaluator };
         } catch (error) {
             lastError = error;
             if (input.signal?.aborted) {
@@ -2182,6 +2496,7 @@ async function runStageWithFallback<Output extends AgentCapabilityOutput>(input:
     readonly createAgentWorkspace: CreateResearchWorkspace;
     readonly prompt: string;
     readonly schema: z.ZodType<Output>;
+    readonly executionProfile?: HarnessExecutionProfile;
     readonly signal?: AbortSignal;
 }): Promise<StageRunOutput<Output>> {
     let lastError: unknown;
@@ -2200,10 +2515,16 @@ async function runStageWithFallback<Output extends AgentCapabilityOutput>(input:
                 agentWorkspace,
                 prompt: input.prompt,
                 schema: input.schema,
+                ...(input.executionProfile === undefined
+                    ? {}
+                    : { executionProfile: input.executionProfile }),
                 ...(input.signal === undefined ? {} : { signal: input.signal })
             });
-            await persistAgentCapabilityRequests(input.workspace, run.value.capability_requests);
-            return { ...run, harness, agentWorkspace };
+            const capabilityRequests = await persistAgentCapabilityRequests(
+                input.workspace,
+                run.value.capability_requests
+            );
+            return { ...run, harness, agentWorkspace, capabilityRequests };
         } catch (error) {
             lastError = error;
             if (input.signal?.aborted) {

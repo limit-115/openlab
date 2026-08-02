@@ -1,3 +1,4 @@
+import { ExternalEffect } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
 import {
     DirectorPlanSchema,
@@ -5,7 +6,9 @@ import {
     RESEARCH_OUTCOME,
     RESEARCH_TARGET_KIND,
     ResearchResultSchema,
-    structuredOutputSchema
+    structuredOutputSchema,
+    VERIFIER_VERDICT,
+    VerifierResultSchema
 } from "#src/research-contract";
 
 const DirectorPlanFixture = {
@@ -129,10 +132,16 @@ describe("research structured-output contracts", () => {
                     target_kind: RESEARCH_TARGET_KIND.ASSUMPTION,
                     target_index: 0,
                     summary: "A falsification attempt",
-                    artifact_paths: ["result.json"],
+                    artifact_paths: [],
                     contradicts_hypothesis: true
                 }
             ],
+            execution_plan: {
+                file: process.execPath,
+                args: ["-e", "process.exit(0)"],
+                declared_output_paths: ["result.json"],
+                external_effect: ExternalEffect.NONE
+            },
             limitations: [],
             next_experiments: []
         });
@@ -141,6 +150,59 @@ describe("research structured-output contracts", () => {
         expect(result.evidence[0]?.target_kind).toBe(RESEARCH_TARGET_KIND.ASSUMPTION);
         expect(result.capability_requests).toEqual([]);
         expect(result.capability_blocked).toBe(false);
+    });
+
+    it("rejects model-created artifact paths as empirical evidence", () => {
+        expect(() =>
+            ResearchResultSchema.parse({
+                summary: "A model fabricated a result file",
+                hypothesis: "The fabricated value supports the claim",
+                outcome: RESEARCH_OUTCOME.SUPPORTED,
+                evidence: [
+                    {
+                        target_kind: RESEARCH_TARGET_KIND.CLAIM,
+                        target_index: 0,
+                        summary: "Unattested JSON",
+                        artifact_paths: ["fabricated.json"],
+                        contradicts_hypothesis: false
+                    }
+                ],
+                execution_plan: {
+                    file: process.execPath,
+                    args: [],
+                    declared_output_paths: ["result.json"]
+                },
+                limitations: [],
+                next_experiments: []
+            })
+        ).toThrow();
+    });
+
+    it("requires reconciliation identity for irreversible outcome plans", () => {
+        expect(() =>
+            ResearchResultSchema.parse({
+                summary: "An irreversible action is planned",
+                hypothesis: "The action may produce evidence",
+                outcome: RESEARCH_OUTCOME.INCONCLUSIVE,
+                evidence: [
+                    {
+                        target_kind: RESEARCH_TARGET_KIND.CLAIM,
+                        target_index: 0,
+                        summary: "Irreversible attempt",
+                        artifact_paths: [],
+                        contradicts_hypothesis: false
+                    }
+                ],
+                execution_plan: {
+                    file: process.execPath,
+                    args: [],
+                    declared_output_paths: ["result.json"],
+                    external_effect: ExternalEffect.IRREVERSIBLE
+                },
+                limitations: [],
+                next_experiments: []
+            })
+        ).toThrow(/stable reconciliation key/);
     });
 
     it("requires a concrete request when a researcher reports a resource block", () => {
@@ -156,6 +218,43 @@ describe("research structured-output contracts", () => {
                 capability_blocked: true
             })
         ).toThrow(/concrete capability request/);
+    });
+
+    it("lets a resource-blocked verifier request a capability without fabricating a plan", () => {
+        const blockedVerifier = {
+            verdict: VERIFIER_VERDICT.INCONCLUSIVE,
+            claim_index: 0,
+            result_statement: "Independent reproduction is blocked on a held-out dataset",
+            evidence_artifact_paths: [],
+            limitations: ["The held-out dataset is unavailable"],
+            known_counterexamples: [],
+            capability_requests: [
+                {
+                    need: "Held-out benchmark dataset",
+                    reason: "Independent reproduction requires disjoint inputs",
+                    provisioning_hint: "Attach a read-only dataset snapshot"
+                }
+            ],
+            capability_blocked: true
+        } as const;
+
+        expect(VerifierResultSchema.parse(blockedVerifier).execution_plan).toBeUndefined();
+        expect(() =>
+            VerifierResultSchema.parse({
+                ...blockedVerifier,
+                capability_requests: []
+            })
+        ).toThrow(/concrete capability request/);
+        expect(() =>
+            VerifierResultSchema.parse({
+                ...blockedVerifier,
+                execution_plan: {
+                    file: process.execPath,
+                    args: [],
+                    declared_output_paths: ["result.json"]
+                }
+            })
+        ).toThrow(/cannot request outcome execution/);
     });
 
     it("produces a JSON Schema accepted by CLI harnesses", () => {
