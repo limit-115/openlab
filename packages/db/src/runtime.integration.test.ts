@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
 import {
     AgentRole,
     AgentStatus,
@@ -9,14 +9,14 @@ import {
 } from "@lab/protocol/constants";
 import type { LabEvent, TaskInput } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, type DatabaseClient } from "#src/client";
+import { migrateDatabase } from "#src/migrations";
 import { RuntimePersistence, RuntimeRevisionConflictError } from "#src/runtime";
-import { labs } from "#src/schema";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
+const testRunId = randomUUID();
 
 describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
     let client: DatabaseClient;
@@ -27,14 +27,8 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             return;
         }
         client = createDatabase(databaseUrl, { max: 2 });
-        await migrate(client.db, {
-            migrationsFolder: fileURLToPath(new URL("../migrations", import.meta.url))
-        });
+        await migrateDatabase(client.db);
         persistence = new RuntimePersistence(client.db);
-    });
-
-    beforeEach(async () => {
-        await client.db.delete(labs);
     });
 
     afterAll(async () => {
@@ -42,7 +36,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
     });
 
     it("initializes and recovers the complete runtime checkpoint with its event", async () => {
-        const task = makeTask();
+        const task = makeTask(testLabId("load"));
         const snapshot = makeSnapshot(task);
         const event = makeEvent(EventType.LAB_STARTED, snapshot.lab.id, "event-started");
 
@@ -70,7 +64,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
     });
 
     it("atomically commits snapshot and event and rejects a stale writer without a ghost event", async () => {
-        const task = makeTask();
+        const task = makeTask(testLabId("conflict"));
         const snapshot = makeSnapshot(task);
         await persistence.initialize({
             task,
@@ -100,8 +94,8 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         expect(committed.revision).toBe(2);
         expect(committed.snapshot.lab.state).toBe(LabState.HIBERNATING);
         expect(committed.snapshot.recent_events.map(({ id }) => id)).toEqual([
-            "event-started",
-            "event-hibernated"
+            testEventId(snapshot.lab.id, "event-started"),
+            testEventId(snapshot.lab.id, "event-hibernated")
         ]);
 
         const ghost = makeEvent(
@@ -115,14 +109,17 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         ).rejects.toBeInstanceOf(RuntimeRevisionConflictError);
 
         const events = await persistence.eventsAfter(snapshot.lab.id);
-        expect(events.map(({ id }) => id)).toEqual(["event-started", "event-hibernated"]);
+        expect(events.map(({ id }) => id)).toEqual([
+            testEventId(snapshot.lab.id, "event-started"),
+            testEventId(snapshot.lab.id, "event-hibernated")
+        ]);
         expect(events.map(({ sequence }) => sequence)).toEqual(
             [...events.map(({ sequence }) => sequence)].sort((left, right) => left - right)
         );
     });
 
     it("finds only recoverable labs and exposes a resumable event cursor", async () => {
-        const runningTask = makeTask("lab-running");
+        const runningTask = makeTask(testLabId("running"));
         const runningSnapshot = makeSnapshot(runningTask);
         const running = await persistence.initialize({
             task: runningTask,
@@ -130,7 +127,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             snapshot: runningSnapshot,
             event: makeEvent(EventType.LAB_STARTED, runningSnapshot.lab.id, "event-running")
         });
-        const completedTask = makeTask("lab-completed");
+        const completedTask = makeTask(testLabId("completed"));
         const completedSnapshot = makeSnapshot(completedTask, LabState.COMPLETED);
         await persistence.initialize({
             task: completedTask,
@@ -140,9 +137,9 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         });
 
         const recoverable = await persistence.listRecoverable();
-        expect(recoverable.map(({ snapshot }) => snapshot.lab.id)).toEqual([
-            runningSnapshot.lab.id
-        ]);
+        const recoverableIds = recoverable.map(({ snapshot }) => snapshot.lab.id);
+        expect(recoverableIds).toContain(runningSnapshot.lab.id);
+        expect(recoverableIds).not.toContain(completedSnapshot.lab.id);
 
         const noReplay = await persistence.eventsAfter(
             runningSnapshot.lab.id,
@@ -152,7 +149,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
     });
 
     it("loads a checkpoint through a new database client after process restart", async () => {
-        const task = makeTask("lab-restarted");
+        const task = makeTask(testLabId("restarted"));
         const snapshot = makeSnapshot(task);
         await persistence.initialize({
             task,
@@ -188,6 +185,14 @@ function makeTask(id = "lab-runtime"): TaskInput {
         context: ["Known observation"],
         success_criteria: ["Independent reproduction"]
     };
+}
+
+function testLabId(name: string): string {
+    return `lab-${testRunId}-${name}`;
+}
+
+function testEventId(labId: string, name: string): string {
+    return `${labId}-${name}`;
 }
 
 function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING): StatusSnapshot {
@@ -256,7 +261,7 @@ function makeEvent(
     occurredAt = "2026-08-02T00:00:00.000Z"
 ): LabEvent {
     return {
-        id,
+        id: testEventId(labId, id),
         lab_id: labId,
         type,
         occurred_at: occurredAt,

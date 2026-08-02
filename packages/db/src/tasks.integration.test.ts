@@ -1,13 +1,12 @@
-import { fileURLToPath } from "node:url";
 import { SchedulerLane } from "@lab/core/constants";
 import { AgentRole, InternalTaskStatus } from "@lab/protocol/constants";
 import { eq } from "drizzle-orm";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { BranchRepository } from "#src/branches";
 import { createDatabase, type DatabaseClient } from "#src/client";
 import { AttemptStatus, ExternalEffect } from "#src/constants";
 import { LabRepository } from "#src/labs";
+import { migrateDatabase } from "#src/migrations";
 import { attempts, labs, tasks } from "#src/schema";
 import { TaskRepository } from "#src/tasks";
 
@@ -23,14 +22,12 @@ describeDatabase("TaskRepository PostgreSQL 18 integration", () => {
             return;
         }
         client = createDatabase(databaseUrl, { max: 2 });
-        await migrate(client.db, {
-            migrationsFolder: fileURLToPath(new URL("../migrations", import.meta.url))
-        });
+        await migrateDatabase(client.db);
         repository = new TaskRepository(client.db);
     });
 
     beforeEach(async () => {
-        await client.db.delete(labs);
+        await client.db.delete(labs).where(eq(labs.id, "lab-task-repository-integration"));
     });
 
     afterAll(async () => {
@@ -132,9 +129,9 @@ async function prepareRunningAttempt(
     const branchRepository = new BranchRepository(client.db);
     const leasedAt = new Date("2026-08-02T00:00:00.000Z");
     await labRepository.create({
-        id: "lab-1",
+        id: "lab-task-repository-integration",
         input: {
-            id: "lab-1",
+            id: "lab-task-repository-integration",
             goal: "Test task recovery",
             context: [],
             success_criteria: []
@@ -144,7 +141,7 @@ async function prepareRunningAttempt(
     });
     await branchRepository.create({
         id: "branch-1",
-        labId: "lab-1",
+        labId: "lab-task-repository-integration",
         title: "Recovery",
         approach: "Exercise lease semantics",
         lane: SchedulerLane.EXPLORATION,
@@ -152,7 +149,7 @@ async function prepareRunningAttempt(
     });
     await repository.queue({
         id: "task-1",
-        labId: "lab-1",
+        labId: "lab-task-repository-integration",
         branchId: "branch-1",
         objective: "Run a recoverable task",
         role: AgentRole.RESEARCHER,
@@ -160,7 +157,7 @@ async function prepareRunningAttempt(
         availableAt: leasedAt
     });
     await repository.leaseNext({
-        labId: "lab-1",
+        labId: "lab-task-repository-integration",
         lane: SchedulerLane.EXPLORATION,
         workerId: "worker-1",
         leaseDurationMs: options.leaseDurationMs,

@@ -232,6 +232,7 @@ export class RuntimePersistence {
 }
 
 type RuntimeDatabase = Pick<Database, "select">;
+type EventInsertDatabase = Pick<Database, "insert">;
 
 async function withRecentEvents(
     database: RuntimeDatabase,
@@ -250,7 +251,10 @@ async function withRecentEvents(
     });
 }
 
-async function insertEvent(database: Database, event: LabEvent): Promise<PersistedLabEvent> {
+async function insertEvent(
+    database: EventInsertDatabase,
+    event: LabEvent
+): Promise<PersistedLabEvent> {
     const [record] = await database
         .insert(events)
         .values({
