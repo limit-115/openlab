@@ -1,21 +1,22 @@
 {
-  "name": "@lab/protocol",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+    "name": "@lab/protocol",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./provider": "./src/provider.ts",
+        "./schemas": "./src/schemas.ts"
+    },
+    "imports": {
+        "#src/*": "./src/*.ts"
+    },
+    "scripts": {
+        "typecheck": "tsc -p tsconfig.json",
+        "test": "vitest run",
+        "lint": "biome lint .",
+        "format": "biome format --write ."
+    },
+    "dependencies": {
+        "zod": "4.4.3"
     }
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
-    "clean": "rm -rf dist coverage"
-  },
-  "dependencies": {
-    "zod": "latest"
-  }
 }
