@@ -4,6 +4,7 @@ import path from "node:path";
 import { WakeTrigger } from "@lab/core/constants";
 import type { LifecycleContext } from "@lab/core/lifecycle";
 import { transitionLabState } from "@lab/core/lifecycle";
+import type { PersistedLabEvent, RuntimePersistence } from "@lab/db/runtime";
 import {
     AgentRole,
     AgentStatus,
@@ -28,6 +29,10 @@ import { validateFileArtifact } from "#src/artifact";
 
 type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;
 type SnapshotUpdater = (draft: StatusSnapshot) => void;
+export type WorkspaceRuntimePersistence = Pick<
+    RuntimePersistence,
+    "initialize" | "load" | "commit" | "eventsAfter"
+>;
 
 export interface VerifiedResult {
     summary: string;
@@ -46,6 +51,8 @@ export class LabWorkspace {
     private readonly listeners = new Set<StatusListener>();
     private readonly events: LabEvent[];
     private readonly evidence: Evidence[];
+    private runtimePersistence: WorkspaceRuntimePersistence | undefined;
+    private runtimeRevision: number | undefined;
     private snapshot: StatusSnapshot;
 
     private constructor(
@@ -53,7 +60,9 @@ export class LabWorkspace {
         snapshot: StatusSnapshot,
         events: LabEvent[],
         evidence: Evidence[],
-        recovered: boolean
+        recovered: boolean,
+        runtimePersistence?: WorkspaceRuntimePersistence,
+        runtimeRevision?: number
     ) {
         this.runDirectory = runDirectory;
         this.labId = snapshot.lab.id;
@@ -61,13 +70,26 @@ export class LabWorkspace {
         this.events = events;
         this.evidence = evidence;
         this.recovered = recovered;
+        this.runtimePersistence = runtimePersistence;
+        this.runtimeRevision = runtimeRevision;
     }
 
-    static async openOrCreate(workspaceRoot: string, taskPath: string): Promise<LabWorkspace> {
+    static async openOrCreate(
+        workspaceRoot: string,
+        taskPath: string,
+        runtimePersistence?: WorkspaceRuntimePersistence
+    ): Promise<LabWorkspace> {
         const requestedTask = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
         const current = await LabWorkspace.readCurrentPointer(workspaceRoot);
         if (current !== undefined) {
-            const workspace = await LabWorkspace.load(workspaceRoot, current.run_directory);
+            const workspace =
+                runtimePersistence === undefined
+                    ? await LabWorkspace.load(workspaceRoot, current.run_directory)
+                    : await LabWorkspace.loadFromRuntime(
+                          workspaceRoot,
+                          current,
+                          runtimePersistence
+                      );
             const existingTask = await workspace.getTask();
             const state = workspace.getSnapshot().lab.state;
             const recoverable = state === LabState.RUNNING || state === LabState.HIBERNATING;
@@ -75,10 +97,14 @@ export class LabWorkspace {
                 return workspace;
             }
         }
-        return LabWorkspace.initialize(workspaceRoot, taskPath);
+        return LabWorkspace.initialize(workspaceRoot, taskPath, runtimePersistence);
     }
 
-    static async initialize(workspaceRoot: string, taskPath: string): Promise<LabWorkspace> {
+    static async initialize(
+        workspaceRoot: string,
+        taskPath: string,
+        runtimePersistence?: WorkspaceRuntimePersistence
+    ): Promise<LabWorkspace> {
         const task = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
         const labId = `lab-${randomUUID()}`;
         const runDirectory = path.join(workspaceRoot, "runs", labId);
@@ -135,24 +161,21 @@ export class LabWorkspace {
 
         await mkdir(runDirectory, { recursive: true });
         const workspace = new LabWorkspace(runDirectory, snapshot, [], [], false);
-        await Promise.all([
-            workspace.writeJson("task.json", task),
-            workspace.persistSnapshot(),
-            writeFileAtomic(
-                path.join(workspaceRoot, "current.json"),
-                `${JSON.stringify({ lab_id: labId, run_directory: runDirectory }, null, 4)}\n`
-            )
-        ]);
+        await workspace.writeJson("task.json", task);
+        await workspace.persistFilesystemSnapshot();
+        if (runtimePersistence !== undefined) {
+            await workspace.attachRuntimePersistence(runtimePersistence, task);
+        }
+        await writeFileAtomic(
+            path.join(workspaceRoot, "current.json"),
+            `${JSON.stringify({ lab_id: labId, run_directory: runDirectory }, null, 4)}\n`
+        );
 
         return workspace;
     }
 
     static async load(workspaceRoot: string, runDirectory: string): Promise<LabWorkspace> {
-        const root = path.resolve(workspaceRoot);
-        const resolvedRunDirectory = path.resolve(runDirectory);
-        if (!resolvedRunDirectory.startsWith(`${root}${path.sep}`)) {
-            throw new Error("Current run directory escapes LAB_HOME");
-        }
+        const resolvedRunDirectory = LabWorkspace.resolveRunDirectory(workspaceRoot, runDirectory);
         const [snapshotSource, eventsSource, storedEvidence] = await Promise.all([
             readFile(path.join(resolvedRunDirectory, "status.json"), "utf8"),
             readFile(path.join(resolvedRunDirectory, "events.json"), "utf8"),
@@ -161,6 +184,39 @@ export class LabWorkspace {
         const snapshot = StatusSnapshotSchema.parse(JSON.parse(snapshotSource));
         const events = LabEventSchema.array().parse(JSON.parse(eventsSource));
         return new LabWorkspace(resolvedRunDirectory, snapshot, events, storedEvidence, true);
+    }
+
+    private static async loadFromRuntime(
+        workspaceRoot: string,
+        current: { lab_id: string; run_directory: string },
+        runtimePersistence: WorkspaceRuntimePersistence
+    ): Promise<LabWorkspace> {
+        const runDirectory = LabWorkspace.resolveRunDirectory(workspaceRoot, current.run_directory);
+        const checkpoint = await runtimePersistence.load(current.lab_id);
+        if (checkpoint === undefined) {
+            const workspace = await LabWorkspace.load(workspaceRoot, runDirectory);
+            await workspace.attachRuntimePersistence(runtimePersistence, await workspace.getTask());
+            return workspace;
+        }
+        if (checkpoint.snapshot.lab.id !== current.lab_id) {
+            throw new Error("Runtime checkpoint does not match current.json");
+        }
+
+        const [storedEvidence, events] = await Promise.all([
+            LabWorkspace.readOptionalEvidence(runDirectory),
+            LabWorkspace.readAllRuntimeEvents(runtimePersistence, current.lab_id)
+        ]);
+        const workspace = new LabWorkspace(
+            runDirectory,
+            checkpoint.snapshot,
+            events,
+            storedEvidence,
+            true,
+            runtimePersistence,
+            checkpoint.revision
+        );
+        await workspace.persistFilesystemSnapshot();
+        return workspace;
     }
 
     getTask(): Promise<TaskInput> {
@@ -202,8 +258,9 @@ export class LabWorkspace {
             const draft = structuredClone(this.snapshot);
             updater(draft);
             this.touch(draft);
-            this.snapshot = StatusSnapshotSchema.parse(draft);
-            await this.persistSnapshot();
+            const parsed = StatusSnapshotSchema.parse(draft);
+            this.snapshot = await this.commitRuntime(parsed);
+            await this.persistFilesystemSnapshot();
             return this.getSnapshot();
         });
     }
@@ -332,12 +389,13 @@ export class LabWorkspace {
                 occurred_at: new Date().toISOString(),
                 payload
             };
-            this.events.push(event);
             const draft = structuredClone(this.snapshot);
-            draft.recent_events = this.events.slice(-200);
+            draft.recent_events = [...this.events, event].slice(-200);
             this.touch(draft);
-            this.snapshot = StatusSnapshotSchema.parse(draft);
-            await this.persistSnapshot();
+            const parsed = StatusSnapshotSchema.parse(draft);
+            this.snapshot = await this.commitRuntime(parsed, event);
+            this.events.push(event);
+            await this.persistFilesystemSnapshot();
             return event;
         });
         const snapshot = this.getSnapshot();
@@ -411,6 +469,63 @@ export class LabWorkspace {
         return structuredClone(request);
     }
 
+    private async attachRuntimePersistence(
+        runtimePersistence: WorkspaceRuntimePersistence,
+        task: TaskInput
+    ): Promise<void> {
+        const checkpoint = await runtimePersistence.load(this.labId);
+        if (checkpoint !== undefined) {
+            if (checkpoint.snapshot.lab.goal !== task.goal) {
+                throw new Error("Runtime checkpoint goal does not match task.json");
+            }
+            this.runtimePersistence = runtimePersistence;
+            this.runtimeRevision = checkpoint.revision;
+            this.snapshot = checkpoint.snapshot;
+            const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, this.labId);
+            this.events.splice(0, this.events.length, ...events);
+            await this.persistFilesystemSnapshot();
+            return;
+        }
+
+        const [firstEvent, ...remainingEvents] = this.events;
+        let initialized = await runtimePersistence.initialize({
+            task,
+            workspacePath: this.runDirectory,
+            snapshot: this.snapshot,
+            ...(firstEvent === undefined ? {} : { event: firstEvent })
+        });
+        for (const event of remainingEvents) {
+            initialized = await runtimePersistence.commit({
+                snapshot: this.snapshot,
+                expectedRevision: initialized.revision,
+                event
+            });
+        }
+        this.runtimePersistence = runtimePersistence;
+        this.runtimeRevision = initialized.revision;
+        this.snapshot = initialized.snapshot;
+        await this.persistFilesystemSnapshot();
+    }
+
+    private async commitRuntime(
+        snapshot: StatusSnapshot,
+        event?: LabEvent
+    ): Promise<StatusSnapshot> {
+        if (this.runtimePersistence === undefined) {
+            return snapshot;
+        }
+        if (this.runtimeRevision === undefined) {
+            throw new Error("Runtime persistence is attached without a revision");
+        }
+        const committed = await this.runtimePersistence.commit({
+            snapshot,
+            expectedRevision: this.runtimeRevision,
+            ...(event === undefined ? {} : { event })
+        });
+        this.runtimeRevision = committed.revision;
+        return committed.snapshot;
+    }
+
     private touch(snapshot: StatusSnapshot): void {
         const now = new Date();
         snapshot.lab.updated_at = now.toISOString();
@@ -421,7 +536,7 @@ export class LabWorkspace {
         snapshot.frontier.updated_at = snapshot.lab.updated_at;
     }
 
-    private async persistSnapshot(): Promise<void> {
+    private async persistFilesystemSnapshot(): Promise<void> {
         await Promise.all([
             this.writeJson("status.json", this.snapshot),
             this.writeJson("events.json", this.events),
@@ -503,6 +618,48 @@ export class LabWorkspace {
             }
             throw error;
         }
+    }
+
+    private static async readAllRuntimeEvents(
+        runtimePersistence: WorkspaceRuntimePersistence,
+        labId: string
+    ): Promise<LabEvent[]> {
+        const events: LabEvent[] = [];
+        let cursor = 0;
+        for (;;) {
+            const page = await runtimePersistence.eventsAfter(labId, cursor, 1_000);
+            if (page.length === 0) {
+                return events;
+            }
+            events.push(...page.map(LabWorkspace.toLabEvent));
+            const last = page.at(-1);
+            if (last === undefined) {
+                return events;
+            }
+            cursor = last.sequence;
+            if (page.length < 1_000) {
+                return events;
+            }
+        }
+    }
+
+    private static toLabEvent(event: PersistedLabEvent): LabEvent {
+        return {
+            id: event.id,
+            lab_id: event.lab_id,
+            type: event.type,
+            occurred_at: event.occurred_at,
+            payload: event.payload
+        };
+    }
+
+    private static resolveRunDirectory(workspaceRoot: string, runDirectory: string): string {
+        const root = path.resolve(workspaceRoot);
+        const resolvedRunDirectory = path.resolve(runDirectory);
+        if (!resolvedRunDirectory.startsWith(`${root}${path.sep}`)) {
+            throw new Error("Current run directory escapes LAB_HOME");
+        }
+        return resolvedRunDirectory;
     }
 
     private writeJson(fileName: string, value: unknown): Promise<void> {

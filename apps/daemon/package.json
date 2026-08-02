@@ -19,6 +19,7 @@
     "dependencies": {
         "@fastify/static": "10.1.2",
         "@lab/core": "workspace:*",
+        "@lab/db": "workspace:*",
         "@lab/harness": "workspace:*",
         "@lab/protocol": "workspace:*",
         "async-mutex": "0.5.0",

@@ -213,8 +213,8 @@ export class RuntimePersistence {
 
     async eventsAfter(
         labId: string,
-        afterSequence = 0,
-        limit = RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
+        afterSequence: number = 0,
+        limit: number = RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
     ): Promise<PersistedLabEvent[]> {
         assertNonEmptyIdentifier(labId, "labId");
         if (!Number.isSafeInteger(afterSequence) || afterSequence < 0) {
