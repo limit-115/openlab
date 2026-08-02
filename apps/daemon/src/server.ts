@@ -89,7 +89,7 @@ export function createStatusServer(workspace: LabWorkspace): FastifyInstance {
 
 export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon> {
     const config = resolveDaemonConfig(options);
-    const workspace = await LabWorkspace.initialize(config.workspaceRoot, config.taskPath);
+    const workspace = await LabWorkspace.openOrCreate(config.workspaceRoot, config.taskPath);
     const app = createStatusServer(workspace);
     await app.listen({ host: config.host, port: config.port });
     const address = app.server.address() as AddressInfo;

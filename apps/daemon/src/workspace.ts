@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { LabEvent, LabState, TaskInput } from "@lab/protocol/schemas";
-import { TaskInputSchema } from "@lab/protocol/schemas";
+import { LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { StatusSnapshotSchema } from "@lab/protocol/status";
 import { Mutex } from "async-mutex";
@@ -14,17 +14,39 @@ type SnapshotUpdater = (draft: StatusSnapshot) => void;
 export class LabWorkspace {
     readonly runDirectory: string;
     readonly labId: string;
+    readonly recovered: boolean;
 
     private readonly mutex = new Mutex();
     private readonly listeners = new Set<StatusListener>();
     private readonly events: LabEvent[];
     private snapshot: StatusSnapshot;
 
-    private constructor(runDirectory: string, snapshot: StatusSnapshot, events: LabEvent[]) {
+    private constructor(
+        runDirectory: string,
+        snapshot: StatusSnapshot,
+        events: LabEvent[],
+        recovered: boolean
+    ) {
         this.runDirectory = runDirectory;
         this.labId = snapshot.lab.id;
         this.snapshot = snapshot;
         this.events = events;
+        this.recovered = recovered;
+    }
+
+    static async openOrCreate(workspaceRoot: string, taskPath: string): Promise<LabWorkspace> {
+        const requestedTask = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
+        const current = await LabWorkspace.readCurrentPointer(workspaceRoot);
+        if (current !== undefined) {
+            const workspace = await LabWorkspace.load(workspaceRoot, current.run_directory);
+            const existingTask = await workspace.getTask();
+            const state = workspace.getSnapshot().lab.state;
+            const recoverable = state === "RUNNING" || state === "HIBERNATING";
+            if (recoverable && LabWorkspace.tasksMatch(existingTask, requestedTask)) {
+                return workspace;
+            }
+        }
+        return LabWorkspace.initialize(workspaceRoot, taskPath);
     }
 
     static async initialize(workspaceRoot: string, taskPath: string): Promise<LabWorkspace> {
@@ -83,7 +105,7 @@ export class LabWorkspace {
         });
 
         await mkdir(runDirectory, { recursive: true });
-        const workspace = new LabWorkspace(runDirectory, snapshot, []);
+        const workspace = new LabWorkspace(runDirectory, snapshot, [], false);
         await Promise.all([
             workspace.writeJson("task.json", task),
             workspace.persistSnapshot(),
@@ -94,6 +116,21 @@ export class LabWorkspace {
         ]);
 
         return workspace;
+    }
+
+    static async load(workspaceRoot: string, runDirectory: string): Promise<LabWorkspace> {
+        const root = path.resolve(workspaceRoot);
+        const resolvedRunDirectory = path.resolve(runDirectory);
+        if (!resolvedRunDirectory.startsWith(`${root}${path.sep}`)) {
+            throw new Error("Current run directory escapes LAB_HOME");
+        }
+        const [snapshotSource, eventsSource] = await Promise.all([
+            readFile(path.join(resolvedRunDirectory, "status.json"), "utf8"),
+            readFile(path.join(resolvedRunDirectory, "events.json"), "utf8")
+        ]);
+        const snapshot = StatusSnapshotSchema.parse(JSON.parse(snapshotSource));
+        const events = LabEventSchema.array().parse(JSON.parse(eventsSource));
+        return new LabWorkspace(resolvedRunDirectory, snapshot, events, true);
     }
 
     getTask(): Promise<TaskInput> {
@@ -216,5 +253,37 @@ export class LabWorkspace {
             path.join(this.runDirectory, fileName),
             `${JSON.stringify(value, null, 4)}\n`
         );
+    }
+
+    private static async readCurrentPointer(
+        workspaceRoot: string
+    ): Promise<{ lab_id: string; run_directory: string } | undefined> {
+        try {
+            const source = await readFile(path.join(workspaceRoot, "current.json"), "utf8");
+            const value: unknown = JSON.parse(source);
+            if (
+                typeof value !== "object" ||
+                value === null ||
+                !("lab_id" in value) ||
+                !("run_directory" in value) ||
+                typeof value.lab_id !== "string" ||
+                typeof value.run_directory !== "string"
+            ) {
+                throw new Error("Invalid current.json pointer");
+            }
+            return { lab_id: value.lab_id, run_directory: value.run_directory };
+        } catch (error) {
+            if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+                return undefined;
+            }
+            throw error;
+        }
+    }
+
+    private static tasksMatch(left: TaskInput, right: TaskInput): boolean {
+        if (left.id !== undefined || right.id !== undefined) {
+            return left.id !== undefined && left.id === right.id;
+        }
+        return JSON.stringify(left) === JSON.stringify(right);
     }
 }

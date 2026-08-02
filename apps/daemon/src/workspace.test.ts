@@ -39,4 +39,16 @@ describe("LabWorkspace", () => {
         expect(workspace.getSnapshot().lab.state).toBe("STOPPED");
         expect(observed).toContain("lab.state_changed");
     });
+
+    it("recovers an unfinished run for the same task", async () => {
+        const workspace = await createWorkspace();
+        const taskPath = path.join(path.dirname(path.dirname(workspace.runDirectory)), "task.json");
+        const recovered = await LabWorkspace.openOrCreate(
+            path.dirname(path.dirname(workspace.runDirectory)),
+            taskPath
+        );
+
+        expect(recovered.labId).toBe(workspace.labId);
+        expect(recovered.recovered).toBe(true);
+    });
 });
