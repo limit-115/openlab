@@ -432,7 +432,7 @@ describe("harness process isolation", () => {
         expect(runner.spawnRequests).toHaveLength(0);
     });
 
-    it("records a timed-out run as cancelled with terminal artifacts", async () => {
+    it("records a timed-out run with an explicit status and terminal artifacts", async () => {
         const runner = new FakeHarnessProcessRunner([
             captureSuccess("codex-cli 0.146.0"),
             captureSuccess(TestLoginMarkers.CHATGPT)
@@ -454,7 +454,7 @@ describe("harness process isolation", () => {
         const expectedError = `codex harness run timed out after ${TestTimeoutMilliseconds.WATCHDOG} ms`;
 
         expect(completed.result).toMatchObject({
-            status: HarnessRunStatuses.CANCELLED,
+            status: HarnessRunStatuses.TIMED_OUT,
             error: expectedError,
             timeoutMs: TestTimeoutMilliseconds.WATCHDOG,
             sessionId: "timed-out-session"
@@ -469,7 +469,7 @@ describe("harness process isolation", () => {
         await expect(
             readFile(completed.result.artifacts.manifest.path, "utf8").then(JSON.parse)
         ).resolves.toMatchObject({
-            status: HarnessRunStatuses.CANCELLED,
+            status: HarnessRunStatuses.TIMED_OUT,
             error: expectedError,
             timeoutMs: TestTimeoutMilliseconds.WATCHDOG
         });

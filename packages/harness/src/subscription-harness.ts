@@ -355,7 +355,8 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 processExit,
                 semanticError,
                 streamCompleted,
-                signal?.aborted === true || watchdog.timedOut()
+                signal?.aborted === true,
+                watchdog.timedOut()
             );
             const finishedAt = new Date().toISOString();
             const artifacts = await collectArtifacts(files);
@@ -580,9 +581,13 @@ function determineStatus(
     processExit: HarnessProcessExit,
     semanticError: Error | undefined,
     streamCompleted: boolean,
-    cancelledByWatchdogOrCaller: boolean
+    cancelledByCaller: boolean,
+    timedOut: boolean
 ): HarnessRunStatus {
-    if (cancelledByWatchdogOrCaller || (!streamCompleted && semanticError === undefined)) {
+    if (timedOut) {
+        return HarnessRunStatuses.TIMED_OUT;
+    }
+    if (cancelledByCaller || (!streamCompleted && semanticError === undefined)) {
         return HarnessRunStatuses.CANCELLED;
     }
     if (semanticError) {

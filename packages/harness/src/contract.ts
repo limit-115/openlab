@@ -17,6 +17,7 @@ export const HarnessRunStatuses = {
     RUNNING: "running",
     SUCCEEDED: "succeeded",
     FAILED: "failed",
+    TIMED_OUT: "timed_out",
     CANCELLED: "cancelled"
 } as const;
 

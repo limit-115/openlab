@@ -95,6 +95,7 @@ export const EventType = {
     HARNESS_RUN_STARTED: "harness.run_started",
     HARNESS_RUN_SUCCEEDED: "harness.run_succeeded",
     HARNESS_RUN_FAILED: "harness.run_failed",
+    HARNESS_RUN_TIMED_OUT: "harness.run_timed_out",
     HARNESS_RUN_CANCELLED: "harness.run_cancelled",
     GOAL_OPERATIONALIZED: "goal.operationalized",
     BRANCH_CREATED: "branch.created",
