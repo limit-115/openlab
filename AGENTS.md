@@ -12,5 +12,8 @@
 - Biome is the formatter and linter for every workspace. Use four spaces and no trailing commas. Run
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
+- Run model agents only through locally authenticated Codex or Claude CLI harnesses. Subscription
+  authentication is mandatory. Never call a model API, accept an API key, or silently fall back to
+  usage-based billing.
 - Make a conventional commit after every coherent block. Stage only files owned by that block.
 
