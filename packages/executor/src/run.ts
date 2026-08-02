@@ -4,13 +4,13 @@ import { mkdir, open, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { execa } from "execa";
 import writeFileAtomic from "write-file-atomic";
+import { EXECUTION_STATUS, type ExecutionStatus } from "#src/constants";
 import { ArtifactDirectoryExistsError, ExecutionRequestError } from "#src/errors";
 import type {
     ArtifactDescriptor,
     CompletedExecutionRecord,
     ExecutionRequest,
     ExecutionResult,
-    ExecutionStatus,
     RecordedCommand,
     RecordedEnvironment,
     RunningExecutionRecord
@@ -53,7 +53,7 @@ export async function runExperiment(
     const startedAt = new Date().toISOString();
     const runningRecord: RunningExecutionRecord = {
         schemaVersion: 1,
-        status: "running",
+        status: EXECUTION_STATUS.RUNNING,
         command,
         environment,
         startedAt,
@@ -202,28 +202,28 @@ function recordEnvironment(request: ExecutionRequest): RecordedEnvironment {
 function determineStatus(
     result: ProcessResult | undefined,
     unexpectedError: unknown
-): Exclude<ExecutionStatus, "running"> {
+): Exclude<ExecutionStatus, typeof EXECUTION_STATUS.RUNNING> {
     if (!result) {
-        return "spawn_error";
+        return EXECUTION_STATUS.SPAWN_ERROR;
     }
 
     if (result.timedOut) {
-        return "timed_out";
+        return EXECUTION_STATUS.TIMED_OUT;
     }
 
     if (result.isCanceled) {
-        return "cancelled";
+        return EXECUTION_STATUS.CANCELLED;
     }
 
     if (!result.failed && result.exitCode === 0) {
-        return "succeeded";
+        return EXECUTION_STATUS.SUCCEEDED;
     }
 
     if (result.exitCode === undefined && !result.signal && unexpectedError === undefined) {
-        return "spawn_error";
+        return EXECUTION_STATUS.SPAWN_ERROR;
     }
 
-    return "failed";
+    return EXECUTION_STATUS.FAILED;
 }
 
 function errorMessage(result: ProcessResult | undefined, unexpectedError: unknown): string | null {

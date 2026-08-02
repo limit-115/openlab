@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { EXECUTION_STATUS } from "#src/constants";
 import { ArtifactDirectoryExistsError } from "#src/errors";
 import { runExperiment } from "#src/run";
 
@@ -38,7 +39,7 @@ describe("runExperiment", () => {
         const stderr = await readFile(result.stderr.path, "utf8");
         const manifest = await readFile(result.manifest.path, "utf8");
 
-        expect(result.status).toBe("succeeded");
+        expect(result.status).toBe(EXECUTION_STATUS.SUCCEEDED);
         expect(result.exitCode).toBe(0);
         expect(result.command.shell).toBe(false);
         expect(stdout).toBe(input);
@@ -51,7 +52,7 @@ describe("runExperiment", () => {
         });
         expect(manifest).not.toContain("do-not-persist-this-value");
         expect(JSON.parse(manifest)).toMatchObject({
-            status: "succeeded",
+            status: EXECUTION_STATUS.SUCCEEDED,
             command: {
                 file: process.execPath,
                 args: expect.arrayContaining([suspiciousArgument]),
@@ -78,7 +79,7 @@ describe("runExperiment", () => {
             artifactDirectory: join(root, "failed-attempt")
         });
 
-        expect(result).toMatchObject({ status: "failed", exitCode: 7 });
+        expect(result).toMatchObject({ status: EXECUTION_STATUS.FAILED, exitCode: 7 });
         await expect(readFile(result.stdout.path, "utf8")).resolves.toBe("partial result");
         await expect(readFile(result.stderr.path, "utf8")).resolves.toBe("failure details");
     });
@@ -95,7 +96,7 @@ describe("runExperiment", () => {
             forceKillAfterMs: 100
         });
 
-        expect(result.status).toBe("timed_out");
+        expect(result.status).toBe(EXECUTION_STATUS.TIMED_OUT);
         await expect(readFile(result.stdout.path, "utf8")).resolves.toBe("before timeout");
     });
 
@@ -118,11 +119,11 @@ describe("runExperiment", () => {
         const runningManifest = JSON.parse(
             await readFile(join(artifactDirectory, "execution.json"), "utf8")
         );
-        expect(runningManifest.status).toBe("running");
+        expect(runningManifest.status).toBe(EXECUTION_STATUS.RUNNING);
         controller.abort(new Error("test cancellation"));
 
         const result = await execution;
-        expect(result.status).toBe("cancelled");
+        expect(result.status).toBe(EXECUTION_STATUS.CANCELLED);
         await expect(readFile(result.stdout.path, "utf8")).resolves.toBe("started");
     });
 
@@ -135,7 +136,7 @@ describe("runExperiment", () => {
             artifactDirectory: join(root, "spawn-error")
         });
 
-        expect(result.status).toBe("spawn_error");
+        expect(result.status).toBe(EXECUTION_STATUS.SPAWN_ERROR);
         expect(result.exitCode).toBeNull();
         expect(result.error).toContain("missing-executable");
         expect(result.stdout.bytes).toBe(0);
@@ -153,7 +154,7 @@ describe("runExperiment", () => {
             shell: { enabled: true }
         });
 
-        expect(result.status).toBe("succeeded");
+        expect(result.status).toBe(EXECUTION_STATUS.SUCCEEDED);
         expect(result.command.shell).toEqual({ executable: null });
         await expect(readFile(result.stdout.path, "utf8")).resolves.toBe("shell-output");
     });

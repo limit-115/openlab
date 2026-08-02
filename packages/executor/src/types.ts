@@ -1,10 +1,4 @@
-export type ExecutionStatus =
-    | "running"
-    | "succeeded"
-    | "failed"
-    | "timed_out"
-    | "cancelled"
-    | "spawn_error";
+import type { EXECUTION_STATUS, ExecutionStatus } from "#src/constants";
 
 export interface ExplicitShellOptions {
     readonly enabled: true;
@@ -57,7 +51,7 @@ export interface RecordedCommand {
 
 export interface RunningExecutionRecord {
     readonly schemaVersion: 1;
-    readonly status: "running";
+    readonly status: typeof EXECUTION_STATUS.RUNNING;
     readonly command: RecordedCommand;
     readonly environment: RecordedEnvironment;
     readonly startedAt: string;
@@ -68,7 +62,7 @@ export interface RunningExecutionRecord {
 
 export interface CompletedExecutionRecord {
     readonly schemaVersion: 1;
-    readonly status: Exclude<ExecutionStatus, "running">;
+    readonly status: Exclude<ExecutionStatus, typeof EXECUTION_STATUS.RUNNING>;
     readonly command: RecordedCommand;
     readonly environment: RecordedEnvironment;
     readonly startedAt: string;
