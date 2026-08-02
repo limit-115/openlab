@@ -33,6 +33,8 @@
 - Use a monospace font only where literal code is rendered: JSON payloads, source, and shell commands.
   Identifiers, timestamps, counts, metrics, and file paths are prose and use the sans-serif face.
 - Letter-spacing is forbidden. Never use `tracking-*` utilities or a `letter-spacing` declaration.
+- `text-sm` is the smallest permitted font size. Never set a smaller one, including through an
+  arbitrary value such as `text-[10px]`. Express sizes with the named Tailwind scale.
 - Biome is the formatter and linter for every workspace. Use four spaces and no trailing commas. Run
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
