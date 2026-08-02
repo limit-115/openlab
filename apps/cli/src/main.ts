@@ -14,6 +14,16 @@ interface GlobalOptions {
     json?: boolean;
 }
 
+const ShutdownSignal = {
+    INTERRUPT: "SIGINT",
+    TERMINATE: "SIGTERM"
+} as const;
+
+const ShutdownExitCode = {
+    [ShutdownSignal.INTERRUPT]: 130,
+    [ShutdownSignal.TERMINATE]: 143
+} as const;
+
 function parsePort(value: string): number {
     const port = Number.parseInt(value, 10);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -80,6 +90,17 @@ program
             taskPath,
             ...(options.port === undefined ? {} : { port: options.port })
         });
+        let closing = false;
+        for (const signal of Object.values(ShutdownSignal)) {
+            process.once(signal, async () => {
+                if (closing) {
+                    return;
+                }
+                closing = true;
+                process.exitCode = ShutdownExitCode[signal];
+                await daemon.close();
+            });
+        }
         outro(`Running ${daemon.workspace.labId} at ${daemon.url}`);
     });
 
