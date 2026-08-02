@@ -10,6 +10,8 @@ import {
     type AgentHarnessKind,
     AgentHarnessKind as AgentHarnessKinds
 } from "@lab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { ResearchStage } from "#src/research-cycle/research-stage-workspace.const";
 
 /**
  * The harness package owns its own finite domains and never depends on the wire protocol, so a
@@ -19,6 +21,17 @@ export const SnapshotHarnessKind: Record<HarnessKind, AgentHarnessKind> = {
     [HarnessKinds.CODEX]: AgentHarnessKinds.CODEX,
     [HarnessKinds.CLAUDE]: AgentHarnessKinds.CLAUDE,
     [HarnessKinds.GLM]: AgentHarnessKinds.GLM
+};
+
+/**
+ * Which role a stage's agent is reported under. The two domains list the same work, but one belongs
+ * to the research loop and the other to the wire protocol, so neither is read as the other.
+ */
+export const SnapshotAgentRole: Record<ResearchStage, AgentRole> = {
+    [ResearchStage.DIRECTOR]: AgentRole.DIRECTOR,
+    [ResearchStage.RESEARCHER]: AgentRole.RESEARCHER,
+    [ResearchStage.CRITIC]: AgentRole.CRITIC,
+    [ResearchStage.VERIFIER]: AgentRole.VERIFIER
 };
 
 export const SnapshotEffortLevel: Record<HarnessEffortLevel, AgentEffortLevel> = {

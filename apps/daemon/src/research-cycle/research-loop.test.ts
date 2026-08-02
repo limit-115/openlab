@@ -25,6 +25,9 @@ import { CodexSessionDefaults } from "@lab/harness/codex-cli.const";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
+import { AgentRunStatus } from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
 import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
@@ -42,6 +45,7 @@ import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { describe, expect, it, vi } from "vitest";
+import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import {
     CRITIC_VERDICT,
@@ -815,6 +819,35 @@ describe.sequential("runResearchLoop", () => {
             model: ClaudeSessionDefaults.MODEL,
             effort: ClaudeSessionDefaults.EFFORT
         });
+    });
+
+    it("opens a live activity run for every stage the loop puts through a harness", async () => {
+        const workspace = await createWorkspace();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX);
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE);
+        const activity = new AgentActivityHub();
+        const frames: AgentActivityFrame[] = [];
+        activity.subscribe((frame) => frames.push(frame));
+
+        await runResearchLoop(workspace, { harnesses: [codex, claude], activity });
+
+        const harnessRuns = [...codex.requests, ...claude.requests];
+        const finished = frames.filter(({ kind }) => kind === AgentActivityFrameKind.RUN_FINISHED);
+        expect(finished).toHaveLength(harnessRuns.length);
+        expect(new Set(activity.roster().map(({ role }) => role))).toEqual(
+            new Set([
+                AgentRole.DIRECTOR,
+                AgentRole.RESEARCHER,
+                AgentRole.CRITIC,
+                AgentRole.VERIFIER
+            ])
+        );
+        expect(activity.roster().every(({ status }) => status === AgentRunStatus.SUCCEEDED)).toBe(
+            true
+        );
+        expect(new Set(finished.map(({ run_id }) => run_id))).toEqual(
+            new Set(harnessRuns.map(({ artifactDirectory }) => path.basename(artifactDirectory)))
+        );
     });
 
     it("falls back when a director omits required operational assumptions", async () => {

@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import type {
     AgentHarness,
@@ -11,6 +12,7 @@ import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { requiredById } from "#src/lab-workspace/snapshot-entities";
 import { structuredOutputSchema } from "#src/research-contract/research-contract";
 import {
+    SnapshotAgentRole,
     SnapshotEffortLevel,
     SnapshotHarnessKind
 } from "#src/research-cycle/structured-agent-run.const";
@@ -32,7 +34,17 @@ export class StructuredAgentRunError extends Error {
 export async function runStructuredAgent<Output>(
     input: StructuredAgentRunInput<Output>
 ): Promise<StructuredAgentRunOutput<Output>> {
-    const { workspace, harness, stage, branchId, agentId, taskId, agentWorkspace, signal } = input;
+    const {
+        workspace,
+        activity,
+        harness,
+        stage,
+        branchId,
+        agentId,
+        taskId,
+        agentWorkspace,
+        signal
+    } = input;
     const request: HarnessRunRequest = {
         prompt: input.prompt,
         cwd: agentWorkspace.cwd,
@@ -59,10 +71,22 @@ export async function runStructuredAgent<Output>(
         }
     );
 
+    const activityRun = activity.startRun({
+        agent_id: agentId,
+        run_id: basename(agentWorkspace.artifactDirectory),
+        branch_id: branchId,
+        task_id: taskId,
+        role: SnapshotAgentRole[stage],
+        execution,
+        artifact_directory: agentWorkspace.artifactDirectory,
+        started_at: new Date().toISOString()
+    });
+
     let completed: HarnessRunResult | undefined;
     let terminalEventRecorded = false;
     try {
         for await (const event of harness.run(request, signal)) {
+            activityRun.publish(event);
             if (event.type === HarnessEventTypes.RUN_COMPLETED) {
                 completed = event.result;
             }
@@ -104,6 +128,7 @@ export async function runStructuredAgent<Output>(
         terminalEventRecorded = true;
         return { value, result: completed };
     } catch (error) {
+        activityRun.abandon(error instanceof Error ? error.message : String(error));
         if (!terminalEventRecorded) {
             const cancelled =
                 signal?.aborted === true ||

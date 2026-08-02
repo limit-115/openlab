@@ -1,6 +1,7 @@
 import { stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import type { FastifyInstance } from "fastify";
+import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { resolveDaemonConfig } from "#src/daemon-runtime/daemon-config";
 import type { DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
 import { type DaemonDatabase, openDaemonDatabase } from "#src/daemon-runtime/daemon-database";
@@ -28,8 +29,10 @@ export async function startDaemon(
             database.persistence
         );
         const dashboardRoot = await existingDirectory(config.dashboardRoot);
+        const activity = new AgentActivityHub();
         controller = new ResearchLoopController(
             workspace,
+            activity,
             dependencies.researchLoop ?? runResearchLoop
         );
         app = createStatusServer(workspace, {

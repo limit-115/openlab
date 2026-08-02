@@ -1,5 +1,6 @@
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import type {
     ResearchLoopOptions,
@@ -8,6 +9,7 @@ import type {
 
 export class ResearchLoopController {
     readonly #workspace: LabWorkspace;
+    readonly #activity: AgentActivityHub;
     readonly #run: (
         workspace: LabWorkspace,
         options: ResearchLoopOptions
@@ -19,9 +21,11 @@ export class ResearchLoopController {
 
     constructor(
         workspace: LabWorkspace,
+        activity: AgentActivityHub,
         run: (workspace: LabWorkspace, options: ResearchLoopOptions) => Promise<ResearchLoopOutcome>
     ) {
         this.#workspace = workspace;
+        this.#activity = activity;
         this.#run = run;
         this.#unsubscribe = workspace.subscribe((event, snapshot) => {
             if (
@@ -44,7 +48,10 @@ export class ResearchLoopController {
         }
         const abortController = new AbortController();
         this.#abortController = abortController;
-        const running = this.#run(this.#workspace, { signal: abortController.signal });
+        const running = this.#run(this.#workspace, {
+            activity: this.#activity,
+            signal: abortController.signal
+        });
         this.#running = running;
         const clear = () => {
             if (this.#running === running) {

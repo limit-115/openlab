@@ -1,6 +1,7 @@
 import type { AgentHarness, HarnessPreflight } from "@lab/harness/agent-harness.types";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import type {
@@ -24,6 +25,7 @@ export interface ResearchLoopOutcome {
 }
 
 export interface ResearchLoopOptions {
+    readonly activity?: AgentActivityHub;
     readonly harnesses?: readonly AgentHarness[];
     readonly workspaceFactory?: ResearchWorkspaceFactory;
     readonly signal?: AbortSignal;
@@ -40,6 +42,7 @@ export interface AvailableHarness {
 
 export interface ResearchCycleInput {
     readonly workspace: LabWorkspace;
+    readonly activity: AgentActivityHub;
     readonly task: TaskInput;
     readonly available: readonly AvailableHarness[];
     readonly createAgentWorkspace: CreateResearchWorkspace;
@@ -49,6 +52,7 @@ export interface ResearchCycleInput {
 
 export interface ResearchBranchInput {
     readonly workspace: LabWorkspace;
+    readonly activity: AgentActivityHub;
     readonly task: TaskInput;
     readonly plan: DirectorPlan;
     readonly direction: DirectorPlan["directions"][number];

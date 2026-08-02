@@ -6,6 +6,7 @@ import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-r
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import type { z } from "zod";
+import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { freezeEvaluator } from "#src/evaluator-integrity/frozen-evaluator";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import {
@@ -91,6 +92,7 @@ export function preferredDifferentHarnessIndex(
 
 export async function runCriticStageWithFallback(input: {
     readonly workspace: LabWorkspace;
+    readonly activity: AgentActivityHub;
     readonly available: readonly AvailableHarness[];
     readonly preferredIndex: number;
     readonly ids: RoleIdentifiers;
@@ -109,6 +111,7 @@ export async function runCriticStageWithFallback(input: {
         try {
             const run = await runStructuredAgent({
                 workspace: input.workspace,
+                activity: input.activity,
                 harness,
                 stage: ResearchStage.CRITIC,
                 branchId: input.ids.branchId,
@@ -164,6 +167,7 @@ export async function runCriticStageWithFallback(input: {
 
 export async function runStageWithFallback<Output extends AgentCapabilityOutput>(input: {
     readonly workspace: LabWorkspace;
+    readonly activity: AgentActivityHub;
     readonly available: readonly AvailableHarness[];
     readonly preferredIndex: number;
     readonly stage: ResearchStage;
@@ -185,6 +189,7 @@ export async function runStageWithFallback<Output extends AgentCapabilityOutput>
         try {
             const run = await runStructuredAgent({
                 workspace: input.workspace,
+                activity: input.activity,
                 harness,
                 stage: input.stage,
                 branchId: input.branchId,

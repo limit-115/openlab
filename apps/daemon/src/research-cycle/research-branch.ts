@@ -56,6 +56,7 @@ import { evaluatorPrecommitPrompt, researcherPrompt } from "#src/research-prompt
 export async function runResearchBranch(input: ResearchBranchInput): Promise<ResearchBranchResult> {
     const {
         workspace,
+        activity,
         task,
         plan,
         direction,
@@ -83,6 +84,7 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
         try {
             const precommit = await runStructuredAgent({
                 workspace,
+                activity,
                 harness,
                 stage: ResearchStage.RESEARCHER,
                 branchId: ids.branchId,
@@ -114,6 +116,7 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
             attemptPrepared = true;
             const run = await runStructuredAgent({
                 workspace,
+                activity,
                 harness,
                 stage: ResearchStage.RESEARCHER,
                 branchId: ids.branchId,

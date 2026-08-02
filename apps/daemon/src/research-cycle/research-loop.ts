@@ -9,6 +9,7 @@ import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { executeResearchOutcome } from "#src/daemon-execution/outcome-execution";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { directorPlanSchema, VerifierResultSchema } from "#src/research-contract/research-contract";
@@ -69,6 +70,7 @@ export async function runResearchLoop(
     options: ResearchLoopOptions = {}
 ): Promise<ResearchLoopOutcome> {
     const signal = options.signal;
+    const activity = options.activity ?? new AgentActivityHub();
     if (signal?.aborted) {
         return { status: ResearchLoopOutcomeStatus.CANCELLED };
     }
@@ -114,6 +116,7 @@ export async function runResearchLoop(
             const cycleStartedAt = new Date();
             const cycleResult = await runResearchCycle({
                 workspace,
+                activity,
                 task: taskForCycle(task, workspace, cycle),
                 available,
                 createAgentWorkspace,
@@ -199,11 +202,12 @@ async function blockForUnavailableHarnesses(
 }
 
 async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycleResult> {
-    const { workspace, task, available, createAgentWorkspace, cycle, signal } = input;
+    const { workspace, activity, task, available, createAgentWorkspace, cycle, signal } = input;
     const progress: Date[] = [];
     const directorIds = await prepareDirector(workspace, cycle);
     const { value: plan } = await runStageWithFallback({
         workspace,
+        activity,
         available,
         preferredIndex: cycle,
         stage: ResearchStage.DIRECTOR,
@@ -230,6 +234,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         plan.directions.map((direction, index) =>
             runResearchBranch({
                 workspace,
+                activity,
                 task,
                 plan,
                 direction,
@@ -292,6 +297,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
     );
     const criticRun = await runCriticStageWithFallback({
         workspace,
+        activity,
         available,
         preferredIndex: cycle + plan.directions.length + 1,
         ids: criticIds,
@@ -316,6 +322,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
     const verifierPreferredIndex = preferredDifferentHarnessIndex(available, criticRun.harness);
     const verifierRun = await runStageWithFallback({
         workspace,
+        activity,
         available,
         preferredIndex: verifierPreferredIndex,
         stage: ResearchStage.VERIFIER,
