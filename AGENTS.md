@@ -15,5 +15,7 @@
 - Run model agents only through locally authenticated Codex or Claude CLI harnesses. Subscription
   authentication is mandatory. Never call a model API, accept an API key, or silently fall back to
   usage-based billing.
+- Define every finite domain value set (events, statuses, states, roles, lanes, result kinds) as a
+  named `const` object with `as const`, and infer its union type from that object. Zod schemas and all
+  comparisons must use those constants. Do not use TypeScript `enum` or domain magic strings.
 - Make a conventional commit after every coherent block. Stage only files owned by that block.
-
