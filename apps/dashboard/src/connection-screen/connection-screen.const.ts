@@ -8,9 +8,9 @@ export const CENTER_STATE_MARK_READY = "border-green/24 bg-green/12 text-green" 
 
 export const CENTER_STATE_MARK_ERROR = "border-red/24 bg-red/11 text-red" as const;
 
-export const CENTER_STATE_TITLE = "mt-[7px] mb-2 text-[24px] font-[580]" as const;
+export const CENTER_STATE_TITLE = "mt-[7px] mb-2 text-2xl font-[580]" as const;
 
-export const CENTER_STATE_TEXT = "max-w-[470px] text-[12px] leading-[1.55] text-fg-muted" as const;
+export const CENTER_STATE_TEXT = "max-w-[470px] text-sm leading-[1.55] text-fg-muted" as const;
 
 export const FLOATING_MARK = "animate-float motion-reduce:animate-none" as const;
 
@@ -20,9 +20,9 @@ export const LOADING_LINE =
 export const COMMAND_HINT =
     "mt-[18px] inline-flex items-center gap-2 rounded-[7px] border border-line bg-surface-soft px-[10px] py-2 text-fg-faint" as const;
 
-export const COMMAND_HINT_CODE = "font-mono text-[10px] text-fg-muted" as const;
+export const COMMAND_HINT_CODE = "font-mono text-sm text-fg-muted" as const;
 
 export const PRIMARY_BUTTON =
-    "mt-[14px] inline-flex cursor-pointer items-center gap-[7px] rounded-[7px] bg-green px-3 py-2 text-[10px] font-[680] text-[#07110c] disabled:cursor-not-allowed disabled:opacity-55" as const;
+    "mt-[14px] inline-flex cursor-pointer items-center gap-[7px] rounded-[7px] bg-green px-3 py-2 text-sm font-[680] text-[#07110c] disabled:cursor-not-allowed disabled:opacity-55" as const;
 
 export const SPIN = "animate-spin motion-reduce:animate-none" as const;

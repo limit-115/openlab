@@ -21,8 +21,8 @@ export const METRIC_ICON_TONE: Record<MetricTone, string> = {
     [MetricTone.AMBER]: "border-amber/20 bg-amber/11 text-amber"
 };
 
-export const METRIC_LABEL = "text-[10px] font-[620] text-fg-muted" as const;
+export const METRIC_LABEL = "text-sm font-[620] text-fg-muted" as const;
 
-export const METRIC_VALUE = "mt-1 text-[21px] font-[520] leading-none" as const;
+export const METRIC_VALUE = "mt-1 text-xl font-[520] leading-none" as const;
 
-export const METRIC_TOTAL = "text-[10px] text-fg-faint" as const;
+export const METRIC_TOTAL = "text-sm text-fg-faint" as const;

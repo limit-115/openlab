@@ -1,7 +1,7 @@
 import { StreamState } from "#src/live-status/status-stream.const";
 
 export const CONNECTION_BADGE =
-    "inline-flex items-center gap-[6px] rounded-full border px-[9px] py-[6px] text-[10px] font-[650] max-[620px]:col-span-full max-[620px]:justify-self-start" as const;
+    "inline-flex items-center gap-[6px] rounded-full border px-[9px] py-[6px] text-sm font-[650] max-[620px]:col-span-full max-[620px]:justify-self-start" as const;
 
 export const CONNECTION_BADGE_TONE: Record<StreamState, string> = {
     [StreamState.CONNECTING]: "border-amber/24 bg-surface-soft text-amber",

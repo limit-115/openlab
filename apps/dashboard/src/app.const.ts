@@ -12,4 +12,4 @@ export const CONTENT_GRID_ASIDE =
     "grid min-w-0 gap-[14px] max-[1240px]:grid-cols-2 max-[1240px]:items-start max-[620px]:grid-cols-1" as const;
 
 export const APP_FOOTER =
-    "mx-auto flex w-[min(1680px,100%)] justify-between px-[clamp(18px,3vw,48px)] pb-7 text-[9px] text-fg-faint max-[620px]:flex-col max-[620px]:gap-[5px]" as const;
+    "mx-auto flex w-[min(1680px,100%)] justify-between px-[clamp(18px,3vw,48px)] pb-7 text-sm text-fg-faint max-[620px]:flex-col max-[620px]:gap-[5px]" as const;

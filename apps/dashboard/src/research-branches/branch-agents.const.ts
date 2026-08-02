@@ -14,9 +14,9 @@ export const AGENT_PRESENCE_TONE: Record<AgentStatus, string> = {
     [AgentStatus.STOPPED]: "bg-fg-faint"
 };
 
-export const AGENT_ROLE = "text-[10px] font-[650] capitalize" as const;
+export const AGENT_ROLE = "text-sm font-[650] capitalize" as const;
 
 export const AGENT_TASK =
-    "mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-fg-faint" as const;
+    "mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-fg-faint" as const;
 
-export const AGENT_STATUS = "text-[8px] uppercase text-fg-faint" as const;
+export const AGENT_STATUS = "text-sm uppercase text-fg-faint" as const;

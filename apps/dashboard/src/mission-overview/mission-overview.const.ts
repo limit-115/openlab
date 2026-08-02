@@ -10,6 +10,6 @@ export const GOAL_PANEL_BODY =
 export const GOAL_STATEMENT =
     "max-w-[980px] text-[clamp(19px,1.8vw,27px)] font-[550] leading-[1.28]" as const;
 
-export const GOAL_REASON = "mt-3 text-[12px] leading-[1.55] text-fg-muted" as const;
+export const GOAL_REASON = "mt-3 text-sm leading-[1.55] text-fg-muted" as const;
 
 export const METRIC_GRID = "grid grid-cols-2 gap-[10px] max-[620px]:grid-cols-1" as const;

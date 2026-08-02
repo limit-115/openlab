@@ -5,7 +5,7 @@ import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-statu
 import type { TaggedStatus } from "#src/status-tag/status-tag.types";
 
 export const STATUS_TAG =
-    "inline-flex whitespace-nowrap rounded-full border px-[6px] py-[3px] text-[8px] font-[680] uppercase" as const;
+    "inline-flex whitespace-nowrap rounded-full border px-[6px] py-[3px] text-sm font-[680] uppercase" as const;
 
 const NEUTRAL_TONE = "border-line bg-surface-soft text-fg-muted" as const;
 const ACTIVE_TONE = "border-cyan/19 bg-cyan/10 text-cyan" as const;

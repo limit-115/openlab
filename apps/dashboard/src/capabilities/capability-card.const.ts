@@ -17,17 +17,17 @@ export const CAPABILITY_ICON =
 
 export const CAPABILITY_HEADER = "flex items-start justify-between gap-2" as const;
 
-export const CAPABILITY_NEED = "text-[11px] font-[620] leading-[1.35]" as const;
+export const CAPABILITY_NEED = "text-sm font-[620] leading-[1.35]" as const;
 
-export const CAPABILITY_REASON = "mt-[6px] mb-2 text-[10px] leading-[1.45] text-fg-muted" as const;
+export const CAPABILITY_REASON = "mt-[6px] mb-2 text-sm leading-[1.45] text-fg-muted" as const;
 
 export const PROVISIONING_HINT = "grid gap-1 rounded-md bg-black/20 p-[7px]" as const;
 
-export const PROVISIONING_HINT_LABEL = "text-[8px] font-[680] uppercase text-fg-faint" as const;
+export const PROVISIONING_HINT_LABEL = "text-sm font-[680] uppercase text-fg-faint" as const;
 
 export const PROVISIONING_HINT_COMMAND =
-    "overflow-hidden text-ellipsis whitespace-nowrap text-[8px] text-amber" as const;
+    "overflow-hidden text-ellipsis whitespace-nowrap text-sm text-amber" as const;
 
-export const PROVISIONING_HINT_NOTE = "text-[8px] leading-[1.4] text-fg-faint" as const;
+export const PROVISIONING_HINT_NOTE = "text-sm leading-[1.4] text-fg-faint" as const;
 
-export const CAPABILITY_FOOTER = "mt-[7px] text-[8px] leading-[1.4] text-fg-faint" as const;
+export const CAPABILITY_FOOTER = "mt-[7px] text-sm leading-[1.4] text-fg-faint" as const;
