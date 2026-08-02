@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import type { LabEvent, LabState, TaskInput } from "@lab/protocol/schemas";
+import type { CapabilityRequest, LabEvent, LabState, TaskInput } from "@lab/protocol/schemas";
 import { LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { StatusSnapshotSchema } from "@lab/protocol/status";
@@ -227,6 +227,45 @@ export class LabWorkspace {
             });
         }
         return provided;
+    }
+
+    async requestCapability(input: {
+        need: string;
+        reason: string;
+        provisioningHint: string;
+    }): Promise<CapabilityRequest> {
+        const request: CapabilityRequest = {
+            id: `capability-${randomUUID()}`,
+            type: "capability_request",
+            need: input.need,
+            reason: input.reason,
+            provisioning_hint: input.provisioningHint,
+            status: "open",
+            created_at: new Date().toISOString()
+        };
+        let selected: CapabilityRequest = request;
+        await this.update((draft) => {
+            const existing = draft.capability_requests.find(
+                (candidate) => candidate.status === "open" && candidate.need === input.need
+            );
+            if (existing !== undefined) {
+                selected = existing;
+                return;
+            }
+            draft.capability_requests.push(request);
+            if (!draft.frontier.blockers.includes(request.need)) {
+                draft.frontier.blockers.push(request.need);
+            }
+        });
+        if (selected.id !== request.id) {
+            return structuredClone(selected);
+        }
+        await this.appendEvent("capability.requested", {
+            request_id: request.id,
+            need: request.need,
+            reason: request.reason
+        });
+        return structuredClone(request);
     }
 
     private touch(snapshot: StatusSnapshot): void {

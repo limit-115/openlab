@@ -51,4 +51,20 @@ describe("LabWorkspace", () => {
         expect(recovered.labId).toBe(workspace.labId);
         expect(recovered.recovered).toBe(true);
     });
+
+    it("deduplicates open capability requests", async () => {
+        const workspace = await createWorkspace();
+        const input = {
+            need: "Claude subscription login",
+            reason: "No authenticated research harness is available",
+            provisioningHint: "Run claude and sign in with claude.ai"
+        };
+
+        const first = await workspace.requestCapability(input);
+        const second = await workspace.requestCapability(input);
+
+        expect(second.id).toBe(first.id);
+        expect(workspace.getSnapshot().capability_requests).toHaveLength(1);
+        expect(workspace.getSnapshot().frontier.blockers).toContain(input.need);
+    });
 });
