@@ -4,8 +4,8 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "#src/app";
-import { FakeEventSource } from "#src/test/fake-event-source";
-import { statusFixture } from "#src/test/status-fixture";
+import { FakeEventSource } from "#src/test-support/fake-event-source";
+import { statusFixture } from "#src/test-support/status-fixture";
 
 function wrapper() {
     const client = new QueryClient({

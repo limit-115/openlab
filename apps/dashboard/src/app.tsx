@@ -1,17 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchStatus, statusQueryKey } from "#src/api/status-client";
-import { StreamState } from "#src/api/stream-constants";
-import { useLiveStatus } from "#src/api/use-live-status";
-import { BranchesPanel } from "#src/components/branches-panel";
-import { CapabilitiesPanel } from "#src/components/capabilities-panel";
-import { ClaimsPanel } from "#src/components/claims-panel";
-import { DashboardHeader } from "#src/components/dashboard-header";
-import { ErrorDashboard, LoadingDashboard } from "#src/components/dashboard-state";
-import { EventsPanel } from "#src/components/events-panel";
-import { ExperimentsPanel } from "#src/components/experiments-panel";
-import { FrontierPanel } from "#src/components/frontier-panel";
-import { OutcomePanel } from "#src/components/outcome-panel";
-import { Overview } from "#src/components/overview";
+import {
+    APP_FOOTER,
+    APP_SHELL,
+    CONTENT_GRID,
+    CONTENT_GRID_ASIDE,
+    CONTENT_GRID_MAIN,
+    DASHBOARD
+} from "#src/app.const";
+import { CapabilitiesPanel } from "#src/capabilities/capabilities-panel";
+import { ClaimsPanel } from "#src/claims/claims-panel";
+import { ErrorDashboard } from "#src/connection-screen/error-screen";
+import { LoadingDashboard } from "#src/connection-screen/loading-screen";
+import { EventsPanel } from "#src/events/events-panel";
+import { ExperimentsPanel } from "#src/experiments/experiments-panel";
+import { LabHeader } from "#src/lab-header/lab-header";
+import { OutcomePanel } from "#src/lab-outcome/outcome-panel";
+import { fetchStatus, statusQueryKey } from "#src/live-status/status-client";
+import { useLiveStatus } from "#src/live-status/status-stream";
+import { StreamState } from "#src/live-status/status-stream.const";
+import { MissionOverview } from "#src/mission-overview/mission-overview";
+import { BranchesPanel } from "#src/research-branches/branches-panel";
+import { FrontierPanel } from "#src/research-frontier/frontier-panel";
 
 export function App() {
     const stream = useLiveStatus();
@@ -46,14 +55,14 @@ export function App() {
     const snapshot = statusQuery.data;
 
     return (
-        <div className="app-shell">
-            <DashboardHeader snapshot={snapshot} stream={stream} />
-            <main className="dashboard">
-                <Overview snapshot={snapshot} />
+        <div className={APP_SHELL}>
+            <LabHeader snapshot={snapshot} stream={stream} />
+            <main className={DASHBOARD}>
+                <MissionOverview snapshot={snapshot} />
                 <OutcomePanel snapshot={snapshot} />
                 <FrontierPanel frontier={snapshot.frontier} />
-                <div className="content-grid">
-                    <div className="content-grid__main">
+                <div className={CONTENT_GRID}>
+                    <div className={CONTENT_GRID_MAIN}>
                         <BranchesPanel
                             branches={snapshot.branches}
                             agents={snapshot.agents}
@@ -62,13 +71,13 @@ export function App() {
                         <ClaimsPanel claims={snapshot.claims} />
                         <ExperimentsPanel experiments={snapshot.experiments} />
                     </div>
-                    <aside className="content-grid__aside" aria-label="Blockers and activity">
+                    <aside className={CONTENT_GRID_ASIDE} aria-label="Blockers and activity">
                         <CapabilitiesPanel requests={snapshot.capability_requests} />
                         <EventsPanel events={snapshot.recent_events} />
                     </aside>
                 </div>
             </main>
-            <footer className="app-footer">
+            <footer className={APP_FOOTER}>
                 <span>AI Research Lab · Observer mode</span>
                 <span>Control remains in the CLI</span>
             </footer>

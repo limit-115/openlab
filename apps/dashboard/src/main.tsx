@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "#src/app";
-import "#src/styles.css";
+import "#src/tailwind.css";
 
 const rootElement = document.getElementById("root");
 
