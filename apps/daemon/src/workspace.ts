@@ -12,8 +12,8 @@ import {
     CapabilityStatus,
     EventType,
     InternalTaskStatus,
-    LabState,
     type EventType as LabEventType,
+    LabState,
     type LabState as LabStateValue
 } from "@lab/protocol/constants";
 import type { CapabilityRequest, LabEvent, TaskInput } from "@lab/protocol/schemas";
