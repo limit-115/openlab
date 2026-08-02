@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
     HarnessAuthenticationMethods,
+    HarnessEffortLevels,
     HarnessExecutionProfiles,
     HarnessKinds,
     HarnessRunStatuses
 } from "#src/agent-harness/agent-harness.const";
 import { HarnessEventTypes } from "#src/agent-harness/harness-event.const";
-import { ClaudePermissionModes } from "#src/claude-cli/claude-cli.const";
+import { ClaudePermissionModes, ClaudeSessionDefaults } from "#src/claude-cli/claude-cli.const";
 import { ClaudeHarness } from "#src/claude-cli/claude-harness";
 import {
     captureSuccess,
@@ -132,6 +133,10 @@ describe("ClaudeHarness", () => {
             "",
             "--settings",
             expect.stringContaining('"PreToolUse"'),
+            "--model",
+            ClaudeSessionDefaults.MODEL,
+            "--effort",
+            ClaudeSessionDefaults.EFFORT,
             "--json-schema",
             JSON.stringify(answerSchema())
         ]);
@@ -222,5 +227,49 @@ describe("ClaudeHarness", () => {
             expect.arrayContaining(["--permission-mode", ClaudePermissionModes.PLAN])
         );
         expect(args).not.toContain("--dangerously-skip-permissions");
+    });
+
+    it("lets a request override the default model and effort", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess(ClaudeTestCliValues.VERSION),
+            captureSuccess(
+                JSON.stringify({
+                    loggedIn: true,
+                    authMethod: HarnessAuthenticationMethods.CLAUDE_AI,
+                    apiProvider: ClaudeTestApiProviders.FIRST_PARTY,
+                    subscriptionType: ClaudeTestSubscriptionTypes.MAX
+                })
+            )
+        ]);
+        runner.nextStream = streamSuccess([
+            {
+                type: ClaudeTestNativeEventTypes.SYSTEM,
+                subtype: ClaudeTestNativeSubtypes.INIT,
+                session_id: "override-session"
+            },
+            {
+                type: ClaudeTestNativeEventTypes.RESULT,
+                subtype: ClaudeTestResultSubtypes.SUCCESS,
+                is_error: false,
+                session_id: "override-session"
+            }
+        ]);
+        const harness = new ClaudeHarness({ runner, environment: testEnvironment() });
+
+        await Array.fromAsync(
+            harness.run(
+                await harnessRequest("claude-override", {
+                    model: "opus",
+                    effort: HarnessEffortLevels.XHIGH
+                })
+            )
+        );
+
+        const args = runner.spawnRequests[0]?.args ?? [];
+
+        expect(args).toEqual(
+            expect.arrayContaining(["--model", "opus", "--effort", HarnessEffortLevels.XHIGH])
+        );
+        expect(args).not.toContain(ClaudeSessionDefaults.MODEL);
     });
 });

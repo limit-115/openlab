@@ -1,5 +1,6 @@
 import type {
     HarnessAuthenticationMethod,
+    HarnessEffortLevel,
     HarnessExecutionProfile,
     HarnessInputSource,
     HarnessKind,
@@ -23,6 +24,7 @@ export interface HarnessRunRequest {
     readonly cwd: string;
     readonly artifactDirectory: string;
     readonly model?: string;
+    readonly effort?: HarnessEffortLevel;
     readonly responseSchema?: Readonly<Record<string, unknown>>;
     readonly resumeSessionId?: string;
     readonly timeoutMs?: number;

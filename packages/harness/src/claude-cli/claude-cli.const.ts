@@ -1,4 +1,12 @@
+import { HarnessEffortLevels } from "#src/agent-harness/agent-harness.const";
+
 export const CLAUDE_BINARY = "claude";
+
+/** Applied when a run request does not name its own model or effort. */
+export const ClaudeSessionDefaults = {
+    MODEL: "haiku",
+    EFFORT: HarnessEffortLevels.MEDIUM
+} as const;
 
 export const ClaudePermissionModes = {
     BYPASS_PERMISSIONS: "bypassPermissions",

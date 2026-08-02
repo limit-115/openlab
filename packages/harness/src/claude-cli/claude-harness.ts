@@ -13,7 +13,8 @@ import {
     CLAUDE_BINARY,
     ClaudeApiProviders,
     ClaudeOutputFormats,
-    ClaudePermissionModes
+    ClaudePermissionModes,
+    ClaudeSessionDefaults
 } from "#src/claude-cli/claude-cli.const";
 import { ClaudeEventParser } from "#src/claude-cli/claude-event-parser";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
@@ -89,7 +90,10 @@ export class ClaudeHarness extends SubscriptionCliHarness {
                 "",
                 "--settings",
                 claudeModelApiPolicySettings(),
-                ...(request.model === undefined ? [] : ["--model", request.model]),
+                "--model",
+                request.model ?? ClaudeSessionDefaults.MODEL,
+                "--effort",
+                request.effort ?? ClaudeSessionDefaults.EFFORT,
                 ...(request.resumeSessionId === undefined
                     ? []
                     : ["--resume", request.resumeSessionId]),
