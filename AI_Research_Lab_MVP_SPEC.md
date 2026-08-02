@@ -21,7 +21,10 @@
 
 ## 2. Зафиксированные решения
 
-- Цена API и compute не ограничивает работу.
+- Лимиты активных продуктовых подписок и локального compute не задают искусственный `max-hours`.
+- Model agents запускаются только через локальные Codex CLI и Claude CLI, аутентифицированные
+  активной подпиской оператора.
+- Model API, API keys, provider SDK и автоматический fallback на usage-based billing запрещены.
 - `max-hours` отсутствует.
 - Методы решения не задаются заранее.
 - Первый reference domain — software и algorithms.
@@ -83,7 +86,7 @@ lab start task.json
 - До фиксации гипотезы независимые branches не получают выводы друг друга.
 - Director управляет приоритетами, но не определяет истинность claims.
 - Любой agent может зафиксировать dissent и продолжить minority branch.
-- Согласие агентов или разных model providers не является evidence само по себе.
+- Согласие агентов, моделей или CLI harnesses не является evidence само по себе.
 - Отрицательные и inconclusive результаты сохраняются.
 - Сложная задача, от которой отказалась одна модель, передаётся другой модели или branch.
 
@@ -257,8 +260,8 @@ PostgreSQL хранит durable operational state:
 
 - TypeScript.
 - PostgreSQL 18.
-- Нативные TypeScript SDK модельных провайдеров.
-- Provider adapters, чтобы orchestration не зависел от одного model API.
+- Subscription-authenticated Codex CLI и Claude CLI harnesses.
+- Нормализованный harness contract, чтобы orchestration не зависел от конкретного CLI.
 - Local filesystem для workspace и outputs.
 - CLI для запуска и управления.
 - Простой локальный status dashboard на Vite + React.
@@ -315,7 +318,7 @@ MVP обязан корректно обрабатывать:
 - fabricated experiment numbers;
 - cherry-picking успешных runs;
 - benchmark overfitting и train/test leakage;
-- зависший или упавший model provider;
+- зависший или упавший CLI harness;
 - invalid structured model output;
 - crash процесса во время experiment;
 - повтор task после частичного external side effect;
