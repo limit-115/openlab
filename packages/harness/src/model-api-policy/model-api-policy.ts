@@ -1,20 +1,20 @@
 import { z } from "zod";
 import {
     BASH_FORBIDDEN_MODEL_API_PATTERNS,
-    ForbiddenModelApiPattern,
     MODEL_API_POLICY_WRITE_TOOLS,
     ModelApiPolicyDecision,
     ModelApiPolicyDenialReason,
     ModelApiPolicyHookEvent,
     ModelApiPolicyToolName,
-    UNIVERSAL_FORBIDDEN_MODEL_API_PATTERNS
+    UNIVERSAL_FORBIDDEN_MODEL_API_PATTERNS,
+    WRITE_FORBIDDEN_MODEL_API_PATTERNS
 } from "#src/model-api-policy/model-api-policy.const";
 import type { ModelApiPolicyResult } from "#src/model-api-policy/model-api-policy.types";
 
 const HookInputSchema = z.looseObject({
     hook_event_name: z.literal(ModelApiPolicyHookEvent.PRE_TOOL_USE),
     tool_name: z.string().min(1),
-    tool_input: z.unknown()
+    tool_input: z.unknown().optional()
 });
 
 const writeToolNames: readonly string[] = MODEL_API_POLICY_WRITE_TOOLS;
@@ -42,7 +42,7 @@ export function evaluateModelApiToolInput(input: unknown): ModelApiPolicyResult 
     }
 
     if (writeToolNames.includes(parsed.data.tool_name)) {
-        if (ForbiddenModelApiPattern.MODEL_SDK_IMPORT.test(serializedInput)) {
+        if (firstViolation(serializedInput, WRITE_FORBIDDEN_MODEL_API_PATTERNS)) {
             return deny(ModelApiPolicyDenialReason.SDK_INTEGRATION_CODE);
         }
     }
