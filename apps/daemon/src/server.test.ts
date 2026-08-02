@@ -10,6 +10,7 @@ import type {
     RuntimeCheckpoint
 } from "@lab/db/runtime";
 import { CapabilityStatus, LabState } from "@lab/protocol/constants";
+import type { Evidence } from "@lab/protocol/schemas";
 import { describe, expect, it } from "vitest";
 import { ResearchLoopOutcomeStatus } from "#src/research-loop";
 import { createStatusServer, startDaemon } from "#src/server";
@@ -31,7 +32,7 @@ class InMemoryRuntimePersistence {
         }
         this.#task = structuredClone(input.task);
         this.#workspacePath = input.workspacePath;
-        return this.#store(input.snapshot, 1, input.event);
+        return this.#store(input.snapshot, input.evidence ?? [], 1, input.event);
     }
 
     async load(labId: string): Promise<RuntimeCheckpoint | undefined> {
@@ -44,7 +45,12 @@ class InMemoryRuntimePersistence {
         if (this.#checkpoint?.revision !== input.expectedRevision) {
             throw new Error(`Unexpected runtime revision ${input.expectedRevision}`);
         }
-        return this.#store(input.snapshot, input.expectedRevision + 1, input.event);
+        return this.#store(
+            input.snapshot,
+            input.evidence ?? this.#checkpoint.evidence,
+            input.expectedRevision + 1,
+            input.event
+        );
     }
 
     async eventsAfter(labId: string, afterSequence = 0, limit = 200): Promise<PersistedLabEvent[]> {
@@ -77,6 +83,7 @@ class InMemoryRuntimePersistence {
 
     #store(
         snapshot: RuntimeCheckpoint["snapshot"],
+        evidence: readonly Evidence[],
         revision: number,
         event?: InitializeRuntimeInput["event"]
     ): CommitRuntimeResult {
@@ -85,13 +92,15 @@ class InMemoryRuntimePersistence {
         if (appendedEvent !== undefined) {
             this.#events.push(appendedEvent);
         }
-        this.#checkpoint = {
+        const checkpoint: RuntimeCheckpoint = {
             snapshot: structuredClone(snapshot),
+            evidence: [...structuredClone(evidence)],
             revision,
             ...(appendedEvent === undefined ? {} : { lastEventSequence: appendedEvent.sequence })
         };
+        this.#checkpoint = checkpoint;
         return {
-            ...structuredClone(this.#checkpoint),
+            ...structuredClone(checkpoint),
             ...(appendedEvent === undefined ? {} : { appendedEvent })
         };
     }

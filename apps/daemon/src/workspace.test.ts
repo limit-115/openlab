@@ -342,7 +342,7 @@ function makeRecoverableRuntime(
     return {
         task: structuredClone(task),
         workspacePath,
-        checkpoint: { snapshot, revision: 1 },
+        checkpoint: { snapshot, evidence: [], revision: 1 },
         persistedAt
     };
 }

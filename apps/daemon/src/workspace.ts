@@ -250,15 +250,12 @@ export class LabWorkspace {
             throw new Error("Runtime checkpoint does not match current.json");
         }
 
-        const [storedEvidence, events] = await Promise.all([
-            LabWorkspace.readOptionalEvidence(runDirectory),
-            LabWorkspace.readAllRuntimeEvents(runtimePersistence, current.lab_id)
-        ]);
+        const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, current.lab_id);
         const workspace = new LabWorkspace(
             runDirectory,
             checkpoint.snapshot,
             events,
-            storedEvidence,
+            checkpoint.evidence,
             true,
             runtimePersistence,
             checkpoint.revision
@@ -519,8 +516,13 @@ export class LabWorkspace {
                 }
                 return structuredClone(existing);
             }
-            this.evidence.push(evidence);
-            await this.writeJson("evidence.json", this.evidence);
+            const nextEvidence = [...this.evidence, evidence];
+            const draft = structuredClone(this.snapshot);
+            this.touch(draft);
+            const parsed = StatusSnapshotSchema.parse(draft);
+            this.snapshot = await this.commitRuntime(parsed, undefined, nextEvidence);
+            this.evidence.splice(0, this.evidence.length, ...nextEvidence);
+            await this.persistFilesystemSnapshot();
             return structuredClone(evidence);
         });
     }
@@ -669,6 +671,7 @@ export class LabWorkspace {
             this.runtimePersistence = runtimePersistence;
             this.runtimeRevision = checkpoint.revision;
             this.snapshot = checkpoint.snapshot;
+            this.evidence.splice(0, this.evidence.length, ...checkpoint.evidence);
             const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, this.labId);
             this.events.splice(0, this.events.length, ...events);
             await this.persistFilesystemSnapshot();
@@ -680,11 +683,13 @@ export class LabWorkspace {
             task,
             workspacePath: this.runDirectory,
             snapshot: this.snapshot,
+            evidence: this.evidence,
             ...(firstEvent === undefined ? {} : { event: firstEvent })
         });
         for (const event of remainingEvents) {
             initialized = await runtimePersistence.commit({
                 snapshot: this.snapshot,
+                evidence: this.evidence,
                 expectedRevision: initialized.revision,
                 event
             });
@@ -692,12 +697,14 @@ export class LabWorkspace {
         this.runtimePersistence = runtimePersistence;
         this.runtimeRevision = initialized.revision;
         this.snapshot = initialized.snapshot;
+        this.evidence.splice(0, this.evidence.length, ...initialized.evidence);
         await this.persistFilesystemSnapshot();
     }
 
     private async commitRuntime(
         snapshot: StatusSnapshot,
-        event?: LabEvent
+        event?: LabEvent,
+        evidenceRecords: readonly Evidence[] = this.evidence
     ): Promise<StatusSnapshot> {
         if (this.runtimePersistence === undefined) {
             return snapshot;
@@ -707,6 +714,7 @@ export class LabWorkspace {
         }
         const committed = await this.runtimePersistence.commit({
             snapshot,
+            evidence: evidenceRecords,
             expectedRevision: this.runtimeRevision,
             ...(event === undefined ? {} : { event })
         });

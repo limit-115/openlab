@@ -1,6 +1,6 @@
 import { LabState } from "@lab/protocol/constants";
-import type { LabEvent, TaskInput } from "@lab/protocol/schemas";
-import { LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
+import type { Evidence, LabEvent, TaskInput } from "@lab/protocol/schemas";
+import { EvidenceSchema, LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { StatusSnapshotSchema } from "@lab/protocol/status";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
@@ -20,6 +20,7 @@ export interface PersistedLabEvent extends LabEvent {
 
 export interface RuntimeCheckpoint {
     readonly snapshot: StatusSnapshot;
+    readonly evidence: Evidence[];
     readonly revision: number;
     readonly lastEventSequence?: number;
 }
@@ -35,11 +36,13 @@ export interface InitializeRuntimeInput {
     readonly task: TaskInput;
     readonly workspacePath: string;
     readonly snapshot: StatusSnapshot;
+    readonly evidence?: readonly Evidence[];
     readonly event?: LabEvent;
 }
 
 export interface CommitRuntimeInput {
     readonly snapshot: StatusSnapshot;
+    readonly evidence?: readonly Evidence[];
     readonly expectedRevision: number;
     readonly event?: LabEvent;
 }
@@ -70,6 +73,7 @@ export class RuntimePersistence {
     async initialize(input: InitializeRuntimeInput): Promise<CommitRuntimeResult> {
         const task = TaskInputSchema.parse(input.task);
         const snapshot = StatusSnapshotSchema.parse(input.snapshot);
+        const evidenceRecords = parseEvidence(input.evidence);
         const event = parseEvent(input.event, snapshot.lab.id);
         assertNonEmptyWorkspacePath(input.workspacePath);
         if (snapshot.lab.goal !== task.goal) {
@@ -104,6 +108,7 @@ export class RuntimePersistence {
                 .values({
                     labId: snapshot.lab.id,
                     snapshot: canonicalSnapshot,
+                    evidence: evidenceRecords,
                     lastEventSequence: appendedEvent?.sequence,
                     persistedAt: updatedAt
                 })
@@ -114,8 +119,8 @@ export class RuntimePersistence {
             if (checkpoint === undefined) {
                 throw new Error(`Failed to initialize runtime checkpoint ${snapshot.lab.id}`);
             }
-            await projectRuntimeSnapshot(transaction, canonicalSnapshot);
-            return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
+            await projectRuntimeSnapshot(transaction, canonicalSnapshot, evidenceRecords);
+            return checkpointResult(canonicalSnapshot, evidenceRecords, checkpoint, appendedEvent);
         });
     }
 
@@ -125,6 +130,10 @@ export class RuntimePersistence {
         const event = parseEvent(input.event, snapshot.lab.id);
 
         return this.#database.transaction(async (transaction) => {
+            const evidenceRecords =
+                input.evidence === undefined
+                    ? await loadCheckpointEvidence(transaction, snapshot.lab.id)
+                    : parseEvidence(input.evidence);
             const appendedEvent =
                 event === undefined ? undefined : await insertEvent(transaction, event);
             const canonicalSnapshot = await withRecentEvents(
@@ -138,6 +147,7 @@ export class RuntimePersistence {
                 .set({
                     revision: sql`${runtimeCheckpoints.revision} + 1`,
                     snapshot: canonicalSnapshot,
+                    evidence: evidenceRecords,
                     ...(appendedEvent === undefined
                         ? {}
                         : { lastEventSequence: appendedEvent.sequence }),
@@ -170,8 +180,8 @@ export class RuntimePersistence {
             if (lab === undefined) {
                 throw new Error(`Lab ${snapshot.lab.id} does not exist`);
             }
-            await projectRuntimeSnapshot(transaction, canonicalSnapshot);
-            return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
+            await projectRuntimeSnapshot(transaction, canonicalSnapshot, evidenceRecords);
+            return checkpointResult(canonicalSnapshot, evidenceRecords, checkpoint, appendedEvent);
         });
     }
 
@@ -184,12 +194,13 @@ export class RuntimePersistence {
             return undefined;
         }
         const snapshot = StatusSnapshotSchema.parse(checkpoint.snapshot);
+        const evidenceRecords = parseEvidence(checkpoint.evidence);
         const canonicalSnapshot = await withRecentEvents(
             this.#database,
             snapshot,
             RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
         );
-        return checkpointResult(canonicalSnapshot, checkpoint);
+        return checkpointResult(canonicalSnapshot, evidenceRecords, checkpoint);
     }
 
     async listRecoverable(limit = 100): Promise<RecoverableRuntime[]> {
@@ -200,6 +211,7 @@ export class RuntimePersistence {
                 task: labs.input,
                 workspacePath: labs.workspacePath,
                 snapshot: runtimeCheckpoints.snapshot,
+                evidence: runtimeCheckpoints.evidence,
                 revision: runtimeCheckpoints.revision,
                 lastEventSequence: runtimeCheckpoints.lastEventSequence,
                 persistedAt: runtimeCheckpoints.persistedAt
@@ -214,6 +226,7 @@ export class RuntimePersistence {
             records.map(async (record) => {
                 const task = TaskInputSchema.parse(record.task);
                 const snapshot = StatusSnapshotSchema.parse(record.snapshot);
+                const evidenceRecords = parseEvidence(record.evidence);
                 assertRecoverableMetadata(record.labId, task, record.workspacePath, snapshot);
                 return {
                     task,
@@ -224,6 +237,7 @@ export class RuntimePersistence {
                             snapshot,
                             RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
                         ),
+                        evidenceRecords,
                         record
                     ),
                     persistedAt: record.persistedAt.toISOString()
@@ -272,6 +286,18 @@ async function withRecentEvents(
     });
 }
 
+async function loadCheckpointEvidence(
+    database: RuntimeDatabase,
+    labId: string
+): Promise<Evidence[]> {
+    const [checkpoint] = await database
+        .select({ evidence: runtimeCheckpoints.evidence })
+        .from(runtimeCheckpoints)
+        .where(eq(runtimeCheckpoints.labId, labId))
+        .limit(1);
+    return parseEvidence(checkpoint?.evidence);
+}
+
 async function insertEvent(
     database: EventInsertDatabase,
     event: LabEvent
@@ -305,17 +331,23 @@ function parseEvent(event: LabEvent | undefined, labId: string): LabEvent | unde
 
 function checkpointResult(
     snapshot: StatusSnapshot,
+    evidenceRecords: Evidence[],
     checkpoint: { readonly revision: number; readonly lastEventSequence: number | null },
     appendedEvent?: PersistedLabEvent
 ): CommitRuntimeResult {
     return {
         snapshot,
+        evidence: evidenceRecords,
         revision: checkpoint.revision,
         ...(checkpoint.lastEventSequence === null
             ? {}
             : { lastEventSequence: checkpoint.lastEventSequence }),
         ...(appendedEvent === undefined ? {} : { appendedEvent })
     };
+}
+
+function parseEvidence(value: readonly Evidence[] | undefined): Evidence[] {
+    return EvidenceSchema.array().parse(value ?? []);
 }
 
 function terminalTimestamps(snapshot: StatusSnapshot, updatedAt: Date) {

@@ -1,0 +1,1507 @@
+{
+    "id": "18193a60-0c85-44fa-81d4-a3cef601ef88",
+    "prevId": "8a3a164f-156b-4cc1-9748-469fbffa96ba",
+    "version": "7",
+    "dialect": "postgresql",
+    "tables": {
+        "public.attempts": {
+            "name": "attempts",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "task_id": {
+                    "name": "task_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "attempt_number": {
+                    "name": "attempt_number",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "worker_id": {
+                    "name": "worker_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "status": {
+                    "name": "status",
+                    "type": "attempt_status",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'planned'"
+                },
+                "command": {
+                    "name": "command",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cwd": {
+                    "name": "cwd",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputs": {
+                    "name": "inputs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'{}'::jsonb"
+                },
+                "environment": {
+                    "name": "environment",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'{}'::jsonb"
+                },
+                "stdout_path": {
+                    "name": "stdout_path",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "stderr_path": {
+                    "name": "stderr_path",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "output_hash": {
+                    "name": "output_hash",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "exit_code": {
+                    "name": "exit_code",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "error": {
+                    "name": "error",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reconciliation_key": {
+                    "name": "reconciliation_key",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "external_effect": {
+                    "name": "external_effect",
+                    "type": "external_effect",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'none'"
+                },
+                "started_at": {
+                    "name": "started_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "finished_at": {
+                    "name": "finished_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "attempts_task_number_unique": {
+                    "name": "attempts_task_number_unique",
+                    "columns": [
+                        {
+                            "expression": "task_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "attempt_number",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "attempts_reconciliation_key_unique": {
+                    "name": "attempts_reconciliation_key_unique",
+                    "columns": [
+                        {
+                            "expression": "reconciliation_key",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "attempts_running_idx": {
+                    "name": "attempts_running_idx",
+                    "columns": [
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "task_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "attempts_task_id_tasks_id_fk": {
+                    "name": "attempts_task_id_tasks_id_fk",
+                    "tableFrom": "attempts",
+                    "tableTo": "tasks",
+                    "columnsFrom": ["task_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.branches": {
+            "name": "branches",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "title": {
+                    "name": "title",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "approach": {
+                    "name": "approach",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "status": {
+                    "name": "status",
+                    "type": "branch_status",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'active'"
+                },
+                "lane": {
+                    "name": "lane",
+                    "type": "scheduler_lane",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "isolated": {
+                    "name": "isolated",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": true
+                },
+                "closed_reason": {
+                    "name": "closed_reason",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "branches_lab_status_idx": {
+                    "name": "branches_lab_status_idx",
+                    "columns": [
+                        {
+                            "expression": "lab_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "branches_lab_id_labs_id_fk": {
+                    "name": "branches_lab_id_labs_id_fk",
+                    "tableFrom": "branches",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.capability_requests": {
+            "name": "capability_requests",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "branch_id": {
+                    "name": "branch_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "need": {
+                    "name": "need",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "reason": {
+                    "name": "reason",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "provisioning_hint": {
+                    "name": "provisioning_hint",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "status": {
+                    "name": "status",
+                    "type": "capability_status",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'open'"
+                },
+                "resource_reference": {
+                    "name": "resource_reference",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "provided_at": {
+                    "name": "provided_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "capability_requests_lab_status_idx": {
+                    "name": "capability_requests_lab_status_idx",
+                    "columns": [
+                        {
+                            "expression": "lab_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "capability_requests_lab_id_labs_id_fk": {
+                    "name": "capability_requests_lab_id_labs_id_fk",
+                    "tableFrom": "capability_requests",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "capability_requests_branch_id_branches_id_fk": {
+                    "name": "capability_requests_branch_id_branches_id_fk",
+                    "tableFrom": "capability_requests",
+                    "tableTo": "branches",
+                    "columnsFrom": ["branch_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "set null",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.claim_dependencies": {
+            "name": "claim_dependencies",
+            "schema": "",
+            "columns": {
+                "claim_id": {
+                    "name": "claim_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "dependency_id": {
+                    "name": "dependency_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {
+                "claim_dependencies_dependency_idx": {
+                    "name": "claim_dependencies_dependency_idx",
+                    "columns": [
+                        {
+                            "expression": "dependency_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "claim_dependencies_claim_id_claims_id_fk": {
+                    "name": "claim_dependencies_claim_id_claims_id_fk",
+                    "tableFrom": "claim_dependencies",
+                    "tableTo": "claims",
+                    "columnsFrom": ["claim_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "claim_dependencies_dependency_id_claims_id_fk": {
+                    "name": "claim_dependencies_dependency_id_claims_id_fk",
+                    "tableFrom": "claim_dependencies",
+                    "tableTo": "claims",
+                    "columnsFrom": ["dependency_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "claim_dependencies_claim_id_dependency_id_pk": {
+                    "name": "claim_dependencies_claim_id_dependency_id_pk",
+                    "columns": ["claim_id", "dependency_id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.claim_evidence": {
+            "name": "claim_evidence",
+            "schema": "",
+            "columns": {
+                "claim_id": {
+                    "name": "claim_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "evidence_id": {
+                    "name": "evidence_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "relationship": {
+                    "name": "relationship",
+                    "type": "evidence_relationship",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {
+                "claim_evidence_evidence_idx": {
+                    "name": "claim_evidence_evidence_idx",
+                    "columns": [
+                        {
+                            "expression": "evidence_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "claim_evidence_claim_id_claims_id_fk": {
+                    "name": "claim_evidence_claim_id_claims_id_fk",
+                    "tableFrom": "claim_evidence",
+                    "tableTo": "claims",
+                    "columnsFrom": ["claim_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "claim_evidence_evidence_id_evidence_id_fk": {
+                    "name": "claim_evidence_evidence_id_evidence_id_fk",
+                    "tableFrom": "claim_evidence",
+                    "tableTo": "evidence",
+                    "columnsFrom": ["evidence_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "claim_evidence_claim_id_evidence_id_pk": {
+                    "name": "claim_evidence_claim_id_evidence_id_pk",
+                    "columns": ["claim_id", "evidence_id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.claims": {
+            "name": "claims",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "branch_id": {
+                    "name": "branch_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "statement": {
+                    "name": "statement",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "status": {
+                    "name": "status",
+                    "type": "claim_status",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'proposed'"
+                },
+                "universal": {
+                    "name": "universal",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "stale": {
+                    "name": "stale",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "claims_lab_status_idx": {
+                    "name": "claims_lab_status_idx",
+                    "columns": [
+                        {
+                            "expression": "lab_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "claims_lab_id_labs_id_fk": {
+                    "name": "claims_lab_id_labs_id_fk",
+                    "tableFrom": "claims",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "claims_branch_id_branches_id_fk": {
+                    "name": "claims_branch_id_branches_id_fk",
+                    "tableFrom": "claims",
+                    "tableTo": "branches",
+                    "columnsFrom": ["branch_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.events": {
+            "name": "events",
+            "schema": "",
+            "columns": {
+                "sequence": {
+                    "name": "sequence",
+                    "type": "bigint",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "identity": {
+                        "type": "always",
+                        "name": "events_sequence_seq",
+                        "schema": "public",
+                        "increment": "1",
+                        "startWith": "1",
+                        "minValue": "1",
+                        "maxValue": "9223372036854775807",
+                        "cache": "1",
+                        "cycle": false
+                    }
+                },
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "type": {
+                    "name": "type",
+                    "type": "event_type",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "payload": {
+                    "name": "payload",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "occurred_at": {
+                    "name": "occurred_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "events_id_unique": {
+                    "name": "events_id_unique",
+                    "columns": [
+                        {
+                            "expression": "id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "events_lab_sequence_idx": {
+                    "name": "events_lab_sequence_idx",
+                    "columns": [
+                        {
+                            "expression": "lab_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "sequence",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "events_lab_id_labs_id_fk": {
+                    "name": "events_lab_id_labs_id_fk",
+                    "tableFrom": "events",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.evidence": {
+            "name": "evidence",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "source_branch_id": {
+                    "name": "source_branch_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "attempt_id": {
+                    "name": "attempt_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "kind": {
+                    "name": "kind",
+                    "type": "evidence_kind",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "origin": {
+                    "name": "origin",
+                    "type": "evidence_origin",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "fingerprint": {
+                    "name": "fingerprint",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "run_id": {
+                    "name": "run_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "artifact_path": {
+                    "name": "artifact_path",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "artifact_hash": {
+                    "name": "artifact_hash",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "summary": {
+                    "name": "summary",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "independent": {
+                    "name": "independent",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "valid": {
+                    "name": "valid",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": true
+                },
+                "complete": {
+                    "name": "complete",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": true
+                },
+                "reproducible": {
+                    "name": "reproducible",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "evidence_lab_fingerprint_unique": {
+                    "name": "evidence_lab_fingerprint_unique",
+                    "columns": [
+                        {
+                            "expression": "lab_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "fingerprint",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "evidence_attempt_idx": {
+                    "name": "evidence_attempt_idx",
+                    "columns": [
+                        {
+                            "expression": "attempt_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "evidence_lab_id_labs_id_fk": {
+                    "name": "evidence_lab_id_labs_id_fk",
+                    "tableFrom": "evidence",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "evidence_source_branch_id_branches_id_fk": {
+                    "name": "evidence_source_branch_id_branches_id_fk",
+                    "tableFrom": "evidence",
+                    "tableTo": "branches",
+                    "columnsFrom": ["source_branch_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "evidence_attempt_id_attempts_id_fk": {
+                    "name": "evidence_attempt_id_attempts_id_fk",
+                    "tableFrom": "evidence",
+                    "tableTo": "attempts",
+                    "columnsFrom": ["attempt_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "set null",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.labs": {
+            "name": "labs",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "goal": {
+                    "name": "goal",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "input": {
+                    "name": "input",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "state": {
+                    "name": "state",
+                    "type": "lab_state",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'RUNNING'"
+                },
+                "state_reason": {
+                    "name": "state_reason",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "workspace_path": {
+                    "name": "workspace_path",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "started_at": {
+                    "name": "started_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "hibernated_at": {
+                    "name": "hibernated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "completed_at": {
+                    "name": "completed_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "stopped_at": {
+                    "name": "stopped_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "labs_state_idx": {
+                    "name": "labs_state_idx",
+                    "columns": [
+                        {
+                            "expression": "state",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.runtime_checkpoints": {
+            "name": "runtime_checkpoints",
+            "schema": "",
+            "columns": {
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "revision": {
+                    "name": "revision",
+                    "type": "bigint",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 1
+                },
+                "snapshot": {
+                    "name": "snapshot",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "evidence": {
+                    "name": "evidence",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'[]'::jsonb"
+                },
+                "last_event_sequence": {
+                    "name": "last_event_sequence",
+                    "type": "bigint",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "persisted_at": {
+                    "name": "persisted_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "runtime_checkpoints_persisted_at_idx": {
+                    "name": "runtime_checkpoints_persisted_at_idx",
+                    "columns": [
+                        {
+                            "expression": "persisted_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "runtime_checkpoints_lab_id_labs_id_fk": {
+                    "name": "runtime_checkpoints_lab_id_labs_id_fk",
+                    "tableFrom": "runtime_checkpoints",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.tasks": {
+            "name": "tasks",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "branch_id": {
+                    "name": "branch_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "objective": {
+                    "name": "objective",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "context_refs": {
+                    "name": "context_refs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'[]'::jsonb"
+                },
+                "status": {
+                    "name": "status",
+                    "type": "task_status",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'queued'"
+                },
+                "role": {
+                    "name": "role",
+                    "type": "agent_role",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "lane": {
+                    "name": "lane",
+                    "type": "scheduler_lane",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "priority": {
+                    "name": "priority",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "attempt": {
+                    "name": "attempt",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 1
+                },
+                "available_at": {
+                    "name": "available_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "lease_owner": {
+                    "name": "lease_owner",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "lease_expires_at": {
+                    "name": "lease_expires_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "last_error": {
+                    "name": "last_error",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "tasks_lease_candidate_idx": {
+                    "name": "tasks_lease_candidate_idx",
+                    "columns": [
+                        {
+                            "expression": "lab_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "lane",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "available_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "priority",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "tasks_expired_lease_idx": {
+                    "name": "tasks_expired_lease_idx",
+                    "columns": [
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "lease_expires_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "tasks_lab_id_labs_id_fk": {
+                    "name": "tasks_lab_id_labs_id_fk",
+                    "tableFrom": "tasks",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "tasks_branch_id_branches_id_fk": {
+                    "name": "tasks_branch_id_branches_id_fk",
+                    "tableFrom": "tasks",
+                    "tableTo": "branches",
+                    "columnsFrom": ["branch_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        }
+    },
+    "enums": {
+        "public.agent_role": {
+            "name": "agent_role",
+            "schema": "public",
+            "values": ["director", "researcher", "critic", "verifier"]
+        },
+        "public.attempt_status": {
+            "name": "attempt_status",
+            "schema": "public",
+            "values": ["planned", "running", "succeeded", "failed", "timed_out", "cancelled"]
+        },
+        "public.branch_status": {
+            "name": "branch_status",
+            "schema": "public",
+            "values": ["active", "paused", "closed"]
+        },
+        "public.capability_status": {
+            "name": "capability_status",
+            "schema": "public",
+            "values": ["open", "provided", "obsolete"]
+        },
+        "public.claim_status": {
+            "name": "claim_status",
+            "schema": "public",
+            "values": ["proposed", "testing", "supported", "refuted", "reproduced"]
+        },
+        "public.event_type": {
+            "name": "event_type",
+            "schema": "public",
+            "values": [
+                "lab.started",
+                "lab.recovered",
+                "lab.state_changed",
+                "lab.woken",
+                "lab.hibernated",
+                "lab.completed",
+                "lab.stopped",
+                "lab.failed",
+                "harness.preflight_succeeded",
+                "harness.preflight_failed",
+                "harness.run_started",
+                "harness.run_succeeded",
+                "harness.run_failed",
+                "harness.run_timed_out",
+                "harness.run_cancelled",
+                "goal.operationalized",
+                "evaluator.precommitted",
+                "branch.created",
+                "branch.paused",
+                "branch.closed",
+                "task.queued",
+                "task.leased",
+                "task.started",
+                "task.succeeded",
+                "task.failed",
+                "task.cancelled",
+                "attempt.planned",
+                "attempt.started",
+                "attempt.succeeded",
+                "attempt.failed",
+                "attempt.timed_out",
+                "attempt.cancelled",
+                "claim.proposed",
+                "claim.testing",
+                "claim.supported",
+                "claim.refuted",
+                "claim.reproduced",
+                "claim.stale",
+                "evidence.recorded",
+                "experiment.planned",
+                "experiment.started",
+                "experiment.succeeded",
+                "experiment.failed",
+                "experiment.timed_out",
+                "experiment.cancelled",
+                "verifier.verdict_recorded",
+                "frontier.updated",
+                "plateau.confirmed",
+                "capability.requested",
+                "capability.provided",
+                "capability.obsolete",
+                "report.generated",
+                "result.generated"
+            ]
+        },
+        "public.evidence_kind": {
+            "name": "evidence_kind",
+            "schema": "public",
+            "values": ["experiment", "source", "artifact", "counterexample", "verifier_result"]
+        },
+        "public.evidence_origin": {
+            "name": "evidence_origin",
+            "schema": "public",
+            "values": ["empirical", "model_judgement", "primary_source", "verifier"]
+        },
+        "public.evidence_relationship": {
+            "name": "evidence_relationship",
+            "schema": "public",
+            "values": ["supports", "contradicts"]
+        },
+        "public.external_effect": {
+            "name": "external_effect",
+            "schema": "public",
+            "values": ["none", "reversible", "irreversible"]
+        },
+        "public.lab_state": {
+            "name": "lab_state",
+            "schema": "public",
+            "values": ["RUNNING", "HIBERNATING", "COMPLETED", "STOPPED", "FAILED"]
+        },
+        "public.scheduler_lane": {
+            "name": "scheduler_lane",
+            "schema": "public",
+            "values": ["promising", "exploration", "adversarial", "reproduction"]
+        },
+        "public.task_status": {
+            "name": "task_status",
+            "schema": "public",
+            "values": ["queued", "leased", "running", "succeeded", "failed", "cancelled"]
+        }
+    },
+    "schemas": {},
+    "sequences": {},
+    "roles": {},
+    "policies": {},
+    "views": {},
+    "_meta": {
+        "columns": {},
+        "schemas": {},
+        "tables": {}
+    }
+}

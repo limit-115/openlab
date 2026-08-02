@@ -1,12 +1,14 @@
-import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { EvidenceOrigin } from "@lab/core/constants";
 import { createDatabase, type DatabaseClient } from "@lab/db/client";
+import { EvidenceRelationship } from "@lab/db/constants";
 import { migrateDatabase } from "@lab/db/migrations";
 import { RuntimePersistence } from "@lab/db/runtime";
 import { labs } from "@lab/db/schema";
-import { CapabilityStatus, EventType } from "@lab/protocol/constants";
+import { CapabilityStatus, ClaimStatus, EventType, EvidenceKind } from "@lab/protocol/constants";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { LabWorkspace } from "#src/workspace";
 
@@ -42,10 +44,40 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         await workspace.appendEvent(EventType.LAB_STARTED, { source: "integration-test" });
         await workspace.update((draft) => {
             draft.frontier.known.push("PostgreSQL checkpoint survived");
+            draft.claims.push({
+                id: "claim-durable-evidence",
+                branch_id: "branch-director",
+                statement: "PostgreSQL preserves material evidence",
+                status: ClaimStatus.TESTING,
+                assumption_ids: [],
+                supporting_evidence_ids: ["evidence-durable"],
+                contradicting_evidence_ids: [],
+                stale: false,
+                created_at: draft.lab.updated_at,
+                updated_at: draft.lab.updated_at
+            });
         });
+        const artifactDirectory = path.join(workspace.runDirectory, "artifacts");
+        const artifactPath = path.join(artifactDirectory, "durable-evidence.json");
+        const artifactContents = JSON.stringify({ reproduced: true });
+        await mkdir(artifactDirectory, { recursive: true });
+        await writeFile(artifactPath, artifactContents);
+        const recordedEvidence = {
+            id: "evidence-durable",
+            kind: EvidenceKind.EXPERIMENT,
+            claim_id: "claim-durable-evidence",
+            artifact_path: "artifacts/durable-evidence.json",
+            artifact_hash: createHash("sha256").update(artifactContents).digest("hex"),
+            summary: "The material artifact survived a runtime restart",
+            supports: true,
+            independent: false,
+            created_at: new Date().toISOString()
+        } as const;
+        await workspace.recordEvidence(recordedEvidence);
         await Promise.all([
             writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt"),
-            writeFile(path.join(workspace.runDirectory, "events.json"), "corrupt")
+            writeFile(path.join(workspace.runDirectory, "events.json"), "corrupt"),
+            writeFile(path.join(workspace.runDirectory, "evidence.json"), "corrupt")
         ]);
 
         const recovered = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, persistence);
@@ -54,16 +86,51 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         expect(recovered.labId).toBe(workspace.labId);
         expect(recovered.getSnapshot().frontier.known).toContain("PostgreSQL checkpoint survived");
         expect(recovered.getEvents().map(({ type }) => type)).toContain(EventType.LAB_STARTED);
+        expect(recovered.getEvidence()).toEqual([recordedEvidence]);
         await expect(
             readFile(path.join(workspace.runDirectory, "status.json"), "utf8").then(JSON.parse)
         ).resolves.toMatchObject({ lab: { id: workspace.labId } });
+        await expect(
+            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8").then(JSON.parse)
+        ).resolves.toEqual([recordedEvidence]);
+        expect(
+            await client.db.query.evidence.findFirst({
+                where: (evidence, { eq }) => eq(evidence.id, recordedEvidence.id)
+            })
+        ).toMatchObject({
+            labId: workspace.labId,
+            sourceBranchId: "branch-director",
+            origin: EvidenceOrigin.MODEL_JUDGEMENT,
+            valid: true,
+            complete: true,
+            reproducible: false
+        });
+        expect(
+            await client.db.query.claimEvidence.findFirst({
+                where: (link, { eq }) => eq(link.evidenceId, recordedEvidence.id)
+            })
+        ).toMatchObject({
+            claimId: "claim-durable-evidence",
+            relationship: EvidenceRelationship.SUPPORTS
+        });
 
-        const request = await recovered.requestCapability({
+        await unlink(path.join(workspace.runDirectory, "evidence.json"));
+        const recoveredMissingEvidence = await LabWorkspace.openOrCreate(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
+        expect(recoveredMissingEvidence.getEvidence()).toEqual([recordedEvidence]);
+        await expect(
+            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8").then(JSON.parse)
+        ).resolves.toEqual([recordedEvidence]);
+
+        const request = await recoveredMissingEvidence.requestCapability({
             need: "Independent dataset",
             reason: "The verifier needs independent observations",
             provisioningHint: "Mount the dataset in the run workspace"
         });
-        await recovered.provideCapability(request.id, "dataset://independent/v1");
+        await recoveredMissingEvidence.provideCapability(request.id, "dataset://independent/v1");
         await writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt");
 
         const recoveredCapabilityWorkspace = await LabWorkspace.openOrCreate(

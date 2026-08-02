@@ -10,7 +10,7 @@ import {
     InternalTaskStatus,
     LabState
 } from "@lab/protocol/constants";
-import type { TaskInput } from "@lab/protocol/schemas";
+import type { Evidence, TaskInput } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import {
     bigint,
@@ -262,6 +262,7 @@ export const runtimeCheckpoints = pgTable(
             .references(() => labs.id, { onDelete: "cascade" }),
         revision: bigint("revision", { mode: "number" }).notNull().default(1),
         snapshot: jsonb("snapshot").$type<StatusSnapshot>().notNull(),
+        evidence: jsonb("evidence").$type<Evidence[]>().notNull().default([]),
         lastEventSequence: bigint("last_event_sequence", { mode: "number" }),
         persistedAt: timestamp("persisted_at", { withTimezone: true }).notNull().defaultNow()
     },
