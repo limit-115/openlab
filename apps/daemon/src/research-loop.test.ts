@@ -40,9 +40,19 @@ class ScriptedHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE;
     readonly requests: HarnessRunRequest[] = [];
     readonly verifierInitialEntries: string[][] = [];
+    readonly #criticVerdict: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
+    readonly #missingVerifierArtifacts: boolean;
 
-    constructor(kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE) {
+    constructor(
+        kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
+        options: {
+            criticVerdict?: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
+            missingVerifierArtifacts?: boolean;
+        } = {}
+    ) {
         this.kind = kind;
+        this.#criticVerdict = options.criticVerdict ?? CRITIC_VERDICT.CREDIBLE;
+        this.#missingVerifierArtifacts = options.missingVerifierArtifacts ?? false;
     }
 
     async preflight(): Promise<HarnessPreflight> {
@@ -91,7 +101,7 @@ class ScriptedHarness implements AgentHarness {
                     {
                         claim_index: 0,
                         summary: "Recorded benchmark samples",
-                        artifact_paths: [artifactPath],
+                        artifact_paths: [path.basename(artifactPath)],
                         contradicts_hypothesis: false,
                         evaluator_command: {
                             file: process.execPath,
@@ -104,10 +114,16 @@ class ScriptedHarness implements AgentHarness {
             };
         } else if (request.prompt.includes(PromptRole.CRITIC)) {
             output = {
-                verdict: CRITIC_VERDICT.CREDIBLE,
+                verdict: this.#criticVerdict,
                 summary: "The result is ready for independent reproduction",
-                issues: [],
-                counterexamples: [],
+                issues:
+                    this.#criticVerdict === CRITIC_VERDICT.CREDIBLE
+                        ? []
+                        : ["The evaluator may be overfit"],
+                counterexamples:
+                    this.#criticVerdict === CRITIC_VERDICT.CREDIBLE
+                        ? []
+                        : ["A held-out workload did not improve"],
                 claims_to_verify: ["The candidate is faster"],
                 next_experiments: []
             };
@@ -115,8 +131,10 @@ class ScriptedHarness implements AgentHarness {
             this.verifierInitialEntries.push(await readdir(request.cwd));
             const artifactPath = path.join(request.cwd, "independent-reproduction.json");
             const evaluatorPath = path.join(request.cwd, "verify-speedup.mjs");
-            await writeFile(artifactPath, JSON.stringify({ elapsed_ms: 11 }));
-            await writeFile(evaluatorPath, "process.exit(0);\n");
+            if (!this.#missingVerifierArtifacts) {
+                await writeFile(artifactPath, JSON.stringify({ elapsed_ms: 11 }));
+                await writeFile(evaluatorPath, "process.exit(0);\n");
+            }
             output = {
                 verdict: VERIFIER_VERDICT.REPRODUCED,
                 claim_index: 0,
@@ -147,26 +165,24 @@ class ScriptedHarness implements AgentHarness {
 
 class FailingOnceHarness extends ScriptedHarness {
     readonly #promptMarker: string;
+    readonly #status: HarnessRunResult["status"];
     #failed = false;
 
     constructor(
         kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
-        promptMarker: string
+        promptMarker: string,
+        status: HarnessRunResult["status"] = HarnessRunStatuses.FAILED
     ) {
         super(kind);
         this.#promptMarker = promptMarker;
+        this.#status = status;
     }
 
     override async *run(request: HarnessRunRequest): AsyncIterable<HarnessEvent> {
         if (!this.#failed && request.prompt.includes(this.#promptMarker)) {
             this.#failed = true;
             this.requests.push(request);
-            const result = await harnessResult(
-                this.kind,
-                request,
-                undefined,
-                HarnessRunStatuses.FAILED
-            );
+            const result = await harnessResult(this.kind, request, undefined, this.#status);
             yield {
                 type: HarnessEventTypes.RUN_COMPLETED,
                 sequence: 1,
@@ -229,6 +245,34 @@ class BlockingHarness implements AgentHarness {
     }
 }
 
+class BlockingPreflightHarness implements AgentHarness {
+    readonly kind = HarnessKinds.CODEX;
+    readonly started: Promise<void>;
+    #markStarted: () => void = () => undefined;
+
+    constructor() {
+        this.started = new Promise((resolve) => {
+            this.#markStarted = resolve;
+        });
+    }
+
+    async preflight(signal?: AbortSignal): Promise<HarnessPreflight> {
+        this.#markStarted();
+        await new Promise<void>((_resolve, reject) => {
+            signal?.addEventListener(
+                "abort",
+                () => reject(signal.reason ?? new Error("cancelled")),
+                { once: true }
+            );
+        });
+        throw new Error("Unexpected preflight continuation");
+    }
+
+    run(): AsyncIterable<HarnessEvent> {
+        throw new Error("Cancelled preflight harness must never run");
+    }
+}
+
 describe.sequential("runResearchLoop", () => {
     it("completes only after material branch evidence and a clean independent reproduction", async () => {
         const workspace = await createWorkspace();
@@ -255,6 +299,10 @@ describe.sequential("runResearchLoop", () => {
             workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.VERIFIER_RESULT)
         ).toBe(true);
         expect([...codex.requests, ...claude.requests]).toHaveLength(5);
+        const criticRequest = [...codex.requests, ...claude.requests].find(({ prompt }) =>
+            prompt.includes(PromptRole.CRITIC)
+        );
+        expect(criticRequest?.prompt).toMatch(/"artifact_paths": \[\s+"\//);
         const runDirectories = new Set(
             [...codex.requests, ...claude.requests].map(({ cwd }) => cwd)
         );
@@ -342,6 +390,89 @@ describe.sequential("runResearchLoop", () => {
         );
     });
 
+    it("records a timed-out researcher and retries through the other subscription CLI", async () => {
+        const workspace = await createWorkspace();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX);
+        const claude = new FailingOnceHarness(
+            HarnessKinds.CLAUDE,
+            PromptRole.RESEARCHER,
+            HarnessRunStatuses.TIMED_OUT
+        );
+
+        const outcome = await runResearchLoop(workspace, { harnesses: [codex, claude] });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
+        expect(workspace.getSnapshot().experiments).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    status: ExperimentStatus.TIMED_OUT,
+                    output_path: expect.any(String),
+                    output_hash: expect.any(String)
+                })
+            ])
+        );
+        expect(workspace.getEvents().map(({ type }) => type)).toEqual(
+            expect.arrayContaining([
+                EventType.HARNESS_RUN_TIMED_OUT,
+                EventType.EXPERIMENT_TIMED_OUT,
+                EventType.ATTEMPT_TIMED_OUT
+            ])
+        );
+    });
+
+    it("does not complete when the critic refutes the candidate", async () => {
+        const workspace = await createWorkspace();
+        const abortController = new AbortController();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX);
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            criticVerdict: CRITIC_VERDICT.REFUTED
+        });
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            signal: abortController.signal,
+            waitForCycle: async () => abortController.abort(new Error("test cycle observed"))
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(workspace.getSnapshot().claims).not.toEqual(
+            expect.arrayContaining([expect.objectContaining({ status: ClaimStatus.REPRODUCED })])
+        );
+        expect(workspace.getSnapshot().frontier.known).toContain(
+            "A held-out workload did not improve"
+        );
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+            EventType.LAB_COMPLETED
+        );
+    });
+
+    it("rejects a reproduced verdict whose evaluator and artifacts do not exist", async () => {
+        const workspace = await createWorkspace();
+        const abortController = new AbortController();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            missingVerifierArtifacts: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE);
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            signal: abortController.signal,
+            waitForCycle: async () => abortController.abort(new Error("test cycle observed"))
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
+        expect(workspace.getSnapshot().claims).not.toEqual(
+            expect.arrayContaining([expect.objectContaining({ status: ClaimStatus.REPRODUCED })])
+        );
+        expect(
+            workspace.getEvidence().filter(({ kind }) => kind === EvidenceKind.VERIFIER_RESULT)
+        ).toHaveLength(0);
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+            EventType.LAB_COMPLETED
+        );
+    });
+
     it("cancels an in-flight CLI harness through AbortSignal without completing the lab", async () => {
         const workspace = await createWorkspace();
         const harness = new BlockingHarness(HarnessKinds.CODEX);
@@ -359,6 +490,27 @@ describe.sequential("runResearchLoop", () => {
         expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
         expect(workspace.getEvents().map(({ type }) => type)).toContain(
             EventType.HARNESS_RUN_CANCELLED
+        );
+    });
+
+    it("propagates caller cancellation during preflight without requesting capabilities", async () => {
+        const workspace = await createWorkspace();
+        const harness = new BlockingPreflightHarness();
+        const abortController = new AbortController();
+        const running = runResearchLoop(workspace, {
+            harnesses: [harness],
+            signal: abortController.signal
+        });
+        await harness.started;
+
+        abortController.abort(new Error("daemon closing"));
+        const outcome = await running;
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(workspace.getSnapshot().capability_requests).toHaveLength(0);
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+            EventType.PLATEAU_CONFIRMED
         );
     });
 });

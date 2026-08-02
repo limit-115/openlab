@@ -77,6 +77,12 @@ export async function runStructuredAgent<Output>(
                 { cause: new HarnessAbortedError(harness.kind, { cause: signal?.reason }) }
             );
         }
+        if (completed.status === HarnessRunStatuses.TIMED_OUT) {
+            throw new StructuredAgentRunError(
+                completed.error ?? `${harness.kind} harness run timed out`,
+                completed
+            );
+        }
         if (completed.status === HarnessRunStatuses.FAILED) {
             throw new StructuredAgentRunError(
                 completed.error ?? `${harness.kind} harness run failed`,
@@ -102,23 +108,25 @@ export async function runStructuredAgent<Output>(
                 signal?.aborted === true ||
                 error instanceof HarnessAbortedError ||
                 completed?.status === HarnessRunStatuses.CANCELLED;
-            await workspace.appendEvent(
-                cancelled ? EventType.HARNESS_RUN_CANCELLED : EventType.HARNESS_RUN_FAILED,
-                {
-                    harness: harness.kind,
-                    stage,
-                    branch_id: branchId,
-                    task_id: taskId,
-                    session_id: completed?.sessionId ?? null,
-                    error: error instanceof Error ? error.message : String(error),
-                    ...(completed === undefined
-                        ? {}
-                        : {
-                              manifest_path: completed.artifacts.manifest.path,
-                              manifest_sha256: completed.artifacts.manifest.sha256
-                          })
-                }
-            );
+            const eventType = cancelled
+                ? EventType.HARNESS_RUN_CANCELLED
+                : completed?.status === HarnessRunStatuses.TIMED_OUT
+                  ? EventType.HARNESS_RUN_TIMED_OUT
+                  : EventType.HARNESS_RUN_FAILED;
+            await workspace.appendEvent(eventType, {
+                harness: harness.kind,
+                stage,
+                branch_id: branchId,
+                task_id: taskId,
+                session_id: completed?.sessionId ?? null,
+                error: error instanceof Error ? error.message : String(error),
+                ...(completed === undefined
+                    ? {}
+                    : {
+                          manifest_path: completed.artifacts.manifest.path,
+                          manifest_sha256: completed.artifacts.manifest.sha256
+                      })
+            });
         }
         if (error instanceof StructuredAgentRunError || completed === undefined) {
             throw error;

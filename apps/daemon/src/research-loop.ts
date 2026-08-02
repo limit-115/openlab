@@ -1242,11 +1242,14 @@ async function finishResearchAttempt(
     await workspace.update((draft) => {
         const experiment = requiredById(draft.experiments, experimentId);
         const cancelled = run?.status === HarnessRunStatuses.CANCELLED;
+        const timedOut = run?.status === HarnessRunStatuses.TIMED_OUT;
         experiment.status = succeeded
             ? ExperimentStatus.SUCCEEDED
             : cancelled
               ? ExperimentStatus.CANCELLED
-              : ExperimentStatus.FAILED;
+              : timedOut
+                ? ExperimentStatus.TIMED_OUT
+                : ExperimentStatus.FAILED;
         experiment.finished_at = finishedAt;
         if (run !== undefined) {
             experiment.command = renderHarnessCommand(run);
@@ -1256,12 +1259,15 @@ async function finishResearchAttempt(
         }
     });
     const cancelled = run?.status === HarnessRunStatuses.CANCELLED;
+    const timedOut = run?.status === HarnessRunStatuses.TIMED_OUT;
     await workspace.appendEvent(
         succeeded
             ? EventType.EXPERIMENT_SUCCEEDED
             : cancelled
               ? EventType.EXPERIMENT_CANCELLED
-              : EventType.EXPERIMENT_FAILED,
+              : timedOut
+                ? EventType.EXPERIMENT_TIMED_OUT
+                : EventType.EXPERIMENT_FAILED,
         { experiment_id: experimentId }
     );
     await workspace.appendEvent(
@@ -1269,7 +1275,9 @@ async function finishResearchAttempt(
             ? EventType.ATTEMPT_SUCCEEDED
             : cancelled
               ? EventType.ATTEMPT_CANCELLED
-              : EventType.ATTEMPT_FAILED,
+              : timedOut
+                ? EventType.ATTEMPT_TIMED_OUT
+                : EventType.ATTEMPT_FAILED,
         { attempt_id: experimentId }
     );
 }
