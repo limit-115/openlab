@@ -1,18 +1,24 @@
 import { randomUUID } from "node:crypto";
+import { SchedulerLane } from "@lab/core/constants";
 import {
     AgentRole,
     AgentStatus,
     BranchStatus,
+    CapabilityRequestType,
+    CapabilityStatus,
+    ClaimStatus,
     EventType,
     InternalTaskStatus,
     LabState
 } from "@lab/protocol/constants";
 import type { LabEvent, TaskInput } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, type DatabaseClient } from "#src/client";
 import { migrateDatabase } from "#src/migrations";
 import { RuntimePersistence, RuntimeRevisionConflictError } from "#src/runtime";
+import { branches, capabilityRequests, claimDependencies, claims, tasks } from "#src/schema";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
@@ -61,6 +67,171 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         expect(recovered?.snapshot.agents).toEqual(snapshot.agents);
         expect(recovered?.snapshot.experiments).toEqual(snapshot.experiments);
         expect(recovered?.snapshot.result).toEqual(snapshot.result);
+    });
+
+    it("projects checkpoint state into normalized tables and removes stale rows", async () => {
+        const task = makeTask(testLabId("projection"));
+        const snapshot = makeSnapshot(task);
+        const secondaryBranchId = `${snapshot.lab.id}-branch-secondary`;
+        snapshot.branches.push({
+            id: secondaryBranchId,
+            title: "Alternative",
+            approach: "Challenge the primary approach",
+            status: BranchStatus.PAUSED,
+            progress: "Deferred"
+        });
+
+        await persistence.initialize({
+            task,
+            workspacePath: "/tmp/lab-runtime-projection",
+            snapshot
+        });
+
+        const initialBranches = await client.db.query.branches.findMany({
+            where: eq(branches.labId, snapshot.lab.id)
+        });
+        expect(initialBranches).toHaveLength(2);
+        expect(initialBranches).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: snapshot.branches[0]?.id,
+                    lane: SchedulerLane.EXPLORATION,
+                    status: BranchStatus.ACTIVE
+                }),
+                expect.objectContaining({
+                    id: secondaryBranchId,
+                    status: BranchStatus.PAUSED
+                })
+            ])
+        );
+        expect(
+            await client.db.query.tasks.findMany({
+                where: eq(tasks.labId, snapshot.lab.id)
+            })
+        ).toEqual([
+            expect.objectContaining({
+                id: snapshot.tasks[0]?.id,
+                lane: SchedulerLane.EXPLORATION,
+                status: InternalTaskStatus.RUNNING,
+                attempt: 1
+            })
+        ]);
+        expect(
+            await client.db.query.claimDependencies.findMany({
+                where: eq(claimDependencies.claimId, snapshot.claims[1]?.id ?? "")
+            })
+        ).toEqual([
+            {
+                claimId: snapshot.claims[1]?.id,
+                dependencyId: snapshot.claims[0]?.id
+            }
+        ]);
+        expect(
+            await client.db.query.capabilityRequests.findMany({
+                where: eq(capabilityRequests.labId, snapshot.lab.id)
+            })
+        ).toEqual([
+            expect.objectContaining({
+                id: snapshot.capability_requests[0]?.id,
+                status: CapabilityStatus.OPEN
+            })
+        ]);
+
+        const updated = structuredClone(snapshot);
+        updated.lab.updated_at = "2026-08-02T00:10:00.000Z";
+        updated.frontier.updated_at = updated.lab.updated_at;
+        updated.branches = updated.branches.filter(({ id }) => id !== secondaryBranchId);
+        const projectedTask = updated.tasks[0];
+        if (projectedTask === undefined) {
+            throw new Error("Projection fixture must contain a task");
+        }
+        projectedTask.status = InternalTaskStatus.SUCCEEDED;
+        projectedTask.attempt = 2;
+        const dependentClaim = updated.claims[1];
+        if (dependentClaim === undefined) {
+            throw new Error("Projection fixture must contain a dependent claim");
+        }
+        dependentClaim.status = ClaimStatus.TESTING;
+        dependentClaim.assumption_ids = [];
+        dependentClaim.updated_at = updated.lab.updated_at;
+        const capability = updated.capability_requests[0];
+        if (capability === undefined) {
+            throw new Error("Projection fixture must contain a capability request");
+        }
+        capability.status = CapabilityStatus.PROVIDED;
+
+        const committed = await persistence.commit({
+            snapshot: updated,
+            expectedRevision: 1
+        });
+        expect(committed.revision).toBe(2);
+        expect(
+            await client.db.query.branches.findMany({
+                where: eq(branches.labId, snapshot.lab.id)
+            })
+        ).toHaveLength(1);
+        expect(
+            await client.db.query.tasks.findFirst({
+                where: eq(tasks.id, projectedTask.id)
+            })
+        ).toEqual(
+            expect.objectContaining({
+                status: InternalTaskStatus.SUCCEEDED,
+                attempt: 2
+            })
+        );
+        expect(
+            await client.db.query.claims.findFirst({
+                where: eq(claims.id, dependentClaim.id)
+            })
+        ).toEqual(expect.objectContaining({ status: ClaimStatus.TESTING }));
+        expect(
+            await client.db.query.claimDependencies.findMany({
+                where: eq(claimDependencies.claimId, dependentClaim.id)
+            })
+        ).toEqual([]);
+        expect(
+            await client.db.query.capabilityRequests.findFirst({
+                where: eq(capabilityRequests.id, capability.id)
+            })
+        ).toEqual(
+            expect.objectContaining({
+                status: CapabilityStatus.PROVIDED,
+                providedAt: new Date(updated.lab.updated_at)
+            })
+        );
+
+        const invalid = structuredClone(updated);
+        const invalidTask = invalid.tasks[0];
+        if (invalidTask === undefined) {
+            throw new Error("Projection fixture must contain a task");
+        }
+        invalidTask.branch_id = `${snapshot.lab.id}-missing-branch`;
+        invalidTask.status = InternalTaskStatus.FAILED;
+        invalid.lab.updated_at = "2026-08-02T00:11:00.000Z";
+        invalid.frontier.updated_at = invalid.lab.updated_at;
+        await expect(
+            persistence.commit({
+                snapshot: invalid,
+                expectedRevision: 2,
+                event: makeEvent(
+                    EventType.TASK_FAILED,
+                    snapshot.lab.id,
+                    "event-invalid-projection",
+                    invalid.lab.updated_at
+                )
+            })
+        ).rejects.toThrow(`references missing branch ${invalidTask.branch_id}`);
+
+        expect((await persistence.load(snapshot.lab.id))?.revision).toBe(2);
+        expect(
+            await client.db.query.tasks.findFirst({
+                where: eq(tasks.id, invalidTask.id)
+            })
+        ).toEqual(expect.objectContaining({ status: InternalTaskStatus.SUCCEEDED }));
+        expect((await persistence.eventsAfter(snapshot.lab.id)).map(({ id }) => id)).not.toContain(
+            testEventId(snapshot.lab.id, "event-invalid-projection")
+        );
     });
 
     it("atomically commits snapshot and event and rejects a stale writer without a ghost event", async () => {
@@ -198,6 +369,10 @@ function testEventId(labId: string, name: string): string {
 function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING): StatusSnapshot {
     const labId = task.id ?? "lab-runtime";
     const timestamp = "2026-08-02T00:00:00.000Z";
+    const branchId = `${labId}-branch-director`;
+    const taskId = `${labId}-task-director`;
+    const assumptionId = `${labId}-claim-assumption`;
+    const claimId = `${labId}-claim-primary`;
     return {
         lab: {
             id: labId,
@@ -216,7 +391,7 @@ function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING): Stat
         },
         branches: [
             {
-                id: "branch-director",
+                id: branchId,
                 title: "Operationalization",
                 approach: "Produce falsifiable claims",
                 status: BranchStatus.ACTIVE,
@@ -225,17 +400,17 @@ function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING): Stat
         ],
         agents: [
             {
-                id: "agent-director",
-                branch_id: "branch-director",
+                id: `${labId}-agent-director`,
+                branch_id: branchId,
                 role: AgentRole.DIRECTOR,
                 status: AgentStatus.WORKING,
-                current_task_id: "task-director"
+                current_task_id: taskId
             }
         ],
         tasks: [
             {
-                id: "task-director",
-                branch_id: "branch-director",
+                id: taskId,
+                branch_id: branchId,
                 objective: "Operationalize the goal",
                 context_refs: [],
                 status: InternalTaskStatus.RUNNING,
@@ -243,9 +418,44 @@ function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING): Stat
                 role: AgentRole.DIRECTOR
             }
         ],
-        claims: [],
+        claims: [
+            {
+                id: assumptionId,
+                branch_id: branchId,
+                statement: "The evaluator measures the target outcome",
+                status: ClaimStatus.SUPPORTED,
+                assumption_ids: [],
+                supporting_evidence_ids: [],
+                contradicting_evidence_ids: [],
+                stale: false,
+                created_at: timestamp,
+                updated_at: timestamp
+            },
+            {
+                id: claimId,
+                branch_id: branchId,
+                statement: "The primary approach is reproducible",
+                status: ClaimStatus.PROPOSED,
+                assumption_ids: [assumptionId],
+                supporting_evidence_ids: [],
+                contradicting_evidence_ids: [],
+                stale: false,
+                created_at: timestamp,
+                updated_at: timestamp
+            }
+        ],
         experiments: [],
-        capability_requests: [],
+        capability_requests: [
+            {
+                id: `${labId}-capability-sandbox`,
+                type: CapabilityRequestType.CAPABILITY_REQUEST,
+                need: "A reproducible sandbox",
+                reason: "The evaluator must run independently",
+                provisioning_hint: "Provide an isolated local runtime",
+                status: CapabilityStatus.OPEN,
+                created_at: timestamp
+            }
+        ],
         recent_events: [],
         result: {
             summary: "Work in progress",

@@ -5,6 +5,7 @@ import type { StatusSnapshot } from "@lab/protocol/status";
 import { StatusSnapshotSchema } from "@lab/protocol/status";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import type { Database } from "#src/client";
+import { projectRuntimeSnapshot } from "#src/runtime-projection";
 import { events, labs, runtimeCheckpoints } from "#src/schema";
 
 const RuntimePersistenceLimit = {
@@ -106,6 +107,7 @@ export class RuntimePersistence {
             if (checkpoint === undefined) {
                 throw new Error(`Failed to initialize runtime checkpoint ${snapshot.lab.id}`);
             }
+            await projectRuntimeSnapshot(transaction, canonicalSnapshot);
             return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
         });
     }
@@ -161,6 +163,7 @@ export class RuntimePersistence {
             if (lab === undefined) {
                 throw new Error(`Lab ${snapshot.lab.id} does not exist`);
             }
+            await projectRuntimeSnapshot(transaction, canonicalSnapshot);
             return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
         });
     }
