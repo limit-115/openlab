@@ -46,7 +46,7 @@ describe("CapabilityRequestSchema", () => {
         ).toThrow("requires its resource reference and timestamp");
     });
 
-    it("rejects installable tooling because no resource class can express it", () => {
+    it("keeps installable tooling outside the resource class domain", () => {
         expect(() =>
             CapabilityRequestSchema.parse({
                 id: "capability-hyperfine",

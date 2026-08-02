@@ -48,4 +48,10 @@
 - Define every finite domain value set (events, statuses, states, roles, lanes, result kinds) as a
   named `const` object with `as const`, and infer its union type from that object. Zod schemas and all
   comparisons must use those constants. Do not use TypeScript `enum` or domain magic strings.
+- Every test must be able to fail for the reason its name states. Never assert what the query already
+  guarantees: finding an element by its text and then asserting that same text, or asserting that a
+  query result exists when the query already throws when it does not, proves nothing and passes
+  forever. Assert an outcome the selector did not already decide.
+- Never write a test whose only purpose is to record that something was removed, renamed or restyled.
+  A test earns its place by protecting behaviour someone depends on, not by narrating the last diff.
 - Make a conventional commit after every coherent block. Stage only files owned by that block.
