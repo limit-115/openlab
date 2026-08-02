@@ -15,6 +15,8 @@ export const AGENT_CARD = "flex flex-col gap-3 rounded-2xl border p-4" as const;
 
 export const AGENT_CARD_HEADER = "flex flex-wrap items-start justify-between gap-3" as const;
 
+export const AGENT_STATUS_GROUP = "flex flex-wrap items-center gap-2" as const;
+
 export const AGENT_EXECUTION = "text-sm text-muted-foreground" as const;
 
 /** The transcript scrolls on its own so a talkative agent cannot push the roster off the page. */
@@ -38,6 +40,21 @@ export const PHASE_LABEL: Record<AgentActivityPhase, string> = {
     [AgentActivityPhase.RESPONDING]: "Writing",
     [AgentActivityPhase.USING_TOOL]: "Using a tool",
     [AgentActivityPhase.FINISHED]: "Finished"
+};
+
+/**
+ * What the agent is doing and how its run is going are two different questions, so the card answers
+ * both. The phase is the quieter of the two: it changes every few seconds, while the status is what
+ * an operator scanning the roster is looking for.
+ */
+export const PHASE_TONE: BadgeVariant = "outline";
+
+export const RUN_STATUS_LABEL: Record<AgentRunStatus, string> = {
+    [AgentRunStatus.RUNNING]: "Running",
+    [AgentRunStatus.SUCCEEDED]: "Succeeded",
+    [AgentRunStatus.FAILED]: "Failed",
+    [AgentRunStatus.TIMED_OUT]: "Timed out",
+    [AgentRunStatus.CANCELLED]: "Cancelled"
 };
 
 /** The same emphasis the rest of the dashboard uses: live work loudest, failures as warnings. */

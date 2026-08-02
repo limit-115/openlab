@@ -111,7 +111,29 @@ describe("TeamPanel", () => {
         const card = screen.getByRole("heading", { name: "researcher" }).closest("article");
 
         expect(card?.textContent).toContain("claude harness run timed out");
-        expect(card?.textContent).toContain("Finished");
+        expect(card?.textContent).toContain("Failed");
+    });
+
+    it("says both what the agent is doing and how its run is going", () => {
+        render(
+            <TeamPanel
+                agents={[
+                    agent(
+                        [],
+                        watchedActivity({
+                            phase: AgentActivityPhase.USING_TOOL,
+                            status: AgentRunStatus.RUNNING
+                        })
+                    )
+                ]}
+                tasks={[TASK]}
+            />
+        );
+
+        const card = screen.getByRole("heading", { name: "researcher" }).closest("article");
+
+        expect(card?.textContent).toContain("Using a tool");
+        expect(card?.textContent).toContain("Running");
     });
 
     it("says so plainly when the lab is running nobody", () => {

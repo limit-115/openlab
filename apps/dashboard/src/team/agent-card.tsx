@@ -9,8 +9,11 @@ import {
     AGENT_CARD,
     AGENT_CARD_HEADER,
     AGENT_EXECUTION,
+    AGENT_STATUS_GROUP,
     HARNESS_LABEL,
     PHASE_LABEL,
+    PHASE_TONE,
+    RUN_STATUS_LABEL,
     RUN_STATUS_TONE
 } from "#src/team/team-panel.const";
 
@@ -33,9 +36,12 @@ export function AgentCard({ agent, task }: AgentCardProps) {
                         effort
                     </p>
                 </div>
-                <Badge variant={RUN_STATUS_TONE[activity.status]}>
-                    {PHASE_LABEL[activity.phase]}
-                </Badge>
+                <div className={AGENT_STATUS_GROUP}>
+                    <Badge variant={PHASE_TONE}>{PHASE_LABEL[activity.phase]}</Badge>
+                    <Badge variant={RUN_STATUS_TONE[activity.status]}>
+                        {RUN_STATUS_LABEL[activity.status]}
+                    </Badge>
+                </div>
             </header>
 
             {task === undefined ? null : <p className="text-sm">{task.objective}</p>}
