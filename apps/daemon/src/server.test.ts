@@ -117,6 +117,37 @@ describe("status server", () => {
         await server.close();
     });
 
+    it("exports every durable run file using portable relative paths", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-export-test-"));
+        const taskPath = path.join(directory, "task.json");
+        await writeFile(taskPath, JSON.stringify({ goal: "Export every artifact" }));
+        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const artifactDirectory = path.join(workspace.runDirectory, "artifacts", "experiment-1");
+        await mkdir(artifactDirectory, { recursive: true });
+        await writeFile(path.join(artifactDirectory, "metrics.json"), JSON.stringify({ score: 1 }));
+        const server = createStatusServer(workspace);
+
+        const response = await server.inject({ method: "GET", url: "/api/export" });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            lab_id: workspace.labId,
+            run_directory: workspace.runDirectory
+        });
+        expect(response.json().files).toEqual(
+            expect.arrayContaining([
+                "artifacts/experiment-1/metrics.json",
+                "claims.json",
+                "events.json",
+                "evidence.json",
+                "experiments.json",
+                "status.json",
+                "task.json"
+            ])
+        );
+        await server.close();
+    });
+
     it("restarts background research after waking a hibernating run", async () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-daemon-research-test-"));
         const taskPath = path.join(directory, "task.json");

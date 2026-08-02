@@ -1,5 +1,6 @@
-import { stat } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
+import path from "node:path";
 import FastifyStatic from "@fastify/static";
 import { WakeTrigger } from "@lab/core/constants";
 import { LabState } from "@lab/protocol/constants";
@@ -111,14 +112,7 @@ export function createStatusServer(
     app.get("/api/export", async () => ({
         lab_id: workspace.labId,
         run_directory: workspace.runDirectory,
-        files: [
-            "task.json",
-            "events.json",
-            "claims.json",
-            "evidence.json",
-            "experiments.json",
-            "status.json"
-        ]
+        files: await listRunFiles(workspace.runDirectory)
     }));
 
     app.get("/api/events", async (request, reply) => {
@@ -311,4 +305,17 @@ async function existingDirectory(candidate: string): Promise<string | undefined>
         }
         throw error;
     }
+}
+
+async function listRunFiles(runDirectory: string): Promise<string[]> {
+    const entries = await readdir(runDirectory, { recursive: true, withFileTypes: true });
+    return entries
+        .filter((entry) => entry.isFile())
+        .map((entry) =>
+            path
+                .relative(runDirectory, path.join(entry.parentPath, entry.name))
+                .split(path.sep)
+                .join(path.posix.sep)
+        )
+        .sort((left, right) => left.localeCompare(right));
 }
