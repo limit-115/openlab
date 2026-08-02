@@ -3,6 +3,7 @@ import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 import { DaemonLogLevel, DatabaseProtocol } from "#src/daemon-runtime/daemon-config.const";
 import type { DaemonConfig, DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
+import { DEFAULT_HARNESS_KINDS } from "#src/research-cycle/harness-roster.const";
 
 const DatabaseUrlSchema = z
     .url()
@@ -42,6 +43,7 @@ export function resolveDaemonConfig(options: DaemonOptions): DaemonConfig {
                 path.join(import.meta.dirname, "..", "..", "..", "dashboard", "dist")
         ),
         databaseUrl: environment.DATABASE_URL,
-        logLevel: environment.LAB_LOG_LEVEL
+        logLevel: environment.LAB_LOG_LEVEL,
+        harnessKinds: options.harnessKinds ?? DEFAULT_HARNESS_KINDS
     };
 }

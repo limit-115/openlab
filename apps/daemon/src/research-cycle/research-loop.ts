@@ -1,8 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { HarnessExecutionProfiles } from "@lab/harness/agent-harness.const";
-import { ClaudeHarness } from "@lab/harness/claude-harness";
-import { CodexHarness } from "@lab/harness/codex-harness";
-import { GlmHarness } from "@lab/harness/glm-harness";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
@@ -13,6 +10,8 @@ import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { executeResearchOutcome } from "#src/daemon-execution/outcome-execution";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { directorPlanSchema, VerifierResultSchema } from "#src/research-contract/research-contract";
+import { createHarnesses } from "#src/research-cycle/harness-roster";
+import { DEFAULT_HARNESS_KINDS } from "#src/research-cycle/harness-roster.const";
 import { runResearchBranch } from "#src/research-cycle/research-branch";
 import { throwIfAborted } from "#src/research-cycle/research-cancellation";
 import { taskForCycle, updateFrontier } from "#src/research-cycle/research-frontier";
@@ -75,11 +74,7 @@ export async function runResearchLoop(
         return { status: ResearchLoopOutcomeStatus.CANCELLED };
     }
 
-    const harnesses = options.harnesses ?? [
-        new CodexHarness(),
-        new ClaudeHarness(),
-        new GlmHarness()
-    ];
+    const harnesses = options.harnesses ?? createHarnesses(DEFAULT_HARNESS_KINDS);
     const workspaceFactory =
         options.workspaceFactory ?? new GitResearchWorkspaceFactory(workspace.runDirectory);
     const createAgentWorkspace = workspaceAllocator(workspaceFactory);

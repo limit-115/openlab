@@ -1,3 +1,4 @@
+import type { AgentHarness } from "@lab/harness/agent-harness.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
@@ -14,6 +15,7 @@ export class ResearchLoopController {
         workspace: LabWorkspace,
         options: ResearchLoopOptions
     ) => Promise<ResearchLoopOutcome>;
+    readonly #harnesses: readonly AgentHarness[] | undefined;
     #abortController: AbortController | undefined;
     #running: Promise<ResearchLoopOutcome> | undefined;
     #restartRequested = false;
@@ -22,11 +24,16 @@ export class ResearchLoopController {
     constructor(
         workspace: LabWorkspace,
         activity: AgentActivityHub,
-        run: (workspace: LabWorkspace, options: ResearchLoopOptions) => Promise<ResearchLoopOutcome>
+        run: (
+            workspace: LabWorkspace,
+            options: ResearchLoopOptions
+        ) => Promise<ResearchLoopOutcome>,
+        harnesses?: readonly AgentHarness[]
     ) {
         this.#workspace = workspace;
         this.#activity = activity;
         this.#run = run;
+        this.#harnesses = harnesses;
         this.#unsubscribe = workspace.subscribe((event, snapshot) => {
             if (
                 event.type === EventType.LAB_STATE_CHANGED &&
@@ -50,7 +57,8 @@ export class ResearchLoopController {
         this.#abortController = abortController;
         const running = this.#run(this.#workspace, {
             activity: this.#activity,
-            signal: abortController.signal
+            signal: abortController.signal,
+            ...(this.#harnesses === undefined ? {} : { harnesses: this.#harnesses })
         });
         this.#running = running;
         const clear = () => {

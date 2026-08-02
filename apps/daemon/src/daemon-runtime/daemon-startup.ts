@@ -11,6 +11,7 @@ import { bootstrapResearch } from "#src/daemon-runtime/research-bootstrap";
 import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
 import { createStatusServer } from "#src/lab-status/status-server";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { createHarnesses } from "#src/research-cycle/harness-roster";
 import { runResearchLoop } from "#src/research-cycle/research-loop";
 
 export async function startDaemon(
@@ -33,7 +34,8 @@ export async function startDaemon(
         controller = new ResearchLoopController(
             workspace,
             activity,
-            dependencies.researchLoop ?? runResearchLoop
+            dependencies.researchLoop ?? runResearchLoop,
+            createHarnesses(config.harnessKinds)
         );
         app = createStatusServer(workspace, {
             activity,

@@ -1,3 +1,4 @@
+import type { HarnessKind } from "@lab/harness/agent-harness.const";
 import type { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
 
 export interface DaemonOptions {
@@ -6,6 +7,7 @@ export interface DaemonOptions {
     port?: number;
     workspaceRoot?: string;
     databaseUrl?: string;
+    harnessKinds?: readonly HarnessKind[];
 }
 
 export interface DaemonConfig {
@@ -16,4 +18,5 @@ export interface DaemonConfig {
     dashboardRoot: string;
     databaseUrl: string;
     logLevel: DaemonLogLevel;
+    harnessKinds: readonly HarnessKind[];
 }
