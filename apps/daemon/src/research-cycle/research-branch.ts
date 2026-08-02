@@ -7,7 +7,6 @@ import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { renderHarnessCommand } from "#src/daemon-execution/experiment-record";
 import { ExperimentEvaluator } from "#src/daemon-execution/experiment-record.const";
@@ -27,8 +26,7 @@ import { RESEARCH_TARGET_KIND } from "#src/research-contract/research-contract.c
 import { freezeResearchEvaluators } from "#src/research-cycle/evaluator-precommit";
 import { BranchProgress } from "#src/research-cycle/research-loop.const";
 import type {
-    AvailableHarness,
-    CreateResearchWorkspace,
+    ResearchBranchInput,
     ResearchBranchResult,
     RoleIdentifiers
 } from "#src/research-cycle/research-loop.types";
@@ -53,22 +51,22 @@ import {
     recordResearchEvidence,
     recordResearchSources
 } from "#src/research-evidence/research-evidence";
-import type { PlanTarget } from "#src/research-evidence/research-evidence.types";
 import { evaluatorPrecommitPrompt, researcherPrompt } from "#src/research-prompts/research-prompts";
 
-export async function runResearchBranch(
-    workspace: LabWorkspace,
-    task: TaskInput,
-    plan: DirectorPlan,
-    direction: DirectorPlan["directions"][number],
-    directionIndex: number,
-    cycle: number,
-    planTargets: readonly PlanTarget[],
-    available: readonly AvailableHarness[],
-    preferredHarnessIndex: number,
-    createAgentWorkspace: CreateResearchWorkspace,
-    signal?: AbortSignal
-): Promise<ResearchBranchResult> {
+export async function runResearchBranch(input: ResearchBranchInput): Promise<ResearchBranchResult> {
+    const {
+        workspace,
+        task,
+        plan,
+        direction,
+        directionIndex,
+        cycle,
+        planTargets,
+        available,
+        preferredHarnessIndex,
+        createAgentWorkspace,
+        signal
+    } = input;
     const ids = roleIdentifiers(ResearchStage.RESEARCHER, cycle, directionIndex);
     if (!planTargets.some(({ kind }) => kind === RESEARCH_TARGET_KIND.CLAIM)) {
         throw new Error("Director plan unexpectedly contains no claims");

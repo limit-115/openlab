@@ -1,9 +1,12 @@
 import type { AgentHarness, HarnessPreflight } from "@lab/harness/agent-harness.types";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
+import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import type {
     CapabilityRequestCandidate,
     CriticResult,
+    DirectorPlan,
     ResearchResult
 } from "#src/research-contract/research-contract";
 import type { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
@@ -13,7 +16,7 @@ import type {
     ResearchWorkspaceFactory
 } from "#src/research-cycle/research-stage-workspace.types";
 import type { StructuredAgentRunOutput } from "#src/research-cycle/structured-agent-run.types";
-import type { MaterialEvidence } from "#src/research-evidence/research-evidence.types";
+import type { MaterialEvidence, PlanTarget } from "#src/research-evidence/research-evidence.types";
 
 export interface ResearchLoopOutcome {
     readonly status: ResearchLoopOutcomeStatus;
@@ -33,6 +36,29 @@ export interface ResearchLoopOptions {
 export interface AvailableHarness {
     readonly harness: AgentHarness;
     readonly preflight: HarnessPreflight;
+}
+
+export interface ResearchCycleInput {
+    readonly workspace: LabWorkspace;
+    readonly task: TaskInput;
+    readonly available: readonly AvailableHarness[];
+    readonly createAgentWorkspace: CreateResearchWorkspace;
+    readonly cycle: number;
+    readonly signal?: AbortSignal;
+}
+
+export interface ResearchBranchInput {
+    readonly workspace: LabWorkspace;
+    readonly task: TaskInput;
+    readonly plan: DirectorPlan;
+    readonly direction: DirectorPlan["directions"][number];
+    readonly directionIndex: number;
+    readonly cycle: number;
+    readonly planTargets: readonly PlanTarget[];
+    readonly available: readonly AvailableHarness[];
+    readonly preferredHarnessIndex: number;
+    readonly createAgentWorkspace: CreateResearchWorkspace;
+    readonly signal?: AbortSignal;
 }
 
 export interface ResearchBranchResult {

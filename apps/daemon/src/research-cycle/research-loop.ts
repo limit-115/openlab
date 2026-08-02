@@ -9,7 +9,6 @@ import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { executeResearchOutcome } from "#src/daemon-execution/outcome-execution";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { directorPlanSchema, VerifierResultSchema } from "#src/research-contract/research-contract";
@@ -23,9 +22,9 @@ import {
     ResearchLoopOutcomeStatus
 } from "#src/research-cycle/research-loop.const";
 import type {
-    AvailableHarness,
     CreateResearchWorkspace,
     ResearchBranchResult,
+    ResearchCycleInput,
     ResearchCycleResult,
     ResearchLoopOptions,
     ResearchLoopOutcome
@@ -113,14 +112,14 @@ export async function runResearchLoop(
         while (workspace.getSnapshot().lab.state === LabState.RUNNING) {
             throwIfAborted(signal);
             const cycleStartedAt = new Date();
-            const cycleResult = await runResearchCycle(
+            const cycleResult = await runResearchCycle({
                 workspace,
-                taskForCycle(task, workspace, cycle),
+                task: taskForCycle(task, workspace, cycle),
                 available,
                 createAgentWorkspace,
                 cycle,
-                signal
-            );
+                ...(signal === undefined ? {} : { signal })
+            });
             if (cycleResult.completed) {
                 return { status: ResearchLoopOutcomeStatus.COMPLETED };
             }
@@ -199,14 +198,8 @@ async function blockForUnavailableHarnesses(
     await workspace.hibernateForPlateau(reason);
 }
 
-async function runResearchCycle(
-    workspace: LabWorkspace,
-    task: TaskInput,
-    available: readonly AvailableHarness[],
-    createAgentWorkspace: CreateResearchWorkspace,
-    cycle: number,
-    signal?: AbortSignal
-): Promise<ResearchCycleResult> {
+async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycleResult> {
+    const { workspace, task, available, createAgentWorkspace, cycle, signal } = input;
     const progress: Date[] = [];
     const directorIds = await prepareDirector(workspace, cycle);
     const { value: plan } = await runStageWithFallback({
@@ -235,19 +228,19 @@ async function runResearchCycle(
     const planTargets = await prepareClaims(workspace, plan, directorIds.branchId);
     const settledBranches = await Promise.allSettled(
         plan.directions.map((direction, index) =>
-            runResearchBranch(
+            runResearchBranch({
                 workspace,
                 task,
                 plan,
                 direction,
-                index,
+                directionIndex: index,
                 cycle,
                 planTargets,
                 available,
-                cycle + index + 1,
+                preferredHarnessIndex: cycle + index + 1,
                 createAgentWorkspace,
-                signal
-            )
+                ...(signal === undefined ? {} : { signal })
+            })
         )
     );
     const rejectedBranch = settledBranches.find(
