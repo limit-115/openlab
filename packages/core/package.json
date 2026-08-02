@@ -5,6 +5,7 @@
     "type": "module",
     "exports": {
         "./claims": "./src/claims.ts",
+        "./constants": "./src/constants.ts",
         "./frontier": "./src/frontier.ts",
         "./lifecycle": "./src/lifecycle.ts",
         "./scheduler": "./src/scheduler.ts"

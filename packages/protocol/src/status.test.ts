@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { LabState } from "#src/constants";
 import { StatusSnapshotSchema } from "#src/status";
 
 describe("StatusSnapshotSchema", () => {
@@ -7,7 +8,7 @@ describe("StatusSnapshotSchema", () => {
         const status = StatusSnapshotSchema.parse({
             lab: {
                 id: "lab-1",
-                state: "RUNNING",
+                state: LabState.RUNNING,
                 goal: "Prove a claim",
                 started_at: now,
                 updated_at: now,

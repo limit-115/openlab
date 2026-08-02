@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ProgressKind, SchedulerLane } from "#src/constants";
 import { assessPlateau, type ResearchFrontier } from "#src/frontier";
 
 const frontier: ResearchFrontier = {
@@ -12,7 +13,7 @@ const frontier: ResearchFrontier = {
     progress: [
         {
             id: "progress-1",
-            kind: "evidence",
+            kind: ProgressKind.EVIDENCE,
             summary: "New benchmark",
             occurredAt: new Date("2026-08-01T00:00:00Z")
         }
@@ -33,7 +34,7 @@ describe("assessPlateau", () => {
                             taskId: "task-1",
                             objective: "Try a held-out evaluator",
                             informationValue: 1,
-                            lane: "adversarial"
+                            lane: SchedulerLane.ADVERSARIAL
                         }
                     ]
                 },

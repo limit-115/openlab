@@ -1,3 +1,4 @@
+import { ClaimStatus, EvidenceKind } from "@lab/protocol/constants";
 import type { Claim, Evidence } from "@lab/protocol/schemas";
 import { describe, expect, it } from "vitest";
 import {
@@ -7,6 +8,7 @@ import {
     deduplicateEvidence,
     transitionClaim
 } from "#src/claims";
+import { EvidenceOrigin } from "#src/constants";
 
 const now = "2026-08-02T00:00:00.000Z";
 
@@ -29,7 +31,7 @@ function evidence(overrides: Partial<Evidence> = {}): AssessedEvidence {
     return {
         evidence: {
             id: "evidence-1",
-            kind: "experiment",
+            kind: EvidenceKind.EXPERIMENT,
             claim_id: "claim-1",
             run_id: "run-1",
             artifact_hash: "sha256:one",
@@ -39,7 +41,7 @@ function evidence(overrides: Partial<Evidence> = {}): AssessedEvidence {
             created_at: now,
             ...overrides
         },
-        origin: "empirical",
+        origin: EvidenceOrigin.EMPIRICAL,
         sourceBranchId: "solution-branch",
         valid: true,
         complete: true,
@@ -49,8 +51,8 @@ function evidence(overrides: Partial<Evidence> = {}): AssessedEvidence {
 
 describe("claim promotion", () => {
     it("rejects model judgement as the only support", () => {
-        const decision = assessClaimPromotion(claim("testing"), "supported", [
-            { ...evidence(), origin: "model_judgement" }
+        const decision = assessClaimPromotion(claim(ClaimStatus.TESTING), ClaimStatus.SUPPORTED, [
+            { ...evidence(), origin: EvidenceOrigin.MODEL_JUDGEMENT }
         ]);
 
         expect(decision.allowed).toBe(false);
@@ -58,15 +60,19 @@ describe("claim promotion", () => {
     });
 
     it("requires a reproducible verifier result from another branch", () => {
-        const verifier = evidence({ kind: "verifier_result" });
-        const decision = assessClaimPromotion(claim("supported"), "reproduced", [
-            {
-                ...verifier,
-                origin: "verifier",
-                sourceBranchId: "independent-verifier",
-                evidence: { ...verifier.evidence, independent: true }
-            }
-        ]);
+        const verifier = evidence({ kind: EvidenceKind.VERIFIER_RESULT });
+        const decision = assessClaimPromotion(
+            claim(ClaimStatus.SUPPORTED),
+            ClaimStatus.REPRODUCED,
+            [
+                {
+                    ...verifier,
+                    origin: EvidenceOrigin.VERIFIER,
+                    sourceBranchId: "independent-verifier",
+                    evidence: { ...verifier.evidence, independent: true }
+                }
+            ]
+        );
 
         expect(decision.allowed).toBe(true);
     });
@@ -90,13 +96,13 @@ describe("claim promotion", () => {
 
     it("allows a stale claim to re-enter testing and clears stale state", () => {
         const transitioned = transitionClaim(
-            claim("supported", true),
-            "testing",
+            claim(ClaimStatus.SUPPORTED, true),
+            ClaimStatus.TESTING,
             [],
             "2026-08-02T01:00:00.000Z"
         );
 
-        expect(transitioned.status).toBe("testing");
+        expect(transitioned.status).toBe(ClaimStatus.TESTING);
         expect(transitioned.stale).toBe(false);
     });
 });

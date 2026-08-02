@@ -1,36 +1,37 @@
-export const schedulerLanes = ["promising", "exploration", "adversarial", "reproduction"] as const;
+import { domainValues } from "@lab/protocol/constants";
+import { SchedulerLane, type SchedulerLane as SchedulerLaneValue } from "#src/constants";
 
-export type SchedulerLane = (typeof schedulerLanes)[number];
+const schedulerLaneValues = domainValues(SchedulerLane);
 
 export interface SchedulableTask {
     readonly id: string;
-    readonly lane: SchedulerLane;
+    readonly lane: SchedulerLaneValue;
     readonly priority: number;
     readonly queuedAt: Date;
 }
 
-export type SchedulerWeights = Readonly<Record<SchedulerLane, number>>;
+export type SchedulerWeights = Readonly<Record<SchedulerLaneValue, number>>;
 
 export const defaultSchedulerWeights: SchedulerWeights = {
-    promising: 3,
-    exploration: 1,
-    adversarial: 1,
-    reproduction: 1
+    [SchedulerLane.PROMISING]: 3,
+    [SchedulerLane.EXPLORATION]: 1,
+    [SchedulerLane.ADVERSARIAL]: 1,
+    [SchedulerLane.REPRODUCTION]: 1
 };
 
 export class FairScheduler<Task extends SchedulableTask> {
-    readonly #laneOrder: readonly SchedulerLane[];
-    readonly #queues: Record<SchedulerLane, Task[]> = {
-        promising: [],
-        exploration: [],
-        adversarial: [],
-        reproduction: []
+    readonly #laneOrder: readonly SchedulerLaneValue[];
+    readonly #queues: Record<SchedulerLaneValue, Task[]> = {
+        [SchedulerLane.PROMISING]: [],
+        [SchedulerLane.EXPLORATION]: [],
+        [SchedulerLane.ADVERSARIAL]: [],
+        [SchedulerLane.REPRODUCTION]: []
     };
     #cursor = 0;
 
     constructor(weights: SchedulerWeights = defaultSchedulerWeights) {
-        const laneOrder: SchedulerLane[] = [];
-        for (const lane of schedulerLanes) {
+        const laneOrder: SchedulerLaneValue[] = [];
+        for (const lane of schedulerLaneValues) {
             const weight = weights[lane];
             if (!Number.isSafeInteger(weight) || weight < 1) {
                 throw new RangeError(`Weight for ${lane} must be a positive safe integer`);
@@ -69,11 +70,14 @@ export class FairScheduler<Task extends SchedulableTask> {
         return undefined;
     }
 
-    size(lane?: SchedulerLane): number {
+    size(lane?: SchedulerLaneValue): number {
         if (lane !== undefined) {
             return this.#queues[lane].length;
         }
-        return schedulerLanes.reduce((total, current) => total + this.#queues[current].length, 0);
+        return schedulerLaneValues.reduce(
+            (total, current) => total + this.#queues[current].length,
+            0
+        );
     }
 }
 

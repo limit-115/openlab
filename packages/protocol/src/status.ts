@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AgentStatus, BranchStatus } from "#src/constants";
 import {
     AgentRoleSchema,
     CapabilityRequestSchema,
@@ -14,7 +15,7 @@ export const BranchSummarySchema = z.object({
     id: IdentifierSchema,
     title: z.string().min(1),
     approach: z.string().min(1),
-    status: z.enum(["active", "paused", "closed"]),
+    status: z.enum(BranchStatus),
     progress: z.string().default("")
 });
 
@@ -22,7 +23,7 @@ export const AgentSummarySchema = z.object({
     id: IdentifierSchema,
     branch_id: IdentifierSchema,
     role: AgentRoleSchema,
-    status: z.enum(["idle", "working", "blocked", "stopped"]),
+    status: z.enum(AgentStatus),
     current_task_id: IdentifierSchema.optional()
 });
 

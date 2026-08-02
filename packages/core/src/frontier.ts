@@ -1,13 +1,5 @@
-import type { ClaimStatus } from "@lab/protocol/schemas";
-import type { SchedulerLane } from "#src/scheduler";
-
-export type ProgressKind =
-    | "counterevidence"
-    | "evaluator_fix"
-    | "evidence"
-    | "excluded_approach"
-    | "narrowed_claim"
-    | "reproduction";
+import type { ClaimStatus } from "@lab/protocol/constants";
+import type { ProgressKind, SchedulerLane } from "#src/constants";
 
 export interface FrontierClaim {
     readonly id: string;

@@ -1,6 +1,5 @@
-import type { LabState } from "@lab/protocol/schemas";
-
-export type WakeTrigger = "capability" | "evidence" | "model" | "tool" | "user";
+import { LabState, type LabState as LabStateValue } from "@lab/protocol/constants";
+import type { WakeTrigger } from "#src/constants";
 
 export interface CompletionEvidence {
     readonly resultStatement: string;
@@ -24,17 +23,22 @@ export interface LifecycleDecision {
     readonly reasons: readonly string[];
 }
 
-const legalTransitions: Readonly<Record<LabState, ReadonlySet<LabState>>> = {
-    RUNNING: new Set(["HIBERNATING", "COMPLETED", "STOPPED", "FAILED"]),
-    HIBERNATING: new Set(["RUNNING", "STOPPED", "FAILED"]),
-    COMPLETED: new Set(),
-    STOPPED: new Set(),
-    FAILED: new Set()
+const legalTransitions: Readonly<Record<LabStateValue, ReadonlySet<LabStateValue>>> = {
+    [LabState.RUNNING]: new Set([
+        LabState.HIBERNATING,
+        LabState.COMPLETED,
+        LabState.STOPPED,
+        LabState.FAILED
+    ]),
+    [LabState.HIBERNATING]: new Set([LabState.RUNNING, LabState.STOPPED, LabState.FAILED]),
+    [LabState.COMPLETED]: new Set(),
+    [LabState.STOPPED]: new Set(),
+    [LabState.FAILED]: new Set()
 };
 
 export function assessLifecycleTransition(
-    current: LabState,
-    target: LabState,
+    current: LabStateValue,
+    target: LabStateValue,
     context: LifecycleContext = {}
 ): LifecycleDecision {
     const reasons: string[] = [];
@@ -43,20 +47,24 @@ export function assessLifecycleTransition(
         reasons.push(`Illegal lifecycle transition: ${current} -> ${target}`);
     }
 
-    if (target === "COMPLETED") {
+    if (target === LabState.COMPLETED) {
         reasons.push(...validateCompletion(context.completion));
     }
 
-    if (target === "HIBERNATING" && context.plateauConfirmed !== true) {
+    if (target === LabState.HIBERNATING && context.plateauConfirmed !== true) {
         reasons.push("Hibernation requires a confirmed plateau");
     }
 
-    if (current === "HIBERNATING" && target === "RUNNING" && context.wakeTrigger === undefined) {
+    if (
+        current === LabState.HIBERNATING &&
+        target === LabState.RUNNING &&
+        context.wakeTrigger === undefined
+    ) {
         reasons.push("Waking a hibernating lab requires a trigger");
     }
 
     if (
-        target === "FAILED" &&
+        target === LabState.FAILED &&
         (context.failureReason === undefined || context.failureReason.trim().length === 0)
     ) {
         reasons.push("Failure requires a non-empty reason");
@@ -66,10 +74,10 @@ export function assessLifecycleTransition(
 }
 
 export function transitionLabState(
-    current: LabState,
-    target: LabState,
+    current: LabStateValue,
+    target: LabStateValue,
     context: LifecycleContext = {}
-): LabState {
+): LabStateValue {
     const decision = assessLifecycleTransition(current, target, context);
     if (!decision.allowed) {
         throw new Error(decision.reasons.join("; "));

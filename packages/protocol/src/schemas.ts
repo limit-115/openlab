@@ -1,4 +1,16 @@
 import { z } from "zod";
+import {
+    AgentRole,
+    CapabilityRequestType,
+    CapabilityStatus,
+    ClaimStatus,
+    EventType,
+    EvidenceKind,
+    ExperimentStatus,
+    InternalTaskStatus,
+    LabState,
+    ModelMessageRole
+} from "#src/constants";
 
 export const IdentifierSchema = z.string().trim().min(1).max(200);
 
@@ -9,17 +21,11 @@ export const TaskInputSchema = z.object({
     success_criteria: z.array(z.string()).default([])
 });
 
-export const LabStateSchema = z.enum(["RUNNING", "HIBERNATING", "COMPLETED", "STOPPED", "FAILED"]);
+export const LabStateSchema = z.enum(LabState);
 
-export const AgentRoleSchema = z.enum(["director", "researcher", "critic", "verifier"]);
+export const AgentRoleSchema = z.enum(AgentRole);
 
-export const ClaimStatusSchema = z.enum([
-    "proposed",
-    "testing",
-    "supported",
-    "refuted",
-    "reproduced"
-]);
+export const ClaimStatusSchema = z.enum(ClaimStatus);
 
 export const ClaimSchema = z.object({
     id: IdentifierSchema,
@@ -34,13 +40,7 @@ export const ClaimSchema = z.object({
     updated_at: z.string().datetime()
 });
 
-export const EvidenceKindSchema = z.enum([
-    "experiment",
-    "source",
-    "artifact",
-    "counterexample",
-    "verifier_result"
-]);
+export const EvidenceKindSchema = z.enum(EvidenceKind);
 
 export const EvidenceSchema = z.object({
     id: IdentifierSchema,
@@ -55,33 +55,19 @@ export const EvidenceSchema = z.object({
     created_at: z.string().datetime()
 });
 
-export const InternalTaskStatusSchema = z.enum([
-    "queued",
-    "leased",
-    "running",
-    "succeeded",
-    "failed",
-    "cancelled"
-]);
+export const InternalTaskStatusSchema = z.enum(InternalTaskStatus);
 
 export const InternalTaskSchema = z.object({
     id: IdentifierSchema,
     branch_id: IdentifierSchema,
     objective: z.string().trim().min(1),
     context_refs: z.array(z.string()).default([]),
-    status: InternalTaskStatusSchema.default("queued"),
+    status: InternalTaskStatusSchema.default(InternalTaskStatus.QUEUED),
     attempt: z.number().int().positive().default(1),
     role: AgentRoleSchema
 });
 
-export const ExperimentStatusSchema = z.enum([
-    "planned",
-    "running",
-    "succeeded",
-    "failed",
-    "timed_out",
-    "cancelled"
-]);
+export const ExperimentStatusSchema = z.enum(ExperimentStatus);
 
 export const ExperimentSchema = z.object({
     id: IdentifierSchema,
@@ -101,24 +87,24 @@ export const ExperimentSchema = z.object({
 
 export const CapabilityRequestSchema = z.object({
     id: IdentifierSchema,
-    type: z.literal("capability_request"),
+    type: z.literal(CapabilityRequestType.CAPABILITY_REQUEST),
     need: z.string().trim().min(1),
     reason: z.string().trim().min(1),
     provisioning_hint: z.string().trim().min(1),
-    status: z.enum(["open", "provided", "obsolete"]).default("open"),
+    status: z.enum(CapabilityStatus).default(CapabilityStatus.OPEN),
     created_at: z.string().datetime()
 });
 
 export const LabEventSchema = z.object({
     id: IdentifierSchema,
     lab_id: IdentifierSchema,
-    type: IdentifierSchema,
+    type: z.enum(EventType),
     occurred_at: z.string().datetime(),
     payload: z.record(z.string(), z.unknown())
 });
 
 export const ModelMessageSchema = z.object({
-    role: z.enum(["system", "user", "assistant", "tool"]),
+    role: z.enum(ModelMessageRole),
     content: z.string(),
     name: z.string().optional(),
     tool_call_id: z.string().optional()
@@ -146,9 +132,6 @@ export const ModelResponseSchema = z.object({
 });
 
 export type TaskInput = z.infer<typeof TaskInputSchema>;
-export type LabState = z.infer<typeof LabStateSchema>;
-export type AgentRole = z.infer<typeof AgentRoleSchema>;
-export type ClaimStatus = z.infer<typeof ClaimStatusSchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type InternalTask = z.infer<typeof InternalTaskSchema>;

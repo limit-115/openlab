@@ -1,10 +1,14 @@
-import type { Claim, ClaimStatus, Evidence } from "@lab/protocol/schemas";
-
-export type EvidenceOrigin = "empirical" | "model_judgement" | "primary_source" | "verifier";
+import {
+    ClaimStatus,
+    type ClaimStatus as ClaimStatusValue,
+    EvidenceKind
+} from "@lab/protocol/constants";
+import type { Claim, Evidence } from "@lab/protocol/schemas";
+import { EvidenceOrigin, type EvidenceOrigin as EvidenceOriginValue } from "#src/constants";
 
 export interface AssessedEvidence {
     readonly evidence: Evidence;
-    readonly origin: EvidenceOrigin;
+    readonly origin: EvidenceOriginValue;
     readonly sourceBranchId: string;
     readonly valid: boolean;
     readonly complete: boolean;
@@ -23,12 +27,16 @@ export interface PromotionDecision {
     readonly contradictingEvidenceIds: readonly string[];
 }
 
-const legalClaimTransitions: Readonly<Record<ClaimStatus, ReadonlySet<ClaimStatus>>> = {
-    proposed: new Set(["testing", "refuted"]),
-    testing: new Set(["supported", "refuted"]),
-    supported: new Set(["testing", "refuted", "reproduced"]),
-    refuted: new Set(["testing"]),
-    reproduced: new Set(["testing", "refuted"])
+const legalClaimTransitions: Readonly<Record<ClaimStatusValue, ReadonlySet<ClaimStatusValue>>> = {
+    [ClaimStatus.PROPOSED]: new Set([ClaimStatus.TESTING, ClaimStatus.REFUTED]),
+    [ClaimStatus.TESTING]: new Set([ClaimStatus.SUPPORTED, ClaimStatus.REFUTED]),
+    [ClaimStatus.SUPPORTED]: new Set([
+        ClaimStatus.TESTING,
+        ClaimStatus.REFUTED,
+        ClaimStatus.REPRODUCED
+    ]),
+    [ClaimStatus.REFUTED]: new Set([ClaimStatus.TESTING]),
+    [ClaimStatus.REPRODUCED]: new Set([ClaimStatus.TESTING, ClaimStatus.REFUTED])
 };
 
 export function evidenceFingerprint(candidate: AssessedEvidence): string {
@@ -79,7 +87,7 @@ function ids(candidates: readonly AssessedEvidence[]): string[] {
 
 export function assessClaimPromotion(
     claim: Claim,
-    target: ClaimStatus,
+    target: ClaimStatusValue,
     suppliedEvidence: readonly AssessedEvidence[]
 ): PromotionDecision {
     const reasons: string[] = [];
@@ -89,7 +97,7 @@ export function assessClaimPromotion(
     const supporting = evidence.filter(isSupport);
     const contradicting = evidence.filter(isContradiction);
 
-    if (claim.stale && target !== "testing") {
+    if (claim.stale && target !== ClaimStatus.TESTING) {
         reasons.push("A stale claim must be retested before promotion");
     }
 
@@ -97,18 +105,20 @@ export function assessClaimPromotion(
         reasons.push(`Illegal claim transition: ${claim.status} -> ${target}`);
     }
 
-    if (target === "supported" || target === "reproduced") {
-        const materialSupport = supporting.filter(({ origin }) => origin !== "model_judgement");
+    if (target === ClaimStatus.SUPPORTED || target === ClaimStatus.REPRODUCED) {
+        const materialSupport = supporting.filter(
+            ({ origin }) => origin !== EvidenceOrigin.MODEL_JUDGEMENT
+        );
         if (materialSupport.length === 0) {
             reasons.push("Model judgement alone cannot support a claim");
         }
     }
 
-    if (target === "reproduced") {
+    if (target === ClaimStatus.REPRODUCED) {
         const independentVerifierEvidence = supporting.filter(
             (candidate) =>
-                candidate.origin === "verifier" &&
-                candidate.evidence.kind === "verifier_result" &&
+                candidate.origin === EvidenceOrigin.VERIFIER &&
+                candidate.evidence.kind === EvidenceKind.VERIFIER_RESULT &&
                 candidate.evidence.independent &&
                 candidate.sourceBranchId !== claim.branch_id &&
                 candidate.reproducible
@@ -120,7 +130,7 @@ export function assessClaimPromotion(
         }
     }
 
-    if (target === "refuted" && contradicting.length === 0) {
+    if (target === ClaimStatus.REFUTED && contradicting.length === 0) {
         reasons.push("Refutation requires valid contradicting evidence");
     }
 
@@ -134,7 +144,7 @@ export function assessClaimPromotion(
 
 export function transitionClaim(
     claim: Claim,
-    target: ClaimStatus,
+    target: ClaimStatusValue,
     suppliedEvidence: readonly AssessedEvidence[],
     updatedAt: string
 ): Claim {
@@ -152,7 +162,7 @@ export function transitionClaim(
         contradicting_evidence_ids: [
             ...new Set([...claim.contradicting_evidence_ids, ...decision.contradictingEvidenceIds])
         ],
-        stale: target === "testing" ? false : claim.stale,
+        stale: target === ClaimStatus.TESTING ? false : claim.stale,
         updated_at: updatedAt
     };
 }

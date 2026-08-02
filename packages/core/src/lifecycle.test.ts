@@ -1,4 +1,6 @@
+import { LabState } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
+import { WakeTrigger } from "#src/constants";
 import { assessLifecycleTransition, type CompletionEvidence } from "#src/lifecycle";
 
 const completion: CompletionEvidence = {
@@ -13,11 +15,11 @@ const completion: CompletionEvidence = {
 
 describe("lab lifecycle", () => {
     it("requires every completion artifact and independent verification", () => {
-        expect(assessLifecycleTransition("RUNNING", "COMPLETED", { completion }).allowed).toBe(
-            true
-        );
         expect(
-            assessLifecycleTransition("RUNNING", "COMPLETED", {
+            assessLifecycleTransition(LabState.RUNNING, LabState.COMPLETED, { completion }).allowed
+        ).toBe(true);
+        expect(
+            assessLifecycleTransition(LabState.RUNNING, LabState.COMPLETED, {
                 completion: {
                     resultStatement: completion.resultStatement,
                     supportingEvidenceIds: completion.supportingEvidenceIds,
@@ -31,13 +33,21 @@ describe("lab lifecycle", () => {
     });
 
     it("hibernates only at a confirmed plateau and wakes on a trigger", () => {
-        expect(assessLifecycleTransition("RUNNING", "HIBERNATING").allowed).toBe(false);
+        expect(assessLifecycleTransition(LabState.RUNNING, LabState.HIBERNATING).allowed).toBe(
+            false
+        );
         expect(
-            assessLifecycleTransition("RUNNING", "HIBERNATING", { plateauConfirmed: true }).allowed
+            assessLifecycleTransition(LabState.RUNNING, LabState.HIBERNATING, {
+                plateauConfirmed: true
+            }).allowed
         ).toBe(true);
-        expect(assessLifecycleTransition("HIBERNATING", "RUNNING").allowed).toBe(false);
+        expect(assessLifecycleTransition(LabState.HIBERNATING, LabState.RUNNING).allowed).toBe(
+            false
+        );
         expect(
-            assessLifecycleTransition("HIBERNATING", "RUNNING", { wakeTrigger: "evidence" }).allowed
+            assessLifecycleTransition(LabState.HIBERNATING, LabState.RUNNING, {
+                wakeTrigger: WakeTrigger.EVIDENCE
+            }).allowed
         ).toBe(true);
     });
 });
