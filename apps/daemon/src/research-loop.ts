@@ -21,6 +21,7 @@ import {
     AgentRole,
     AgentStatus,
     BranchStatus,
+    CapabilityStatus,
     ClaimStatus,
     EventType,
     EvidenceKind,
@@ -28,7 +29,7 @@ import {
     InternalTaskStatus,
     LabState
 } from "@lab/protocol/constants";
-import type { Claim, Evidence, TaskInput } from "@lab/protocol/schemas";
+import type { CapabilityRequest, Claim, Evidence, TaskInput } from "@lab/protocol/schemas";
 import type { z } from "zod";
 import { type ValidatedArtifact, validateFileArtifact } from "#src/artifact";
 import {
@@ -109,6 +110,14 @@ const PromiseSettlement = {
     REJECTED: "rejected"
 } as const;
 
+const ResearchContextEntryType = {
+    PROVIDED_CAPABILITY: "provided_capability"
+} as const;
+
+const ResearchContextPrefix = {
+    NEXT_EXPERIMENT: "Next experiment:"
+} as const;
+
 const DEFAULT_PLATEAU_INACTIVITY_MS = 60_000;
 const DEFAULT_CYCLE_BACKOFF_MS = 5_000;
 const VERIFIER_EVALUATOR_TIMEOUT_MS = 300_000;
@@ -170,6 +179,13 @@ type CreateResearchWorkspace = (stage: ResearchStage) => Promise<ResearchWorkspa
 interface StageRunOutput<Output> extends StructuredAgentRunOutput<Output> {
     readonly harness: AgentHarness;
     readonly agentWorkspace: ResearchWorkspace;
+}
+
+class StageCapabilityBlockedError extends Error {
+    constructor(stage: ResearchStage) {
+        super(`All subscription CLI harnesses lost required capabilities during ${stage}`);
+        this.name = "StageCapabilityBlockedError";
+    }
 }
 
 export async function runResearchLoop(
@@ -256,6 +272,14 @@ export async function runResearchLoop(
         if (signal?.aborted) {
             await cancelActiveWork(workspace);
             return { status: ResearchLoopOutcomeStatus.CANCELLED };
+        }
+
+        if (error instanceof StageCapabilityBlockedError) {
+            await blockForUnavailableHarnesses(workspace, error.message);
+            return {
+                status: ResearchLoopOutcomeStatus.HIBERNATING,
+                reason: error.message
+            };
         }
 
         const reason = error instanceof Error ? error.message : String(error);
@@ -1768,18 +1792,50 @@ async function cancelActiveWork(workspace: LabWorkspace): Promise<void> {
 }
 
 function taskForCycle(task: TaskInput, workspace: LabWorkspace, cycle: number): TaskInput {
-    if (cycle === 0) {
-        return task;
-    }
-    const frontier = workspace.getSnapshot().frontier;
+    const snapshot = workspace.getSnapshot();
+    const capabilityContext = snapshot.capability_requests
+        .filter(({ status }) => status === CapabilityStatus.PROVIDED)
+        .sort(
+            (left, right) =>
+                requiredProvidedAt(left).localeCompare(requiredProvidedAt(right)) ||
+                left.id.localeCompare(right.id)
+        )
+        .map(providedCapabilityContext);
+    const frontierContext =
+        cycle === 0
+            ? []
+            : [
+                  ...snapshot.frontier.known,
+                  ...snapshot.frontier.next_experiments.map(
+                      (experiment) => `${ResearchContextPrefix.NEXT_EXPERIMENT} ${experiment}`
+                  )
+              ];
     return {
         ...task,
-        context: uniqueStrings([
-            ...task.context,
-            ...frontier.known,
-            ...frontier.next_experiments.map((experiment) => `Next experiment: ${experiment}`)
-        ])
+        context: uniqueStrings([...task.context, ...capabilityContext, ...frontierContext])
     };
+}
+
+function providedCapabilityContext(request: CapabilityRequest): string {
+    return JSON.stringify({
+        type: ResearchContextEntryType.PROVIDED_CAPABILITY,
+        resource_reference: requiredResourceReference(request),
+        provided_at: requiredProvidedAt(request)
+    });
+}
+
+function requiredResourceReference(request: CapabilityRequest): string {
+    if (request.resource_reference === undefined) {
+        throw new Error(`Provided capability ${request.id} has no resource reference`);
+    }
+    return request.resource_reference;
+}
+
+function requiredProvidedAt(request: CapabilityRequest): string {
+    if (request.provided_at === undefined) {
+        throw new Error(`Provided capability ${request.id} has no provided timestamp`);
+    }
+    return request.provided_at;
 }
 
 function roleIdentifiers(stage: ResearchStage, cycle: number, ordinal: number): RoleIdentifiers {
@@ -1821,6 +1877,7 @@ async function runStageWithFallback<Output>(input: {
     readonly signal?: AbortSignal;
 }): Promise<StageRunOutput<Output>> {
     let lastError: unknown;
+    let capabilityFailures = 0;
     for (let offset = 0; offset < input.available.length; offset += 1) {
         throwIfAborted(input.signal);
         const harness = selectHarness(input.available, input.preferredIndex + offset).harness;
@@ -1853,9 +1910,13 @@ async function runStageWithFallback<Output>(input: {
                 throw error;
             }
             if (error instanceof HarnessCapabilityError) {
+                capabilityFailures += 1;
                 await input.workspace.requestCapability(error.capabilityRequest);
             }
         }
+    }
+    if (capabilityFailures === input.available.length) {
+        throw new StageCapabilityBlockedError(input.stage);
     }
     await failRoleTask(
         input.workspace,

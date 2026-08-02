@@ -48,6 +48,14 @@ const EvaluatorComparison = {
     TRUTHY: "truthy"
 } as const;
 
+const CapabilityFixture = {
+    NEED: "An active local product-subscription CLI session",
+    REASON: "The previously authenticated subscription session became unavailable",
+    PROVISIONING_HINT: "Restore the interactive subscription login and retry",
+    RESOURCE_REFERENCE: "subscription-session://restored/v1",
+    CONTEXT_TYPE: "provided_capability"
+} as const;
+
 class ScriptedHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE;
     readonly requests: HarnessRunRequest[] = [];
@@ -303,6 +311,34 @@ class UnavailableHarness implements AgentHarness {
     }
 }
 
+class CapabilityLossHarness extends ScriptedHarness {
+    readonly #promptMarker: string;
+
+    constructor(
+        kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
+        promptMarker: string
+    ) {
+        super(kind);
+        this.#promptMarker = promptMarker;
+    }
+
+    override async *run(request: HarnessRunRequest): AsyncIterable<HarnessEvent> {
+        if (request.prompt.includes(this.#promptMarker)) {
+            this.requests.push(request);
+            throw new HarnessCapabilityError(
+                this.kind,
+                "Subscription capability disappeared after preflight",
+                {
+                    need: CapabilityFixture.NEED,
+                    reason: CapabilityFixture.REASON,
+                    provisioningHint: CapabilityFixture.PROVISIONING_HINT
+                }
+            );
+        }
+        yield* super.run(request);
+    }
+}
+
 class BlockingHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX;
     readonly started: Promise<void>;
@@ -479,6 +515,75 @@ describe.sequential("runResearchLoop", () => {
                 EventType.LAB_HIBERNATED
             ])
         );
+    });
+
+    it("includes provided capability resources after restarting at cycle zero", async () => {
+        const workspace = await createWorkspace();
+        const blocked = await runResearchLoop(workspace, {
+            harnesses: [new UnavailableHarness(HarnessKinds.CODEX)]
+        });
+        expect(blocked.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        const request = workspace.getSnapshot().capability_requests[0];
+        if (request === undefined) {
+            throw new Error("Expected the unavailable harness to request a capability");
+        }
+        await workspace.provideCapability(request.id, CapabilityFixture.RESOURCE_REFERENCE);
+        const provided = workspace
+            .getSnapshot()
+            .capability_requests.find(({ id }) => id === request.id);
+        if (provided?.provided_at === undefined) {
+            throw new Error("Expected the capability to have operational resource state");
+        }
+        const harness = new ScriptedHarness(HarnessKinds.CODEX);
+
+        const outcome = await runResearchLoop(workspace, { harnesses: [harness] });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
+        expect(harness.requests).toHaveLength(7);
+        for (const run of harness.requests) {
+            expect(run.prompt).toContain(CapabilityFixture.CONTEXT_TYPE);
+            expect(run.prompt).toContain("resource_reference");
+            expect(run.prompt).toContain(CapabilityFixture.RESOURCE_REFERENCE);
+            expect(run.prompt).toContain("provided_at");
+            expect(run.prompt).toContain(provided.provided_at);
+        }
+    });
+
+    it("hibernates when every preflighted harness loses a critical-stage capability", async () => {
+        const workspace = await createWorkspace();
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [
+                new CapabilityLossHarness(HarnessKinds.CODEX, PromptRole.DIRECTOR),
+                new CapabilityLossHarness(HarnessKinds.CLAUDE, PromptRole.DIRECTOR)
+            ]
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
+        expect(workspace.getSnapshot().capability_requests).toEqual([
+            expect.objectContaining({ need: CapabilityFixture.NEED })
+        ]);
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(EventType.LAB_FAILED);
+        expect(
+            workspace.getEvents().find(({ type }) => type === EventType.PLATEAU_CONFIRMED)?.payload
+        ).toMatchObject({ capability_blocked: true });
+    });
+
+    it("fails honestly when critical-stage fallback mixes capability and run failures", async () => {
+        const workspace = await createWorkspace();
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [
+                new CapabilityLossHarness(HarnessKinds.CODEX, PromptRole.DIRECTOR),
+                new FailingOnceHarness(HarnessKinds.CLAUDE, PromptRole.DIRECTOR)
+            ]
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.FAILED);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.FAILED);
+        expect(workspace.getSnapshot().capability_requests).toHaveLength(1);
+        expect(workspace.getEvents().map(({ type }) => type)).toContain(EventType.LAB_FAILED);
     });
 
     it("retries a failed critic through the other subscription CLI in a fresh workspace", async () => {
