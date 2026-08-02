@@ -15,7 +15,6 @@ import {
     PROVISIONING_HINT_NOTE
 } from "#src/capabilities/capability-card.const";
 import { StatusTag } from "#src/status-tag/status-tag";
-import { formatIdentifier } from "#src/value-display/identifier-display";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 interface CapabilityCardProps {
@@ -41,7 +40,7 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                 <div className={PROVISIONING_HINT}>
                     <span className={PROVISIONING_HINT_LABEL}>Provision via CLI</span>
                     <code className={PROVISIONING_HINT_COMMAND}>
-                        lab provide {formatIdentifier(request.id)} &lt;resource-reference&gt;
+                        lab provide {request.id} &lt;resource-reference&gt;
                     </code>
                     <small className={PROVISIONING_HINT_NOTE}>{request.provisioning_hint}</small>
                 </div>

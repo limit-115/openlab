@@ -16,7 +16,6 @@ import {
     TABLE_SCROLL
 } from "#src/claims/claims-table.const";
 import { StatusTag } from "#src/status-tag/status-tag";
-import { formatIdentifier } from "#src/value-display/identifier-display";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 interface ClaimsTableProps {
@@ -50,7 +49,7 @@ export function ClaimsTable({ claims }: ClaimsTableProps) {
                                             {claim.statement}
                                         </strong>
                                         <span className={CLAIM_IDENTIFIER} title={claim.id}>
-                                            {formatIdentifier(claim.id)} · {claim.branch_id}
+                                            {claim.id} · {claim.branch_id}
                                             {claim.stale ? " · stale" : ""}
                                         </span>
                                     </div>

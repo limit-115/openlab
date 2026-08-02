@@ -8,5 +8,4 @@ export const BRAND_MARK =
 
 export const BRAND_NAME = "text-sm font-[680]" as const;
 
-export const BRAND_ID =
-    "mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-fg-faint" as const;
+export const BRAND_ID = "mt-[2px] break-words text-sm text-fg-faint" as const;

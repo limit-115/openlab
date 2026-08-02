@@ -19,11 +19,9 @@ export const BRANCH_CARD_STATUS_TONE: Record<BranchStatus, string> = {
 
 export const BRANCH_CARD_HEADING = "flex min-w-0 flex-col" as const;
 
-export const BRANCH_CARD_TITLE =
-    "overflow-hidden text-ellipsis whitespace-nowrap text-sm font-[650]" as const;
+export const BRANCH_CARD_TITLE = "break-words text-sm font-[650]" as const;
 
-export const BRANCH_CARD_APPROACH =
-    "mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-fg-muted" as const;
+export const BRANCH_CARD_APPROACH = "mt-1 break-words text-sm text-fg-muted" as const;
 
 export const BRANCH_CARD_META = "flex gap-[6px] max-[620px]:hidden" as const;
 

@@ -4,7 +4,6 @@ import { BRAND, BRAND_ID, BRAND_MARK, BRAND_NAME, TOPBAR } from "#src/lab-header
 import { RuntimeStrip } from "#src/lab-header/runtime-strip";
 import { SectionNav } from "#src/lab-header/section-nav";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
-import { formatIdentifier } from "#src/value-display/identifier-display";
 
 interface LabHeaderProps {
     snapshot: StatusSnapshot;
@@ -21,7 +20,7 @@ export function LabHeader({ snapshot, stream }: LabHeaderProps) {
                 <div>
                     <p className={BRAND_NAME}>Research Lab</p>
                     <p className={BRAND_ID} title={snapshot.lab.id}>
-                        {formatIdentifier(snapshot.lab.id)}
+                        {snapshot.lab.id}
                     </p>
                 </div>
             </div>

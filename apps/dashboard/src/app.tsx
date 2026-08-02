@@ -1,12 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-    APP_FOOTER,
-    APP_SHELL,
-    CONTENT_GRID,
-    CONTENT_GRID_ASIDE,
-    CONTENT_GRID_MAIN,
-    DASHBOARD
-} from "#src/app.const";
+import { APP_FOOTER, APP_SHELL, DASHBOARD } from "#src/app.const";
 import { CapabilitiesPanel } from "#src/capabilities/capabilities-panel";
 import { ClaimsPanel } from "#src/claims/claims-panel";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
@@ -61,20 +54,14 @@ export function App() {
                 <MissionOverview snapshot={snapshot} />
                 <OutcomePanel snapshot={snapshot} />
                 <FrontierPanel frontier={snapshot.frontier} />
-                <div className={CONTENT_GRID}>
-                    <div className={CONTENT_GRID_MAIN}>
-                        <BranchesPanel
-                            branches={snapshot.branches}
-                            agents={snapshot.agents}
-                            tasks={snapshot.tasks}
-                        />
-                        <ClaimsPanel claims={snapshot.claims} />
-                        <ExperimentsPanel experiments={snapshot.experiments} />
-                    </div>
-                    <aside className={CONTENT_GRID_ASIDE} aria-label="Blockers">
-                        <CapabilitiesPanel requests={snapshot.capability_requests} />
-                    </aside>
-                </div>
+                <CapabilitiesPanel requests={snapshot.capability_requests} />
+                <BranchesPanel
+                    branches={snapshot.branches}
+                    agents={snapshot.agents}
+                    tasks={snapshot.tasks}
+                />
+                <ClaimsPanel claims={snapshot.claims} />
+                <ExperimentsPanel experiments={snapshot.experiments} />
                 <EventsPanel events={snapshot.recent_events} />
             </main>
             <footer className={APP_FOOTER}>

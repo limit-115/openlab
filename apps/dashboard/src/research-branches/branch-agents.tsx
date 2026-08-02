@@ -11,7 +11,6 @@ import {
     AGENT_TASK
 } from "#src/research-branches/branch-agents.const";
 import { BRANCH_DETAIL_HEADING } from "#src/research-branches/branch-card.const";
-import { formatIdentifier } from "#src/value-display/identifier-display";
 
 interface BranchAgentsProps {
     agents: AgentSummary[];
@@ -36,7 +35,7 @@ export function BranchAgents({ agents, tasks }: BranchAgentsProps) {
                                 <div className="flex min-w-0 flex-col">
                                     <strong className={AGENT_ROLE}>{agent.role}</strong>
                                     <span className={AGENT_TASK}>
-                                        {currentTask?.objective ?? formatIdentifier(agent.id)}
+                                        {currentTask?.objective ?? agent.id}
                                     </span>
                                 </div>
                                 <small className={AGENT_STATUS}>{agent.status}</small>

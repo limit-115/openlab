@@ -24,8 +24,7 @@ export const EXPERIMENT_HYPOTHESIS = "text-sm font-[570] leading-[1.4]" as const
 export const EXPERIMENT_COMMAND =
     "my-2 flex min-w-0 items-center gap-[7px] rounded-[5px] bg-black/22 px-2 py-[6px] text-fg-faint" as const;
 
-export const EXPERIMENT_COMMAND_TEXT =
-    "overflow-hidden text-ellipsis whitespace-nowrap text-sm text-[#99a69f]" as const;
+export const EXPERIMENT_COMMAND_TEXT = "break-words text-sm text-[#99a69f]" as const;
 
 export const EXPERIMENT_FOOTER =
     "flex flex-wrap gap-x-[13px] gap-y-[6px] text-sm text-fg-faint" as const;

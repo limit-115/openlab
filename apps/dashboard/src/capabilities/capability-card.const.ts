@@ -26,7 +26,7 @@ export const PROVISIONING_HINT = "grid gap-1 rounded-md bg-black/20 p-[7px]" as 
 export const PROVISIONING_HINT_LABEL = "text-sm font-[680] uppercase text-fg-faint" as const;
 
 export const PROVISIONING_HINT_COMMAND =
-    "overflow-hidden text-ellipsis whitespace-nowrap text-sm text-amber" as const;
+    "rounded-md bg-black/25 px-[9px] py-[7px] font-mono text-sm leading-[1.5] break-all text-amber select-all" as const;
 
 export const PROVISIONING_HINT_NOTE = "text-sm leading-[1.4] text-fg-faint" as const;
 

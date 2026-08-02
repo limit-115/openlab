@@ -13,7 +13,6 @@ import {
 } from "#src/experiments/experiment-card.const";
 import { experimentDuration } from "#src/experiments/experiment-duration";
 import { StatusTag } from "#src/status-tag/status-tag";
-import { formatIdentifier } from "#src/value-display/identifier-display";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 function ExperimentIcon({ status }: { status: ExperimentStatus }) {
@@ -56,7 +55,7 @@ export function ExperimentCard({ experiment }: ExperimentCardProps) {
                     <code className={EXPERIMENT_COMMAND_TEXT}>{experiment.command}</code>
                 </p>
                 <footer className={EXPERIMENT_FOOTER}>
-                    <span title={experiment.id}>{formatIdentifier(experiment.id)}</span>
+                    <span title={experiment.id}>{experiment.id}</span>
                     <span>Started {formatDate(experiment.started_at)}</span>
                     <span>{experimentDuration(experiment)}</span>
                     {experiment.exit_code !== undefined ? (
