@@ -47,7 +47,7 @@ import {
     type CriticResult,
     CriticResultSchema,
     type DirectorPlan,
-    DirectorPlanSchema,
+    directorPlanSchema,
     EVALUATOR_VERDICT,
     type EvaluatorPrecommit,
     type EvaluatorStructuredVerdict,
@@ -386,7 +386,7 @@ async function runResearchCycle(
         taskId: directorIds.taskId,
         createAgentWorkspace,
         prompt: directorPrompt(task),
-        schema: DirectorPlanSchema,
+        schema: directorPlanSchema(task),
         ...(signal === undefined ? {} : { signal })
     });
     await finishRoleTask(workspace, directorIds, BranchStatus.CLOSED);

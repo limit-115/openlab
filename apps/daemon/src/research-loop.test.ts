@@ -592,6 +592,52 @@ describe.sequential("runResearchLoop", () => {
         ).resolves.toContain("independent benchmark reproduced");
     });
 
+    it("falls back when a director omits required operational assumptions", async () => {
+        const workspace = await createWorkspace({
+            goal: "Find and independently reproduce a speedup",
+            context: [],
+            success_criteria: []
+        });
+        const codex = new ScriptedHarness(HarnessKinds.CODEX);
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            falsifyAssumption: true
+        });
+        const abortController = new AbortController();
+        const running = runResearchLoop(workspace, {
+            harnesses: [codex, claude],
+            signal: abortController.signal
+        });
+        await waitUntil(() =>
+            workspace
+                .getSnapshot()
+                .claims.some(
+                    ({ statement }) =>
+                        statement === "The benchmark workload represents production traffic"
+                )
+        );
+
+        abortController.abort(new Error("director fallback observed"));
+        const outcome = await running;
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
+        expect(codex.requests.some(({ prompt }) => prompt.includes(PromptRole.DIRECTOR))).toBe(
+            true
+        );
+        expect(claude.requests.some(({ prompt }) => prompt.includes(PromptRole.DIRECTOR))).toBe(
+            true
+        );
+        expect(workspace.getEvents().map(({ type }) => type)).toContain(
+            EventType.GOAL_OPERATIONALIZED
+        );
+        expect(workspace.getSnapshot().claims).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    statement: "The benchmark workload represents production traffic"
+                })
+            ])
+        );
+    });
+
     it("persists a blocked researcher resource request while another branch completes", async () => {
         const workspace = await createWorkspace();
         const harness = new ScriptedHarness(HarnessKinds.CODEX, {
@@ -1341,17 +1387,16 @@ async function waitUntil(predicate: () => boolean): Promise<void> {
     }
 }
 
-async function createWorkspace(): Promise<LabWorkspace> {
+async function createWorkspace(
+    task: { goal: string; context: string[]; success_criteria: string[] } = {
+        goal: "Find and independently reproduce a speedup",
+        context: [],
+        success_criteria: ["A clean verifier reproduces the result"]
+    }
+): Promise<LabWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-research-loop-"));
     const taskPath = path.join(directory, "task.json");
-    await writeFile(
-        taskPath,
-        JSON.stringify({
-            goal: "Find and independently reproduce a speedup",
-            context: [],
-            success_criteria: ["A clean verifier reproduces the result"]
-        })
-    );
+    await writeFile(taskPath, JSON.stringify(task));
     return LabWorkspace.initialize(directory, taskPath);
 }
 
