@@ -4,6 +4,12 @@
     "private": true,
     "type": "module",
     "exports": {
+        "./agent-activity/agent-activity.const": "./src/agent-activity/agent-activity.const.ts",
+        "./agent-activity/agent-activity.schema": "./src/agent-activity/agent-activity.schema.ts",
+        "./agent-activity/agent-activity.types": "./src/agent-activity/agent-activity.types.ts",
+        "./agent-activity/agent-activity-frame.const": "./src/agent-activity/agent-activity-frame.const.ts",
+        "./agent-activity/agent-activity-frame.schema": "./src/agent-activity/agent-activity-frame.schema.ts",
+        "./agent-activity/agent-activity-frame.types": "./src/agent-activity/agent-activity-frame.types.ts",
         "./agents/agent-execution.const": "./src/agents/agent-execution.const.ts",
         "./agents/agent-execution.schema": "./src/agents/agent-execution.schema.ts",
         "./agents/agent-execution.types": "./src/agents/agent-execution.types.ts",
