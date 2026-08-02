@@ -2,8 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
+import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { App } from "#src/app";
+import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
@@ -22,6 +23,12 @@ function wrapper() {
             </QueryClientProvider>
         );
     };
+}
+
+function renderDashboard() {
+    return render(<RouterProvider router={createMemoryRouter(dashboardRoutes)} />, {
+        wrapper: wrapper()
+    });
 }
 
 function respondWith(payload: unknown) {
@@ -44,7 +51,7 @@ describe("App", () => {
     it("renders the operational snapshot and claim filters", async () => {
         respondWith(statusFixture);
         const user = userEvent.setup();
-        render(<App />, { wrapper: wrapper() });
+        renderDashboard();
 
         expect(await screen.findByText(statusFixture.lab.goal)).toBeInTheDocument();
         expect(screen.getByText("Landmark heuristics")).toBeInTheDocument();
@@ -62,7 +69,7 @@ describe("App", () => {
         respondWith(statusFixture);
         const user = userEvent.setup();
         const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
-        render(<App />, { wrapper: wrapper() });
+        renderDashboard();
 
         const [copyPayload] = await screen.findAllByRole("button", {
             name: "Copy the event payload"
@@ -81,7 +88,7 @@ describe("App", () => {
 
     it("names the harness, model and effort behind a running agent", async () => {
         respondWith(statusFixture);
-        render(<App />, { wrapper: wrapper() });
+        renderDashboard();
 
         expect(await screen.findByText("Codex · gpt-5.6-sol · medium effort")).toBeInTheDocument();
     });
@@ -104,7 +111,7 @@ describe("App", () => {
             capability_requests: [],
             recent_events: []
         });
-        render(<App />, { wrapper: wrapper() });
+        renderDashboard();
 
         expect(await screen.findByText("Frontier is being mapped")).toBeInTheDocument();
         expect(screen.getByText("No research branches yet")).toBeInTheDocument();

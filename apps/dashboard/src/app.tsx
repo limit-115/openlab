@@ -1,30 +1,20 @@
-import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { useQuery } from "@tanstack/react-query";
+import { Link, Outlet, useLocation } from "react-router";
 import { APP_FOOTER, APP_SHELL, DASHBOARD, PAGE_FRAME } from "#src/app.const";
-import { CapabilitiesPanel } from "#src/capabilities/capabilities-panel";
-import { ClaimsPanel } from "#src/claims/claims-panel";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
-import { useDashboardView } from "#src/dashboard-view/dashboard-view";
-import { DashboardView, VIEW_TABS } from "#src/dashboard-view/dashboard-view.const";
+import { DashboardRoute, VIEW_TABS } from "#src/dashboard-routes/dashboard-routes.const";
 import { cn } from "#src/design-system/class-names";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "#src/design-system/tabs";
-import { EventsPanel } from "#src/events/events-panel";
-import { ExperimentsPanel } from "#src/experiments/experiments-panel";
+import { Tabs, TabsList, TabsTrigger } from "#src/design-system/tabs";
 import { LabHeader } from "#src/lab-header/lab-header";
-import { OutcomePanel } from "#src/lab-outcome/outcome-panel";
 import { fetchStatus, statusQueryKey } from "#src/live-status/status-client";
 import { useLiveStatus } from "#src/live-status/status-stream";
 import { StreamState } from "#src/live-status/status-stream.const";
-import { MissionOverview } from "#src/mission-overview/mission-overview";
-import { BranchesPanel } from "#src/research-branches/branches-panel";
-import { FrontierPanel } from "#src/research-frontier/frontier-panel";
-import { TeamPanel } from "#src/team/team-panel";
-import { useAgentActivity } from "#src/team/team-stream";
 
+/** The shell every view is shown in: it resolves the snapshot once and hands it to the route. */
 export function App() {
     const stream = useLiveStatus();
-    const [view, selectView] = useDashboardView();
+    const { pathname } = useLocation();
     const statusQuery = useQuery({
         queryKey: statusQueryKey,
         queryFn: ({ signal }) => fetchStatus(signal),
@@ -60,35 +50,20 @@ export function App() {
             <LabHeader
                 snapshot={snapshot}
                 stream={stream}
-                showSections={view === DashboardView.OVERVIEW}
+                showSections={pathname === DashboardRoute.OVERVIEW}
             />
-            <Tabs value={view} onValueChange={selectView} className={cn(PAGE_FRAME, "pt-6")}>
+            <Tabs value={pathname} className={cn(PAGE_FRAME, "pt-6")}>
                 <TabsList>
                     {VIEW_TABS.map((tab) => (
-                        <TabsTrigger key={tab.view} value={tab.view}>
-                            {tab.label}
+                        <TabsTrigger key={tab.route} value={tab.route} asChild>
+                            <Link to={tab.route}>{tab.label}</Link>
                         </TabsTrigger>
                     ))}
                 </TabsList>
 
-                <TabsContent value={DashboardView.OVERVIEW} className={DASHBOARD}>
-                    <MissionOverview snapshot={snapshot} />
-                    <OutcomePanel snapshot={snapshot} />
-                    <FrontierPanel frontier={snapshot.frontier} />
-                    <CapabilitiesPanel requests={snapshot.capability_requests} />
-                    <BranchesPanel
-                        branches={snapshot.branches}
-                        agents={snapshot.agents}
-                        tasks={snapshot.tasks}
-                    />
-                    <ClaimsPanel claims={snapshot.claims} />
-                    <ExperimentsPanel experiments={snapshot.experiments} />
-                    <EventsPanel events={snapshot.recent_events} />
-                </TabsContent>
-
-                <TabsContent value={DashboardView.TEAM} className={DASHBOARD}>
-                    <LiveTeam tasks={snapshot.tasks} />
-                </TabsContent>
+                <div className={DASHBOARD}>
+                    <Outlet context={snapshot} />
+                </div>
             </Tabs>
             <footer className={cn(PAGE_FRAME, APP_FOOTER)}>
                 <span>AI Research Lab · Observer mode</span>
@@ -96,13 +71,4 @@ export function App() {
             </footer>
         </div>
     );
-}
-
-/**
- * The stream lives inside the tab's own content, which an inactive tab does not render, so a lab
- * nobody is watching is never asked for frames.
- */
-function LiveTeam({ tasks }: { tasks: InternalTask[] }) {
-    const { agents } = useAgentActivity();
-    return <TeamPanel agents={agents} tasks={tasks} />;
 }
