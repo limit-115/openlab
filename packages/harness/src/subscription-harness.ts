@@ -20,14 +20,17 @@ import {
     type HarnessRunRequest,
     type HarnessRunResult,
     type HarnessRunStatus,
-    HarnessRunStatuses
+    HarnessRunStatuses,
+    HarnessTimeoutMilliseconds
 } from "#src/contract";
 import { removedHarnessEnvironmentVariables, sanitizeHarnessEnvironment } from "#src/environment";
 import {
     HarnessAbortedError,
     HarnessCapabilityError,
     HarnessProtocolError,
-    HarnessRequestError
+    HarnessRequestError,
+    HarnessTimeoutError,
+    HarnessTimeoutPhases
 } from "#src/errors";
 import type { HarnessEventParser, ParsedHarnessEvent } from "#src/event-parser";
 import {
@@ -50,6 +53,7 @@ export interface SubscriptionHarnessOptions {
     readonly binary?: string;
     readonly runner?: HarnessProcessRunner;
     readonly environment?: Readonly<NodeJS.ProcessEnv>;
+    readonly preflightTimeoutMs?: number;
 }
 
 interface HarnessCommand {
@@ -76,16 +80,27 @@ interface NonManifestArtifacts {
     readonly responseSchema?: HarnessArtifact;
 }
 
+interface WatchdogSignal {
+    readonly signal: AbortSignal;
+    timedOut(): boolean;
+}
+
+const MAXIMUM_TIMEOUT_MILLISECONDS = 2_147_483_647;
+
 export abstract class SubscriptionCliHarness implements AgentHarness {
     abstract readonly kind: HarnessKind;
     readonly #binary: string;
     readonly #runner: HarnessProcessRunner;
     readonly #sourceEnvironment: Readonly<NodeJS.ProcessEnv>;
+    readonly #preflightTimeoutMs: number;
 
     protected constructor(defaultBinary: string, options: SubscriptionHarnessOptions) {
         this.#binary = options.binary ?? defaultBinary;
         this.#runner = options.runner ?? new ExecaHarnessProcessRunner();
         this.#sourceEnvironment = options.environment ?? process.env;
+        this.#preflightTimeoutMs =
+            options.preflightTimeoutMs ?? HarnessTimeoutMilliseconds.PREFLIGHT;
+        validateTimeoutMilliseconds(this.#preflightTimeoutMs, "Preflight timeout");
     }
 
     protected abstract authenticationCommand(): readonly string[];
@@ -105,6 +120,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         signal?: AbortSignal
     ): Promise<HarnessPreflight> {
         this.throwIfAborted(signal);
+        const watchdog = createWatchdogSignal(this.#preflightTimeoutMs, [signal]);
         const environment = sanitizeHarnessEnvironment(this.#sourceEnvironment);
         let versionResult: HarnessCaptureResult;
         let authenticationResult: HarnessCaptureResult;
@@ -115,18 +131,28 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 args: ["--version"],
                 cwd,
                 environment,
-                ...(signal === undefined ? {} : { signal })
+                signal: watchdog.signal
             });
-            this.throwIfAborted(signal, versionResult);
+            this.throwIfPreflightStopped(watchdog, signal, versionResult);
             authenticationResult = await this.#runner.capture({
                 file: this.#binary,
                 args: this.authenticationCommand(),
                 cwd,
                 environment,
-                ...(signal === undefined ? {} : { signal })
+                signal: watchdog.signal
             });
-            this.throwIfAborted(signal, authenticationResult);
+            this.throwIfPreflightStopped(watchdog, signal, authenticationResult);
         } catch (error) {
+            if (error instanceof HarnessTimeoutError || error instanceof HarnessAbortedError) {
+                throw error;
+            }
+            if (watchdog.timedOut()) {
+                throw new HarnessTimeoutError(
+                    this.kind,
+                    HarnessTimeoutPhases.PREFLIGHT,
+                    this.#preflightTimeoutMs
+                );
+            }
             if (signal?.aborted) {
                 throw new HarnessAbortedError(this.kind, { cause: signal.reason ?? error });
             }
@@ -149,6 +175,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
 
     async *run(request: HarnessRunRequest, signal?: AbortSignal): AsyncIterable<HarnessEvent> {
         this.validateRequest(request);
+        const timeoutMs = request.timeoutMs ?? HarnessTimeoutMilliseconds.RUN;
         const preflight = await this.preflightInDirectory(resolve(request.cwd), signal);
         const environment = sanitizeHarnessEnvironment(this.#sourceEnvironment);
         const removedEnvironmentVariables = removedHarnessEnvironmentVariables(
@@ -175,6 +202,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                     authentication: preflight.authentication,
                     command: commandRecord,
                     startedAt,
+                    timeoutMs,
                     prompt: files.prompt,
                     ...(files.responseSchema === undefined
                         ? {}
@@ -188,9 +216,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
 
         const parser = this.createEventParser(request);
         const internalAbortController = new AbortController();
-        const processSignal = signal
-            ? AbortSignal.any([signal, internalAbortController.signal])
-            : internalAbortController.signal;
+        const watchdog = createWatchdogSignal(timeoutMs, [signal, internalAbortController.signal]);
         let processExit: HarnessProcessExit | undefined;
         let processCompleted: Promise<HarnessProcessExit> | undefined;
         let sequence = 0;
@@ -208,7 +234,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 cwd: resolve(request.cwd),
                 environment,
                 input: request.prompt,
-                signal: processSignal
+                signal: watchdog.signal
             });
             processCompleted = child.completed;
             const lines = createInterface({
@@ -231,6 +257,9 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
             }
 
             processExit = await processCompleted;
+            if (watchdog.timedOut()) {
+                throw new HarnessTimeoutError(this.kind, HarnessTimeoutPhases.RUN, timeoutMs);
+            }
             for (const parsedEvent of parser.finish()) {
                 const event = stampEvent(parsedEvent, ++sequence, this.kind, parser.sessionId);
                 await appendEvent(files.eventsHandle, event);
@@ -272,7 +301,11 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
 
             streamCompleted = true;
         } catch (error) {
-            semanticError = error instanceof Error ? error : new Error(String(error));
+            semanticError = watchdog.timedOut()
+                ? new HarnessTimeoutError(this.kind, HarnessTimeoutPhases.RUN, timeoutMs)
+                : error instanceof Error
+                  ? error
+                  : new Error(String(error));
             internalAbortController.abort(semanticError);
             const diagnostic = {
                 type: HarnessEventTypes.DIAGNOSTIC,
@@ -294,7 +327,11 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 try {
                     processExit = await processCompleted;
                 } catch (error) {
-                    semanticError = error instanceof Error ? error : new Error(String(error));
+                    semanticError ??= watchdog.timedOut()
+                        ? new HarnessTimeoutError(this.kind, HarnessTimeoutPhases.RUN, timeoutMs)
+                        : error instanceof Error
+                          ? error
+                          : new Error(String(error));
                 }
             }
 
@@ -302,7 +339,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 exitCode: null,
                 signal: null,
                 failed: true,
-                cancelled: signal?.aborted ?? false,
+                cancelled: signal?.aborted === true || watchdog.timedOut(),
                 stderr: "",
                 error: semanticError?.message ?? "Harness process did not start"
             };
@@ -314,7 +351,12 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
             });
             await Promise.all([files.nativeEventsHandle.close(), files.eventsHandle.close()]);
 
-            const status = determineStatus(processExit, semanticError, streamCompleted, signal);
+            const status = determineStatus(
+                processExit,
+                semanticError,
+                streamCompleted,
+                signal?.aborted === true || watchdog.timedOut()
+            );
             const finishedAt = new Date().toISOString();
             const artifacts = await collectArtifacts(files);
             const error = semanticError?.message ?? processExit.error;
@@ -331,6 +373,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 exitCode: processExit.exitCode,
                 signal: processExit.signal,
                 error,
+                timeoutMs,
                 command: commandRecord,
                 artifacts
             };
@@ -352,6 +395,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 exitCode: processExit.exitCode,
                 signal: processExit.signal,
                 error,
+                timeoutMs,
                 command: commandRecord,
                 artifacts: { ...artifacts, manifest }
             };
@@ -389,12 +433,34 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         if (request.resumeSessionId !== undefined && !request.resumeSessionId.trim()) {
             throw new HarnessRequestError(this.kind, "Resume session id cannot be empty");
         }
+        const timeoutMs = request.timeoutMs ?? HarnessTimeoutMilliseconds.RUN;
+        try {
+            validateTimeoutMilliseconds(timeoutMs, "Run timeout");
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new HarnessRequestError(this.kind, message, { cause: error });
+        }
     }
 
     private throwIfAborted(signal?: AbortSignal, result?: HarnessCaptureResult): void {
         if (signal?.aborted || result?.cancelled) {
             throw new HarnessAbortedError(this.kind, { cause: signal?.reason });
         }
+    }
+
+    private throwIfPreflightStopped(
+        watchdog: WatchdogSignal,
+        signal: AbortSignal | undefined,
+        result: HarnessCaptureResult
+    ): void {
+        if (watchdog.timedOut()) {
+            throw new HarnessTimeoutError(
+                this.kind,
+                HarnessTimeoutPhases.PREFLIGHT,
+                this.#preflightTimeoutMs
+            );
+        }
+        this.throwIfAborted(signal, result);
     }
 
     private unavailableCapability(cause: unknown): HarnessCapabilityError {
@@ -514,19 +580,49 @@ function determineStatus(
     processExit: HarnessProcessExit,
     semanticError: Error | undefined,
     streamCompleted: boolean,
-    signal: AbortSignal | undefined
+    cancelledByWatchdogOrCaller: boolean
 ): HarnessRunStatus {
-    if (
-        signal?.aborted ||
-        processExit.cancelled ||
-        (!streamCompleted && semanticError === undefined)
-    ) {
+    if (cancelledByWatchdogOrCaller || (!streamCompleted && semanticError === undefined)) {
         return HarnessRunStatuses.CANCELLED;
     }
-    if (semanticError || processExit.failed || processExit.exitCode !== 0) {
+    if (semanticError) {
+        return HarnessRunStatuses.FAILED;
+    }
+    if (processExit.cancelled) {
+        return HarnessRunStatuses.CANCELLED;
+    }
+    if (processExit.failed || processExit.exitCode !== 0) {
         return HarnessRunStatuses.FAILED;
     }
     return HarnessRunStatuses.SUCCEEDED;
+}
+
+function createWatchdogSignal(
+    timeoutMs: number,
+    candidates: readonly (AbortSignal | undefined)[]
+): WatchdogSignal {
+    const timeoutSignal = AbortSignal.timeout(timeoutMs);
+    const signals = [
+        ...candidates.filter((candidate): candidate is AbortSignal => candidate !== undefined),
+        timeoutSignal
+    ];
+    const signal = signals.length === 1 ? timeoutSignal : AbortSignal.any(signals);
+    return {
+        signal,
+        timedOut: () => timeoutSignal.aborted && signal.reason === timeoutSignal.reason
+    };
+}
+
+function validateTimeoutMilliseconds(timeoutMs: number, label: string): void {
+    if (
+        !Number.isSafeInteger(timeoutMs) ||
+        timeoutMs < 1 ||
+        timeoutMs > MAXIMUM_TIMEOUT_MILLISECONDS
+    ) {
+        throw new RangeError(
+            `${label} must be an integer between 1 and ${MAXIMUM_TIMEOUT_MILLISECONDS} ms`
+        );
+    }
 }
 
 async function collectArtifacts(files: RunFiles): Promise<NonManifestArtifacts> {

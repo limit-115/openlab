@@ -11,14 +11,20 @@ import {
     HarnessEventTypes,
     HarnessKinds,
     type HarnessRunRequest,
-    HarnessRunStatuses
+    HarnessRunStatuses,
+    HarnessTimeoutMilliseconds
 } from "#src/contract";
 import {
     isForbiddenHarnessEnvironmentVariable,
     removedHarnessEnvironmentVariables,
     sanitizeHarnessEnvironment
 } from "#src/environment";
-import { HarnessAbortedError, HarnessCapabilityError, HarnessErrorCodes } from "#src/errors";
+import {
+    HarnessAbortedError,
+    HarnessCapabilityError,
+    HarnessErrorCodes,
+    HarnessTimeoutPhases
+} from "#src/errors";
 import type {
     HarnessCaptureResult,
     HarnessProcessExit,
@@ -74,6 +80,15 @@ const TestLoginMarkers = {
 const TestCliArgumentValues = {
     COLOR_NEVER: "never",
     STREAM_JSON: "stream-json"
+} as const;
+
+const TestTimeoutMilliseconds = {
+    WATCHDOG: 10,
+    INVALID: 0
+} as const;
+
+const TestProcessSignals = {
+    TERMINATE: "SIGTERM"
 } as const;
 
 afterEach(async () => {
@@ -166,7 +181,8 @@ describe("CodexHarness", () => {
             },
             sessionId: "codex-session",
             structuredOutput: { answer: 42 },
-            exitCode: 0
+            exitCode: 0,
+            timeoutMs: HarnessTimeoutMilliseconds.RUN
         });
         await expect(
             readFile(completed.result.artifacts.nativeEvents.path, "utf8")
@@ -396,6 +412,112 @@ describe("harness process isolation", () => {
         expect(runner.captureRequests).toHaveLength(0);
     });
 
+    it("times out preflight with a distinct actionable error", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            (request) => captureCancellationOnAbort(request)
+        ]);
+        const harness = new CodexHarness({
+            runner,
+            environment: testEnvironment(),
+            preflightTimeoutMs: TestTimeoutMilliseconds.WATCHDOG
+        });
+
+        await expect(harness.preflight()).rejects.toMatchObject({
+            code: HarnessErrorCodes.TIMED_OUT,
+            message: `codex harness preflight timed out after ${TestTimeoutMilliseconds.WATCHDOG} ms`,
+            phase: HarnessTimeoutPhases.PREFLIGHT,
+            timeoutMs: TestTimeoutMilliseconds.WATCHDOG
+        });
+        expect(runner.captureRequests[0]?.signal?.aborted).toBe(true);
+        expect(runner.spawnRequests).toHaveLength(0);
+    });
+
+    it("records a timed-out run as cancelled with terminal artifacts", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess("codex-cli 0.146.0"),
+            captureSuccess(TestLoginMarkers.CHATGPT)
+        ]);
+        runner.nextStream = (request) =>
+            streamUntilAbort(request, [
+                {
+                    type: TestNativeEventTypes.CODEX_THREAD_STARTED,
+                    thread_id: "timed-out-session"
+                }
+            ]);
+        const harness = new CodexHarness({ runner, environment: testEnvironment() });
+        const request = await harnessRequest("codex-timeout", {
+            timeoutMs: TestTimeoutMilliseconds.WATCHDOG
+        });
+
+        const events = await Array.fromAsync(harness.run(request));
+        const completed = lastCompleted(events);
+        const expectedError = `codex harness run timed out after ${TestTimeoutMilliseconds.WATCHDOG} ms`;
+
+        expect(completed.result).toMatchObject({
+            status: HarnessRunStatuses.CANCELLED,
+            error: expectedError,
+            timeoutMs: TestTimeoutMilliseconds.WATCHDOG,
+            sessionId: "timed-out-session"
+        });
+        expect(events).toContainEqual(
+            expect.objectContaining({
+                type: HarnessEventTypes.DIAGNOSTIC,
+                message: expectedError
+            })
+        );
+        expect(runner.spawnRequests[0]?.signal?.aborted).toBe(true);
+        await expect(
+            readFile(completed.result.artifacts.manifest.path, "utf8").then(JSON.parse)
+        ).resolves.toMatchObject({
+            status: HarnessRunStatuses.CANCELLED,
+            error: expectedError,
+            timeoutMs: TestTimeoutMilliseconds.WATCHDOG
+        });
+        await expect(readFile(completed.result.artifacts.events.path, "utf8")).resolves.toContain(
+            expectedError
+        );
+    });
+
+    it("records an internally cancelled protocol failure as failed", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess("codex-cli 0.146.0"),
+            captureSuccess(TestLoginMarkers.CHATGPT)
+        ]);
+        runner.nextStream = (request) => invalidStreamUntilAbort(request);
+        const harness = new CodexHarness({ runner, environment: testEnvironment() });
+        const request = await harnessRequest("codex-invalid-stream");
+
+        const completed = lastCompleted(await Array.fromAsync(harness.run(request)));
+
+        expect(completed.result).toMatchObject({
+            status: HarnessRunStatuses.FAILED,
+            error: expect.stringContaining("emitted invalid JSONL")
+        });
+    });
+
+    it("validates configured and per-run watchdog durations", async () => {
+        expect(
+            () =>
+                new CodexHarness({
+                    environment: testEnvironment(),
+                    preflightTimeoutMs: TestTimeoutMilliseconds.INVALID
+                })
+        ).toThrow("Preflight timeout must be an integer between");
+
+        const harness = new CodexHarness({
+            runner: new FakeHarnessProcessRunner([]),
+            environment: testEnvironment()
+        });
+        const request = await harnessRequest("invalid-timeout", {
+            timeoutMs: TestTimeoutMilliseconds.INVALID
+        });
+
+        await expect(Array.fromAsync(harness.run(request))).rejects.toMatchObject({
+            code: HarnessErrorCodes.INVALID_REQUEST,
+            message: expect.stringContaining("Run timeout must be an integer between")
+        });
+    });
+
     it("propagates AbortSignal to a running CLI and records cancellation", async () => {
         const runner = new FakeHarnessProcessRunner([
             captureSuccess("codex-cli 0.146.0"),
@@ -408,7 +530,7 @@ describe("harness process isolation", () => {
                     () => {
                         resolveExit({
                             exitCode: null,
-                            signal: "SIGTERM",
+                            signal: TestProcessSignals.TERMINATE,
                             failed: true,
                             cancelled: true,
                             stderr: "cancelled",
@@ -454,13 +576,13 @@ describe("harness process isolation", () => {
 class FakeHarnessProcessRunner implements HarnessProcessRunner {
     readonly captureRequests: HarnessProcessRequest[] = [];
     readonly spawnRequests: HarnessProcessRequest[] = [];
-    readonly #captureResults: HarnessCaptureResult[];
+    readonly #captureResults: FakeCaptureResult[];
     nextStream:
         | HarnessStreamingProcess
         | ((request: HarnessProcessRequest) => HarnessStreamingProcess)
         | undefined;
 
-    constructor(captureResults: readonly HarnessCaptureResult[]) {
+    constructor(captureResults: readonly FakeCaptureResult[]) {
         this.#captureResults = [...captureResults];
     }
 
@@ -470,7 +592,7 @@ class FakeHarnessProcessRunner implements HarnessProcessRunner {
         if (!result) {
             throw new Error("No fake capture result configured");
         }
-        return result;
+        return typeof result === "function" ? result(request) : result;
     }
 
     spawn(request: HarnessProcessRequest): HarnessStreamingProcess {
@@ -481,6 +603,10 @@ class FakeHarnessProcessRunner implements HarnessProcessRunner {
         return typeof this.nextStream === "function" ? this.nextStream(request) : this.nextStream;
     }
 }
+
+type FakeCaptureResult =
+    | HarnessCaptureResult
+    | ((request: HarnessProcessRequest) => Promise<HarnessCaptureResult>);
 
 function captureSuccess(stdout: string): HarnessCaptureResult {
     return {
@@ -508,6 +634,67 @@ function streamSuccess(
     return {
         stdout: Readable.from(events.map((event) => `${JSON.stringify(event)}\n`)),
         completed: Promise.resolve(exit)
+    };
+}
+
+function captureCancellationOnAbort(request: HarnessProcessRequest): Promise<HarnessCaptureResult> {
+    return new Promise((resolveCapture) => {
+        const resolve = () =>
+            resolveCapture({
+                stdout: "",
+                exitCode: null,
+                signal: TestProcessSignals.TERMINATE,
+                failed: true,
+                cancelled: true,
+                stderr: "watchdog cancelled preflight",
+                error: "watchdog cancelled preflight"
+            });
+        if (request.signal?.aborted) {
+            resolve();
+            return;
+        }
+        request.signal?.addEventListener("abort", resolve, { once: true });
+    });
+}
+
+function streamUntilAbort(
+    request: HarnessProcessRequest,
+    events: readonly Readonly<Record<string, unknown>>[]
+): HarnessStreamingProcess {
+    const completed = new Promise<HarnessProcessExit>((_resolveExit, rejectExit) => {
+        const reject = () => rejectExit(new Error("watchdog rejected the run process"));
+        if (request.signal?.aborted) {
+            reject();
+            return;
+        }
+        request.signal?.addEventListener("abort", reject, { once: true });
+    });
+    return {
+        stdout: Readable.from(events.map((event) => `${JSON.stringify(event)}\n`)),
+        completed
+    };
+}
+
+function invalidStreamUntilAbort(request: HarnessProcessRequest): HarnessStreamingProcess {
+    const completed = new Promise<HarnessProcessExit>((resolveExit) => {
+        request.signal?.addEventListener(
+            "abort",
+            () => {
+                resolveExit({
+                    exitCode: null,
+                    signal: TestProcessSignals.TERMINATE,
+                    failed: true,
+                    cancelled: true,
+                    stderr: "protocol failure cancelled run",
+                    error: "protocol failure cancelled run"
+                });
+            },
+            { once: true }
+        );
+    });
+    return {
+        stdout: Readable.from(["not-json\n"]),
+        completed
     };
 }
 

@@ -20,6 +20,11 @@ export const HarnessRunStatuses = {
     CANCELLED: "cancelled"
 } as const;
 
+export const HarnessTimeoutMilliseconds = {
+    PREFLIGHT: 30_000,
+    RUN: 3_600_000
+} as const;
+
 export type HarnessRunStatus = Exclude<
     (typeof HarnessRunStatuses)[keyof typeof HarnessRunStatuses],
     typeof HarnessRunStatuses.RUNNING
@@ -77,6 +82,7 @@ export interface HarnessRunRequest {
     readonly model?: string;
     readonly responseSchema?: Readonly<Record<string, unknown>>;
     readonly resumeSessionId?: string;
+    readonly timeoutMs?: number;
 }
 
 export interface HarnessArtifact {
@@ -114,6 +120,7 @@ export interface HarnessRunResult {
     readonly exitCode: number | null;
     readonly signal: string | null;
     readonly error: string | null;
+    readonly timeoutMs: number;
     readonly command: HarnessCommandRecord;
     readonly artifacts: HarnessArtifacts;
 }
