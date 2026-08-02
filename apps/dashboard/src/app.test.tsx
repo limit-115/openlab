@@ -1,5 +1,6 @@
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -91,6 +92,32 @@ describe("App", () => {
         renderDashboard();
 
         expect(await screen.findByText("Codex · gpt-5.6-sol · medium effort")).toBeInTheDocument();
+    });
+
+    it("wakes a hibernating lab from the header and settles on the state it reports", async () => {
+        const hibernating = {
+            ...statusFixture,
+            lab: { ...statusFixture.lab, state: LabState.HIBERNATING }
+        };
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((_input: string, init?: RequestInit) =>
+                Promise.resolve(
+                    new Response(
+                        JSON.stringify(init?.method === "POST" ? statusFixture : hibernating),
+                        { headers: { "Content-Type": "application/json" } }
+                    )
+                )
+            )
+        );
+        const user = userEvent.setup();
+        renderDashboard();
+
+        await user.click(await screen.findByRole("button", { name: "Wake" }));
+
+        const runtime = screen.getByRole("status", { name: "Lab runtime status" });
+        expect(await within(runtime).findByText(LabState.RUNNING)).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Wake" })).not.toBeInTheDocument();
     });
 
     it("shows useful empty states while the lab is still mapping the goal", async () => {

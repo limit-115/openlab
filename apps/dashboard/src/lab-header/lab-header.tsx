@@ -2,7 +2,12 @@ import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.ty
 import { FlaskConicalIcon } from "lucide-react";
 import { PAGE_FRAME } from "#src/app.const";
 import { cn } from "#src/design-system/class-names";
-import { LAB_HEADER_BAR, LAB_HEADER_ROW } from "#src/lab-header/lab-header.const";
+import { LabControls } from "#src/lab-control/lab-controls";
+import {
+    LAB_HEADER_BAR,
+    LAB_HEADER_ROW,
+    LAB_HEADER_RUNTIME
+} from "#src/lab-header/lab-header.const";
 import { RuntimeStrip } from "#src/lab-header/runtime-strip";
 import { SectionNav } from "#src/lab-header/section-nav";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
@@ -35,7 +40,10 @@ export function LabHeader({ snapshot, stream, showSections }: LabHeaderProps) {
 
                 {showSections ? <SectionNav /> : null}
 
-                <RuntimeStrip snapshot={snapshot} stream={stream} />
+                <div className={LAB_HEADER_RUNTIME}>
+                    <RuntimeStrip snapshot={snapshot} stream={stream} />
+                    <LabControls state={snapshot.lab.state} />
+                </div>
             </div>
         </header>
     );

@@ -66,8 +66,8 @@ export function App() {
                 </div>
             </Tabs>
             <footer className={cn(PAGE_FRAME, APP_FOOTER)}>
-                <span>AI Research Lab · Observer mode</span>
-                <span>Control remains in the CLI</span>
+                <span>AI Research Lab · Local runtime</span>
+                <span>Lifecycle controls sit beside the state in the header</span>
             </footer>
         </div>
     );
