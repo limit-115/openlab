@@ -7,9 +7,16 @@ import { createDatabase, type DatabaseClient } from "@lab/db/client";
 import { EvidenceRelationship } from "@lab/db/constants";
 import { migrateDatabase } from "@lab/db/migrations";
 import { RuntimePersistence } from "@lab/db/runtime";
-import { labs } from "@lab/db/schema";
-import { CapabilityStatus, ClaimStatus, EventType, EvidenceKind } from "@lab/protocol/constants";
+import { branches, labs, tasks } from "@lab/db/schema";
+import {
+    CapabilityStatus,
+    ClaimStatus,
+    EventType,
+    EvidenceKind,
+    LabState
+} from "@lab/protocol/constants";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { initialResearchIdentifiers } from "#src/research-identifiers";
 import { LabWorkspace } from "#src/workspace";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
@@ -34,19 +41,51 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         await client?.db.delete(labs);
     });
 
+    it("namespaces initial entities across independent and repeated labs", async () => {
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-multiple-runs-"));
+        const firstTaskPath = path.join(workspaceRoot, "first-task.json");
+        const secondTaskPath = path.join(workspaceRoot, "second-task.json");
+        await Promise.all([
+            writeFile(firstTaskPath, JSON.stringify({ goal: "Run the first independent lab" })),
+            writeFile(secondTaskPath, JSON.stringify({ goal: "Run the second independent lab" }))
+        ]);
+        const persistence = new RuntimePersistence(client.db);
+        const first = await LabWorkspace.initialize(workspaceRoot, firstTaskPath, persistence);
+        const second = await LabWorkspace.openOrCreate(workspaceRoot, secondTaskPath, persistence);
+        await second.transition(LabState.STOPPED, "Exercise a terminal rerun");
+        const repeated = await LabWorkspace.openOrCreate(
+            workspaceRoot,
+            secondTaskPath,
+            persistence
+        );
+
+        expect(new Set([first.labId, second.labId, repeated.labId]).size).toBe(3);
+        const projectedBranches = await client.db.select().from(branches);
+        const projectedTasks = await client.db.select().from(tasks);
+        expect(new Set(projectedBranches.map(({ id }) => id)).size).toBe(3);
+        expect(new Set(projectedTasks.map(({ id }) => id)).size).toBe(3);
+        expect(projectedBranches.map(({ labId }) => labId).sort()).toEqual(
+            [first.labId, second.labId, repeated.labId].sort()
+        );
+        expect(projectedTasks.map(({ labId }) => labId).sort()).toEqual(
+            [first.labId, second.labId, repeated.labId].sort()
+        );
+    });
+
     it("repairs corrupt filesystem snapshots from the atomic database checkpoint", async () => {
         const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-recovery-"));
         const taskPath = path.join(workspaceRoot, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Recover the authoritative state" }));
         const persistence = new RuntimePersistence(client.db);
         const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        const initialIds = initialResearchIdentifiers(workspace.labId);
 
         await workspace.appendEvent(EventType.LAB_STARTED, { source: "integration-test" });
         await workspace.update((draft) => {
             draft.frontier.known.push("PostgreSQL checkpoint survived");
             draft.claims.push({
                 id: "claim-durable-evidence",
-                branch_id: "branch-director",
+                branch_id: initialIds.branchId,
                 statement: "PostgreSQL preserves material evidence",
                 status: ClaimStatus.TESTING,
                 assumption_ids: [],
@@ -99,7 +138,7 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             })
         ).toMatchObject({
             labId: workspace.labId,
-            sourceBranchId: "branch-director",
+            sourceBranchId: initialIds.branchId,
             origin: EvidenceOrigin.MODEL_JUDGEMENT,
             valid: true,
             complete: true,

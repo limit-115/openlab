@@ -26,6 +26,7 @@ import { StatusSnapshotSchema } from "@lab/protocol/status";
 import { Mutex } from "async-mutex";
 import writeFileAtomic from "write-file-atomic";
 import { validateFileArtifact } from "#src/artifact";
+import { initialResearchIdentifiers } from "#src/research-identifiers";
 
 type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;
 type SnapshotUpdater = (draft: StatusSnapshot) => void;
@@ -155,6 +156,7 @@ export class LabWorkspace {
     ): Promise<LabWorkspace> {
         const task = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
         const labId = `lab-${randomUUID()}`;
+        const initialIds = initialResearchIdentifiers(labId);
         const runDirectory = path.join(workspaceRoot, "runs", labId);
         const now = new Date().toISOString();
         const snapshot = StatusSnapshotSchema.parse({
@@ -178,7 +180,7 @@ export class LabWorkspace {
             },
             branches: [
                 {
-                    id: "branch-director",
+                    id: initialIds.branchId,
                     title: "Goal operationalization",
                     approach: "Clarify claims, evaluators, and independent research directions",
                     status: BranchStatus.ACTIVE,
@@ -187,17 +189,17 @@ export class LabWorkspace {
             ],
             agents: [
                 {
-                    id: "agent-director",
-                    branch_id: "branch-director",
+                    id: initialIds.agentId,
+                    branch_id: initialIds.branchId,
                     role: AgentRole.DIRECTOR,
                     status: AgentStatus.WORKING,
-                    current_task_id: "task-understand"
+                    current_task_id: initialIds.taskId
                 }
             ],
             tasks: [
                 {
-                    id: "task-understand",
-                    branch_id: "branch-director",
+                    id: initialIds.taskId,
+                    branch_id: initialIds.branchId,
                     objective: "Turn the goal into testable claims without prescribing a method",
                     context_refs: [],
                     status: InternalTaskStatus.QUEUED,

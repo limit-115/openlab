@@ -58,6 +58,7 @@ import {
     VERIFIER_VERDICT,
     VerifierResultSchema
 } from "#src/research-contract";
+import { initialResearchIdentifiers } from "#src/research-identifiers";
 import {
     criticPrompt,
     directorPrompt,
@@ -86,12 +87,6 @@ export const ResearchLoopOutcomeStatus = {
 } as const;
 export type ResearchLoopOutcomeStatus =
     (typeof ResearchLoopOutcomeStatus)[keyof typeof ResearchLoopOutcomeStatus];
-
-const InitialResearchIdentifiers = {
-    DIRECTOR_BRANCH: "branch-director",
-    DIRECTOR_AGENT: "agent-director",
-    DIRECTOR_TASK: "task-understand"
-} as const;
 
 const BranchProgress = {
     RUNNING: "Running",
@@ -536,12 +531,13 @@ async function runResearchCycle(
 }
 
 async function prepareDirector(workspace: LabWorkspace, cycle: number): Promise<RoleIdentifiers> {
+    const initialIds = initialResearchIdentifiers(workspace.labId);
     const ids =
         cycle === 0
             ? {
-                  branchId: InitialResearchIdentifiers.DIRECTOR_BRANCH,
-                  agentId: InitialResearchIdentifiers.DIRECTOR_AGENT,
-                  taskId: InitialResearchIdentifiers.DIRECTOR_TASK
+                  branchId: initialIds.branchId,
+                  agentId: initialIds.agentId,
+                  taskId: initialIds.taskId
               }
             : roleIdentifiers(ResearchStage.DIRECTOR, cycle, 0);
     const snapshot = workspace.getSnapshot();
