@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import { HarnessEventTypes, HarnessToolPhases } from "@lab/harness/harness-event.const";
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
 import { HarnessArtifactFiles } from "@lab/harness/harness-run-artifacts.const";
@@ -116,6 +117,39 @@ describe("replayAgentActivity", () => {
         const sequences = frames.map(({ sequence }) => sequence);
 
         expect(Math.max(...sequences)).toBe(TRANSCRIPT.length);
+    });
+
+    it("ends a finished run with the outcome only its manifest kept", async () => {
+        const activity = await writeTranscript(TRANSCRIPT);
+        await writeFile(
+            path.join(activity.artifact_directory, HarnessArtifactFiles.MANIFEST),
+            JSON.stringify({
+                status: HarnessRunStatuses.FAILED,
+                error: "codex harness run failed",
+                finishedAt: "2026-08-03T10:05:00.000Z"
+            })
+        );
+
+        expect((await replay(activity)).at(-1)).toEqual({
+            agent_id: activity.agent_id,
+            run_id: activity.run_id,
+            sequence: TRANSCRIPT.length + 1,
+            occurred_at: "2026-08-03T10:05:00.000Z",
+            kind: AgentActivityFrameKind.RUN_FINISHED,
+            status: AgentRunStatus.FAILED,
+            error: "codex harness run failed"
+        });
+    });
+
+    it("leaves a run whose manifest says it is still going unfinished", async () => {
+        const activity = await writeTranscript(TRANSCRIPT);
+        await writeFile(
+            path.join(activity.artifact_directory, HarnessArtifactFiles.MANIFEST),
+            JSON.stringify({ status: HarnessRunStatuses.RUNNING })
+        );
+        const frames = await replay(activity);
+
+        expect(frames.some(({ kind }) => kind === AgentActivityFrameKind.RUN_FINISHED)).toBe(false);
     });
 
     it("yields nothing for a run that has not opened its event file yet", async () => {

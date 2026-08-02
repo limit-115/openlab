@@ -19,6 +19,8 @@
         "./harness-error.const": "./src/cli-execution/harness-error.const.ts",
         "./harness-event-parser.types": "./src/agent-harness/harness-event-parser.types.ts",
         "./harness-run-artifacts.const": "./src/subscription-cli-harness/harness-run-artifacts.const.ts",
+        "./harness-run-outcome": "./src/subscription-cli-harness/harness-run-outcome.ts",
+        "./harness-run-outcome.types": "./src/subscription-cli-harness/harness-run-outcome.types.ts",
         "./harness-event.const": "./src/agent-harness/harness-event.const.ts",
         "./harness-event.types": "./src/agent-harness/harness-event.types.ts",
         "./response-schema": "./src/subscription-cli-harness/response-schema.ts",

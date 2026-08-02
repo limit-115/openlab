@@ -3,9 +3,11 @@ import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
 import { HarnessArtifactFiles } from "@lab/harness/harness-run-artifacts.const";
+import { readFinishedRunOutcome } from "@lab/harness/harness-run-outcome";
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { ActivityRunStatus } from "#src/agent-activity/agent-activity.const";
 import { HarnessEventTranslator } from "#src/agent-activity/harness-event-translation";
 import type { AgentTextFrameKind } from "#src/agent-activity/harness-event-translation.types";
 
@@ -17,11 +19,12 @@ interface OpenTurn {
 }
 
 /**
- * Replays what an agent has done so far from the run's own events.jsonl.
+ * Replays what an agent has done, and how it ended, from the run's own artifacts.
  *
- * The harness writes each event before it yields it, so this file already holds everything the live
- * stream has broadcast. Replaying it is what lets a viewer that joins an hour into a run see the
- * whole run rather than the tail, without the daemon buffering any of it.
+ * The harness writes each event before it yields it, so events.jsonl already holds everything the
+ * live stream has broadcast bar the last frame, which the manifest keeps instead. Replaying them is
+ * what lets a viewer that joins an hour into a run see the whole run rather than the tail, without
+ * the daemon buffering any of it.
  *
  * Chunks of a completed turn are folded away, because the sealed frame that closed the turn carries
  * its full text. Only the turn still being written survives as chunks, and it is emitted as one
@@ -38,6 +41,7 @@ export async function* replayAgentActivity(
 
     const translator = new HarnessEventTranslator(activity);
     const openTurns = new Map<AgentTextFrameKind, OpenTurn>();
+    let lastSequence = 0;
     try {
         const lines = createInterface({
             input: handle.createReadStream(),
@@ -48,6 +52,7 @@ export async function* replayAgentActivity(
             if (event === undefined) {
                 continue;
             }
+            lastSequence = Math.max(lastSequence, event.sequence);
             const frame = translator.translate(event);
             if (frame === undefined) {
                 continue;
@@ -77,6 +82,25 @@ export async function* replayAgentActivity(
             turn: turn.turn,
             text: turn.text,
             sealed: false
+        };
+    }
+
+    /**
+     * The event that ends a run is the one event the run cannot write into its own events.jsonl,
+     * because it carries the manifest and the manifest carries that file's hash. Replaying the file
+     * alone would therefore leave every finished agent looking like it is still working, so the
+     * outcome is read from the manifest and told as the frame the live stream sent at the time.
+     */
+    const outcome = await readFinishedRunOutcome(activity.artifact_directory);
+    if (outcome !== undefined) {
+        yield {
+            agent_id: activity.agent_id,
+            run_id: activity.run_id,
+            sequence: lastSequence + 1,
+            occurred_at: outcome.finishedAt,
+            kind: AgentActivityFrameKind.RUN_FINISHED,
+            status: ActivityRunStatus[outcome.status],
+            error: outcome.error
         };
     }
 }

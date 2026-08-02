@@ -23,7 +23,9 @@ import { HarnessEventTranslator } from "#src/agent-activity/harness-event-transl
  * It is deliberately not the lab event log. That log is the durable research record, and committing
  * a snapshot revision per token of harness output would starve the research loop. Nothing is lost by
  * keeping this in memory: every frame here was written to the run's events.jsonl before it was
- * broadcast, so history is replayed from disk rather than buffered.
+ * broadcast, so history is replayed from disk rather than buffered. The one exception is the frame
+ * that ends a run, which no run can write into the file it is hashing; the replay reads that one
+ * back from the manifest instead.
  */
 export class AgentActivityHub {
     readonly #runs = new Map<string, AgentActivity>();
