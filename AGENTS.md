@@ -9,6 +9,18 @@
 - Never create barrel files. Export explicit package subpaths and import the module that owns a symbol.
 - Use absolute aliases: `#src/*` inside a package and explicit `@lab/<package>/<module>` subpaths across
   workspaces. Do not use relative source imports or `.js` specifier workarounds.
+- Organize every non-trivial application and package feature-first. Keep a feature's contracts,
+  constants, implementation, and tests together under a self-explanatory feature directory. A
+  layer-first layout such as repository-wide `components/`, `services/`, `types/`, or `constants/`
+  directories is forbidden when those files belong to different features.
+- Split files by responsibility before they become mixed-purpose modules. Prefer colocated names such
+  as `research-loop.ts`, `research-loop.types.ts`, and `research-loop.const.ts`, plus narrower
+  self-explanatory modules when a feature has multiple behaviors. Small single-domain packages may use
+  package-level `types.ts` and `constants.ts`; introduce feature directories as soon as more than one
+  domain or feature exists. Do not use generic dumping-ground filenames.
+- Keep feature modules cohesive rather than merely moving large files into directories. Public entry
+  points should orchestrate feature modules; domain contracts and constants must not be hidden inside a
+  large implementation file.
 - Biome is the formatter and linter for every workspace. Use four spaces and no trailing commas. Run
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
