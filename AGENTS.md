@@ -35,6 +35,10 @@
 - Letter-spacing is forbidden. Never use `tracking-*` utilities or a `letter-spacing` declaration.
 - `text-sm` is the smallest permitted font size. Never set a smaller one, including through an
   arbitrary value such as `text-[10px]`. Express sizes with the named Tailwind scale.
+- Never truncate text unless the full value stays reachable in the interface. Ellipsis, `line-clamp-*`,
+  and clipped overflow are only allowed alongside a way to reveal the whole thing, such as expanding
+  the row or wrapping it. Values the operator has to read or copy, including commands, paths, and
+  identifiers, must be shown in full.
 - Biome is the formatter and linter for every workspace. Use four spaces and no trailing commas. Run
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
