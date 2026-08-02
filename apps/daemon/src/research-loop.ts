@@ -729,11 +729,27 @@ async function ensureTestingClaim(
         const updated = claim;
         await workspace.update((draft) => replaceById(draft.claims, updated));
     }
-    if (claim.status === ClaimStatus.PROPOSED || claim.status === ClaimStatus.REFUTED) {
-        claim = transitionClaim(claim, ClaimStatus.TESTING, [], new Date().toISOString());
+    const wasStale = claim.stale;
+    if (
+        claim.stale ||
+        claim.status === ClaimStatus.PROPOSED ||
+        claim.status === ClaimStatus.REFUTED
+    ) {
+        if (claim.stale && claim.status === ClaimStatus.TESTING) {
+            claim = {
+                ...claim,
+                stale: false,
+                updated_at: new Date().toISOString()
+            };
+        } else {
+            claim = transitionClaim(claim, ClaimStatus.TESTING, [], new Date().toISOString());
+        }
         const transitioned = claim;
         await workspace.update((draft) => replaceById(draft.claims, transitioned));
-        await workspace.appendEvent(EventType.CLAIM_TESTING, { claim_id: claim.id });
+        await workspace.appendEvent(EventType.CLAIM_TESTING, {
+            claim_id: claim.id,
+            stale_evidence_invalidated: wasStale
+        });
     }
     return claim;
 }
@@ -962,25 +978,6 @@ async function recordResearchEvidence(
         for (const artifactPath of item.artifact_paths) {
             try {
                 const artifact = await validateFileArtifact(outcomeWorkspace.cwd, artifactPath);
-                const rawArtifact: Evidence = {
-                    id: `evidence-${randomUUID()}`,
-                    kind: EvidenceKind.ARTIFACT,
-                    claim_id: planTarget.claim.id,
-                    artifact_path: artifact.path,
-                    artifact_hash: artifact.sha256,
-                    summary: item.summary,
-                    supports: false,
-                    independent: true,
-                    created_at: new Date().toISOString()
-                };
-                await workspace.recordEvidence(rawArtifact);
-                await workspace.appendEvent(EventType.EVIDENCE_RECORDED, {
-                    evidence_id: rawArtifact.id,
-                    claim_id: rawArtifact.claim_id,
-                    artifact_path: rawArtifact.artifact_path,
-                    artifact_sha256: rawArtifact.artifact_hash,
-                    attested_support: false
-                });
                 if (artifact.bytes > 0) {
                     validatedArtifacts.push(artifact);
                 } else {
@@ -1076,6 +1073,29 @@ async function recordResearchEvidence(
             evaluator_command: evaluation.result.command,
             evaluator_status: evaluation.result.status
         });
+        for (const artifact of validatedArtifacts) {
+            const artifactEvidence: Evidence = {
+                id: `evidence-${randomUUID()}`,
+                kind: EvidenceKind.ARTIFACT,
+                claim_id: planTarget.claim.id,
+                run_id: evaluation.experimentId,
+                artifact_path: artifact.path,
+                artifact_hash: artifact.sha256,
+                summary: evaluation.verdict.summary,
+                supports: recorded.supports,
+                independent: true,
+                created_at: new Date().toISOString()
+            };
+            await workspace.recordEvidence(artifactEvidence);
+            await workspace.appendEvent(EventType.EVIDENCE_RECORDED, {
+                evidence_id: artifactEvidence.id,
+                claim_id: artifactEvidence.claim_id,
+                artifact_path: artifactEvidence.artifact_path,
+                artifact_sha256: artifactEvidence.artifact_hash,
+                evaluator_run_id: evaluation.experimentId,
+                evaluator_status: evaluation.result.status
+            });
+        }
         evidence.push({
             claimId: recorded.claim_id,
             outcome: evaluatedOutcome,

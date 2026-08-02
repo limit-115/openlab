@@ -529,6 +529,12 @@ describe.sequential("runResearchLoop", () => {
             true
         );
         expect(
+            workspace
+                .getEvidence()
+                .filter(({ kind }) => kind === EvidenceKind.ARTIFACT)
+                .every(({ supports }) => supports)
+        ).toBe(true);
+        expect(
             workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.VERIFIER_RESULT)
         ).toBe(true);
         expect([...codex.requests, ...claude.requests]).toHaveLength(7);
@@ -755,7 +761,7 @@ describe.sequential("runResearchLoop", () => {
                 expect.stringContaining("supports daemon-owned negative-control artifacts")
             ])
         );
-        expect(workspace.getEvidence().some(({ supports }) => supports)).toBe(false);
+        expect(workspace.getEvidence()).toHaveLength(0);
     });
 
     it("does not accept outcome artifacts created in the separate precommit workspace", async () => {
@@ -1152,6 +1158,50 @@ describe.sequential("runResearchLoop", () => {
                 })
             ])
         );
+    });
+
+    it("reopens a stale claim for testing before accepting evidence from a new cycle", async () => {
+        const workspace = await createWorkspace();
+        const initialBranch = workspace.getSnapshot().branches[0];
+        if (initialBranch === undefined) {
+            throw new Error("Expected an initial research branch");
+        }
+        const claimId = `claim-${randomUUID()}`;
+        const createdAt = new Date().toISOString();
+        await workspace.update((draft) => {
+            draft.claims.push({
+                id: claimId,
+                branch_id: initialBranch.id,
+                statement: "The candidate is faster",
+                status: ClaimStatus.SUPPORTED,
+                assumption_ids: [],
+                supporting_evidence_ids: [],
+                contradicting_evidence_ids: [],
+                stale: true,
+                created_at: createdAt,
+                updated_at: createdAt
+            });
+        });
+        const abortController = new AbortController();
+        const running = runResearchLoop(workspace, {
+            harnesses: [new ScriptedHarness(HarnessKinds.CODEX)],
+            signal: abortController.signal
+        });
+        await waitUntil(() =>
+            workspace
+                .getEvents()
+                .some(
+                    ({ type, payload }) =>
+                        type === EventType.CLAIM_TESTING &&
+                        payload.claim_id === claimId &&
+                        payload.stale_evidence_invalidated === true
+                )
+        );
+
+        abortController.abort(new Error("stale claim retest observed"));
+        await running;
+
+        expect(workspace.getSnapshot().claims.find(({ id }) => id === claimId)?.stale).toBe(false);
     });
 
     it("rejects a reproduced verdict whose evaluator and artifacts do not exist", async () => {
