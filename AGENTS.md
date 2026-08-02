@@ -43,9 +43,7 @@
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
 - Run model agents only through a locally authenticated agent CLI harness. Subscription billing is
-  mandatory and preflight must prove it before a run starts. Never write a model API client, and never
-  accept, store, or prompt for a credential: a harness may only read one that a local vendor sign-in
-  already provisioned on this machine.
+  mandatory and preflight must prove it before a run starts.
 - Pin every model endpoint a harness talks to. Vendors serve subscription quota and pay-as-you-go
   billing from the same credential on different hosts or paths, so a configurable base URL is a silent
   path to usage-based billing.
