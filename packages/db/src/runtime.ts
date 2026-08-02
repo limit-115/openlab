@@ -25,12 +25,14 @@ export interface RuntimeCheckpoint {
     readonly lastEventSequence?: number;
 }
 
-export interface RecoverableRuntime {
+export interface PersistedRuntime {
     readonly task: TaskInput;
     readonly workspacePath: string;
     readonly checkpoint: RuntimeCheckpoint;
     readonly persistedAt: string;
 }
+
+export type RecoverableRuntime = PersistedRuntime;
 
 export interface InitializeRuntimeInput {
     readonly task: TaskInput;
@@ -185,22 +187,27 @@ export class RuntimePersistence {
         });
     }
 
-    async load(labId: string): Promise<RuntimeCheckpoint | undefined> {
+    async load(labId: string): Promise<PersistedRuntime | undefined> {
         assertNonEmptyIdentifier(labId, "labId");
-        const checkpoint = await this.#database.query.runtimeCheckpoints.findFirst({
-            where: eq(runtimeCheckpoints.labId, labId)
-        });
-        if (checkpoint === undefined) {
+        const [record] = await this.#database
+            .select({
+                labId: labs.id,
+                task: labs.input,
+                workspacePath: labs.workspacePath,
+                snapshot: runtimeCheckpoints.snapshot,
+                evidence: runtimeCheckpoints.evidence,
+                revision: runtimeCheckpoints.revision,
+                lastEventSequence: runtimeCheckpoints.lastEventSequence,
+                persistedAt: runtimeCheckpoints.persistedAt
+            })
+            .from(runtimeCheckpoints)
+            .innerJoin(labs, eq(labs.id, runtimeCheckpoints.labId))
+            .where(eq(runtimeCheckpoints.labId, labId))
+            .limit(1);
+        if (record === undefined) {
             return undefined;
         }
-        const snapshot = StatusSnapshotSchema.parse(checkpoint.snapshot);
-        const evidenceRecords = parseEvidence(checkpoint.evidence);
-        const canonicalSnapshot = await withRecentEvents(
-            this.#database,
-            snapshot,
-            RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
-        );
-        return checkpointResult(canonicalSnapshot, evidenceRecords, checkpoint);
+        return toPersistedRuntime(this.#database, record);
     }
 
     async listRecoverable(limit = 100): Promise<RecoverableRuntime[]> {
@@ -224,24 +231,7 @@ export class RuntimePersistence {
 
         return Promise.all(
             records.map(async (record) => {
-                const task = TaskInputSchema.parse(record.task);
-                const snapshot = StatusSnapshotSchema.parse(record.snapshot);
-                const evidenceRecords = parseEvidence(record.evidence);
-                assertRecoverableMetadata(record.labId, task, record.workspacePath, snapshot);
-                return {
-                    task,
-                    workspacePath: record.workspacePath,
-                    checkpoint: checkpointResult(
-                        await withRecentEvents(
-                            this.#database,
-                            snapshot,
-                            RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
-                        ),
-                        evidenceRecords,
-                        record
-                    ),
-                    persistedAt: record.persistedAt.toISOString()
-                };
+                return toPersistedRuntime(this.#database, record);
             })
         );
     }
@@ -268,6 +258,37 @@ export class RuntimePersistence {
 
 type RuntimeDatabase = Pick<Database, "select">;
 type EventInsertDatabase = Pick<Database, "insert">;
+
+interface PersistedRuntimeRecord {
+    readonly labId: string;
+    readonly task: TaskInput;
+    readonly workspacePath: string;
+    readonly snapshot: StatusSnapshot;
+    readonly evidence: Evidence[];
+    readonly revision: number;
+    readonly lastEventSequence: number | null;
+    readonly persistedAt: Date;
+}
+
+async function toPersistedRuntime(
+    database: RuntimeDatabase,
+    record: PersistedRuntimeRecord
+): Promise<PersistedRuntime> {
+    const task = TaskInputSchema.parse(record.task);
+    const snapshot = StatusSnapshotSchema.parse(record.snapshot);
+    const evidenceRecords = parseEvidence(record.evidence);
+    assertRuntimeMetadata(record.labId, task, record.workspacePath, snapshot);
+    return {
+        task,
+        workspacePath: record.workspacePath,
+        checkpoint: checkpointResult(
+            await withRecentEvents(database, snapshot, RuntimePersistenceLimit.DEFAULT_EVENT_PAGE),
+            evidenceRecords,
+            record
+        ),
+        persistedAt: record.persistedAt.toISOString()
+    };
+}
 
 async function withRecentEvents(
     database: RuntimeDatabase,
@@ -407,7 +428,7 @@ function assertNonEmptyWorkspacePath(workspacePath: string): void {
     }
 }
 
-function assertRecoverableMetadata(
+function assertRuntimeMetadata(
     labId: string,
     task: TaskInput,
     workspacePath: string,

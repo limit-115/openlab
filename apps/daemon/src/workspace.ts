@@ -4,7 +4,12 @@ import path from "node:path";
 import { WakeTrigger } from "@lab/core/constants";
 import type { LifecycleContext } from "@lab/core/lifecycle";
 import { transitionLabState } from "@lab/core/lifecycle";
-import type { PersistedLabEvent, RecoverableRuntime, RuntimePersistence } from "@lab/db/runtime";
+import type {
+    PersistedLabEvent,
+    PersistedRuntime,
+    RecoverableRuntime,
+    RuntimePersistence
+} from "@lab/db/runtime";
 import {
     AgentRole,
     AgentStatus,
@@ -120,19 +125,27 @@ export class LabWorkspace {
         const requestedTask = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
         const current = await LabWorkspace.readCurrentPointer(workspaceRoot);
         if (current.status === CurrentPointerStatus.VALID) {
-            const workspace =
-                runtimePersistence === undefined
-                    ? await LabWorkspace.load(workspaceRoot, current.pointer.run_directory)
-                    : await LabWorkspace.loadFromRuntime(
-                          workspaceRoot,
-                          current.pointer,
-                          runtimePersistence
-                      );
-            const existingTask = await workspace.getTask();
-            const state = workspace.getSnapshot().lab.state;
-            const recoverable = state === LabState.RUNNING || state === LabState.HIBERNATING;
-            if (recoverable && LabWorkspace.tasksMatch(existingTask, requestedTask)) {
-                return workspace;
+            if (runtimePersistence === undefined) {
+                const workspace = await LabWorkspace.load(
+                    workspaceRoot,
+                    current.pointer.run_directory
+                );
+                const existingTask = await workspace.getTask();
+                const state = workspace.getSnapshot().lab.state;
+                const recoverable = state === LabState.RUNNING || state === LabState.HIBERNATING;
+                if (recoverable && LabWorkspace.tasksMatch(existingTask, requestedTask)) {
+                    return workspace;
+                }
+            } else {
+                const workspace = await LabWorkspace.loadFromRuntime(
+                    workspaceRoot,
+                    current.pointer,
+                    requestedTask,
+                    runtimePersistence
+                );
+                if (workspace !== undefined) {
+                    return workspace;
+                }
             }
         }
         if (runtimePersistence !== undefined) {
@@ -142,7 +155,7 @@ export class LabWorkspace {
                 runtimePersistence
             );
             if (recoverable !== undefined) {
-                return LabWorkspace.loadRecoverableRuntime(
+                return LabWorkspace.loadPersistedRuntime(
                     workspaceRoot,
                     recoverable,
                     runtimePersistence
@@ -244,55 +257,48 @@ export class LabWorkspace {
     private static async loadFromRuntime(
         workspaceRoot: string,
         current: CurrentPointer,
+        requestedTask: TaskInput,
         runtimePersistence: WorkspaceRuntimePersistence
-    ): Promise<LabWorkspace> {
-        const runDirectory = LabWorkspace.resolveRunDirectory(workspaceRoot, current.run_directory);
-        const checkpoint = await runtimePersistence.load(current.lab_id);
-        if (checkpoint === undefined) {
-            const workspace = await LabWorkspace.load(workspaceRoot, runDirectory);
-            await workspace.attachRuntimePersistence(runtimePersistence, await workspace.getTask());
-            return workspace;
+    ): Promise<LabWorkspace | undefined> {
+        LabWorkspace.resolveRunDirectory(workspaceRoot, current.run_directory);
+        const persisted = await runtimePersistence.load(current.lab_id);
+        if (persisted === undefined) {
+            return undefined;
         }
-        if (checkpoint.snapshot.lab.id !== current.lab_id) {
-            throw new Error("Runtime checkpoint does not match current.json");
+        LabWorkspace.validatePersistedRuntime(workspaceRoot, persisted, current.lab_id);
+        if (!LabWorkspace.tasksMatch(persisted.task, requestedTask)) {
+            return undefined;
         }
-
-        const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, current.lab_id);
-        const workspace = new LabWorkspace(
-            runDirectory,
-            checkpoint.snapshot,
-            events,
-            checkpoint.evidence,
-            true,
-            runtimePersistence,
-            checkpoint.revision
-        );
-        await workspace.persistFilesystemSnapshot();
-        return workspace;
+        const state = persisted.checkpoint.snapshot.lab.state;
+        if (state !== LabState.RUNNING && state !== LabState.HIBERNATING) {
+            return undefined;
+        }
+        return LabWorkspace.loadPersistedRuntime(workspaceRoot, persisted, runtimePersistence);
     }
 
-    private static async loadRecoverableRuntime(
+    private static async loadPersistedRuntime(
         workspaceRoot: string,
-        recoverable: RecoverableRuntime,
+        persisted: PersistedRuntime,
         runtimePersistence: WorkspaceRuntimePersistence
     ): Promise<LabWorkspace> {
+        LabWorkspace.validatePersistedRuntime(workspaceRoot, persisted);
         const runDirectory = LabWorkspace.resolveRunDirectory(
             workspaceRoot,
-            recoverable.workspacePath
+            persisted.workspacePath
         );
-        const labId = recoverable.checkpoint.snapshot.lab.id;
+        const labId = persisted.checkpoint.snapshot.lab.id;
         const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, labId);
         await mkdir(runDirectory, { recursive: true });
         const workspace = new LabWorkspace(
             runDirectory,
-            recoverable.checkpoint.snapshot,
+            persisted.checkpoint.snapshot,
             events,
-            recoverable.checkpoint.evidence,
+            persisted.checkpoint.evidence,
             true,
             runtimePersistence,
-            recoverable.checkpoint.revision
+            persisted.checkpoint.revision
         );
-        await workspace.writeJson("task.json", recoverable.task);
+        await workspace.writeJson("task.json", persisted.task);
         await workspace.persistFilesystemSnapshot();
         await LabWorkspace.writeCurrentPointer(workspaceRoot, {
             lab_id: labId,
@@ -324,7 +330,7 @@ export class LabWorkspace {
         const matching = recoverable
             .filter(({ task }) => LabWorkspace.tasksMatch(task, requestedTask))
             .map((candidate) => {
-                LabWorkspace.validateRecoverableRuntime(workspaceRoot, candidate);
+                LabWorkspace.validatePersistedRuntime(workspaceRoot, candidate);
                 return candidate;
             })
             .sort((left, right) => Date.parse(right.persistedAt) - Date.parse(left.persistedAt));
@@ -336,19 +342,23 @@ export class LabWorkspace {
         return latest;
     }
 
-    private static validateRecoverableRuntime(
+    private static validatePersistedRuntime(
         workspaceRoot: string,
-        recoverable: RecoverableRuntime
+        persisted: PersistedRuntime,
+        expectedLabId: string = persisted.checkpoint.snapshot.lab.id
     ): void {
-        const snapshot = StatusSnapshotSchema.parse(recoverable.checkpoint.snapshot);
-        const task = TaskInputSchema.parse(recoverable.task);
+        const snapshot = StatusSnapshotSchema.parse(persisted.checkpoint.snapshot);
+        const task = TaskInputSchema.parse(persisted.task);
+        if (snapshot.lab.id !== expectedLabId) {
+            throw new Error(`Runtime checkpoint does not match lab ${expectedLabId}`);
+        }
         if (snapshot.lab.goal !== task.goal) {
-            throw new Error("Recoverable runtime checkpoint does not match its task input");
+            throw new Error("Persisted runtime checkpoint does not match its task input");
         }
-        if (Number.isNaN(Date.parse(recoverable.persistedAt))) {
-            throw new Error("Recoverable runtime checkpoint timestamp is invalid");
+        if (Number.isNaN(Date.parse(persisted.persistedAt))) {
+            throw new Error("Persisted runtime checkpoint timestamp is invalid");
         }
-        LabWorkspace.resolveRunDirectory(workspaceRoot, recoverable.workspacePath);
+        LabWorkspace.resolveRunDirectory(workspaceRoot, persisted.workspacePath);
     }
 
     getTask(): Promise<TaskInput> {
@@ -665,11 +675,15 @@ export class LabWorkspace {
         runtimePersistence: WorkspaceRuntimePersistence,
         task: TaskInput
     ): Promise<void> {
-        const checkpoint = await runtimePersistence.load(this.labId);
-        if (checkpoint !== undefined) {
-            if (checkpoint.snapshot.lab.goal !== task.goal) {
-                throw new Error("Runtime checkpoint goal does not match task.json");
+        const persisted = await runtimePersistence.load(this.labId);
+        if (persisted !== undefined) {
+            if (!LabWorkspace.tasksMatch(persisted.task, task)) {
+                throw new Error("Persisted runtime task does not match task.json");
             }
+            if (path.resolve(persisted.workspacePath) !== path.resolve(this.runDirectory)) {
+                throw new Error("Persisted runtime workspace does not match the run directory");
+            }
+            const checkpoint = persisted.checkpoint;
             this.runtimePersistence = runtimePersistence;
             this.runtimeRevision = checkpoint.revision;
             this.snapshot = checkpoint.snapshot;

@@ -199,6 +199,104 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         });
     });
 
+    it("repairs a swapped pointer in the canonical lab directory without touching the other lab", async () => {
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-swapped-pointer-"));
+        const firstTaskPath = path.join(workspaceRoot, "task-a.json");
+        const secondTaskPath = path.join(workspaceRoot, "task-b.json");
+        const firstTask = {
+            id: `task-swapped-a-${randomUUID()}`,
+            goal: "Recover lab A in its canonical directory",
+            context: ["Lab B must remain untouched"],
+            success_criteria: ["The pointer identifies exactly one persisted runtime"]
+        };
+        const secondTask = {
+            id: `task-swapped-b-${randomUUID()}`,
+            goal: "Keep lab B isolated",
+            context: [],
+            success_criteria: []
+        };
+        await Promise.all([
+            writeFile(firstTaskPath, JSON.stringify(firstTask)),
+            writeFile(secondTaskPath, JSON.stringify(secondTask))
+        ]);
+        const persistence = new RuntimePersistence(client.db);
+        const first = await LabWorkspace.initialize(workspaceRoot, firstTaskPath, persistence);
+        const second = await LabWorkspace.initialize(workspaceRoot, secondTaskPath, persistence);
+        const corruptedSecondFiles = {
+            task: "corrupt-b-task",
+            status: "corrupt-b-status",
+            events: "corrupt-b-events",
+            evidence: "corrupt-b-evidence"
+        } as const;
+        await Promise.all([
+            writeFile(path.join(second.runDirectory, "task.json"), corruptedSecondFiles.task),
+            writeFile(path.join(second.runDirectory, "status.json"), corruptedSecondFiles.status),
+            writeFile(path.join(second.runDirectory, "events.json"), corruptedSecondFiles.events),
+            writeFile(
+                path.join(second.runDirectory, "evidence.json"),
+                corruptedSecondFiles.evidence
+            ),
+            writeFile(
+                path.join(workspaceRoot, "current.json"),
+                JSON.stringify({
+                    lab_id: first.labId,
+                    run_directory: second.runDirectory
+                })
+            )
+        ]);
+
+        const recovered = await LabWorkspace.openOrCreate(
+            workspaceRoot,
+            firstTaskPath,
+            persistence
+        );
+
+        expect(recovered.labId).toBe(first.labId);
+        expect(recovered.runDirectory).toBe(first.runDirectory);
+        await expect(recovered.getTask()).resolves.toEqual(firstTask);
+        await expect(readCurrentPointer(workspaceRoot)).resolves.toEqual({
+            lab_id: first.labId,
+            run_directory: first.runDirectory
+        });
+        await expect(
+            Promise.all([
+                readFile(path.join(second.runDirectory, "task.json"), "utf8"),
+                readFile(path.join(second.runDirectory, "status.json"), "utf8"),
+                readFile(path.join(second.runDirectory, "events.json"), "utf8"),
+                readFile(path.join(second.runDirectory, "evidence.json"), "utf8")
+            ])
+        ).resolves.toEqual([
+            corruptedSecondFiles.task,
+            corruptedSecondFiles.status,
+            corruptedSecondFiles.events,
+            corruptedSecondFiles.evidence
+        ]);
+    });
+
+    it("repairs a corrupt canonical task file from the persisted runtime", async () => {
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-corrupt-task-"));
+        const taskPath = path.join(workspaceRoot, "task.json");
+        const task = {
+            id: `task-corrupt-canonical-${randomUUID()}`,
+            goal: "Recover the canonical task input",
+            context: ["PostgreSQL stores the accepted input"],
+            success_criteria: ["task.json is repaired without creating another lab"]
+        };
+        await writeFile(taskPath, JSON.stringify(task));
+        const persistence = new RuntimePersistence(client.db);
+        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        await writeFile(path.join(workspace.runDirectory, "task.json"), "corrupt-canonical-task");
+
+        const recovered = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, persistence);
+
+        expect(recovered.labId).toBe(workspace.labId);
+        expect(recovered.runDirectory).toBe(workspace.runDirectory);
+        await expect(recovered.getTask()).resolves.toEqual(task);
+        await expect(
+            readFile(path.join(workspace.runDirectory, "task.json"), "utf8").then(JSON.parse)
+        ).resolves.toEqual(task);
+    });
+
     it("recovers the latest matching runtime and repairs a missing current pointer", async () => {
         const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-missing-pointer-"));
         const taskPath = path.join(workspaceRoot, "task.json");

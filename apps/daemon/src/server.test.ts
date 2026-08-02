@@ -6,6 +6,7 @@ import type {
     CommitRuntimeResult,
     InitializeRuntimeInput,
     PersistedLabEvent,
+    PersistedRuntime,
     RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime";
@@ -42,10 +43,20 @@ class InMemoryRuntimePersistence {
         return this.#store(input.snapshot, input.evidence ?? [], 1, input.event);
     }
 
-    async load(labId: string): Promise<RuntimeCheckpoint | undefined> {
-        return this.#checkpoint?.snapshot.lab.id === labId
-            ? structuredClone(this.#checkpoint)
-            : undefined;
+    async load(labId: string): Promise<PersistedRuntime | undefined> {
+        if (
+            this.#checkpoint?.snapshot.lab.id !== labId ||
+            this.#task === undefined ||
+            this.#workspacePath === undefined
+        ) {
+            return undefined;
+        }
+        return {
+            task: structuredClone(this.#task),
+            workspacePath: this.#workspacePath,
+            checkpoint: structuredClone(this.#checkpoint),
+            persistedAt: this.#checkpoint.snapshot.lab.updated_at
+        };
     }
 
     async commit(input: CommitRuntimeInput): Promise<CommitRuntimeResult> {

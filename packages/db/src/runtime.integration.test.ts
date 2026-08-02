@@ -71,15 +71,20 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
 
         const recovered = await persistence.load(snapshot.lab.id);
         expect(recovered).toEqual({
-            snapshot: initialized.snapshot,
-            evidence: [],
-            revision: 1,
-            lastEventSequence: initialized.appendedEvent?.sequence
+            task,
+            workspacePath: "/tmp/lab-runtime-1",
+            checkpoint: {
+                snapshot: initialized.snapshot,
+                evidence: [],
+                revision: 1,
+                lastEventSequence: initialized.appendedEvent?.sequence
+            },
+            persistedAt: snapshot.lab.updated_at
         });
-        expect(recovered?.snapshot.frontier).toEqual(snapshot.frontier);
-        expect(recovered?.snapshot.agents).toEqual(snapshot.agents);
-        expect(recovered?.snapshot.experiments).toEqual(snapshot.experiments);
-        expect(recovered?.snapshot.result).toEqual(snapshot.result);
+        expect(recovered?.checkpoint.snapshot.frontier).toEqual(snapshot.frontier);
+        expect(recovered?.checkpoint.snapshot.agents).toEqual(snapshot.agents);
+        expect(recovered?.checkpoint.snapshot.experiments).toEqual(snapshot.experiments);
+        expect(recovered?.checkpoint.snapshot.result).toEqual(snapshot.result);
     });
 
     it("atomically projects stable attempts and material evidence", async () => {
@@ -251,7 +256,9 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                 status: AttemptStatus.PLANNED
             })
         ]);
-        expect((await persistence.load(snapshot.lab.id))?.evidence).toEqual(evidenceRecords);
+        expect((await persistence.load(snapshot.lab.id))?.checkpoint.evidence).toEqual(
+            evidenceRecords
+        );
 
         const primaryEvidence = evidenceRecords[0];
         if (primaryEvidence === undefined) {
@@ -271,7 +278,9 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                 expectedRevision: committed.revision
             })
         ).rejects.toThrow(`duplicates semantic evidence ${primaryEvidence.id}`);
-        expect((await persistence.load(snapshot.lab.id))?.revision).toBe(committed.revision);
+        expect((await persistence.load(snapshot.lab.id))?.checkpoint.revision).toBe(
+            committed.revision
+        );
         expect(
             await client.db.query.evidence.findMany({
                 where: eq(evidence.labId, snapshot.lab.id)
@@ -413,7 +422,9 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                 providedAt: new Date(updated.lab.updated_at)
             })
         );
-        expect((await persistence.load(snapshot.lab.id))?.snapshot.capability_requests).toEqual([
+        expect(
+            (await persistence.load(snapshot.lab.id))?.checkpoint.snapshot.capability_requests
+        ).toEqual([
             expect.objectContaining({
                 id: capability.id,
                 resource_reference: capability.resource_reference,
@@ -443,7 +454,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             })
         ).rejects.toThrow(`references missing branch ${invalidTask.branch_id}`);
 
-        expect((await persistence.load(snapshot.lab.id))?.revision).toBe(2);
+        expect((await persistence.load(snapshot.lab.id))?.checkpoint.revision).toBe(2);
         expect(
             await client.db.query.tasks.findFirst({
                 where: eq(tasks.id, invalidTask.id)
@@ -569,7 +580,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             const recovered = await new RuntimePersistence(restartedClient.db).load(
                 snapshot.lab.id
             );
-            expect(recovered?.snapshot).toEqual({
+            expect(recovered?.checkpoint.snapshot).toEqual({
                 ...snapshot,
                 recent_events: [
                     makeEvent(EventType.LAB_STARTED, snapshot.lab.id, "event-restarted")
