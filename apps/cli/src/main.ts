@@ -45,7 +45,7 @@ const program = new Command()
     .option(
         "--api-url <url>",
         "local daemon URL",
-        process.env.LAB_API_URL ?? "http://127.0.0.1:4317"
+        process.env.LAB_API_URL ?? "http://127.0.0.1:4318"
     )
     .option("--json", "print machine-readable JSON")
     .showSuggestionAfterError()

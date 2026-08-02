@@ -1,4 +1,6 @@
+import { stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
+import FastifyStatic from "@fastify/static";
 import { ProvideCapabilitySchema } from "@lab/protocol/status";
 import Fastify, { type FastifyInstance } from "fastify";
 import { bootstrapResearch } from "#src/bootstrap";
@@ -12,12 +14,26 @@ export interface RunningDaemon {
     close(): Promise<void>;
 }
 
-export function createStatusServer(workspace: LabWorkspace): FastifyInstance {
+export interface StatusServerOptions {
+    dashboardRoot?: string;
+}
+
+export function createStatusServer(
+    workspace: LabWorkspace,
+    options: StatusServerOptions = {}
+): FastifyInstance {
     const app = Fastify({
         logger: {
             level: process.env.LAB_LOG_LEVEL ?? "info"
         }
     });
+
+    if (options.dashboardRoot !== undefined) {
+        void app.register(FastifyStatic, {
+            root: options.dashboardRoot,
+            prefix: "/"
+        });
+    }
 
     app.get("/health", async () => ({ ok: true, lab_id: workspace.labId }));
     app.get("/api/status", async () => workspace.getSnapshot());
@@ -83,13 +99,25 @@ export function createStatusServer(workspace: LabWorkspace): FastifyInstance {
         });
     });
 
+    if (options.dashboardRoot !== undefined) {
+        app.setNotFoundHandler((request, reply) => {
+            if (request.method === "GET" && !request.url.startsWith("/api/")) {
+                return reply.sendFile("index.html");
+            }
+            return reply.code(404).send({ error: "Not found" });
+        });
+    }
+
     return app;
 }
 
 export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon> {
     const config = resolveDaemonConfig(options);
     const workspace = await LabWorkspace.openOrCreate(config.workspaceRoot, config.taskPath);
-    const app = createStatusServer(workspace);
+    const dashboardRoot = await existingDirectory(config.dashboardRoot);
+    const app = createStatusServer(workspace, {
+        ...(dashboardRoot === undefined ? {} : { dashboardRoot })
+    });
     await app.listen({ host: config.host, port: config.port });
     const address = app.server.address() as AddressInfo;
     const url = `http://${config.host}:${address.port}`;
@@ -101,4 +129,15 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         url,
         close: () => app.close()
     };
+}
+
+async function existingDirectory(candidate: string): Promise<string | undefined> {
+    try {
+        return (await stat(candidate)).isDirectory() ? candidate : undefined;
+    } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+            return undefined;
+        }
+        throw error;
+    }
 }
