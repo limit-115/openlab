@@ -1,3 +1,4 @@
+import type { TaskInput } from "@lab/protocol/schemas";
 import { z } from "zod";
 
 export const RESEARCH_OUTCOME = {
@@ -61,6 +62,11 @@ const ResearchDirectionSchema = z.object({
     objective: z.string().min(1)
 });
 
+const DIRECTOR_PLAN_VALIDATION_ERROR = {
+    MISSING_OPERATIONAL_CRITERION:
+        "A task without supplied success criteria requires at least one explicit falsifiable assumption"
+} as const;
+
 export const CapabilityRequestCandidateSchema = z.object({
     need: z.string().trim().min(1),
     reason: z.string().trim().min(1),
@@ -111,30 +117,48 @@ export const EvaluatorStructuredVerdictSchema = z.object({
     summary: z.string().min(1)
 });
 
-export const DirectorPlanSchema = z
-    .object({
-        operational_goal: z.string().min(1),
-        assumptions: z.array(AssumptionSchema),
-        claims: z.array(ClaimCandidateSchema).min(1),
-        directions: z.array(ResearchDirectionSchema).min(2),
-        capability_requests: CapabilityRequestCandidatesSchema
-    })
-    .superRefine((plan, context) => {
-        const firstIndexByDirection = new Map<string, number>();
-        for (const [index, direction] of plan.directions.entries()) {
-            const key = normalizedDirectionKey(direction);
-            const firstIndex = firstIndexByDirection.get(key);
-            if (firstIndex === undefined) {
-                firstIndexByDirection.set(key, index);
-                continue;
+function createDirectorPlanSchema(assumptionsSchema: z.ZodArray<typeof AssumptionSchema>) {
+    return z
+        .object({
+            operational_goal: z.string().min(1),
+            assumptions: assumptionsSchema,
+            claims: z.array(ClaimCandidateSchema).min(1),
+            directions: z.array(ResearchDirectionSchema).min(2),
+            capability_requests: CapabilityRequestCandidatesSchema
+        })
+        .superRefine((plan, context) => {
+            const firstIndexByDirection = new Map<string, number>();
+            for (const [index, direction] of plan.directions.entries()) {
+                const key = normalizedDirectionKey(direction);
+                const firstIndex = firstIndexByDirection.get(key);
+                if (firstIndex === undefined) {
+                    firstIndexByDirection.set(key, index);
+                    continue;
+                }
+                context.addIssue({
+                    code: "custom",
+                    path: ["directions", index],
+                    message: `Research direction duplicates normalized approach and objective at index ${firstIndex}`
+                });
             }
-            context.addIssue({
-                code: "custom",
-                path: ["directions", index],
-                message: `Research direction duplicates normalized approach and objective at index ${firstIndex}`
-            });
-        }
-    });
+        });
+}
+
+export const DirectorPlanSchema = createDirectorPlanSchema(z.array(AssumptionSchema));
+
+export function directorPlanSchema(
+    task: Pick<TaskInput, "success_criteria">
+): typeof DirectorPlanSchema {
+    if (task.success_criteria.length > 0) {
+        return DirectorPlanSchema;
+    }
+
+    return createDirectorPlanSchema(
+        z
+            .array(AssumptionSchema)
+            .min(1, DIRECTOR_PLAN_VALIDATION_ERROR.MISSING_OPERATIONAL_CRITERION)
+    );
+}
 
 const ResearchEvidenceSchema = z.object({
     target_kind: z.enum(domainValues(RESEARCH_TARGET_KIND)),
