@@ -13,5 +13,7 @@ export interface SubscriptionPreflightRequest {
     readonly cwd: string;
     readonly timeoutMs: number;
     readonly authenticationCommand: readonly string[];
-    readonly parseAuthentication: (result: HarnessCaptureResult) => HarnessAuthentication;
+    readonly parseAuthentication: (
+        result: HarnessCaptureResult
+    ) => HarnessAuthentication | Promise<HarnessAuthentication>;
 }

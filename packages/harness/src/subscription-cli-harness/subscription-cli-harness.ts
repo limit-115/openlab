@@ -76,7 +76,9 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
     }
 
     protected abstract authenticationCommand(): readonly string[];
-    protected abstract parseAuthentication(result: HarnessCaptureResult): HarnessAuthentication;
+    protected abstract parseAuthentication(
+        result: HarnessCaptureResult
+    ): HarnessAuthentication | Promise<HarnessAuthentication>;
     protected abstract sessionDefaults(): HarnessSession;
     protected abstract buildCommand(
         request: HarnessRunRequest,
@@ -84,6 +86,17 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         responseSchemaPath: string | undefined
     ): HarnessCommand;
     protected abstract createEventParser(request: HarnessRunRequest): HarnessEventParser;
+
+    /**
+     * The environment the CLI runs with, once every inherited provider credential has been stripped.
+     * A harness whose subscription credential lives outside the CLI's own login adds it back here,
+     * and nowhere else, so the run can never inherit a stray endpoint from the operator's shell.
+     */
+    protected extendEnvironment(
+        sanitized: Record<string, string>
+    ): Record<string, string> | Promise<Record<string, string>> {
+        return sanitized;
+    }
 
     resolveSession(request: HarnessRunRequest): HarnessSession {
         const defaults = this.sessionDefaults();
@@ -97,6 +110,10 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         return this.preflightInDirectory(process.cwd(), signal);
     }
 
+    private async harnessEnvironment(): Promise<Record<string, string>> {
+        return this.extendEnvironment(sanitizeHarnessEnvironment(this.#sourceEnvironment));
+    }
+
     private async preflightInDirectory(
         cwd: string,
         signal?: AbortSignal
@@ -106,7 +123,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 kind: this.kind,
                 binary: this.#binary,
                 runner: this.#runner,
-                environment: sanitizeHarnessEnvironment(this.#sourceEnvironment),
+                environment: await this.harnessEnvironment(),
                 cwd,
                 timeoutMs: this.#preflightTimeoutMs,
                 authenticationCommand: this.authenticationCommand(),
@@ -120,7 +137,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         validateHarnessRunRequest(this.kind, request);
         const timeoutMs = request.timeoutMs ?? HarnessTimeoutMilliseconds.RUN;
         const preflight = await this.preflightInDirectory(resolve(request.cwd), signal);
-        const environment = sanitizeHarnessEnvironment(this.#sourceEnvironment);
+        const environment = await this.harnessEnvironment();
         const removedEnvironmentVariables = removedHarnessEnvironmentVariables(
             this.#sourceEnvironment
         );

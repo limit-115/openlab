@@ -65,7 +65,7 @@ export async function runSubscriptionPreflight(
     return {
         kind: request.kind,
         cliVersion: versionResult.stdout.trim(),
-        authentication: request.parseAuthentication(authenticationResult)
+        authentication: await request.parseAuthentication(authenticationResult)
     };
 }
 

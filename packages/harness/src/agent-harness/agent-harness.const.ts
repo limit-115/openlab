@@ -1,13 +1,15 @@
 export const HarnessKinds = {
     CODEX: "codex",
-    CLAUDE: "claude"
+    CLAUDE: "claude",
+    GLM: "glm"
 } as const;
 
 export type HarnessKind = (typeof HarnessKinds)[keyof typeof HarnessKinds];
 
 export const HarnessAuthenticationMethods = {
     CHATGPT: "chatgpt",
-    CLAUDE_AI: "claude.ai"
+    CLAUDE_AI: "claude.ai",
+    ZAI_CODING_PLAN: "zai-coding-plan"
 } as const;
 
 export type HarnessAuthenticationMethod =

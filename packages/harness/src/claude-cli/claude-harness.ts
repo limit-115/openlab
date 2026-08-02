@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-    HarnessAuthenticationMethods,
-    HarnessExecutionProfiles,
-    HarnessKinds
-} from "#src/agent-harness/agent-harness.const";
+import { HarnessAuthenticationMethods, HarnessKinds } from "#src/agent-harness/agent-harness.const";
 import type {
     HarnessAuthentication,
     HarnessRunRequest,
@@ -13,14 +9,15 @@ import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser
 import {
     CLAUDE_BINARY,
     ClaudeApiProviders,
-    ClaudeOutputFormats,
-    ClaudePermissionModes,
     ClaudeSessionDefaults
 } from "#src/claude-cli/claude-cli.const";
 import { ClaudeEventParser } from "#src/claude-cli/claude-event-parser";
+import {
+    claudeAuthenticationCommand,
+    claudeRunArguments
+} from "#src/claude-cli/claude-run-arguments";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
-import { claudeModelApiPolicySettings } from "#src/model-api-policy/model-api-policy-hook";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
 import type {
     HarnessCommand,
@@ -42,7 +39,7 @@ export class ClaudeHarness extends SubscriptionCliHarness {
     }
 
     protected authenticationCommand(): readonly string[] {
-        return ["--setting-sources", "", "auth", "status", "--json"];
+        return claudeAuthenticationCommand();
     }
 
     protected parseAuthentication(result: HarnessCaptureResult): HarnessAuthentication {
@@ -78,36 +75,7 @@ export class ClaudeHarness extends SubscriptionCliHarness {
         session: HarnessSession,
         _responseSchemaPath: string | undefined
     ): HarnessCommand {
-        return {
-            args: [
-                "-p",
-                "--output-format",
-                ClaudeOutputFormats.STREAM_JSON,
-                "--verbose",
-                "--include-partial-messages",
-                ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
-                    ? []
-                    : ["--dangerously-skip-permissions"]),
-                "--permission-mode",
-                ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
-                    ? [ClaudePermissionModes.PLAN]
-                    : [ClaudePermissionModes.BYPASS_PERMISSIONS]),
-                "--setting-sources",
-                "",
-                "--settings",
-                claudeModelApiPolicySettings(),
-                "--model",
-                session.model,
-                "--effort",
-                session.effort,
-                ...(request.resumeSessionId === undefined
-                    ? []
-                    : ["--resume", request.resumeSessionId]),
-                ...(request.responseSchema === undefined
-                    ? []
-                    : ["--json-schema", JSON.stringify(request.responseSchema)])
-            ]
-        };
+        return { args: claudeRunArguments(request, session) };
     }
 
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
