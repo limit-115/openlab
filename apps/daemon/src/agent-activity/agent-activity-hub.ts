@@ -1,6 +1,7 @@
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
 import {
     AgentActivityPhase,
+    AgentActivityPhaseByFrameKind,
     AgentRunStatus
 } from "@lab/protocol/agent-activity/agent-activity.const";
 import type {
@@ -9,10 +10,7 @@ import type {
 } from "@lab/protocol/agent-activity/agent-activity.types";
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
-import {
-    ACTIVITY_RETAINED_RUNS,
-    ActivityPhaseByFrameKind
-} from "#src/agent-activity/agent-activity.const";
+import { ACTIVITY_RETAINED_RUNS } from "#src/agent-activity/agent-activity.const";
 import type {
     AgentActivityListener,
     AgentActivityRun
@@ -73,7 +71,7 @@ export class AgentActivityHub {
             return undefined;
         }
 
-        const phase = ActivityPhaseByFrameKind[frame.kind];
+        const phase = AgentActivityPhaseByFrameKind[frame.kind];
         const updated: AgentActivity = {
             ...current,
             ...(phase === null ? {} : { phase }),

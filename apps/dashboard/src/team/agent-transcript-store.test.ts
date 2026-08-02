@@ -1,4 +1,7 @@
-import { AgentRunStatus } from "@lab/protocol/agent-activity/agent-activity.const";
+import {
+    AgentActivityPhase,
+    AgentRunStatus
+} from "@lab/protocol/agent-activity/agent-activity.const";
 import {
     AgentActivityFrameKind,
     AgentToolPhase
@@ -109,6 +112,29 @@ describe("AgentActivityStore", () => {
         store.receiveFrame(toolCall("reasoning", null));
 
         expect(transcriptOf(store)).toHaveLength(2);
+    });
+
+    it("moves an agent off Starting as soon as it reports doing something", () => {
+        const store = new AgentActivityStore(immediate);
+        store.receiveRoster([watchedActivity({ phase: AgentActivityPhase.STARTING })]);
+
+        store.receiveFrame(toolCall("Bash", "toolu_01"));
+
+        expect(store.getSnapshot()[0]?.activity.phase).toBe(AgentActivityPhase.USING_TOOL);
+    });
+
+    it("leaves the phase where it was when a frame only reports usage", () => {
+        const store = watching();
+        store.receiveFrame(toolCall("Bash", "toolu_01"));
+
+        store.receiveFrame(
+            frame({
+                kind: AgentActivityFrameKind.USAGE,
+                usage: { input_tokens: 28575, output_tokens: 5020, cached_input_tokens: 26368 }
+            })
+        );
+
+        expect(store.getSnapshot()[0]?.activity.phase).toBe(AgentActivityPhase.USING_TOOL);
     });
 
     it("records how a run ended on the agent it belongs to", () => {

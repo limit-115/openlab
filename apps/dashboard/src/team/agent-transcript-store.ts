@@ -1,5 +1,6 @@
 import {
     AgentActivityPhase,
+    AgentActivityPhaseByFrameKind,
     AgentRunStatus
 } from "@lab/protocol/agent-activity/agent-activity.const";
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
@@ -119,16 +120,19 @@ function startedActivity(
     };
 }
 
+/**
+ * The stream carries frames rather than the phase the daemon computed from them, because a viewer
+ * that joins mid-run is caught up by replaying the same frames from disk. So the phase is derived
+ * here, from the contract's table, and both ends read an agent the same way.
+ */
 function applyToActivity(activity: AgentActivity, frame: AgentActivityFrame): AgentActivity {
+    const phase = AgentActivityPhaseByFrameKind[frame.kind];
     return {
         ...activity,
+        ...(phase === null ? {} : { phase }),
         ...(frame.kind === AgentActivityFrameKind.USAGE ? { usage: frame.usage } : {}),
         ...(frame.kind === AgentActivityFrameKind.RUN_FINISHED
-            ? {
-                  status: frame.status,
-                  error: frame.error,
-                  phase: AgentActivityPhase.FINISHED
-              }
+            ? { status: frame.status, error: frame.error }
             : {}),
         updated_at: frame.occurred_at
     };
