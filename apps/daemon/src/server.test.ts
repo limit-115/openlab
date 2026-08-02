@@ -1,11 +1,76 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import type {
+    CommitRuntimeInput,
+    CommitRuntimeResult,
+    InitializeRuntimeInput,
+    PersistedLabEvent,
+    RuntimeCheckpoint
+} from "@lab/db/runtime";
 import { LabState } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
 import { ResearchLoopOutcomeStatus } from "#src/research-loop";
 import { createStatusServer, startDaemon } from "#src/server";
 import { LabWorkspace } from "#src/workspace";
+
+const TestDatabase = {
+    URL: "postgres://test:test@127.0.0.1:5432/test"
+} as const;
+
+class InMemoryRuntimePersistence {
+    #checkpoint: RuntimeCheckpoint | undefined;
+    readonly #events: PersistedLabEvent[] = [];
+
+    async initialize(input: InitializeRuntimeInput): Promise<CommitRuntimeResult> {
+        if (this.#checkpoint !== undefined) {
+            throw new Error(`Runtime ${input.snapshot.lab.id} is already initialized`);
+        }
+        return this.#store(input.snapshot, 1, input.event);
+    }
+
+    async load(labId: string): Promise<RuntimeCheckpoint | undefined> {
+        return this.#checkpoint?.snapshot.lab.id === labId
+            ? structuredClone(this.#checkpoint)
+            : undefined;
+    }
+
+    async commit(input: CommitRuntimeInput): Promise<CommitRuntimeResult> {
+        if (this.#checkpoint?.revision !== input.expectedRevision) {
+            throw new Error(`Unexpected runtime revision ${input.expectedRevision}`);
+        }
+        return this.#store(input.snapshot, input.expectedRevision + 1, input.event);
+    }
+
+    async eventsAfter(labId: string, afterSequence = 0, limit = 200): Promise<PersistedLabEvent[]> {
+        return structuredClone(
+            this.#events
+                .filter((event) => event.lab_id === labId && event.sequence > afterSequence)
+                .slice(0, limit)
+        );
+    }
+
+    #store(
+        snapshot: RuntimeCheckpoint["snapshot"],
+        revision: number,
+        event?: InitializeRuntimeInput["event"]
+    ): CommitRuntimeResult {
+        const appendedEvent =
+            event === undefined ? undefined : { ...event, sequence: this.#events.length + 1 };
+        if (appendedEvent !== undefined) {
+            this.#events.push(appendedEvent);
+        }
+        this.#checkpoint = {
+            snapshot: structuredClone(snapshot),
+            revision,
+            ...(appendedEvent === undefined ? {} : { lastEventSequence: appendedEvent.sequence })
+        };
+        return {
+            ...structuredClone(this.#checkpoint),
+            ...(appendedEvent === undefined ? {} : { appendedEvent })
+        };
+    }
+}
 
 async function createTestServer() {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
@@ -59,13 +124,20 @@ describe("status server", () => {
         await writeFile(taskPath, JSON.stringify({ goal: "Resume autonomous research" }));
         let runs = 0;
         let secondRunCancelled = false;
+        let databaseClosed = false;
         let releaseFirstRun: () => void = () => undefined;
         const firstRunReleased = new Promise<void>((resolve) => {
             releaseFirstRun = resolve;
         });
         const daemon = await startDaemon(
-            { taskPath, workspaceRoot, port: 0 },
+            { taskPath, workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
             {
+                openDatabase: async () => ({
+                    persistence: new InMemoryRuntimePersistence(),
+                    close: async () => {
+                        databaseClosed = true;
+                    }
+                }),
                 researchLoop: async (workspace, { signal }) => {
                     runs += 1;
                     if (runs === 1) {
@@ -100,5 +172,6 @@ describe("status server", () => {
         await expect.poll(() => runs).toBe(2);
         await daemon.close();
         expect(secondRunCancelled).toBe(true);
+        expect(databaseClosed).toBe(true);
     });
 });

@@ -7,12 +7,17 @@ import { ProvideCapabilitySchema } from "@lab/protocol/status";
 import Fastify, { type FastifyInstance } from "fastify";
 import { bootstrapResearch } from "#src/bootstrap";
 import { type DaemonOptions, resolveDaemonConfig } from "#src/config";
+import { type DaemonDatabase, openDaemonDatabase } from "#src/database";
 import {
     type ResearchLoopOptions,
     type ResearchLoopOutcome,
     runResearchLoop
 } from "#src/research-loop";
 import { LabWorkspace } from "#src/workspace";
+
+const PromiseSettlementStatus = {
+    REJECTED: "rejected"
+} as const;
 
 export interface RunningDaemon {
     app: FastifyInstance;
@@ -32,6 +37,7 @@ export interface DaemonDependencies {
         workspace: LabWorkspace,
         options: ResearchLoopOptions
     ) => Promise<ResearchLoopOutcome>;
+    openDatabase?: (databaseUrl: string) => Promise<DaemonDatabase>;
 }
 
 export function createStatusServer(
@@ -153,32 +159,89 @@ export async function startDaemon(
     dependencies: DaemonDependencies = {}
 ): Promise<RunningDaemon> {
     const config = resolveDaemonConfig(options);
-    const workspace = await LabWorkspace.openOrCreate(config.workspaceRoot, config.taskPath);
-    const dashboardRoot = await existingDirectory(config.dashboardRoot);
-    const controller = new ResearchLoopController(
-        workspace,
-        dependencies.researchLoop ?? runResearchLoop
-    );
-    const app = createStatusServer(workspace, {
-        ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
-        onWake: () => controller.start(),
-        onStop: () => controller.cancel(new Error("External stop command"))
-    });
-    await app.listen({ host: config.host, port: config.port });
-    const address = app.server.address() as AddressInfo;
-    const url = `http://${config.host}:${address.port}`;
-    await bootstrapResearch(workspace);
-    controller.start();
+    const database = await (dependencies.openDatabase ?? openDaemonDatabase)(config.databaseUrl);
+    let app: FastifyInstance | undefined;
+    let controller: ResearchLoopController | undefined;
 
-    return {
-        app,
-        workspace,
-        url,
-        close: async () => {
-            await controller.cancel(new Error("Daemon closing"));
-            await app.close();
+    try {
+        const workspace = await LabWorkspace.openOrCreate(
+            config.workspaceRoot,
+            config.taskPath,
+            database.persistence
+        );
+        const dashboardRoot = await existingDirectory(config.dashboardRoot);
+        controller = new ResearchLoopController(
+            workspace,
+            dependencies.researchLoop ?? runResearchLoop
+        );
+        app = createStatusServer(workspace, {
+            ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
+            onWake: () => controller?.start(),
+            onStop: () =>
+                controller?.cancel(new Error("External stop command")) ?? Promise.resolve()
+        });
+        await app.listen({ host: config.host, port: config.port });
+        const address = app.server.address() as AddressInfo;
+        const url = `http://${config.host}:${address.port}`;
+        await bootstrapResearch(workspace);
+        controller.start();
+        const runningApp = app;
+        const runningController = controller;
+        let closing: Promise<void> | undefined;
+
+        return {
+            app: runningApp,
+            workspace,
+            url,
+            close: () => {
+                closing ??= closeDaemonResources(runningController, runningApp, database);
+                return closing;
+            }
+        };
+    } catch (error) {
+        const cleanupErrors = await cleanupFailedStart(controller, app, database);
+        if (cleanupErrors.length > 0) {
+            throw new AggregateError(
+                [error, ...cleanupErrors],
+                "Failed to start daemon and clean up its resources"
+            );
         }
-    };
+        throw error;
+    }
+}
+
+async function closeDaemonResources(
+    controller: ResearchLoopController,
+    app: FastifyInstance,
+    database: DaemonDatabase
+): Promise<void> {
+    await controller.cancel(new Error("Daemon closing"));
+    const results = await Promise.allSettled([app.close(), database.close()]);
+    const errors = rejectedReasons(results);
+    if (errors.length > 0) {
+        throw new AggregateError(errors, "Failed to close daemon resources");
+    }
+}
+
+async function cleanupFailedStart(
+    controller: ResearchLoopController | undefined,
+    app: FastifyInstance | undefined,
+    database: DaemonDatabase
+): Promise<unknown[]> {
+    const cleanups: Promise<unknown>[] = [database.close()];
+    if (app !== undefined) {
+        cleanups.push(app.close());
+    }
+    if (controller !== undefined) {
+        cleanups.push(controller.cancel(new Error("Daemon start failed")));
+    }
+    return rejectedReasons(await Promise.allSettled(cleanups));
+}
+
+function rejectedReasons(results: readonly PromiseSettledResult<unknown>[]): unknown[] {
+    return results.flatMap((result) =>
+        result.status === PromiseSettlementStatus.REJECTED ? [result.reason] : []
+    );
 }
 
 class ResearchLoopController {
