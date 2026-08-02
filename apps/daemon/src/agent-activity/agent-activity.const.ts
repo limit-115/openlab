@@ -5,8 +5,12 @@ import {
     type HarnessToolPhase,
     HarnessToolPhases
 } from "@lab/harness/harness-event.const";
-import { AgentRunStatus } from "@lab/protocol/agent-activity/agent-activity.const";
 import {
+    AgentActivityPhase,
+    AgentRunStatus
+} from "@lab/protocol/agent-activity/agent-activity.const";
+import {
+    AgentActivityFrameKind,
     AgentDiagnosticLevel,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
@@ -39,6 +43,27 @@ export const ActivityDiagnosticLevel: Record<HarnessDiagnosticLevel, AgentDiagno
  * harness shapes its tool payloads differently and the raw payload stays in the run's events.jsonl,
  * so the stream carries the one short subject an operator reads a tool call by: what it acted on.
  */
+/**
+ * What each frame says the agent is now doing. Diagnostics and usage report on work already
+ * described by another frame, so they leave the phase where they found it.
+ */
+export const ActivityPhaseByFrameKind: Record<AgentActivityFrameKind, AgentActivityPhase | null> = {
+    [AgentActivityFrameKind.RUN_STARTED]: AgentActivityPhase.STARTING,
+    [AgentActivityFrameKind.THINKING]: AgentActivityPhase.THINKING,
+    [AgentActivityFrameKind.MESSAGE]: AgentActivityPhase.RESPONDING,
+    [AgentActivityFrameKind.TOOL]: AgentActivityPhase.USING_TOOL,
+    [AgentActivityFrameKind.RUN_FINISHED]: AgentActivityPhase.FINISHED,
+    [AgentActivityFrameKind.DIAGNOSTIC]: null,
+    [AgentActivityFrameKind.USAGE]: null
+};
+
+/**
+ * How many runs the roster keeps. A lab mints fresh agent identifiers every cycle, so finished runs
+ * are evicted oldest first once the roster is this long. Running ones are never evicted: their
+ * number is bounded by how many agents the loop starts at once.
+ */
+export const ACTIVITY_RETAINED_RUNS = 32;
+
 /** Stands in when a harness reports a failure without saying anything about it. */
 export const UNSPECIFIED_DIAGNOSTIC = "The harness reported a failure without a message" as const;
 
