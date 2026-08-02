@@ -6,89 +6,90 @@ import {
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { createStore } from "zustand/vanilla";
+import { StreamState } from "#src/live-status/status-stream.const";
 import type {
     TranscriptEntry,
     TranscriptTurn,
     WatchedAgent
 } from "#src/team/agent-transcript.types";
+import type { AgentActivityState, RedrawSchedule } from "#src/team/agent-transcript-store.types";
+
+export type AgentActivityStore = ReturnType<typeof createAgentActivityStore>;
 
 /**
  * Holds what the Team tab draws, and decides how often it is worth drawing.
  *
  * A model writing at speed produces a frame per token, each arriving in its own task, so React would
- * otherwise re-render the whole tab hundreds of times a second. Readers are told once per animation
- * frame instead, while the data itself is applied the moment it arrives.
+ * otherwise re-render the whole tab hundreds of times a second. Frames are applied to the watched
+ * agents the moment they arrive, while the roster readers see is published once per animation frame.
  */
-export class AgentActivityStore {
-    readonly #agents = new Map<string, WatchedAgent>();
-    readonly #listeners = new Set<() => void>();
-    readonly #schedule: (notify: () => void) => void;
-    #snapshot: WatchedAgent[] = [];
-    #stale = false;
-    #scheduled = false;
+export function createAgentActivityStore(schedule: RedrawSchedule = animationFrame) {
+    return createStore<AgentActivityState>()((set, get) => {
+        const watched = new Map<string, WatchedAgent>();
+        let scheduled = false;
 
-    constructor(schedule: (notify: () => void) => void = animationFrame) {
-        this.#schedule = schedule;
-    }
-
-    subscribe = (listener: () => void): (() => void) => {
-        this.#listeners.add(listener);
-        return () => this.#listeners.delete(listener);
-    };
-
-    getSnapshot = (): WatchedAgent[] => {
-        if (this.#stale) {
-            this.#snapshot = [...this.#agents.values()];
-            this.#stale = false;
-        }
-        return this.#snapshot;
-    };
-
-    /** A roster replaces what is on screen: it is the whole truth as the daemon currently has it. */
-    receiveRoster(roster: readonly AgentActivity[]): void {
-        this.#agents.clear();
-        for (const activity of roster) {
-            this.#agents.set(activity.agent_id, { activity, transcript: [] });
-        }
-        this.changed();
-    }
-
-    receiveFrame(frame: AgentActivityFrame): void {
-        if (frame.kind === AgentActivityFrameKind.RUN_STARTED) {
-            this.#agents.set(frame.agent_id, { activity: startedActivity(frame), transcript: [] });
-            this.changed();
-            return;
-        }
-
-        const watched = this.#agents.get(frame.agent_id);
-        if (watched === undefined || watched.activity.run_id !== frame.run_id) {
-            return;
-        }
-        this.#agents.set(frame.agent_id, {
-            activity: applyToActivity(watched.activity, frame),
-            transcript: applyToTranscript(watched.transcript, frame)
-        });
-        this.changed();
-    }
-
-    clear(): void {
-        this.#agents.clear();
-        this.changed();
-    }
-
-    private changed(): void {
-        this.#stale = true;
-        if (this.#scheduled) {
-            return;
-        }
-        this.#scheduled = true;
-        this.#schedule(() => {
-            this.#scheduled = false;
-            for (const listener of this.#listeners) {
-                listener();
+        /**
+         * Only the agent a frame belongs to is replaced, so every other one keeps the identity it
+         * had. A card whose agent said nothing this frame compares equal and is left alone.
+         */
+        const publish = () => {
+            if (scheduled) {
+                return;
             }
-        });
-    }
+            scheduled = true;
+            schedule(() => {
+                scheduled = false;
+                set({ agents: [...watched.values()] });
+            });
+        };
+
+        return {
+            state: StreamState.CONNECTING,
+            agents: [],
+
+            /** The stream reports it is live on every frame, so saying it again must cost nothing. */
+            setStreamState(state) {
+                if (get().state !== state) {
+                    set({ state });
+                }
+            },
+
+            receiveRoster(roster) {
+                watched.clear();
+                for (const activity of roster) {
+                    watched.set(activity.agent_id, { activity, transcript: [] });
+                }
+                publish();
+            },
+
+            receiveFrame(frame) {
+                if (frame.kind === AgentActivityFrameKind.RUN_STARTED) {
+                    watched.set(frame.agent_id, {
+                        activity: startedActivity(frame),
+                        transcript: []
+                    });
+                    publish();
+                    return;
+                }
+
+                const agent = watched.get(frame.agent_id);
+                if (agent === undefined || agent.activity.run_id !== frame.run_id) {
+                    return;
+                }
+                watched.set(frame.agent_id, {
+                    activity: applyToActivity(agent.activity, frame),
+                    transcript: applyToTranscript(agent.transcript, frame)
+                });
+                publish();
+            },
+
+            clear() {
+                watched.clear();
+                publish();
+            }
+        };
+    });
 }
 
 function animationFrame(notify: () => void): void {

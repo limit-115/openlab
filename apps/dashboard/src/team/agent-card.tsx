@@ -1,5 +1,6 @@
 import type { AgentUsage } from "@lab/protocol/agent-activity/agent-activity.types";
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
+import { memo } from "react";
 import { Badge } from "#src/design-system/badge";
 import { Separator } from "#src/design-system/separator";
 import { AgentTranscript } from "#src/team/agent-transcript";
@@ -22,7 +23,11 @@ interface AgentCardProps {
     task: InternalTask | undefined;
 }
 
-export function AgentCard({ agent, task }: AgentCardProps) {
+/**
+ * The store hands back the very same agent when a frame belonged to somebody else, so a card only
+ * redraws for its own agent rather than every time any of them says a word.
+ */
+export const AgentCard = memo(function AgentCard({ agent, task }: AgentCardProps) {
     const { activity } = agent;
     const { execution } = activity;
 
@@ -59,7 +64,7 @@ export function AgentCard({ agent, task }: AgentCardProps) {
             </footer>
         </article>
     );
-}
+});
 
 function UsageLine({ usage }: { usage: AgentUsage | null }) {
     if (usage === null) {

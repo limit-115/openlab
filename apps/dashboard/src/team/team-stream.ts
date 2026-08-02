@@ -1,11 +1,18 @@
 import { AgentActivityStreamEvent } from "@lab/protocol/agent-activity/agent-activity.const";
 import { AgentActivityRosterSchema } from "@lab/protocol/agent-activity/agent-activity.schema";
 import { AgentActivityFrameSchema } from "@lab/protocol/agent-activity/agent-activity-frame.schema";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo } from "react";
+import { useStore } from "zustand/react";
+import { useShallow } from "zustand/react/shallow";
 import { StreamState } from "#src/live-status/status-stream.const";
-import { AgentActivityStore } from "#src/team/agent-transcript-store";
+import { createAgentActivityStore } from "#src/team/agent-transcript-store";
+import type { AgentActivityState } from "#src/team/agent-transcript-store.types";
 import { AGENT_ACTIVITY_STREAM_URL } from "#src/team/team-stream.const";
 import type { LiveAgents } from "#src/team/team-stream.types";
+
+function selectLiveAgents({ state, agents }: AgentActivityState): LiveAgents {
+    return { state, agents };
+}
 
 /**
  * Watches every agent for as long as the Team tab is open.
@@ -14,13 +21,15 @@ import type { LiveAgents } from "#src/team/team-stream.types";
  * the frames it would otherwise have to send.
  */
 export function useAgentActivity(enabled = true): LiveAgents {
-    const store = useMemo(() => new AgentActivityStore(), []);
-    const [state, setState] = useState<StreamState>(StreamState.CONNECTING);
-    const agents = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+    const store = useMemo(() => createAgentActivityStore(), []);
+    /** The selector builds its result, so it is compared field by field rather than by identity. */
+    const live = useStore(store, useShallow(selectLiveAgents));
 
     useEffect(() => {
+        const { setStreamState, receiveRoster, receiveFrame, clear } = store.getState();
+
         if (!enabled || typeof EventSource === "undefined") {
-            setState(StreamState.UNAVAILABLE);
+            setStreamState(StreamState.UNAVAILABLE);
             return;
         }
 
@@ -28,20 +37,20 @@ export function useAgentActivity(enabled = true): LiveAgents {
         const read = (event: Event) => JSON.parse((event as MessageEvent<string>).data);
 
         source.addEventListener(AgentActivityStreamEvent.ROSTER, (event) => {
-            store.receiveRoster(AgentActivityRosterSchema.parse(read(event)));
-            setState(StreamState.LIVE);
+            receiveRoster(AgentActivityRosterSchema.parse(read(event)));
+            setStreamState(StreamState.LIVE);
         });
         source.addEventListener(AgentActivityStreamEvent.ACTIVITY, (event) => {
-            store.receiveFrame(AgentActivityFrameSchema.parse(read(event)));
-            setState(StreamState.LIVE);
+            receiveFrame(AgentActivityFrameSchema.parse(read(event)));
+            setStreamState(StreamState.LIVE);
         });
-        source.onopen = () => setState(StreamState.LIVE);
+        source.onopen = () => setStreamState(StreamState.LIVE);
         /**
          * A reconnect replays the whole history again, so the roster it opens with is allowed to
          * replace everything on screen rather than being merged into what is already there.
          */
         source.onerror = () => {
-            setState(
+            setStreamState(
                 source.readyState === EventSource.CLOSED
                     ? StreamState.UNAVAILABLE
                     : StreamState.RECONNECTING
@@ -50,9 +59,9 @@ export function useAgentActivity(enabled = true): LiveAgents {
 
         return () => {
             source.close();
-            store.clear();
+            clear();
         };
     }, [enabled, store]);
 
-    return { state, agents };
+    return live;
 }

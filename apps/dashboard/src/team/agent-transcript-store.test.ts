@@ -7,8 +7,13 @@ import {
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import { beforeEach, describe, expect, it } from "vitest";
+import { StreamState } from "#src/live-status/status-stream.const";
 import type { TranscriptTurn } from "#src/team/agent-transcript.types";
-import { AgentActivityStore } from "#src/team/agent-transcript-store";
+import {
+    type AgentActivityStore,
+    createAgentActivityStore
+} from "#src/team/agent-transcript-store";
+import type { RedrawSchedule } from "#src/team/agent-transcript-store.types";
 import {
     frame,
     message,
@@ -18,18 +23,22 @@ import {
     watchedActivity
 } from "#src/team/team.fixture";
 
-function immediate(notify: () => void): void {
-    notify();
-}
+const ENGINEER = "agent-engineer-0-1";
 
-function watching(): AgentActivityStore {
-    const store = new AgentActivityStore(immediate);
-    store.receiveRoster([watchedActivity()]);
+const immediate: RedrawSchedule = (notify) => notify();
+
+function watching(...roster: ReturnType<typeof watchedActivity>[]): AgentActivityStore {
+    const store = createAgentActivityStore(immediate);
+    store.getState().receiveRoster(roster.length > 0 ? roster : [watchedActivity()]);
     return store;
 }
 
+function agentsOf(store: AgentActivityStore) {
+    return store.getState().agents;
+}
+
 function transcriptOf(store: AgentActivityStore) {
-    const [agent] = store.getSnapshot();
+    const [agent] = agentsOf(store);
     if (agent === undefined) {
         throw new Error("The store is watching no agent");
     }
@@ -41,9 +50,10 @@ describe("AgentActivityStore", () => {
 
     it("grows a turn from its chunks while the model is still writing", () => {
         const store = watching();
+        const { receiveFrame } = store.getState();
 
-        store.receiveFrame(thinking("The evaluator ", 0, false));
-        store.receiveFrame(thinking("fails on an empty sample.", 0, false));
+        receiveFrame(thinking("The evaluator ", 0, false));
+        receiveFrame(thinking("fails on an empty sample.", 0, false));
 
         expect(transcriptOf(store)).toEqual([
             expect.objectContaining({
@@ -56,19 +66,22 @@ describe("AgentActivityStore", () => {
 
     it("lands on the same words whether a viewer saw the chunks or only the sealed turn", () => {
         const fromStart = watching();
-        fromStart.receiveFrame(thinking("The evaluator ", 0, false));
-        fromStart.receiveFrame(thinking("fails", 0, false));
-        fromStart.receiveFrame(thinking("The evaluator fails on an empty sample.", 0, true));
+        fromStart.getState().receiveFrame(thinking("The evaluator ", 0, false));
+        fromStart.getState().receiveFrame(thinking("fails", 0, false));
+        fromStart
+            .getState()
+            .receiveFrame(thinking("The evaluator fails on an empty sample.", 0, true));
 
         resetFrameSequence();
         const joinedLate = watching();
-        joinedLate.receiveFrame(
+        const { receiveFrame } = joinedLate.getState();
+        receiveFrame(
             frame({ kind: AgentActivityFrameKind.THINKING, turn: 0, text: "x", sealed: false })
         );
-        joinedLate.receiveFrame(
+        receiveFrame(
             frame({ kind: AgentActivityFrameKind.THINKING, turn: 0, text: "y", sealed: false })
         );
-        joinedLate.receiveFrame(thinking("The evaluator fails on an empty sample.", 0, true));
+        receiveFrame(thinking("The evaluator fails on an empty sample.", 0, true));
 
         const [first] = transcriptOf(fromStart) as TranscriptTurn[];
         const [second] = transcriptOf(joinedLate) as TranscriptTurn[];
@@ -78,9 +91,10 @@ describe("AgentActivityStore", () => {
 
     it("keeps reasoning and message turns apart even when they share a number", () => {
         const store = watching();
+        const { receiveFrame } = store.getState();
 
-        store.receiveFrame(thinking("weighing options", 0, true));
-        store.receiveFrame(message("Added the guard", 0, true));
+        receiveFrame(thinking("weighing options", 0, true));
+        receiveFrame(message("Added the guard", 0, true));
 
         expect(transcriptOf(store).map(({ kind }) => kind)).toEqual([
             AgentActivityFrameKind.THINKING,
@@ -90,11 +104,12 @@ describe("AgentActivityStore", () => {
 
     it("advances a tool call instead of listing its result separately", () => {
         const store = watching();
+        const { receiveFrame } = store.getState();
 
-        store.receiveFrame(
+        receiveFrame(
             toolCall("Bash", "toolu_01", AgentToolPhase.STARTED, "pnpm vitest run evaluators/")
         );
-        store.receiveFrame(toolCall("tool_result", "toolu_01", AgentToolPhase.COMPLETED));
+        receiveFrame(toolCall("tool_result", "toolu_01", AgentToolPhase.COMPLETED));
 
         expect(transcriptOf(store)).toEqual([
             expect.objectContaining({
@@ -107,40 +122,41 @@ describe("AgentActivityStore", () => {
 
     it("lists tool calls the harness gave no identity separately", () => {
         const store = watching();
+        const { receiveFrame } = store.getState();
 
-        store.receiveFrame(toolCall("reasoning", null));
-        store.receiveFrame(toolCall("reasoning", null));
+        receiveFrame(toolCall("reasoning", null));
+        receiveFrame(toolCall("reasoning", null));
 
         expect(transcriptOf(store)).toHaveLength(2);
     });
 
     it("moves an agent off Starting as soon as it reports doing something", () => {
-        const store = new AgentActivityStore(immediate);
-        store.receiveRoster([watchedActivity({ phase: AgentActivityPhase.STARTING })]);
+        const store = watching(watchedActivity({ phase: AgentActivityPhase.STARTING }));
 
-        store.receiveFrame(toolCall("Bash", "toolu_01"));
+        store.getState().receiveFrame(toolCall("Bash", "toolu_01"));
 
-        expect(store.getSnapshot()[0]?.activity.phase).toBe(AgentActivityPhase.USING_TOOL);
+        expect(agentsOf(store)[0]?.activity.phase).toBe(AgentActivityPhase.USING_TOOL);
     });
 
     it("leaves the phase where it was when a frame only reports usage", () => {
         const store = watching();
-        store.receiveFrame(toolCall("Bash", "toolu_01"));
+        const { receiveFrame } = store.getState();
+        receiveFrame(toolCall("Bash", "toolu_01"));
 
-        store.receiveFrame(
+        receiveFrame(
             frame({
                 kind: AgentActivityFrameKind.USAGE,
                 usage: { input_tokens: 28575, output_tokens: 5020, cached_input_tokens: 26368 }
             })
         );
 
-        expect(store.getSnapshot()[0]?.activity.phase).toBe(AgentActivityPhase.USING_TOOL);
+        expect(agentsOf(store)[0]?.activity.phase).toBe(AgentActivityPhase.USING_TOOL);
     });
 
     it("records how a run ended on the agent it belongs to", () => {
         const store = watching();
 
-        store.receiveFrame(
+        store.getState().receiveFrame(
             frame({
                 kind: AgentActivityFrameKind.RUN_FINISHED,
                 status: AgentRunStatus.TIMED_OUT,
@@ -148,7 +164,7 @@ describe("AgentActivityStore", () => {
             })
         );
 
-        expect(store.getSnapshot()[0]?.activity).toMatchObject({
+        expect(agentsOf(store)[0]?.activity).toMatchObject({
             status: AgentRunStatus.TIMED_OUT,
             error: "claude harness run timed out"
         });
@@ -157,28 +173,66 @@ describe("AgentActivityStore", () => {
     it("ignores a frame from a run the agent has already moved on from", () => {
         const store = watching();
 
-        store.receiveFrame({ ...thinking("from a retired attempt", 0, true), run_id: "run-codex" });
+        store
+            .getState()
+            .receiveFrame({ ...thinking("from a retired attempt", 0, true), run_id: "run-codex" });
 
         expect(transcriptOf(store)).toEqual([]);
     });
 
     it("tells its readers once for a burst of chunks rather than once each", () => {
         const notifications: (() => void)[] = [];
-        const store = new AgentActivityStore((notify) => notifications.push(notify));
-        store.receiveRoster([watchedActivity()]);
+        const store = createAgentActivityStore((notify) => notifications.push(notify));
+        store.getState().receiveRoster([watchedActivity()]);
         let redraws = 0;
         store.subscribe(() => {
             redraws += 1;
         });
 
-        store.receiveFrame(thinking("a", 0, false));
-        store.receiveFrame(thinking("b", 0, false));
-        store.receiveFrame(thinking("c", 0, false));
+        const { receiveFrame } = store.getState();
+        receiveFrame(thinking("a", 0, false));
+        receiveFrame(thinking("b", 0, false));
+        receiveFrame(thinking("c", 0, false));
         for (const notify of notifications.splice(0)) {
             notify();
         }
 
         expect(redraws).toBe(1);
         expect((transcriptOf(store)[0] as TranscriptTurn).text).toBe("abc");
+    });
+
+    /** A card is left alone when it compares equal, so an untouched agent must keep its identity. */
+    it("hands back the very same agent when the frame belonged to somebody else", () => {
+        const store = watching(watchedActivity(), watchedActivity({ agent_id: ENGINEER }));
+        const [researcher] = agentsOf(store);
+
+        store.getState().receiveFrame(
+            frame(
+                {
+                    kind: AgentActivityFrameKind.THINKING,
+                    turn: 0,
+                    text: "weighing",
+                    sealed: false
+                },
+                ENGINEER
+            )
+        );
+
+        expect(agentsOf(store)[1]?.transcript).toHaveLength(1);
+        expect(agentsOf(store)[0]).toBe(researcher);
+    });
+
+    it("says nothing to its readers when the stream repeats that it is live", () => {
+        const store = watching();
+        store.getState().setStreamState(StreamState.LIVE);
+        let redraws = 0;
+        store.subscribe(() => {
+            redraws += 1;
+        });
+
+        store.getState().setStreamState(StreamState.LIVE);
+
+        expect(redraws).toBe(0);
+        expect(store.getState().state).toBe(StreamState.LIVE);
     });
 });
