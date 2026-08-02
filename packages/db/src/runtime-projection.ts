@@ -1,7 +1,6 @@
 import { SchedulerLane } from "@lab/core/constants";
-import { CapabilityStatus } from "@lab/protocol/constants";
 import type { StatusSnapshot } from "@lab/protocol/status";
-import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 import type { Database } from "#src/client";
 import { branches, capabilityRequests, claimDependencies, claims, tasks } from "#src/schema";
 
@@ -168,7 +167,8 @@ async function upsertCapabilities(
 ): Promise<void> {
     for (const capability of snapshot.capability_requests) {
         const providedAt =
-            capability.status === CapabilityStatus.PROVIDED ? projectionAt : undefined;
+            capability.provided_at === undefined ? null : new Date(capability.provided_at);
+        const resourceReference = capability.resource_reference ?? null;
         const records = await database
             .insert(capabilityRequests)
             .values({
@@ -178,6 +178,7 @@ async function upsertCapabilities(
                 reason: capability.reason,
                 provisioningHint: capability.provisioning_hint,
                 status: capability.status,
+                resourceReference,
                 providedAt,
                 createdAt: new Date(capability.created_at),
                 updatedAt: projectionAt
@@ -189,14 +190,8 @@ async function upsertCapabilities(
                     reason: capability.reason,
                     provisioningHint: capability.provisioning_hint,
                     status: capability.status,
-                    ...(providedAt === undefined
-                        ? {}
-                        : {
-                              providedAt: sql`coalesce(${capabilityRequests.providedAt}, ${sql.param(
-                                  providedAt,
-                                  capabilityRequests.providedAt
-                              )})`
-                          }),
+                    resourceReference,
+                    providedAt,
                     updatedAt: projectionAt
                 },
                 setWhere: eq(capabilityRequests.labId, snapshot.lab.id)

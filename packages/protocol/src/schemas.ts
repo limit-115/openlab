@@ -84,15 +84,26 @@ export const ExperimentSchema = z.object({
     output_hash: z.string().optional()
 });
 
-export const CapabilityRequestSchema = z.object({
-    id: IdentifierSchema,
-    type: z.literal(CapabilityRequestType.CAPABILITY_REQUEST),
-    need: z.string().trim().min(1),
-    reason: z.string().trim().min(1),
-    provisioning_hint: z.string().trim().min(1),
-    status: z.enum(CapabilityStatus).default(CapabilityStatus.OPEN),
-    created_at: z.string().datetime()
-});
+export const CapabilityRequestSchema = z
+    .object({
+        id: IdentifierSchema,
+        type: z.literal(CapabilityRequestType.CAPABILITY_REQUEST),
+        need: z.string().trim().min(1),
+        reason: z.string().trim().min(1),
+        provisioning_hint: z.string().trim().min(1),
+        status: z.enum(CapabilityStatus).default(CapabilityStatus.OPEN),
+        resource_reference: z.string().trim().min(1).optional(),
+        provided_at: z.string().datetime().optional(),
+        created_at: z.string().datetime()
+    })
+    .refine(
+        (request) =>
+            request.status !== CapabilityStatus.PROVIDED ||
+            (request.resource_reference !== undefined && request.provided_at !== undefined),
+        {
+            message: "A provided capability requires its resource reference and timestamp"
+        }
+    );
 
 export const LabEventSchema = z.object({
     id: IdentifierSchema,

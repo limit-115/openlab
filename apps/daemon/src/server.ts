@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import path from "node:path";
 import FastifyStatic from "@fastify/static";
 import { WakeTrigger } from "@lab/core/constants";
-import { LabState } from "@lab/protocol/constants";
+import { CapabilityStatus, LabState } from "@lab/protocol/constants";
 import { ProvideCapabilitySchema } from "@lab/protocol/status";
 import Fastify, { type FastifyInstance } from "fastify";
 import { bootstrapResearch } from "#src/bootstrap";
@@ -96,14 +96,21 @@ export function createStatusServer(
         "/api/capabilities/:id/provide",
         async (request, reply) => {
             const input = ProvideCapabilitySchema.parse(request.body);
+            const capability = workspace
+                .getSnapshot()
+                .capability_requests.find(({ id }) => id === request.params.id);
+            const wasOpen = capability?.status === CapabilityStatus.OPEN;
             const provided = await workspace.provideCapability(
                 request.params.id,
                 input.resource_reference
             );
             if (!provided) {
-                return reply.code(404).send({ error: "Capability request not found" });
+                if (capability === undefined) {
+                    return reply.code(404).send({ error: "Capability request not found" });
+                }
+                return reply.code(409).send({ error: "Capability request is not open" });
             }
-            if (workspace.getSnapshot().lab.state === LabState.RUNNING) {
+            if (wasOpen && workspace.getSnapshot().lab.state === LabState.RUNNING) {
                 options.onWake?.();
             }
             return reply.code(202).send({ accepted: true });

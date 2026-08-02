@@ -8,7 +8,7 @@ import type {
     PersistedLabEvent,
     RuntimeCheckpoint
 } from "@lab/db/runtime";
-import { LabState } from "@lab/protocol/constants";
+import { CapabilityStatus, LabState } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
 import { ResearchLoopOutcomeStatus } from "#src/research-loop";
 import { createStatusServer, startDaemon } from "#src/server";
@@ -95,6 +95,52 @@ describe("status server", () => {
         const response = await server.inject({ method: "POST", url: "/api/wake" });
 
         expect(response.statusCode).toBe(409);
+        await server.close();
+    });
+
+    it("schedules research once for an idempotently provided capability", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-route-test-"));
+        const taskPath = path.join(directory, "task.json");
+        await writeFile(taskPath, JSON.stringify({ goal: "Resume with a capability" }));
+        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const request = await workspace.requestCapability({
+            need: "Independent dataset",
+            reason: "The verifier needs independent observations",
+            provisioningHint: "Mount the dataset in the run workspace"
+        });
+        let wakeCount = 0;
+        const server = createStatusServer(workspace, {
+            onWake: () => {
+                wakeCount += 1;
+            }
+        });
+
+        const first = await server.inject({
+            method: "POST",
+            url: `/api/capabilities/${request.id}/provide`,
+            payload: { resource_reference: "dataset://independent/v1" }
+        });
+        const retry = await server.inject({
+            method: "POST",
+            url: `/api/capabilities/${request.id}/provide`,
+            payload: { resource_reference: "dataset://independent/v1" }
+        });
+        const conflict = await server.inject({
+            method: "POST",
+            url: `/api/capabilities/${request.id}/provide`,
+            payload: { resource_reference: "dataset://independent/v2" }
+        });
+
+        expect(first.statusCode).toBe(202);
+        expect(retry.statusCode).toBe(202);
+        expect(conflict.statusCode).toBe(409);
+        expect(wakeCount).toBe(1);
+        expect(
+            workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
+        ).toMatchObject({
+            status: CapabilityStatus.PROVIDED,
+            resource_reference: "dataset://independent/v1"
+        });
         await server.close();
     });
 

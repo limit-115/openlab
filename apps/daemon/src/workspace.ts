@@ -432,27 +432,70 @@ export class LabWorkspace {
     }
 
     async provideCapability(id: string, resourceReference: string): Promise<boolean> {
-        let provided = false;
-        await this.update((draft) => {
+        const normalizedResourceReference = resourceReference.trim();
+        if (normalizedResourceReference.length === 0) {
+            throw new Error("Resource reference must not be empty");
+        }
+        let providedEvent: LabEvent | undefined;
+        let shouldWake = false;
+        const accepted = await this.mutex.runExclusive(async () => {
+            const current = this.snapshot.capability_requests.find(
+                (candidate) => candidate.id === id
+            );
+            if (current === undefined) {
+                return false;
+            }
+            if (current.status === CapabilityStatus.PROVIDED) {
+                return current.resource_reference === normalizedResourceReference;
+            }
+            if (current.status !== CapabilityStatus.OPEN) {
+                return false;
+            }
+
+            const providedAt = new Date().toISOString();
+            const draft = structuredClone(this.snapshot);
             const request = draft.capability_requests.find((candidate) => candidate.id === id);
             if (request === undefined) {
-                return;
+                return false;
             }
             request.status = CapabilityStatus.PROVIDED;
-            provided = true;
+            request.resource_reference = normalizedResourceReference;
+            request.provided_at = providedAt;
+            draft.frontier.blockers = draft.frontier.blockers.filter(
+                (blocker) => blocker !== request.need
+            );
+            this.touch(draft);
+            providedEvent = {
+                id: `event-${randomUUID()}`,
+                lab_id: this.labId,
+                type: EventType.CAPABILITY_PROVIDED,
+                occurred_at: providedAt,
+                payload: {
+                    request_id: id,
+                    resource_reference: normalizedResourceReference
+                }
+            };
+            draft.recent_events = [...this.events, providedEvent].slice(-200);
+            const parsed = StatusSnapshotSchema.parse(draft);
+            this.snapshot = await this.commitRuntime(parsed, providedEvent);
+            this.events.push(providedEvent);
+            await this.persistFilesystemSnapshot();
+            shouldWake = this.snapshot.lab.state === LabState.HIBERNATING;
+            return true;
         });
-        if (provided) {
-            await this.appendEvent(EventType.CAPABILITY_PROVIDED, {
-                request_id: id,
-                resource_reference: resourceReference
-            });
-            if (this.snapshot.lab.state === LabState.HIBERNATING) {
-                await this.transition(LabState.RUNNING, `Capability ${id} provided`, {
-                    wakeTrigger: WakeTrigger.CAPABILITY
-                });
+
+        if (providedEvent !== undefined) {
+            const snapshot = this.getSnapshot();
+            for (const listener of this.listeners) {
+                listener(providedEvent, snapshot);
             }
         }
-        return provided;
+        if (shouldWake) {
+            await this.transition(LabState.RUNNING, `Capability ${id} provided`, {
+                wakeTrigger: WakeTrigger.CAPABILITY
+            });
+        }
+        return accepted;
     }
 
     async requestCapability(input: {

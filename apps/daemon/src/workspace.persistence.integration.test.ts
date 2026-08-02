@@ -4,7 +4,7 @@ import path from "node:path";
 import { createDatabase, type DatabaseClient } from "@lab/db/client";
 import { migrateDatabase } from "@lab/db/migrations";
 import { RuntimePersistence } from "@lab/db/runtime";
-import { EventType } from "@lab/protocol/constants";
+import { CapabilityStatus, EventType } from "@lab/protocol/constants";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { LabWorkspace } from "#src/workspace";
 
@@ -51,5 +51,39 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         await expect(
             readFile(path.join(workspace.runDirectory, "status.json"), "utf8").then(JSON.parse)
         ).resolves.toMatchObject({ lab: { id: workspace.labId } });
+
+        const request = await recovered.requestCapability({
+            need: "Independent dataset",
+            reason: "The verifier needs independent observations",
+            provisioningHint: "Mount the dataset in the run workspace"
+        });
+        await recovered.provideCapability(request.id, "dataset://independent/v1");
+        await writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt");
+
+        const recoveredCapabilityWorkspace = await LabWorkspace.openOrCreate(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
+        const capability = recoveredCapabilityWorkspace
+            .getSnapshot()
+            .capability_requests.find(({ id }) => id === request.id);
+        expect(capability).toMatchObject({
+            status: CapabilityStatus.PROVIDED,
+            resource_reference: "dataset://independent/v1"
+        });
+        expect(capability?.provided_at).toBeDefined();
+        expect(recoveredCapabilityWorkspace.getSnapshot().frontier.blockers).not.toContain(
+            request.need
+        );
+        expect(
+            await client.db.query.capabilityRequests.findFirst({
+                where: (capability, { eq }) => eq(capability.id, request.id)
+            })
+        ).toMatchObject({
+            status: CapabilityStatus.PROVIDED,
+            resourceReference: "dataset://independent/v1",
+            providedAt: new Date(capability?.provided_at ?? "")
+        });
     });
 });

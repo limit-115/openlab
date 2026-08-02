@@ -159,6 +159,8 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             throw new Error("Projection fixture must contain a capability request");
         }
         capability.status = CapabilityStatus.PROVIDED;
+        capability.resource_reference = "sandbox://reproducible/v1";
+        capability.provided_at = updated.lab.updated_at;
 
         const committed = await persistence.commit({
             snapshot: updated,
@@ -197,9 +199,17 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         ).toEqual(
             expect.objectContaining({
                 status: CapabilityStatus.PROVIDED,
+                resourceReference: capability.resource_reference,
                 providedAt: new Date(updated.lab.updated_at)
             })
         );
+        expect((await persistence.load(snapshot.lab.id))?.snapshot.capability_requests).toEqual([
+            expect.objectContaining({
+                id: capability.id,
+                resource_reference: capability.resource_reference,
+                provided_at: capability.provided_at
+            })
+        ]);
 
         const invalid = structuredClone(updated);
         const invalidTask = invalid.tasks[0];

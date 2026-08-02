@@ -75,6 +75,10 @@ function toCapabilityRequest(record: typeof capabilityRequests.$inferSelect): Ca
         reason: record.reason,
         provisioning_hint: record.provisioningHint,
         status: record.status,
+        ...(record.resourceReference === null
+            ? {}
+            : { resource_reference: record.resourceReference }),
+        ...(record.providedAt === null ? {} : { provided_at: record.providedAt.toISOString() }),
         created_at: record.createdAt.toISOString()
     };
 }

@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { EventType, EvidenceKind, LabState } from "@lab/protocol/constants";
+import { CapabilityStatus, EventType, EvidenceKind, LabState } from "@lab/protocol/constants";
 import { afterEach, describe, expect, it } from "vitest";
 import { validateFileArtifact } from "#src/artifact";
 import { LabWorkspace } from "#src/workspace";
@@ -68,6 +68,62 @@ describe("LabWorkspace", () => {
         expect(second.id).toBe(first.id);
         expect(workspace.getSnapshot().capability_requests).toHaveLength(1);
         expect(workspace.getSnapshot().frontier.blockers).toContain(input.need);
+    });
+
+    it("persists a provided capability, clears its blocker, and handles retries safely", async () => {
+        const workspace = await createWorkspace();
+        const request = await workspace.requestCapability({
+            need: "Independent dataset",
+            reason: "The verifier needs independent observations",
+            provisioningHint: "Mount the dataset in the run workspace"
+        });
+        await workspace.hibernateForPlateau("Waiting for the independent dataset");
+
+        await expect(
+            workspace.provideCapability(request.id, " dataset://independent/v1 ")
+        ).resolves.toBe(true);
+        const provided = workspace
+            .getSnapshot()
+            .capability_requests.find(({ id }) => id === request.id);
+        expect(provided).toMatchObject({
+            status: CapabilityStatus.PROVIDED,
+            resource_reference: "dataset://independent/v1"
+        });
+        expect(provided?.provided_at).toBeDefined();
+        expect(workspace.getSnapshot().frontier.blockers).not.toContain(request.need);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+
+        await expect(
+            workspace.provideCapability(request.id, "dataset://independent/v1")
+        ).resolves.toBe(true);
+        await expect(workspace.provideCapability(request.id, "dataset://different")).resolves.toBe(
+            false
+        );
+        expect(
+            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_PROVIDED)
+        ).toHaveLength(1);
+    });
+
+    it("rejects capability resources for requests that are not open", async () => {
+        const workspace = await createWorkspace();
+        const request = await workspace.requestCapability({
+            need: "Restricted corpus",
+            reason: "The experiment requires licensed inputs",
+            provisioningHint: "Provide a licensed local corpus"
+        });
+        await workspace.update((draft) => {
+            const obsolete = draft.capability_requests.find(({ id }) => id === request.id);
+            if (obsolete !== undefined) {
+                obsolete.status = CapabilityStatus.OBSOLETE;
+            }
+        });
+
+        await expect(
+            workspace.provideCapability(request.id, "corpus://restricted/v1")
+        ).resolves.toBe(false);
+        await expect(workspace.provideCapability(request.id, "   ")).rejects.toThrow(
+            "must not be empty"
+        );
     });
 
     it("writes a report before hibernating on a plateau", async () => {
