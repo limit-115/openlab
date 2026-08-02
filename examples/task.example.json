@@ -1,0 +1,8 @@
+{
+    "goal": "Find and verify a faster implementation of a reference algorithm",
+    "context": ["The baseline implementation and benchmark must be preserved as evidence"],
+    "success_criteria": [
+        "The candidate passes the baseline test suite",
+        "An independent benchmark reproduces a measurable speedup"
+    ]
+}
