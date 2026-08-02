@@ -37,6 +37,8 @@
         "db:migrate": "drizzle-kit migrate",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",
+        "test:unit": "vitest run --project unit",
+        "test:integration": "vitest run --project integration",
         "lint": "biome lint .",
         "format": "biome format --write ."
     },
