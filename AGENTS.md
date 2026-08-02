@@ -30,6 +30,9 @@
   large implementation file.
 - Style the frontend with Tailwind utility classes only. Do not add stylesheet files, CSS modules, or
   inline style objects. Tailwind configuration and its single entry stylesheet are the only exceptions.
+- Use a monospace font only where literal code is rendered: JSON payloads, source, and shell commands.
+  Identifiers, timestamps, counts, metrics, and file paths are prose and use the sans-serif face.
+- Letter-spacing is forbidden. Never use `tracking-*` utilities or a `letter-spacing` declaration.
 - Biome is the formatter and linter for every workspace. Use four spaces and no trailing commas. Run
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
