@@ -10,9 +10,11 @@ import type { LiveStatus } from "#src/live-status/status-stream.types";
 interface LabHeaderProps {
     snapshot: StatusSnapshot;
     stream: LiveStatus;
+    /** The section anchors only lead anywhere while the overview is the view being shown. */
+    showSections: boolean;
 }
 
-export function LabHeader({ snapshot, stream }: LabHeaderProps) {
+export function LabHeader({ snapshot, stream, showSections }: LabHeaderProps) {
     return (
         <header className={LAB_HEADER_BAR}>
             <div className={cn(PAGE_FRAME, LAB_HEADER_ROW)}>
@@ -31,7 +33,7 @@ export function LabHeader({ snapshot, stream }: LabHeaderProps) {
                     </div>
                 </div>
 
-                <SectionNav />
+                {showSections ? <SectionNav /> : null}
 
                 <RuntimeStrip snapshot={snapshot} stream={stream} />
             </div>
