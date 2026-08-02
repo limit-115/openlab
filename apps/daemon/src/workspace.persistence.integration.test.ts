@@ -179,6 +179,7 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             unlink(path.join(workspaceRoot, "current.json")),
             writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt"),
             writeFile(path.join(workspace.runDirectory, "events.json"), "corrupt"),
+            writeFile(path.join(workspace.runDirectory, "evidence.json"), "corrupt"),
             writeFile(path.join(workspace.runDirectory, "task.json"), "corrupt")
         ]);
 
@@ -187,7 +188,11 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         expect(recovered.recovered).toBe(true);
         expect(recovered.labId).toBe(workspace.labId);
         expect(recovered.getSnapshot().frontier.known).toContain("Latest database state");
+        expect(recovered.getEvidence()).toEqual([]);
         await expect(recovered.getTask()).resolves.toEqual(task);
+        await expect(
+            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8").then(JSON.parse)
+        ).resolves.toEqual([]);
         await expect(readCurrentPointer(workspaceRoot)).resolves.toEqual({
             lab_id: workspace.labId,
             run_directory: workspace.runDirectory

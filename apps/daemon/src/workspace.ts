@@ -274,16 +274,13 @@ export class LabWorkspace {
             recoverable.workspacePath
         );
         const labId = recoverable.checkpoint.snapshot.lab.id;
-        const [storedEvidence, events] = await Promise.all([
-            LabWorkspace.readOptionalEvidence(runDirectory),
-            LabWorkspace.readAllRuntimeEvents(runtimePersistence, labId)
-        ]);
+        const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, labId);
         await mkdir(runDirectory, { recursive: true });
         const workspace = new LabWorkspace(
             runDirectory,
             recoverable.checkpoint.snapshot,
             events,
-            storedEvidence,
+            recoverable.checkpoint.evidence,
             true,
             runtimePersistence,
             recoverable.checkpoint.revision
