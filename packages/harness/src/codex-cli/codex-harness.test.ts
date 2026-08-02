@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import {
     HarnessAuthenticationMethods,
+    HarnessEffortLevels,
     HarnessExecutionProfiles,
     HarnessKinds,
     HarnessRunStatuses,
@@ -15,7 +16,7 @@ import {
 } from "#src/cli-execution/cli-process-runner.fixture";
 import { HarnessErrorCodes } from "#src/cli-execution/harness-error.const";
 import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
-import { CodexPermissionModes } from "#src/codex-cli/codex-cli.const";
+import { CodexPermissionModes, CodexSessionDefaults } from "#src/codex-cli/codex-cli.const";
 import {
     CodexTestCliValues,
     CodexTestItemTypes,
@@ -82,6 +83,10 @@ describe("CodexHarness", () => {
             "--config",
             expect.stringContaining("hooks.PreToolUse"),
             "--dangerously-bypass-approvals-and-sandbox",
+            "--model",
+            CodexSessionDefaults.MODEL,
+            "--config",
+            `model_reasoning_effort="${CodexSessionDefaults.EFFORT}"`,
             "--output-schema",
             expect.stringMatching(/response-schema\.json$/),
             "-"
@@ -116,6 +121,10 @@ describe("CodexHarness", () => {
             authentication: {
                 method: HarnessAuthenticationMethods.CHATGPT,
                 subscription: null
+            },
+            session: {
+                model: CodexSessionDefaults.MODEL,
+                effort: CodexSessionDefaults.EFFORT
             },
             sessionId: "codex-session",
             structuredOutput: { answer: 42 },
@@ -152,7 +161,8 @@ describe("CodexHarness", () => {
         const harness = new CodexHarness({ runner, environment: testEnvironment() });
         const request = await harnessRequest("codex-resume", {
             resumeSessionId: "existing-session",
-            model: "gpt-subscription-model"
+            model: "gpt-subscription-model",
+            effort: HarnessEffortLevels.XHIGH
         });
 
         const events = await Array.fromAsync(harness.run(request));
@@ -169,6 +179,8 @@ describe("CodexHarness", () => {
             "--dangerously-bypass-approvals-and-sandbox",
             "--model",
             "gpt-subscription-model",
+            "--config",
+            `model_reasoning_effort="${HarnessEffortLevels.XHIGH}"`,
             "existing-session",
             "-"
         ]);

@@ -165,6 +165,10 @@ describe("ClaudeHarness", () => {
                 method: HarnessAuthenticationMethods.CLAUDE_AI,
                 subscription: ClaudeTestSubscriptionTypes.MAX
             },
+            session: {
+                model: ClaudeSessionDefaults.MODEL,
+                effort: ClaudeSessionDefaults.EFFORT
+            },
             sessionId: "claude-session"
         });
     });

@@ -1,4 +1,17 @@
+import { HarnessEffortLevels } from "#src/agent-harness/agent-harness.const";
+
 export const CODEX_BINARY = "codex";
+
+/** Applied when a run request does not name its own model or effort. */
+export const CodexSessionDefaults = {
+    MODEL: "gpt-5.6-sol",
+    EFFORT: HarnessEffortLevels.MEDIUM
+} as const;
+
+/** Codex takes reasoning effort as a config override rather than a flag. */
+export const CodexConfigKeys = {
+    MODEL_REASONING_EFFORT: "model_reasoning_effort"
+} as const;
 
 export const CodexPermissionModes = {
     UNRESTRICTED: "unrestricted",

@@ -6,7 +6,8 @@ import {
 } from "#src/agent-harness/agent-harness.const";
 import type {
     HarnessAuthentication,
-    HarnessRunRequest
+    HarnessRunRequest,
+    HarnessSession
 } from "#src/agent-harness/agent-harness.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
 import {
@@ -68,8 +69,13 @@ export class ClaudeHarness extends SubscriptionCliHarness {
         }
     }
 
+    protected sessionDefaults(): HarnessSession {
+        return { model: ClaudeSessionDefaults.MODEL, effort: ClaudeSessionDefaults.EFFORT };
+    }
+
     protected buildCommand(
         request: HarnessRunRequest,
+        session: HarnessSession,
         _responseSchemaPath: string | undefined
     ): HarnessCommand {
         return {
@@ -91,9 +97,9 @@ export class ClaudeHarness extends SubscriptionCliHarness {
                 "--settings",
                 claudeModelApiPolicySettings(),
                 "--model",
-                request.model ?? ClaudeSessionDefaults.MODEL,
+                session.model,
                 "--effort",
-                request.effort ?? ClaudeSessionDefaults.EFFORT,
+                session.effort,
                 ...(request.resumeSessionId === undefined
                     ? []
                     : ["--resume", request.resumeSessionId]),

@@ -4,6 +4,9 @@
     "private": true,
     "type": "module",
     "exports": {
+        "./agents/agent-execution.const": "./src/agents/agent-execution.const.ts",
+        "./agents/agent-execution.schema": "./src/agents/agent-execution.schema.ts",
+        "./agents/agent-execution.types": "./src/agents/agent-execution.types.ts",
         "./agents/agent-role.const": "./src/agents/agent-role.const.ts",
         "./agents/agent-role.schema": "./src/agents/agent-role.schema.ts",
         "./agents/agent-status.const": "./src/agents/agent-status.const.ts",

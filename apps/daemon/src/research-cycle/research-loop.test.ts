@@ -17,11 +17,15 @@ import type {
     AgentHarness,
     HarnessPreflight,
     HarnessRunRequest,
-    HarnessRunResult
+    HarnessRunResult,
+    HarnessSession
 } from "@lab/harness/agent-harness.types";
+import { ClaudeSessionDefaults } from "@lab/harness/claude-cli.const";
+import { CodexSessionDefaults } from "@lab/harness/codex-cli.const";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
+import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
@@ -107,6 +111,21 @@ const SourceCitationFixture = {
     TITLE: "Official benchmark specification"
 } as const;
 
+/** The doubles resolve the same sessions the real harnesses would, so assertions stay meaningful. */
+const ScriptedSession: Record<
+    typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
+    HarnessSession
+> = {
+    [HarnessKinds.CODEX]: {
+        model: CodexSessionDefaults.MODEL,
+        effort: CodexSessionDefaults.EFFORT
+    },
+    [HarnessKinds.CLAUDE]: {
+        model: ClaudeSessionDefaults.MODEL,
+        effort: ClaudeSessionDefaults.EFFORT
+    }
+};
+
 class ScriptedHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE;
     readonly requests: HarnessRunRequest[] = [];
@@ -184,6 +203,10 @@ class ScriptedHarness implements AgentHarness {
         this.#protectedControlPlaneDirection = options.protectedControlPlaneDirection ?? false;
         this.#sourceCandidateUrl = options.sourceCandidateUrl;
         this.#sourceOnly = options.sourceOnly ?? false;
+    }
+
+    resolveSession(): HarnessSession {
+        return ScriptedSession[this.kind];
     }
 
     async preflight(): Promise<HarnessPreflight> {
@@ -563,6 +586,10 @@ class UnavailableHarness implements AgentHarness {
         this.kind = kind;
     }
 
+    resolveSession(): HarnessSession {
+        return ScriptedSession[this.kind];
+    }
+
     preflight(): Promise<HarnessPreflight> {
         this.preflightCalls += 1;
         throw new HarnessCapabilityError(this.kind, "Subscription login is unavailable", {
@@ -617,6 +644,10 @@ class BlockingHarness implements AgentHarness {
         });
     }
 
+    resolveSession(): HarnessSession {
+        return ScriptedSession[this.kind];
+    }
+
     async preflight(): Promise<HarnessPreflight> {
         return preflight(this.kind);
     }
@@ -642,6 +673,10 @@ class BlockingPreflightHarness implements AgentHarness {
         this.started = new Promise((resolve) => {
             this.#markStarted = resolve;
         });
+    }
+
+    resolveSession(): HarnessSession {
+        return ScriptedSession[this.kind];
     }
 
     async preflight(signal?: AbortSignal): Promise<HarnessPreflight> {
@@ -756,6 +791,30 @@ describe.sequential("runResearchLoop", () => {
         await expect(
             readFile(path.join(workspace.runDirectory, "result.json"), "utf8")
         ).resolves.toContain("independent benchmark reproduced");
+    });
+
+    it("attributes every started agent to the harness, model and effort behind it", async () => {
+        const workspace = await createWorkspace();
+
+        await runResearchLoop(workspace, {
+            harnesses: [
+                new ScriptedHarness(HarnessKinds.CODEX),
+                new ScriptedHarness(HarnessKinds.CLAUDE)
+            ]
+        });
+
+        const executions = workspace.getSnapshot().agents.map(({ execution }) => execution);
+        expect(executions).not.toContain(undefined);
+        expect(executions).toContainEqual({
+            harness: AgentHarnessKind.CODEX,
+            model: CodexSessionDefaults.MODEL,
+            effort: CodexSessionDefaults.EFFORT
+        });
+        expect(executions).toContainEqual({
+            harness: AgentHarnessKind.CLAUDE,
+            model: ClaudeSessionDefaults.MODEL,
+            effort: ClaudeSessionDefaults.EFFORT
+        });
     });
 
     it("falls back when a director omits required operational assumptions", async () => {
@@ -2180,6 +2239,7 @@ async function harnessResult(
         status,
         cliVersion: "test-cli",
         authentication: preflight(kind).authentication,
+        session: ScriptedSession[kind],
         sessionId: `session-${randomUUID()}`,
         structuredOutput,
         startedAt: now,

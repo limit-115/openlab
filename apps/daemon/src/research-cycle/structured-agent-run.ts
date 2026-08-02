@@ -1,9 +1,19 @@
 import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
-import type { HarnessRunResult } from "@lab/harness/agent-harness.types";
+import type {
+    AgentHarness,
+    HarnessRunRequest,
+    HarnessRunResult
+} from "@lab/harness/agent-harness.types";
 import { HarnessAbortedError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
+import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { requiredById } from "#src/lab-workspace/snapshot-entities";
 import { structuredOutputSchema } from "#src/research-contract/research-contract";
+import {
+    SnapshotEffortLevel,
+    SnapshotHarnessKind
+} from "#src/research-cycle/structured-agent-run.const";
 import type {
     StructuredAgentRunInput,
     StructuredAgentRunOutput
@@ -22,30 +32,37 @@ export class StructuredAgentRunError extends Error {
 export async function runStructuredAgent<Output>(
     input: StructuredAgentRunInput<Output>
 ): Promise<StructuredAgentRunOutput<Output>> {
-    const { workspace, harness, stage, branchId, taskId, agentWorkspace, signal } = input;
-    await workspace.appendEvent(EventType.HARNESS_RUN_STARTED, {
-        harness: harness.kind,
-        stage,
-        branch_id: branchId,
-        task_id: taskId,
-        cwd: agentWorkspace.cwd
-    });
+    const { workspace, harness, stage, branchId, agentId, taskId, agentWorkspace, signal } = input;
+    const request: HarnessRunRequest = {
+        prompt: input.prompt,
+        cwd: agentWorkspace.cwd,
+        artifactDirectory: agentWorkspace.artifactDirectory,
+        responseSchema: structuredOutputSchema(input.schema),
+        ...(input.executionProfile === undefined
+            ? {}
+            : { executionProfile: input.executionProfile })
+    };
+    const execution = agentExecution(harness, request);
+    await workspace.mutateWithEvent(
+        EventType.HARNESS_RUN_STARTED,
+        {
+            harness: execution.harness,
+            model: execution.model,
+            effort: execution.effort,
+            stage,
+            branch_id: branchId,
+            task_id: taskId,
+            cwd: agentWorkspace.cwd
+        },
+        (draft) => {
+            requiredById(draft.agents, agentId).execution = execution;
+        }
+    );
 
     let completed: HarnessRunResult | undefined;
     let terminalEventRecorded = false;
     try {
-        for await (const event of harness.run(
-            {
-                prompt: input.prompt,
-                cwd: agentWorkspace.cwd,
-                artifactDirectory: agentWorkspace.artifactDirectory,
-                responseSchema: structuredOutputSchema(input.schema),
-                ...(input.executionProfile === undefined
-                    ? {}
-                    : { executionProfile: input.executionProfile })
-            },
-            signal
-        )) {
+        for await (const event of harness.run(request, signal)) {
             if (event.type === HarnessEventTypes.RUN_COMPLETED) {
                 completed = event.result;
             }
@@ -121,4 +138,13 @@ export async function runStructuredAgent<Output>(
             { cause: error }
         );
     }
+}
+
+function agentExecution(harness: AgentHarness, request: HarnessRunRequest): AgentExecution {
+    const session = harness.resolveSession(request);
+    return {
+        harness: SnapshotHarnessKind[harness.kind],
+        model: session.model,
+        effort: SnapshotEffortLevel[session.effort]
+    };
 }

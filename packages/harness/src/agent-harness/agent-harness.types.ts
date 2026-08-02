@@ -19,6 +19,16 @@ export interface HarnessPreflight {
     readonly authentication: HarnessAuthentication;
 }
 
+/**
+ * The model and reasoning effort a run executes with once harness defaults have filled in whatever
+ * the request left unset. Every harness resolves one, so a run is never left to a machine-local or
+ * vendor default.
+ */
+export interface HarnessSession {
+    readonly model: string;
+    readonly effort: HarnessEffortLevel;
+}
+
 export interface HarnessRunRequest {
     readonly prompt: string;
     readonly cwd: string;
@@ -59,6 +69,7 @@ export interface HarnessRunResult {
     readonly status: HarnessRunStatus;
     readonly cliVersion: string;
     readonly authentication: HarnessAuthentication;
+    readonly session: HarnessSession;
     readonly sessionId: string | null;
     readonly structuredOutput?: unknown;
     readonly startedAt: string;
@@ -73,6 +84,7 @@ export interface HarnessRunResult {
 
 export interface AgentHarness {
     readonly kind: HarnessKind;
+    resolveSession(request: HarnessRunRequest): HarnessSession;
     preflight(signal?: AbortSignal): Promise<HarnessPreflight>;
     run(request: HarnessRunRequest, signal?: AbortSignal): AsyncIterable<HarnessEvent>;
 }

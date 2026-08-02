@@ -2,7 +2,8 @@ import type { HarnessKind, HarnessRunStatus } from "#src/agent-harness/agent-har
 import type {
     HarnessArtifact,
     HarnessAuthentication,
-    HarnessCommandRecord
+    HarnessCommandRecord,
+    HarnessSession
 } from "#src/agent-harness/agent-harness.types";
 import type { NonManifestArtifacts } from "#src/subscription-cli-harness/harness-run-artifacts.types";
 
@@ -10,6 +11,7 @@ export interface StartedRunManifest {
     readonly kind: HarnessKind;
     readonly cliVersion: string;
     readonly authentication: HarnessAuthentication;
+    readonly session: HarnessSession;
     readonly command: HarnessCommandRecord;
     readonly startedAt: string;
     readonly timeoutMs: number;
@@ -22,6 +24,7 @@ export interface FinishedRunManifest {
     readonly status: HarnessRunStatus;
     readonly cliVersion: string;
     readonly authentication: HarnessAuthentication;
+    readonly session: HarnessSession;
     readonly sessionId: string | null;
     readonly structuredOutput?: unknown;
     readonly startedAt: string;

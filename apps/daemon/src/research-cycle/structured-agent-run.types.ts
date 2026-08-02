@@ -10,6 +10,7 @@ export interface StructuredAgentRunInput<Output> {
     readonly harness: AgentHarness;
     readonly stage: ResearchStage;
     readonly branchId: string;
+    readonly agentId: string;
     readonly taskId: string;
     readonly agentWorkspace: ResearchWorkspace;
     readonly prompt: string;

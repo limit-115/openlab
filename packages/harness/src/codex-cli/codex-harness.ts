@@ -1,11 +1,13 @@
 import {
     HarnessAuthenticationMethods,
+    type HarnessEffortLevel,
     HarnessExecutionProfiles,
     HarnessKinds
 } from "#src/agent-harness/agent-harness.const";
 import type {
     HarnessAuthentication,
-    HarnessRunRequest
+    HarnessRunRequest,
+    HarnessSession
 } from "#src/agent-harness/agent-harness.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
@@ -13,9 +15,11 @@ import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import {
     CODEX_BINARY,
     CodexColorModes,
+    CodexConfigKeys,
     CodexLoginMarkers,
     CodexPermissionArguments,
-    CodexPermissionModes
+    CodexPermissionModes,
+    CodexSessionDefaults
 } from "#src/codex-cli/codex-cli.const";
 import { CodexEventParser } from "#src/codex-cli/codex-event-parser";
 import { codexModelApiPolicyConfig } from "#src/model-api-policy/model-api-policy-hook";
@@ -57,8 +61,13 @@ export class CodexHarness extends SubscriptionCliHarness {
         };
     }
 
+    protected sessionDefaults(): HarnessSession {
+        return { model: CodexSessionDefaults.MODEL, effort: CodexSessionDefaults.EFFORT };
+    }
+
     protected buildCommand(
         request: HarnessRunRequest,
+        session: HarnessSession,
         responseSchemaPath: string | undefined
     ): HarnessCommand {
         const sharedArguments = [
@@ -71,7 +80,10 @@ export class CodexHarness extends SubscriptionCliHarness {
             ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
                 ? CodexPermissionArguments[CodexPermissionModes.READ_ONLY]
                 : CodexPermissionArguments[CodexPermissionModes.UNRESTRICTED]),
-            ...(request.model === undefined ? [] : ["--model", request.model]),
+            "--model",
+            session.model,
+            "--config",
+            codexReasoningEffortConfig(session.effort),
             ...(responseSchemaPath === undefined ? [] : ["--output-schema", responseSchemaPath])
         ];
 
@@ -89,4 +101,9 @@ export class CodexHarness extends SubscriptionCliHarness {
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
         return new CodexEventParser(request.resumeSessionId, request.responseSchema !== undefined);
     }
+}
+
+/** Codex parses an override value as TOML, so the effort has to arrive as a quoted string. */
+function codexReasoningEffortConfig(effort: HarnessEffortLevel): string {
+    return `${CodexConfigKeys.MODEL_REASONING_EFFORT}=${JSON.stringify(effort)}`;
 }

@@ -11,7 +11,8 @@ import type {
     HarnessCommandRecord,
     HarnessPreflight,
     HarnessRunRequest,
-    HarnessRunResult
+    HarnessRunResult,
+    HarnessSession
 } from "#src/agent-harness/agent-harness.types";
 import { HarnessDiagnosticLevels, HarnessEventTypes } from "#src/agent-harness/harness-event.const";
 import type { HarnessCompletedEvent, HarnessEvent } from "#src/agent-harness/harness-event.types";
@@ -76,11 +77,21 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
 
     protected abstract authenticationCommand(): readonly string[];
     protected abstract parseAuthentication(result: HarnessCaptureResult): HarnessAuthentication;
+    protected abstract sessionDefaults(): HarnessSession;
     protected abstract buildCommand(
         request: HarnessRunRequest,
+        session: HarnessSession,
         responseSchemaPath: string | undefined
     ): HarnessCommand;
     protected abstract createEventParser(request: HarnessRunRequest): HarnessEventParser;
+
+    resolveSession(request: HarnessRunRequest): HarnessSession {
+        const defaults = this.sessionDefaults();
+        return {
+            model: request.model ?? defaults.model,
+            effort: request.effort ?? defaults.effort
+        };
+    }
 
     async preflight(signal?: AbortSignal): Promise<HarnessPreflight> {
         return this.preflightInDirectory(process.cwd(), signal);
@@ -113,8 +124,9 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         const removedEnvironmentVariables = removedHarnessEnvironmentVariables(
             this.#sourceEnvironment
         );
+        const session = this.resolveSession(request);
         const files = await createRunFiles(this.kind, request);
-        const command = this.buildCommand(request, files.responseSchema?.path);
+        const command = this.buildCommand(request, session, files.responseSchema?.path);
         const commandRecord: HarnessCommandRecord = {
             file: this.#binary,
             args: [...command.args],
@@ -127,6 +139,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
             kind: this.kind,
             cliVersion: preflight.cliVersion,
             authentication: preflight.authentication,
+            session,
             command: commandRecord,
             startedAt,
             timeoutMs,
@@ -282,6 +295,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 status,
                 cliVersion: preflight.cliVersion,
                 authentication: preflight.authentication,
+                session,
                 sessionId: parser.sessionId,
                 ...(hasStructuredOutput ? { structuredOutput } : {}),
                 startedAt,
