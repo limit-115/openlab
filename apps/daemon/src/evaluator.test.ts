@@ -3,7 +3,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { ClaimStatus } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
-import { assertEvaluatorUnchanged, type EvaluatorTarget, freezeEvaluator } from "#src/evaluator";
+import {
+    assertEvaluatorUnchanged,
+    type EvaluatorTarget,
+    evaluatorSemanticIdentity,
+    freezeEvaluator
+} from "#src/evaluator";
 import { RESEARCH_TARGET_KIND } from "#src/research-contract";
 
 const target = {
@@ -87,6 +92,23 @@ describe("evaluator precommit", () => {
 
         await expect(assertEvaluatorUnchanged(directory, frozen)).rejects.toThrow(
             "changed after precommit"
+        );
+    });
+
+    it("assigns one semantic identity to comment and whitespace-only variants", () => {
+        const compact = `#!/usr/bin/env node
+const value = 1;
+process.stdout.write(String(value));
+`;
+        const cosmeticVariant = `#!/usr/bin/env node
+// Cosmetic comment
+const   value = 1; /* another comment */
+
+process.stdout.write( String(value) );
+`;
+
+        expect(evaluatorSemanticIdentity(compact, ["--strict"], "A value must be reported")).toBe(
+            evaluatorSemanticIdentity(cosmeticVariant, ["--strict"], "A value must be reported")
         );
     });
 });

@@ -69,6 +69,7 @@ describe("research prompts", () => {
                     targetStatementSha256: "a".repeat(64),
                     file: "/tmp/evaluate",
                     fileSha256: "b".repeat(64),
+                    semanticIdentitySha256: "c".repeat(64),
                     args: [],
                     successContract: "Median runtime is lower"
                 }

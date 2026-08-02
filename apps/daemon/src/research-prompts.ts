@@ -8,6 +8,11 @@ export const SUBSCRIPTION_ONLY_POLICY =
 export const MISSING_CAPABILITY_POLICY =
     "When a credential, tool, dataset, account, or infrastructure resource genuinely required for the mission is unavailable, report it in capability_requests with need, reason, and provisioning_hint, without including secret values. This is a concrete resource request, not permission to proceed. Continue every direction and check that remains possible. Available mission-specific external-service credentials may be used; model-provider API credentials and usage-based model billing remain forbidden." as const;
 
+const RedactedPromptValue = {
+    ARTIFACT_PATH: "[withheld-research-artifact]",
+    EVALUATOR_PATH: "[daemon-frozen]"
+} as const;
+
 function taskContext(task: TaskInput): string {
     return JSON.stringify(
         {
@@ -174,6 +179,25 @@ export function verifierPrompt(
     results: readonly ResearchResult[],
     criticism: CriticResult
 ): string {
+    const researchArtifactPaths = results.flatMap(({ evidence }) =>
+        evidence.flatMap(({ artifact_paths }) => artifact_paths)
+    );
+    const branchReports = results.map((result) => ({
+        ...result,
+        evidence: result.evidence.map(({ artifact_paths, ...evidence }) => ({
+            ...evidence,
+            artifact_count: artifact_paths.length
+        }))
+    }));
+    const redactedCriticism = {
+        ...criticism,
+        verification_evaluator: {
+            ...criticism.verification_evaluator,
+            evaluator_path: RedactedPromptValue.EVALUATOR_PATH
+        }
+    };
+    const safeBranchReports = redactArtifactPaths(branchReports, researchArtifactPaths);
+    const safeCriticism = redactArtifactPaths(redactedCriticism, researchArtifactPaths);
     return `You are an independent verifier in a clean session and workspace. Treat every supplied
 claim as untrusted. Reproduce the strongest claimed result from original inputs or reconstructed
 artifacts, use an independent evaluator where possible, and actively test the critic's concerns.
@@ -189,11 +213,11 @@ ${taskContext(task)}
 Claims and evaluators:
 ${JSON.stringify(plan.claims, null, 4)}
 
-Branch reports and artifact references:
-${JSON.stringify(results, null, 4)}
+Branch reports (research artifact paths are deliberately withheld):
+${JSON.stringify(safeBranchReports, null, 4)}
 
 Adversarial review:
-${JSON.stringify(criticism, null, 4)}
+${JSON.stringify(safeCriticism, null, 4)}
 
 Select the zero-based claim_index you independently tested. A reproduced verdict must reference
 material artifact files created by your own reproduction inside this clean workspace. Paths copied
@@ -203,4 +227,26 @@ reproduction began and will accept only its bound structured verdict. A self-wri
 evaluator passed is not evidence.
 
 Return only the requested structured verdict.`;
+}
+
+function redactArtifactPaths(value: unknown, artifactPaths: readonly string[]): unknown {
+    if (typeof value === "string") {
+        return artifactPaths.reduce(
+            (redacted, artifactPath) =>
+                redacted.replaceAll(artifactPath, RedactedPromptValue.ARTIFACT_PATH),
+            value
+        );
+    }
+    if (Array.isArray(value)) {
+        return value.map((item) => redactArtifactPaths(item, artifactPaths));
+    }
+    if (typeof value === "object" && value !== null) {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, item]) => [
+                key,
+                redactArtifactPaths(item, artifactPaths)
+            ])
+        );
+    }
+    return value;
 }

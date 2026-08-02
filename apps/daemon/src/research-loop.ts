@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { type AssessedEvidence, collectStaleDependents, transitionClaim } from "@lab/core/claims";
@@ -99,7 +100,12 @@ const BranchProgress = {
 
 const ExperimentEvaluator = {
     AGENT_HARNESS: "Subscription CLI research agent",
-    INDEPENDENT_VERIFIER: "Daemon-attested independent evaluator"
+    INDEPENDENT_VERIFIER: "Daemon-attested independent evaluator",
+    NEGATIVE_CONTROL: "Daemon-owned negative control"
+} as const;
+
+const CleanWorkspaceEntry = {
+    GIT: ".git"
 } as const;
 
 const PromiseSettlement = {
@@ -158,7 +164,8 @@ interface MaterialEvidence {
 interface ResearchBranchResult {
     readonly result?: ResearchResult;
     readonly evidence: readonly MaterialEvidence[];
-    readonly evaluatorHashes: readonly string[];
+    readonly evaluatorIdentities: readonly string[];
+    readonly artifactSha256s: readonly string[];
     readonly issues: readonly string[];
 }
 
@@ -190,6 +197,10 @@ class StageCapabilityBlockedError extends Error {
         super(`All subscription CLI harnesses lost required capabilities during ${stage}`);
         this.name = "StageCapabilityBlockedError";
     }
+}
+
+interface CriticStageRunOutput extends StageRunOutput<CriticResult> {
+    readonly evaluator: FrozenEvaluator;
 }
 
 export async function runResearchLoop(
@@ -415,7 +426,8 @@ async function runResearchCycle(
         }
         return {
             evidence: [],
-            evaluatorHashes: [],
+            evaluatorIdentities: [],
+            artifactSha256s: [],
             issues: [result.reason instanceof Error ? result.reason.message : String(result.reason)]
         };
     });
@@ -429,8 +441,11 @@ async function runResearchCycle(
         result === undefined ? [] : [result]
     );
     const issues = branchResults.flatMap(({ issues }) => issues);
-    const researcherEvaluatorHashes = branchResults.flatMap(
-        ({ evaluatorHashes }) => evaluatorHashes
+    const researcherEvaluatorIdentities = branchResults.flatMap(
+        ({ evaluatorIdentities }) => evaluatorIdentities
+    );
+    const researcherArtifactSha256s = branchResults.flatMap(
+        ({ artifactSha256s }) => artifactSha256s
     );
     if (successfulResults.length === 0) {
         const nextExperiments: string[] = [];
@@ -446,37 +461,19 @@ async function runResearchCycle(
         "Adversarial review",
         "Falsify branch results and evaluator assumptions"
     );
-    const criticRun = await runStageWithFallback({
+    const criticRun = await runCriticStageWithFallback({
         workspace,
         available,
         preferredIndex: cycle + plan.directions.length + 1,
-        stage: ResearchStage.CRITIC,
-        branchId: criticIds.branchId,
-        agentId: criticIds.agentId,
-        taskId: criticIds.taskId,
+        ids: criticIds,
         createAgentWorkspace,
         prompt: criticPrompt(task, plan, successfulResults),
-        schema: CriticResultSchema,
+        planTargets,
+        researcherEvaluatorIdentities,
         ...(signal === undefined ? {} : { signal })
     });
     const criticism = criticRun.value;
-    const verificationTarget = requiredPlanTarget(
-        planTargets,
-        criticism.verification_evaluator.target_kind,
-        criticism.verification_evaluator.target_index
-    );
-    if (verificationTarget.kind !== RESEARCH_TARGET_KIND.CLAIM) {
-        throw new Error("Independent verification evaluator must target a claim");
-    }
-    const verificationEvaluator = await freezeEvaluator(
-        criticRun.agentWorkspace.cwd,
-        criticism.verification_evaluator,
-        evaluatorTarget(verificationTarget)
-    );
-    if (researcherEvaluatorHashes.includes(verificationEvaluator.fileSha256)) {
-        throw new Error("Independent verification must use an alternate evaluator");
-    }
-    await recordEvaluatorPrecommit(workspace, criticIds, verificationEvaluator);
+    const verificationEvaluator = criticRun.evaluator;
     await finishRoleTask(workspace, criticIds, BranchStatus.CLOSED);
 
     const verifierIds = roleIdentifiers(ResearchStage.VERIFIER, cycle, 0);
@@ -501,19 +498,32 @@ async function runResearchCycle(
         schema: VerifierResultSchema,
         ...(signal === undefined ? {} : { signal })
     });
-    await finishRoleTask(workspace, verifierIds, BranchStatus.CLOSED);
-    const verification = await recordVerifierEvidence(
-        workspace,
-        verifierRun.value,
-        verifierRun.result,
-        verifierRun.agentWorkspace,
-        verifierIds,
-        planTargets,
-        criticism,
-        verificationEvaluator,
-        criticRun.agentWorkspace,
-        signal
-    );
+    let verification: Awaited<ReturnType<typeof recordVerifierEvidence>>;
+    try {
+        verification = await recordVerifierEvidence(
+            workspace,
+            verifierRun.value,
+            verifierRun.result,
+            verifierRun.agentWorkspace,
+            verifierIds,
+            planTargets,
+            criticism,
+            verificationEvaluator,
+            criticRun.agentWorkspace,
+            researcherArtifactSha256s,
+            signal
+        );
+    } catch (error) {
+        if (!signal?.aborted) {
+            await failRoleTask(workspace, verifierIds, false);
+        }
+        throw error;
+    }
+    if (verification.accepted) {
+        await finishRoleTask(workspace, verifierIds, BranchStatus.CLOSED);
+    } else {
+        await failRoleTask(workspace, verifierIds, false);
+    }
 
     if (verification.completed) {
         progress.push(new Date());
@@ -656,6 +666,7 @@ async function recordEvaluatorPrecommit(
         target_claim_id: evaluator.targetClaimId,
         evaluator_path: evaluator.file,
         evaluator_sha256: evaluator.fileSha256,
+        evaluator_semantic_identity_sha256: evaluator.semanticIdentitySha256,
         args: evaluator.args,
         success_contract: evaluator.successContract
     });
@@ -749,7 +760,7 @@ async function runResearchBranch(
 
     for (let offset = 0; offset < available.length; offset += 1) {
         const harness = selectHarness(available, preferredHarnessIndex + offset).harness;
-        const agentWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
+        const evaluatorWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
         const experimentId = `experiment-${randomUUID()}`;
         let attemptPrepared = false;
         try {
@@ -759,7 +770,7 @@ async function runResearchBranch(
                 stage: ResearchStage.RESEARCHER,
                 branchId: ids.branchId,
                 taskId: ids.taskId,
-                agentWorkspace,
+                agentWorkspace: evaluatorWorkspace,
                 prompt: evaluatorPrecommitPrompt(task, plan, direction),
                 schema: ResearchEvaluatorPrecommitSchema,
                 ...(signal === undefined ? {} : { signal })
@@ -767,17 +778,19 @@ async function runResearchBranch(
             const frozenEvaluators = await freezeResearchEvaluators(
                 workspace,
                 ids,
-                agentWorkspace,
+                evaluatorWorkspace,
                 precommit.value.evaluators,
                 planTargets
             );
+            const outcomeWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
+            await assertCleanOutcomeWorkspace(outcomeWorkspace);
             await prepareResearchAttempt(
                 workspace,
                 ids,
                 experimentId,
                 direction,
                 harness,
-                agentWorkspace,
+                outcomeWorkspace,
                 offset + 1
             );
             attemptPrepared = true;
@@ -787,7 +800,7 @@ async function runResearchBranch(
                 stage: ResearchStage.RESEARCHER,
                 branchId: ids.branchId,
                 taskId: ids.taskId,
-                agentWorkspace,
+                agentWorkspace: outcomeWorkspace,
                 prompt: researcherPrompt(task, plan, direction, frozenEvaluators),
                 schema: ResearchResultSchema,
                 ...(signal === undefined ? {} : { signal })
@@ -801,7 +814,8 @@ async function runResearchBranch(
                 run.value,
                 ids,
                 ids.branchId,
-                agentWorkspace,
+                outcomeWorkspace,
+                evaluatorWorkspace,
                 planTargets,
                 frozenEvaluators,
                 signal
@@ -815,7 +829,10 @@ async function runResearchBranch(
             return {
                 result: recorded.result,
                 evidence: recorded.evidence,
-                evaluatorHashes: frozenEvaluators.map(({ fileSha256 }) => fileSha256),
+                evaluatorIdentities: frozenEvaluators.map(
+                    ({ semanticIdentitySha256 }) => semanticIdentitySha256
+                ),
+                artifactSha256s: recorded.artifactSha256s,
                 issues: [...issues, ...recorded.issues]
             };
         } catch (error) {
@@ -835,7 +852,7 @@ async function runResearchBranch(
     }
 
     await failRoleTask(workspace, ids, false);
-    return { evidence: [], evaluatorHashes: [], issues };
+    return { evidence: [], evaluatorIdentities: [], artifactSha256s: [], issues };
 }
 
 async function prepareResearchBranch(
@@ -916,12 +933,19 @@ async function recordResearchEvidence(
     result: ResearchResult,
     ids: RoleIdentifiers,
     branchId: string,
-    agentWorkspace: ResearchWorkspace,
+    outcomeWorkspace: ResearchWorkspace,
+    evaluatorWorkspace: ResearchWorkspace,
     planTargets: readonly PlanTarget[],
     frozenEvaluators: readonly FrozenEvaluator[],
     signal?: AbortSignal
-): Promise<{ result: ResearchResult; evidence: MaterialEvidence[]; issues: string[] }> {
+): Promise<{
+    result: ResearchResult;
+    evidence: MaterialEvidence[];
+    artifactSha256s: string[];
+    issues: string[];
+}> {
     const evidence: MaterialEvidence[] = [];
+    const artifactSha256s: string[] = [];
     const issues: string[] = [];
     const normalizedEvidence: ResearchResult["evidence"] = [];
     for (const item of result.evidence) {
@@ -937,7 +961,7 @@ async function recordResearchEvidence(
         const validatedArtifacts: ValidatedArtifact[] = [];
         for (const artifactPath of item.artifact_paths) {
             try {
-                const artifact = await validateFileArtifact(agentWorkspace.cwd, artifactPath);
+                const artifact = await validateFileArtifact(outcomeWorkspace.cwd, artifactPath);
                 const rawArtifact: Evidence = {
                     id: `evidence-${randomUUID()}`,
                     kind: EvidenceKind.ARTIFACT,
@@ -974,6 +998,7 @@ async function recordResearchEvidence(
             );
             continue;
         }
+        artifactSha256s.push(...validatedArtifacts.map(({ sha256 }) => sha256));
 
         const frozenEvaluator = frozenEvaluators.find(
             ({ targetKind, targetIndex }) =>
@@ -987,7 +1012,8 @@ async function recordResearchEvidence(
         const evaluation = await executeAttestedEvaluator(
             workspace,
             ids,
-            agentWorkspace,
+            evaluatorWorkspace,
+            outcomeWorkspace,
             planTarget.claim,
             planTarget.evaluator,
             frozenEvaluator,
@@ -1008,6 +1034,18 @@ async function recordResearchEvidence(
                 `${item.target_kind} ${item.target_index} model outcome disagrees with the frozen evaluator verdict`
             );
             continue;
+        }
+        if (evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS) {
+            await assertEvaluatorRejectsNegativeControl(
+                workspace,
+                ids,
+                evaluatorWorkspace,
+                outcomeWorkspace,
+                planTarget.claim,
+                frozenEvaluator,
+                validatedArtifacts,
+                signal
+            );
         }
         const evaluatedOutcome = item.contradicts_hypothesis
             ? RESEARCH_OUTCOME.REFUTED
@@ -1061,6 +1099,7 @@ async function recordResearchEvidence(
     return {
         result: { ...result, evidence: normalizedEvidence },
         evidence,
+        artifactSha256s: uniqueStrings(artifactSha256s),
         issues
     };
 }
@@ -1128,8 +1167,9 @@ async function recordVerifierEvidence(
     criticism: CriticResult,
     verificationEvaluator: FrozenEvaluator,
     evaluatorWorkspace: ResearchWorkspace,
+    researcherArtifactSha256s: readonly string[],
     signal?: AbortSignal
-): Promise<{ completed: boolean; issues: string[] }> {
+): Promise<{ accepted: boolean; completed: boolean; issues: string[] }> {
     const issues: string[] = [];
     const planClaim = planTargets.find(
         ({ kind, planIndex }) =>
@@ -1137,6 +1177,7 @@ async function recordVerifierEvidence(
     );
     if (planClaim === undefined) {
         return {
+            accepted: false,
             completed: false,
             issues: [`Verifier references unknown claim index ${verdict.claim_index}`]
         };
@@ -1147,6 +1188,7 @@ async function recordVerifierEvidence(
         verificationEvaluator.targetClaimId !== planClaim.claim.id
     ) {
         return {
+            accepted: false,
             completed: false,
             issues: ["Verifier verdict does not match the critic-frozen evaluator target"]
         };
@@ -1158,6 +1200,10 @@ async function recordVerifierEvidence(
             const artifact = await validateFileArtifact(verifierWorkspace.cwd, artifactPath);
             if (artifact.bytes === 0) {
                 issues.push(`Rejected empty verifier artifact ${artifactPath}`);
+            } else if (researcherArtifactSha256s.includes(artifact.sha256)) {
+                issues.push(
+                    `Rejected verifier artifact copied from a research branch: ${artifactPath}`
+                );
             } else {
                 validatedArtifacts.push(artifact);
             }
@@ -1168,12 +1214,14 @@ async function recordVerifierEvidence(
         }
     }
     let evaluatorResult: ExecutionResult | undefined;
+    let accepted = false;
     if (validatedArtifacts.length > 0) {
         try {
             const evaluation = await executeAttestedEvaluator(
                 workspace,
                 verifierIds,
                 evaluatorWorkspace,
+                verifierWorkspace,
                 planClaim.claim,
                 ExperimentEvaluator.INDEPENDENT_VERIFIER,
                 verificationEvaluator,
@@ -1190,6 +1238,18 @@ async function recordVerifierEvidence(
             if (evaluation.verdict.verdict !== expectedVerdict) {
                 throw new Error(
                     "Verifier model verdict disagrees with the frozen evaluator verdict"
+                );
+            }
+            if (evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS) {
+                await assertEvaluatorRejectsNegativeControl(
+                    workspace,
+                    verifierIds,
+                    evaluatorWorkspace,
+                    verifierWorkspace,
+                    planClaim.claim,
+                    verificationEvaluator,
+                    validatedArtifacts,
+                    signal
                 );
             }
             const supports = evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS;
@@ -1252,7 +1312,9 @@ async function recordVerifierEvidence(
                     reproducible: false
                 });
             }
+            accepted = true;
         } catch (error) {
+            throwIfAborted(signal);
             issues.push(
                 `Rejected verifier evaluator: ${error instanceof Error ? error.message : String(error)}`
             );
@@ -1299,7 +1361,7 @@ async function recordVerifierEvidence(
                 ...criticism.counterexamples
             ])
         });
-        return { completed: true, issues };
+        return { accepted: true, completed: true, issues };
     }
 
     if (
@@ -1323,7 +1385,7 @@ async function recordVerifierEvidence(
     if (criticism.verdict !== CRITIC_VERDICT.CREDIBLE) {
         issues.push("Adversarial review did not clear the claim for completion");
     }
-    return { completed: false, issues };
+    return { accepted, completed: false, issues };
 }
 
 function verificationEvaluatorVerdict(
@@ -1372,10 +1434,99 @@ async function markDependentClaimsStale(
     );
 }
 
+async function assertCleanOutcomeWorkspace(workspace: ResearchWorkspace): Promise<void> {
+    const unexpectedEntries = (await readdir(workspace.cwd)).filter(
+        (entry) => entry !== CleanWorkspaceEntry.GIT
+    );
+    if (unexpectedEntries.length > 0) {
+        throw new Error(
+            `Research outcome workspace is not clean: ${unexpectedEntries.sort().join(", ")}`
+        );
+    }
+}
+
+async function assertEvaluatorRejectsNegativeControl(
+    workspace: LabWorkspace,
+    ids: RoleIdentifiers,
+    evaluatorWorkspace: ResearchWorkspace,
+    executionWorkspace: ResearchWorkspace,
+    claim: Claim,
+    frozenEvaluator: FrozenEvaluator,
+    inputArtifacts: readonly ValidatedArtifact[],
+    signal?: AbortSignal
+): Promise<void> {
+    const controls = await createNegativeControlArtifacts(executionWorkspace, inputArtifacts);
+    const evaluation = await executeAttestedEvaluator(
+        workspace,
+        ids,
+        evaluatorWorkspace,
+        executionWorkspace,
+        claim,
+        ExperimentEvaluator.NEGATIVE_CONTROL,
+        frozenEvaluator,
+        controls,
+        signal
+    );
+    if (evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS) {
+        throw new Error("Evaluator also supports daemon-owned negative-control artifacts");
+    }
+}
+
+async function createNegativeControlArtifacts(
+    workspace: ResearchWorkspace,
+    inputArtifacts: readonly ValidatedArtifact[]
+): Promise<ValidatedArtifact[]> {
+    const controlDirectory = path.join(
+        workspace.cwd,
+        ".lab-evaluator-controls",
+        `control-${randomUUID()}`
+    );
+    await mkdir(controlDirectory, { recursive: true });
+    return Promise.all(
+        inputArtifacts.map(async (artifact, index) => {
+            const extension = path.extname(artifact.path);
+            const controlPath = path.join(
+                controlDirectory,
+                `artifact-${String(index).padStart(3, "0")}${extension}`
+            );
+            await writeFile(controlPath, await negativeControlContent(artifact.path), {
+                flag: "wx"
+            });
+            return validateFileArtifact(workspace.cwd, controlPath);
+        })
+    );
+}
+
+async function negativeControlContent(artifactPath: string): Promise<string> {
+    const source = await readFile(artifactPath, "utf8");
+    try {
+        return `${JSON.stringify(emptyJsonValue(JSON.parse(source)), null, 4)}\n`;
+    } catch {
+        return "";
+    }
+}
+
+function emptyJsonValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+        return [];
+    }
+    if (typeof value === "object" && value !== null) {
+        return Object.fromEntries(Object.keys(value).map((key) => [key, null]));
+    }
+    if (typeof value === "string") {
+        return "";
+    }
+    if (typeof value === "boolean") {
+        return false;
+    }
+    return null;
+}
+
 async function executeAttestedEvaluator(
     workspace: LabWorkspace,
     ids: RoleIdentifiers,
-    agentWorkspace: ResearchWorkspace,
+    evaluatorWorkspace: ResearchWorkspace,
+    executionWorkspace: ResearchWorkspace,
     claim: Claim,
     evaluator: string,
     frozenEvaluator: FrozenEvaluator,
@@ -1386,11 +1537,11 @@ async function executeAttestedEvaluator(
     experimentId: string;
     verdict: EvaluatorStructuredVerdict;
 }> {
-    await assertEvaluatorUnchanged(agentWorkspace.cwd, frozenEvaluator);
+    await assertEvaluatorUnchanged(evaluatorWorkspace.cwd, frozenEvaluator);
     const evaluatorInput = bindEvaluatorInput(frozenEvaluator, inputArtifacts);
     const experimentId = `experiment-${randomUUID()}`;
     const artifactDirectory = path.join(
-        agentWorkspace.cwd,
+        executionWorkspace.cwd,
         ".lab-evaluator",
         `run-${randomUUID()}`
     );
@@ -1403,7 +1554,7 @@ async function executeAttestedEvaluator(
             hypothesis: claim.statement,
             evaluator,
             command: renderCommand(frozenEvaluator.file, frozenEvaluator.args),
-            cwd: agentWorkspace.cwd,
+            cwd: executionWorkspace.cwd,
             status: ExperimentStatus.RUNNING,
             started_at: startedAt
         });
@@ -1417,7 +1568,7 @@ async function executeAttestedEvaluator(
         {
             file: frozenEvaluator.file,
             args: frozenEvaluator.args,
-            cwd: agentWorkspace.cwd,
+            cwd: executionWorkspace.cwd,
             artifactDirectory,
             timeoutMs: VERIFIER_EVALUATOR_TIMEOUT_MS,
             env: sanitizeHarnessEnvironment(),
@@ -1929,6 +2080,75 @@ function preferredDifferentHarnessIndex(
 ): number {
     const index = available.findIndex(({ harness }) => harness.kind !== criticHarness.kind);
     return index < 0 ? 0 : index;
+}
+
+async function runCriticStageWithFallback(input: {
+    readonly workspace: LabWorkspace;
+    readonly available: readonly AvailableHarness[];
+    readonly preferredIndex: number;
+    readonly ids: RoleIdentifiers;
+    readonly createAgentWorkspace: CreateResearchWorkspace;
+    readonly prompt: string;
+    readonly planTargets: readonly PlanTarget[];
+    readonly researcherEvaluatorIdentities: readonly string[];
+    readonly signal?: AbortSignal;
+}): Promise<CriticStageRunOutput> {
+    let lastError: unknown;
+    let capabilityFailures = 0;
+    for (let offset = 0; offset < input.available.length; offset += 1) {
+        throwIfAborted(input.signal);
+        const harness = selectHarness(input.available, input.preferredIndex + offset).harness;
+        const agentWorkspace = await input.createAgentWorkspace(ResearchStage.CRITIC);
+        try {
+            const run = await runStructuredAgent({
+                workspace: input.workspace,
+                harness,
+                stage: ResearchStage.CRITIC,
+                branchId: input.ids.branchId,
+                taskId: input.ids.taskId,
+                agentWorkspace,
+                prompt: input.prompt,
+                schema: CriticResultSchema,
+                ...(input.signal === undefined ? {} : { signal: input.signal })
+            });
+            await persistAgentCapabilityRequests(input.workspace, run.value.capability_requests);
+            const target = requiredPlanTarget(
+                input.planTargets,
+                run.value.verification_evaluator.target_kind,
+                run.value.verification_evaluator.target_index
+            );
+            if (target.kind !== RESEARCH_TARGET_KIND.CLAIM) {
+                throw new Error("Independent verification evaluator must target a claim");
+            }
+            const evaluator = await freezeEvaluator(
+                agentWorkspace.cwd,
+                run.value.verification_evaluator,
+                evaluatorTarget(target)
+            );
+            if (input.researcherEvaluatorIdentities.includes(evaluator.semanticIdentitySha256)) {
+                throw new Error(
+                    "Independent verification must use a semantically alternate evaluator"
+                );
+            }
+            await recordEvaluatorPrecommit(input.workspace, input.ids, evaluator);
+            return { ...run, harness, agentWorkspace, evaluator };
+        } catch (error) {
+            lastError = error;
+            if (input.signal?.aborted) {
+                await failRoleTask(input.workspace, input.ids, true);
+                throw error;
+            }
+            if (error instanceof HarnessCapabilityError) {
+                capabilityFailures += 1;
+                await input.workspace.requestCapability(error.capabilityRequest);
+            }
+        }
+    }
+    if (capabilityFailures === input.available.length) {
+        throw new StageCapabilityBlockedError(ResearchStage.CRITIC);
+    }
+    await failRoleTask(input.workspace, input.ids, false);
+    throw lastError ?? new Error("All critic evaluator precommit attempts failed");
 }
 
 async function runStageWithFallback<Output extends AgentCapabilityOutput>(input: {
