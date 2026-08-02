@@ -73,9 +73,8 @@ export function createStatusServer(workspace: LabWorkspace): FastifyInstance {
         reply.raw.write(`event: snapshot\ndata: ${JSON.stringify(workspace.getSnapshot())}\n\n`);
 
         const unsubscribe = workspace.subscribe((event, snapshot) => {
-            reply.raw.write(
-                `id: ${event.id}\nevent: status\ndata: ${JSON.stringify({ event, snapshot })}\n\n`
-            );
+            reply.raw.write(`id: ${event.id}\nevent: event\ndata: ${JSON.stringify(event)}\n\n`);
+            reply.raw.write(`event: status\ndata: ${JSON.stringify(snapshot)}\n\n`);
         });
         const heartbeat = setInterval(() => reply.raw.write(": heartbeat\n\n"), 15_000);
         request.raw.on("close", () => {
