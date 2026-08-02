@@ -86,6 +86,14 @@ const RecoveryContextFixture = {
     RESOURCE_REFERENCE: "dataset://recovered/production-v1"
 } as const;
 
+const DormantCapabilityFixture = {
+    DIRECTION_TITLE: "Repair orchestration recovery",
+    DIRECTION_APPROACH: "Rewrite the research lab orchestrator recovery path",
+    DIRECTION_RATIONALE: "The control plane may be losing recovered tasks",
+    DIRECTION_OBJECTIVE: "Patch the research-loop scheduler and measure restored dispatch",
+    BLOCKER: "The research lab orchestrator crashes while restoring queued tasks"
+} as const;
+
 class ScriptedHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE;
     readonly requests: HarnessRunRequest[] = [];
@@ -109,6 +117,7 @@ class ScriptedHarness implements AgentHarness {
     readonly #mutateOutcomeDuringEvaluation: boolean;
     readonly #inspectOutcomeEnvironment: boolean;
     readonly #requestVerifierCapability: boolean;
+    readonly #protectedControlPlaneDirection: boolean;
     readonly #researchEvaluatorPaths: string[] = [];
     readonly #precomputedArtifactPaths: string[] = [];
 
@@ -133,6 +142,7 @@ class ScriptedHarness implements AgentHarness {
             mutateOutcomeDuringEvaluation?: boolean;
             inspectOutcomeEnvironment?: boolean;
             requestVerifierCapability?: boolean;
+            protectedControlPlaneDirection?: boolean;
         } = {}
     ) {
         this.kind = kind;
@@ -154,6 +164,7 @@ class ScriptedHarness implements AgentHarness {
         this.#mutateOutcomeDuringEvaluation = options.mutateOutcomeDuringEvaluation ?? false;
         this.#inspectOutcomeEnvironment = options.inspectOutcomeEnvironment ?? false;
         this.#requestVerifierCapability = options.requestVerifierCapability ?? false;
+        this.#protectedControlPlaneDirection = options.protectedControlPlaneDirection ?? false;
     }
 
     async preflight(): Promise<HarnessPreflight> {
@@ -184,12 +195,19 @@ class ScriptedHarness implements AgentHarness {
                     }
                 ],
                 directions: [
-                    {
-                        title: "Indexing",
-                        approach: "Change the lookup index",
-                        rationale: "Lookup dominates runtime",
-                        objective: "Measure indexed lookup"
-                    },
+                    this.#protectedControlPlaneDirection
+                        ? {
+                              title: DormantCapabilityFixture.DIRECTION_TITLE,
+                              approach: DormantCapabilityFixture.DIRECTION_APPROACH,
+                              rationale: DormantCapabilityFixture.DIRECTION_RATIONALE,
+                              objective: DormantCapabilityFixture.DIRECTION_OBJECTIVE
+                          }
+                        : {
+                              title: "Indexing",
+                              approach: "Change the lookup index",
+                              rationale: "Lookup dominates runtime",
+                              objective: "Measure indexed lookup"
+                          },
                     {
                         title: "Batching",
                         approach: "Batch independent operations",
@@ -735,6 +753,75 @@ describe.sequential("runResearchLoop", () => {
             expect.arrayContaining([
                 expect.objectContaining({
                     statement: "The benchmark workload represents production traffic"
+                })
+            ])
+        );
+    });
+
+    it("rejects an undiagnosed lab-control-plane direction before creating its task or branch", async () => {
+        const workspace = await createWorkspace();
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            protectedControlPlaneDirection: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE);
+
+        const outcome = await runResearchLoop(workspace, { harnesses: [codex, claude] });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
+        expect(
+            codex.requests.filter(({ prompt }) => prompt.includes(PromptRole.DIRECTOR))
+        ).toHaveLength(1);
+        expect(
+            claude.requests.filter(({ prompt }) => prompt.includes(PromptRole.DIRECTOR))
+        ).toHaveLength(1);
+        const snapshot = workspace.getSnapshot();
+        expect(snapshot.branches).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    title: DormantCapabilityFixture.DIRECTION_TITLE,
+                    approach: DormantCapabilityFixture.DIRECTION_APPROACH
+                })
+            ])
+        );
+        expect(snapshot.tasks).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    objective: DormantCapabilityFixture.DIRECTION_OBJECTIVE
+                })
+            ])
+        );
+    });
+
+    it("allows a matching repair direction only after recovering its diagnosed blocker", async () => {
+        const workspace = await createWorkspace();
+        await workspace.update((draft) => {
+            draft.frontier.blockers.push(DormantCapabilityFixture.BLOCKER);
+        });
+        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
+        const recovered = await LabWorkspace.load(workspaceRoot, workspace.runDirectory);
+        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
+            protectedControlPlaneDirection: true
+        });
+        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
+            protectedControlPlaneDirection: true
+        });
+
+        const outcome = await runResearchLoop(recovered, { harnesses: [codex, claude] });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
+        expect(recovered.getSnapshot().branches).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    title: DormantCapabilityFixture.DIRECTION_TITLE,
+                    approach: DormantCapabilityFixture.DIRECTION_APPROACH
+                })
+            ])
+        );
+        expect(recovered.getSnapshot().tasks).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    objective: DormantCapabilityFixture.DIRECTION_OBJECTIVE,
+                    role: AgentRole.RESEARCHER
                 })
             ])
         );

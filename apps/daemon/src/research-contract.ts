@@ -1,6 +1,11 @@
 import { ExternalEffect } from "@lab/protocol/constants";
 import type { TaskInput } from "@lab/protocol/schemas";
 import { z } from "zod";
+import {
+    type DormantCapabilityPolicyContext,
+    DormantCapabilityPolicyDecision,
+    evaluateDormantCapabilityDirection
+} from "#src/director-direction-policy";
 
 export const RESEARCH_OUTCOME = {
     SUPPORTED: "supported",
@@ -118,7 +123,15 @@ export const EvaluatorStructuredVerdictSchema = z.object({
     summary: z.string().min(1)
 });
 
-function createDirectorPlanSchema(assumptionsSchema: z.ZodArray<typeof AssumptionSchema>) {
+const DefaultDormantCapabilityPolicyContext: DormantCapabilityPolicyContext = {
+    recovered: false,
+    frontierBlockers: []
+};
+
+function createDirectorPlanSchema(
+    assumptionsSchema: z.ZodArray<typeof AssumptionSchema>,
+    policyContext: DormantCapabilityPolicyContext = DefaultDormantCapabilityPolicyContext
+) {
     return z
         .object({
             operational_goal: z.string().min(1),
@@ -130,6 +143,14 @@ function createDirectorPlanSchema(assumptionsSchema: z.ZodArray<typeof Assumptio
         .superRefine((plan, context) => {
             const firstIndexByDirection = new Map<string, number>();
             for (const [index, direction] of plan.directions.entries()) {
+                const policyResult = evaluateDormantCapabilityDirection(direction, policyContext);
+                if (policyResult.decision === DormantCapabilityPolicyDecision.DENY) {
+                    context.addIssue({
+                        code: "custom",
+                        path: ["directions", index],
+                        message: policyResult.reason
+                    });
+                }
                 const key = normalizedDirectionKey(direction);
                 const firstIndex = firstIndexByDirection.get(key);
                 if (firstIndex === undefined) {
@@ -148,16 +169,18 @@ function createDirectorPlanSchema(assumptionsSchema: z.ZodArray<typeof Assumptio
 export const DirectorPlanSchema = createDirectorPlanSchema(z.array(AssumptionSchema));
 
 export function directorPlanSchema(
-    task: Pick<TaskInput, "success_criteria">
+    task: Pick<TaskInput, "success_criteria">,
+    policyContext: DormantCapabilityPolicyContext = DefaultDormantCapabilityPolicyContext
 ): typeof DirectorPlanSchema {
     if (task.success_criteria.length > 0) {
-        return DirectorPlanSchema;
+        return createDirectorPlanSchema(z.array(AssumptionSchema), policyContext);
     }
 
     return createDirectorPlanSchema(
         z
             .array(AssumptionSchema)
-            .min(1, DIRECTOR_PLAN_VALIDATION_ERROR.MISSING_OPERATIONAL_CRITERION)
+            .min(1, DIRECTOR_PLAN_VALIDATION_ERROR.MISSING_OPERATIONAL_CRITERION),
+        policyContext
     );
 }
 

@@ -415,7 +415,10 @@ async function runResearchCycle(
         taskId: directorIds.taskId,
         createAgentWorkspace,
         prompt: directorPrompt(task),
-        schema: directorPlanSchema(task),
+        schema: directorPlanSchema(task, {
+            recovered: workspace.recovered,
+            frontierBlockers: workspace.getSnapshot().frontier.blockers
+        }),
         ...(signal === undefined ? {} : { signal })
     });
     await finishRoleTask(workspace, directorIds, BranchStatus.CLOSED);
