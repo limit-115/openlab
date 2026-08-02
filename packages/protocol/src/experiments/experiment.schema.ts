@@ -15,6 +15,7 @@ export const ExperimentSchema = z.object({
     cwd: z.string(),
     status: ExperimentStatusSchema,
     exit_code: z.int().nullable().optional(),
+    error: z.string().trim().min(1).optional(),
     started_at: z.iso.datetime().optional(),
     finished_at: z.iso.datetime().optional(),
     output_path: z.string().optional(),
