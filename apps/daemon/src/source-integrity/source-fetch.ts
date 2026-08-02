@@ -92,7 +92,7 @@ export async function fetchDaemonSource(request: SourceFetchRequest): Promise<So
             const bodyBytes = await readLimitedBody(response);
             const bodyPath = path.join(request.artifactDirectory, SourceFetchArtifactFile.BODY);
             await writeFile(bodyPath, bodyBytes, { flag: "wx", mode: 0o400 });
-            const body = await validateFileArtifact(request.artifactRoot, bodyPath);
+            const body = await validateFileArtifact(request.artifactDirectory, bodyPath);
             const manifest = await persistManifest(request, {
                 outcome: SourceFetchOutcome.SUCCEEDED,
                 requested_url: safeRequestedUrl,
@@ -208,7 +208,7 @@ async function persistManifest(
         flag: "wx",
         mode: 0o400
     });
-    return validateFileArtifact(request.artifactRoot, manifestPath);
+    return validateFileArtifact(request.artifactDirectory, manifestPath);
 }
 
 function safeUrlForRecord(value: string): string {

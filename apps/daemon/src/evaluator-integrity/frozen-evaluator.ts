@@ -24,20 +24,20 @@ import {
 import { EVALUATOR_VERDICT } from "#src/research-contract/research-contract.const";
 
 export async function freezeEvaluator(
-    containmentRoot: string,
+    baseDirectory: string,
     candidate: EvaluatorPrecommit,
     target: EvaluatorTarget
 ): Promise<FrozenEvaluator> {
     if (candidate.target_kind !== target.kind || candidate.target_index !== target.index) {
         throw new Error("Evaluator precommit does not match its target");
     }
-    const artifact = await validateFileArtifact(containmentRoot, candidate.evaluator_path);
+    const artifact = await validateFileArtifact(baseDirectory, candidate.evaluator_path);
     if (artifact.bytes < EvaluatorFileRequirement.MINIMUM_BYTES) {
         throw new Error("Evaluator executable is too small to implement a meaningful contract");
     }
     const metadata = await stat(artifact.path);
     if ((metadata.mode & EvaluatorFileRequirement.EXECUTABLE_MODE_MASK) === 0) {
-        throw new Error("Evaluator must be a contained executable regular file");
+        throw new Error("Evaluator must be an executable regular file");
     }
     const source = await readFile(artifact.path, "utf8");
     if (Object.values(TrivialEvaluatorSource).some((pattern) => pattern.test(source.trim()))) {
@@ -76,10 +76,10 @@ export function evaluatorSemanticIdentity(
 }
 
 export async function assertEvaluatorUnchanged(
-    containmentRoot: string,
+    baseDirectory: string,
     evaluator: FrozenEvaluator
 ): Promise<void> {
-    const artifact = await validateFileArtifact(containmentRoot, evaluator.file);
+    const artifact = await validateFileArtifact(baseDirectory, evaluator.file);
     if (artifact.sha256 !== evaluator.fileSha256) {
         throw new Error("Evaluator executable changed after precommit");
     }

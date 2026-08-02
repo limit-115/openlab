@@ -91,7 +91,6 @@ export async function recordResearchSources(
 
         const fetched = await fetchDaemonSource({
             url: candidate.url,
-            artifactRoot: workspace.runDirectory,
             artifactDirectory,
             ...(signal === undefined ? {} : { signal })
         });

@@ -21,7 +21,6 @@ describe("fetchDaemonSource", () => {
         try {
             const result = await fetchDaemonSource({
                 url: `${server.baseUrl}/redirect`,
-                artifactRoot: root,
                 artifactDirectory: path.join(root, "fetch-1")
             });
 
@@ -58,7 +57,6 @@ describe("fetchDaemonSource", () => {
         try {
             const missing = await fetchDaemonSource({
                 url: `${server.baseUrl}/missing`,
-                artifactRoot: root,
                 artifactDirectory: path.join(root, "missing")
             });
             expect(missing).toMatchObject({
@@ -70,7 +68,6 @@ describe("fetchDaemonSource", () => {
 
             const oversized = await fetchDaemonSource({
                 url: `${server.baseUrl}/oversized`,
-                artifactRoot: root,
                 artifactDirectory: path.join(root, "oversized")
             });
             expect(oversized).toMatchObject({
@@ -90,7 +87,6 @@ describe("fetchDaemonSource", () => {
 
         const result = await fetchDaemonSource({
             url: SourceFixture.MODEL_PROVIDER_URL,
-            artifactRoot: root,
             artifactDirectory: path.join(root, "provider")
         });
 
@@ -105,7 +101,6 @@ describe("fetchDaemonSource", () => {
 
         const invalid = await fetchDaemonSource({
             url: "fabricated source URL",
-            artifactRoot: root,
             artifactDirectory: path.join(root, "invalid")
         });
         expect(invalid).toMatchObject({

@@ -14,7 +14,6 @@ export const SourceFetchLimits = {
 
 export interface SourceFetchRequest {
     readonly url: string;
-    readonly artifactRoot: string;
     readonly artifactDirectory: string;
     readonly signal?: AbortSignal;
 }

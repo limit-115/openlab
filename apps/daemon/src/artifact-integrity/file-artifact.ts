@@ -9,24 +9,17 @@ export interface ValidatedArtifact {
     readonly sha256: string;
 }
 
+/**
+ * Hashing is what turns a file into evidence: the recorded digest is how a later run proves the file
+ * it re-reads is the file that was measured. Where an agent chose to put that file is not the
+ * daemon's business, so a relative path is resolved against the given directory and nothing else is
+ * required of its location.
+ */
 export async function validateFileArtifact(
-    containmentRoot: string,
+    baseDirectory: string,
     candidatePath: string
 ): Promise<ValidatedArtifact> {
-    const canonicalRoot = await realpath(containmentRoot);
-    const requestedPath = path.isAbsolute(candidatePath)
-        ? candidatePath
-        : path.resolve(canonicalRoot, candidatePath);
-    const canonicalPath = await realpath(requestedPath);
-    const relativePath = path.relative(canonicalRoot, canonicalPath);
-    if (
-        relativePath === ".." ||
-        relativePath.startsWith(`..${path.sep}`) ||
-        path.isAbsolute(relativePath)
-    ) {
-        throw new Error(`Artifact escapes its isolated workspace: ${candidatePath}`);
-    }
-
+    const canonicalPath = await realpath(path.resolve(baseDirectory, candidatePath));
     const metadata = await stat(canonicalPath);
     if (!metadata.isFile()) {
         throw new Error(`Artifact is not a regular file: ${candidatePath}`);

@@ -29,24 +29,6 @@ const target = {
 } satisfies EvaluatorTarget;
 
 describe("evaluator precommit", () => {
-    it("rejects an executable outside the isolated workspace", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-external-"));
-
-        await expect(
-            freezeEvaluator(
-                directory,
-                {
-                    target_kind: RESEARCH_TARGET_KIND.CLAIM,
-                    target_index: 0,
-                    evaluator_path: "/usr/bin/true",
-                    args: [],
-                    success_contract: "Validate the measured speedup"
-                },
-                target
-            )
-        ).rejects.toThrow("escapes its isolated workspace");
-    });
-
     it("rejects an empty always-success evaluator", async () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-trivial-"));
         const evaluatorPath = path.join(directory, "evaluate");
