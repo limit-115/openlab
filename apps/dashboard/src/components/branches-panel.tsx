@@ -1,3 +1,4 @@
+import { BranchStatus, InternalTaskStatus } from "@lab/protocol/constants";
 import type { InternalTask } from "@lab/protocol/schemas";
 import type { AgentSummary, BranchSummary } from "@lab/protocol/status";
 import {
@@ -37,7 +38,7 @@ export function BranchesPanel({ branches, agents, tasks }: BranchesPanelProps) {
                             branch={branch}
                             agents={agents.filter((agent) => agent.branch_id === branch.id)}
                             tasks={tasks.filter((task) => task.branch_id === branch.id)}
-                            initiallyOpen={index < 2 && branch.status === "active"}
+                            initiallyOpen={index < 2 && branch.status === BranchStatus.ACTIVE}
                         />
                     ))}
                 </div>
@@ -59,9 +60,16 @@ interface BranchCardProps {
 }
 
 function BranchCard({ branch, agents, tasks, initiallyOpen }: BranchCardProps) {
-    const runningTasks = tasks.filter((task) => ["leased", "running"].includes(task.status)).length;
+    const runningTasks = tasks.filter(
+        (task) =>
+            task.status === InternalTaskStatus.LEASED || task.status === InternalTaskStatus.RUNNING
+    ).length;
     const StatusIcon =
-        branch.status === "active" ? Play : branch.status === "paused" ? Pause : CircleCheck;
+        branch.status === BranchStatus.ACTIVE
+            ? Play
+            : branch.status === BranchStatus.PAUSED
+              ? Pause
+              : CircleCheck;
 
     return (
         <details className="branch-card" open={initiallyOpen}>
@@ -123,7 +131,7 @@ function BranchCard({ branch, agents, tasks, initiallyOpen }: BranchCardProps) {
                             <ul className="task-list">
                                 {tasks.map((task) => (
                                     <li key={task.id}>
-                                        {task.status === "succeeded" ? (
+                                        {task.status === InternalTaskStatus.SUCCEEDED ? (
                                             <CircleCheck size={14} aria-hidden="true" />
                                         ) : (
                                             <CircleDashed size={14} aria-hidden="true" />

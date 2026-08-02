@@ -1,5 +1,7 @@
+import { AgentStatus, LabState } from "@lab/protocol/constants";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { Activity, FlaskConical, Radio, WifiOff } from "lucide-react";
+import { StreamState, type StreamState as StreamStateValue } from "#src/api/stream-constants";
 import type { LiveStatus } from "#src/api/use-live-status";
 import { formatDuration, formatIdentifier, formatTime } from "#src/lib/format";
 import { useElapsedTime } from "#src/lib/use-elapsed-time";
@@ -9,20 +11,22 @@ interface DashboardHeaderProps {
     stream: LiveStatus;
 }
 
-const streamLabels = {
-    connecting: "Connecting",
-    live: "Live",
-    reconnecting: "Reconnecting",
-    unavailable: "Offline"
+const streamLabels: Record<StreamStateValue, string> = {
+    [StreamState.CONNECTING]: "Connecting",
+    [StreamState.LIVE]: "Live",
+    [StreamState.RECONNECTING]: "Reconnecting",
+    [StreamState.UNAVAILABLE]: "Offline"
 } as const;
 
 export function DashboardHeader({ snapshot, stream }: DashboardHeaderProps) {
     const uptime = useElapsedTime(
         snapshot.lab.uptime_ms,
         snapshot.lab.updated_at,
-        snapshot.lab.state === "RUNNING"
+        snapshot.lab.state === LabState.RUNNING
     );
-    const activeAgents = snapshot.agents.filter((agent) => agent.status === "working").length;
+    const activeAgents = snapshot.agents.filter(
+        (agent) => agent.status === AgentStatus.WORKING
+    ).length;
 
     return (
         <header className="topbar">
@@ -65,7 +69,7 @@ export function DashboardHeader({ snapshot, stream }: DashboardHeaderProps) {
                     title={stream.protocolError}
                     aria-live="polite"
                 >
-                    {stream.state === "unavailable" ? (
+                    {stream.state === StreamState.UNAVAILABLE ? (
                         <WifiOff size={14} aria-hidden="true" />
                     ) : (
                         <Radio size={14} aria-hidden="true" />

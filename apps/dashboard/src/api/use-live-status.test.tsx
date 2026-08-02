@@ -1,9 +1,11 @@
+import { EventType } from "@lab/protocol/constants";
 import type { LabEvent } from "@lab/protocol/schemas";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { statusQueryKey } from "#src/api/status-client";
+import { StreamEventType, StreamState } from "#src/api/stream-constants";
 import { useLiveStatus } from "#src/api/use-live-status";
 import { FakeEventSource } from "#src/test/fake-event-source";
 import { statusFixture } from "#src/test/status-fixture";
@@ -33,16 +35,16 @@ describe("useLiveStatus", () => {
         expect(source).toBeDefined();
 
         act(() => source?.open());
-        expect(screen.getByText("live")).toBeInTheDocument();
+        expect(screen.getByText(StreamState.LIVE)).toBeInTheDocument();
 
         const event: LabEvent = {
             id: "event-claim-supported",
             lab_id: statusFixture.lab.id,
-            type: "claim.supported",
+            type: EventType.CLAIM_SUPPORTED,
             occurred_at: "2026-08-02T10:01:00.000Z",
             payload: { summary: "Candidate claim passed its evaluator" }
         };
-        act(() => source?.emit("event", event));
+        act(() => source?.emit(StreamEventType.EVENT, event));
 
         await waitFor(() => {
             expect(
@@ -51,6 +53,6 @@ describe("useLiveStatus", () => {
         });
 
         act(() => source?.fail());
-        expect(screen.getByText("reconnecting")).toBeInTheDocument();
+        expect(screen.getByText(StreamState.RECONNECTING)).toBeInTheDocument();
     });
 });

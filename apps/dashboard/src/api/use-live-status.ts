@@ -3,11 +3,14 @@ import { type StatusSnapshot, StatusSnapshotSchema } from "@lab/protocol/status"
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { statusQueryKey } from "#src/api/status-client";
-
-export type StreamState = "connecting" | "live" | "reconnecting" | "unavailable";
+import {
+    StreamEventType,
+    StreamState,
+    type StreamState as StreamStateValue
+} from "#src/api/stream-constants";
 
 export interface LiveStatus {
-    state: StreamState;
+    state: StreamStateValue;
     lastEventAt?: Date;
     protocolError?: string;
 }
@@ -29,11 +32,11 @@ function prependEvent(snapshot: StatusSnapshot, event: LabEvent): StatusSnapshot
 
 export function useLiveStatus(enabled = true): LiveStatus {
     const queryClient = useQueryClient();
-    const [status, setStatus] = useState<LiveStatus>({ state: "connecting" });
+    const [status, setStatus] = useState<LiveStatus>({ state: StreamState.CONNECTING });
 
     useEffect(() => {
         if (!enabled || typeof EventSource === "undefined") {
-            setStatus({ state: "unavailable" });
+            setStatus({ state: StreamState.UNAVAILABLE });
             return;
         }
 
@@ -50,7 +53,7 @@ export function useLiveStatus(enabled = true): LiveStatus {
                     readPayload(event as MessageEvent<string>)
                 );
                 queryClient.setQueryData(statusQueryKey, snapshot);
-                setStatus({ state: "live", lastEventAt: new Date() });
+                setStatus({ state: StreamState.LIVE, lastEventAt: new Date() });
             } catch (error) {
                 markProtocolError(error);
             }
@@ -62,7 +65,7 @@ export function useLiveStatus(enabled = true): LiveStatus {
                 queryClient.setQueryData<StatusSnapshot>(statusQueryKey, (snapshot) =>
                     snapshot ? prependEvent(snapshot, labEvent) : snapshot
                 );
-                setStatus({ state: "live", lastEventAt: new Date() });
+                setStatus({ state: StreamState.LIVE, lastEventAt: new Date() });
                 void queryClient.invalidateQueries({ queryKey: statusQueryKey });
             } catch (error) {
                 markProtocolError(error);
@@ -70,18 +73,21 @@ export function useLiveStatus(enabled = true): LiveStatus {
         };
 
         source.onopen = () => {
-            setStatus((current) => ({ ...current, state: "live" }));
+            setStatus((current) => ({ ...current, state: StreamState.LIVE }));
         };
         source.onerror = () => {
             setStatus((current) => ({
                 ...current,
-                state: source.readyState === EventSource.CLOSED ? "unavailable" : "reconnecting"
+                state:
+                    source.readyState === EventSource.CLOSED
+                        ? StreamState.UNAVAILABLE
+                        : StreamState.RECONNECTING
             }));
         };
         source.onmessage = receiveLabEvent;
-        source.addEventListener("event", receiveLabEvent);
-        source.addEventListener("snapshot", receiveSnapshot);
-        source.addEventListener("status", receiveSnapshot);
+        source.addEventListener(StreamEventType.EVENT, receiveLabEvent);
+        source.addEventListener(StreamEventType.SNAPSHOT, receiveSnapshot);
+        source.addEventListener(StreamEventType.STATUS, receiveSnapshot);
 
         return () => {
             source.close();

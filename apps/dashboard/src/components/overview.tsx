@@ -1,3 +1,9 @@
+import {
+    BranchStatus,
+    ClaimStatus,
+    ExperimentStatus,
+    InternalTaskStatus
+} from "@lab/protocol/constants";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { CircleDot, GitBranch, ListChecks, Microscope, Target } from "lucide-react";
 import { Panel } from "#src/components/panel";
@@ -8,15 +14,20 @@ interface OverviewProps {
 }
 
 export function Overview({ snapshot }: OverviewProps) {
-    const activeBranches = snapshot.branches.filter((branch) => branch.status === "active").length;
-    const activeTasks = snapshot.tasks.filter((task) =>
-        ["queued", "leased", "running"].includes(task.status)
+    const activeBranches = snapshot.branches.filter(
+        (branch) => branch.status === BranchStatus.ACTIVE
     ).length;
-    const supportedClaims = snapshot.claims.filter((claim) =>
-        ["supported", "reproduced"].includes(claim.status)
+    const activeTasks = snapshot.tasks.filter(
+        (task) =>
+            task.status === InternalTaskStatus.QUEUED ||
+            task.status === InternalTaskStatus.LEASED ||
+            task.status === InternalTaskStatus.RUNNING
+    ).length;
+    const supportedClaims = snapshot.claims.filter(
+        (claim) => claim.status === ClaimStatus.SUPPORTED || claim.status === ClaimStatus.REPRODUCED
     ).length;
     const runningExperiments = snapshot.experiments.filter(
-        (experiment) => experiment.status === "running"
+        (experiment) => experiment.status === ExperimentStatus.RUNNING
     ).length;
 
     return (

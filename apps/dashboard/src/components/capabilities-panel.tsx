@@ -1,3 +1,4 @@
+import { CapabilityStatus } from "@lab/protocol/constants";
 import type { CapabilityRequest } from "@lab/protocol/schemas";
 import { KeyRound, LockKeyhole, Wrench } from "lucide-react";
 import { EmptyState } from "#src/components/empty-state";
@@ -9,7 +10,7 @@ interface CapabilitiesPanelProps {
 }
 
 export function CapabilitiesPanel({ requests }: CapabilitiesPanelProps) {
-    const openCount = requests.filter((request) => request.status === "open").length;
+    const openCount = requests.filter((request) => request.status === CapabilityStatus.OPEN).length;
 
     return (
         <Panel
@@ -30,7 +31,7 @@ export function CapabilitiesPanel({ requests }: CapabilitiesPanelProps) {
                             key={request.id}
                         >
                             <span className="capability__icon" aria-hidden="true">
-                                {request.status === "open" ? (
+                                {request.status === CapabilityStatus.OPEN ? (
                                     <LockKeyhole size={17} />
                                 ) : (
                                     <Wrench size={17} />

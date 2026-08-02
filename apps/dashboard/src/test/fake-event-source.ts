@@ -1,3 +1,8 @@
+import {
+    StreamEventType,
+    type StreamEventType as StreamEventTypeValue
+} from "#src/api/stream-constants";
+
 export class FakeEventSource {
     static readonly CONNECTING = 0;
     static readonly OPEN = 1;
@@ -40,10 +45,10 @@ export class FakeEventSource {
         this.onerror?.(new Event("error"));
     }
 
-    emit(type: "event" | "snapshot" | "status" | "message", payload: unknown): void {
+    emit(type: StreamEventTypeValue, payload: unknown): void {
         const event = new MessageEvent(type, { data: JSON.stringify(payload) });
 
-        if (type === "message") {
+        if (type === StreamEventType.MESSAGE) {
             this.onmessage?.(event);
         }
         for (const listener of this.listeners.get(type) ?? []) {

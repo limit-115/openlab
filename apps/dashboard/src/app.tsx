@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchStatus, statusQueryKey } from "#src/api/status-client";
+import { StreamState } from "#src/api/stream-constants";
 import { useLiveStatus } from "#src/api/use-live-status";
 import { BranchesPanel } from "#src/components/branches-panel";
 import { CapabilitiesPanel } from "#src/components/capabilities-panel";
@@ -19,7 +20,7 @@ export function App() {
         queryFn: ({ signal }) => fetchStatus(signal),
         retry: 2,
         staleTime: 5_000,
-        refetchInterval: stream.state === "live" ? false : 10_000,
+        refetchInterval: stream.state === StreamState.LIVE ? false : 10_000,
         refetchOnWindowFocus: true
     });
 

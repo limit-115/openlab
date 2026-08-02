@@ -1,3 +1,4 @@
+import { LabState } from "@lab/protocol/constants";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { Bed, CircleCheckBig, CircleStop, FileText, OctagonX } from "lucide-react";
 import { Panel } from "#src/components/panel";
@@ -9,24 +10,28 @@ interface OutcomePanelProps {
 export function OutcomePanel({ snapshot }: OutcomePanelProps) {
     const { state, reason } = snapshot.lab;
     const shouldShow =
-        snapshot.result || ["HIBERNATING", "COMPLETED", "FAILED", "STOPPED"].includes(state);
+        snapshot.result ||
+        state === LabState.HIBERNATING ||
+        state === LabState.COMPLETED ||
+        state === LabState.FAILED ||
+        state === LabState.STOPPED;
 
     if (!shouldShow) {
         return null;
     }
 
     const Icon =
-        state === "COMPLETED"
+        state === LabState.COMPLETED
             ? CircleCheckBig
-            : state === "HIBERNATING"
+            : state === LabState.HIBERNATING
               ? Bed
-              : state === "FAILED"
+              : state === LabState.FAILED
                 ? OctagonX
                 : CircleStop;
 
     return (
         <Panel
-            title={state === "COMPLETED" ? "Verified result" : `${state.toLowerCase()} lab`}
+            title={state === LabState.COMPLETED ? "Verified result" : `${state.toLowerCase()} lab`}
             eyebrow="Lifecycle outcome"
             icon={Icon}
             className={`outcome outcome--${state.toLowerCase()}`}

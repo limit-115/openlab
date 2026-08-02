@@ -1,3 +1,4 @@
+import { ExperimentStatus } from "@lab/protocol/constants";
 import type { Experiment } from "@lab/protocol/schemas";
 import { CircleCheck, CircleX, Clock3, Microscope, Play, TerminalSquare } from "lucide-react";
 import { EmptyState } from "#src/components/empty-state";
@@ -18,13 +19,17 @@ function experimentDuration(experiment: Experiment): string {
 }
 
 function ExperimentIcon({ status }: { status: Experiment["status"] }) {
-    if (status === "running") {
+    if (status === ExperimentStatus.RUNNING) {
         return <Play size={14} fill="currentColor" aria-hidden="true" />;
     }
-    if (status === "succeeded") {
+    if (status === ExperimentStatus.SUCCEEDED) {
         return <CircleCheck size={14} aria-hidden="true" />;
     }
-    if (["failed", "timed_out", "cancelled"].includes(status)) {
+    if (
+        status === ExperimentStatus.FAILED ||
+        status === ExperimentStatus.TIMED_OUT ||
+        status === ExperimentStatus.CANCELLED
+    ) {
         return <CircleX size={14} aria-hidden="true" />;
     }
     return <Clock3 size={14} aria-hidden="true" />;
@@ -32,8 +37,8 @@ function ExperimentIcon({ status }: { status: Experiment["status"] }) {
 
 export function ExperimentsPanel({ experiments }: ExperimentsPanelProps) {
     const ordered = [...experiments].sort((left, right) => {
-        if (left.status === "running") return -1;
-        if (right.status === "running") return 1;
+        if (left.status === ExperimentStatus.RUNNING) return -1;
+        if (right.status === ExperimentStatus.RUNNING) return 1;
         return (right.started_at ?? "").localeCompare(left.started_at ?? "");
     });
 

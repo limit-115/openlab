@@ -1,18 +1,26 @@
-import type { Claim, ClaimStatus } from "@lab/protocol/schemas";
+import { ClaimStatus } from "@lab/protocol/constants";
+import type { Claim } from "@lab/protocol/schemas";
 import { CircleDot, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "#src/components/empty-state";
 import { Panel } from "#src/components/panel";
 import { formatDate, formatIdentifier } from "#src/lib/format";
 
-type ClaimFilter = "all" | "open" | ClaimStatus;
+const ClaimFilter = {
+    ALL: "all",
+    OPEN: "open",
+    SUPPORTED: ClaimStatus.SUPPORTED,
+    REPRODUCED: ClaimStatus.REPRODUCED,
+    REFUTED: ClaimStatus.REFUTED
+} as const;
+type ClaimFilter = (typeof ClaimFilter)[keyof typeof ClaimFilter];
 
 const filters: Array<{ value: ClaimFilter; label: string }> = [
-    { value: "all", label: "All" },
-    { value: "open", label: "Open" },
-    { value: "supported", label: "Supported" },
-    { value: "reproduced", label: "Reproduced" },
-    { value: "refuted", label: "Refuted" }
+    { value: ClaimFilter.ALL, label: "All" },
+    { value: ClaimFilter.OPEN, label: "Open" },
+    { value: ClaimFilter.SUPPORTED, label: "Supported" },
+    { value: ClaimFilter.REPRODUCED, label: "Reproduced" },
+    { value: ClaimFilter.REFUTED, label: "Refuted" }
 ];
 
 interface ClaimsPanelProps {
@@ -20,13 +28,16 @@ interface ClaimsPanelProps {
 }
 
 export function ClaimsPanel({ claims }: ClaimsPanelProps) {
-    const [filter, setFilter] = useState<ClaimFilter>("all");
+    const [filter, setFilter] = useState<ClaimFilter>(ClaimFilter.ALL);
     const visibleClaims = useMemo(() => {
-        if (filter === "all") {
+        if (filter === ClaimFilter.ALL) {
             return claims;
         }
-        if (filter === "open") {
-            return claims.filter((claim) => ["proposed", "testing"].includes(claim.status));
+        if (filter === ClaimFilter.OPEN) {
+            return claims.filter(
+                (claim) =>
+                    claim.status === ClaimStatus.PROPOSED || claim.status === ClaimStatus.TESTING
+            );
         }
         return claims.filter((claim) => claim.status === filter);
     }, [claims, filter]);
