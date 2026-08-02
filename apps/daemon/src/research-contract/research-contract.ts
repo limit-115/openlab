@@ -13,17 +13,6 @@ import {
     VERIFIER_VERDICT
 } from "#src/research-contract/research-contract.const";
 
-function domainValues<const Domain extends Readonly<Record<string, string>>>(
-    domain: Domain
-): [Domain[keyof Domain], ...Domain[keyof Domain][]] {
-    const values = Object.values(domain) as Domain[keyof Domain][];
-    const first = values[0];
-    if (first === undefined) {
-        throw new Error("A structured-output domain cannot be empty");
-    }
-    return [first, ...values.slice(1)];
-}
-
 const AssumptionSchema = z.object({
     statement: z.string().min(1),
     reason: z.string().min(1),
@@ -65,8 +54,8 @@ function normalizedDirectionKey(direction: z.infer<typeof ResearchDirectionSchem
 }
 
 export const EvaluatorPrecommitSchema = z.object({
-    target_kind: z.enum(domainValues(RESEARCH_TARGET_KIND)),
-    target_index: z.number().int().nonnegative(),
+    target_kind: z.enum(RESEARCH_TARGET_KIND),
+    target_index: z.int().nonnegative(),
     evaluator_path: z.string().min(1),
     args: z.array(z.string()),
     success_contract: z.string().min(1)
@@ -85,7 +74,7 @@ const EvaluatorCheckSchema = z.object({
 
 export const EvaluatorStructuredVerdictSchema = z.object({
     schema_version: z.literal(1),
-    verdict: z.enum(domainValues(EVALUATOR_VERDICT)),
+    verdict: z.enum(EVALUATOR_VERDICT),
     target_statement_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
     input_binding_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
     artifact_sha256s: z.array(z.string().regex(/^[a-f0-9]{64}$/u)).min(1),
@@ -156,19 +145,19 @@ export function directorPlanSchema(
 }
 
 const ResearchEvidenceSchema = z.object({
-    target_kind: z.enum(domainValues(RESEARCH_TARGET_KIND)),
-    target_index: z.number().int().nonnegative(),
+    target_kind: z.enum(RESEARCH_TARGET_KIND),
+    target_index: z.int().nonnegative(),
     summary: z.string().min(1),
     artifact_paths: z.array(z.string()).max(0),
     contradicts_hypothesis: z.boolean()
 });
 
 const ResearchSourceCandidateSchema = z.object({
-    target_kind: z.enum(domainValues(RESEARCH_TARGET_KIND)),
-    target_index: z.number().int().nonnegative(),
+    target_kind: z.enum(RESEARCH_TARGET_KIND),
+    target_index: z.int().nonnegative(),
     url: z.url(),
     title: z.string().trim().min(1),
-    claimed_classification: z.enum(domainValues(SourceClassification))
+    claimed_classification: z.enum(SourceClassification)
 });
 
 const ResearchExecutionPlanSchema = z
@@ -176,8 +165,8 @@ const ResearchExecutionPlanSchema = z
         file: z.string().trim().min(1),
         args: z.array(z.string()).default([]),
         declared_output_paths: z.array(z.string().trim().min(1)).min(1),
-        timeout_ms: z.number().int().positive().max(3_600_000).default(300_000),
-        external_effect: z.enum(domainValues(ExternalEffect)).default(ExternalEffect.NONE),
+        timeout_ms: z.int().positive().max(3_600_000).default(300_000),
+        external_effect: z.enum(ExternalEffect).default(ExternalEffect.NONE),
         reconciliation_key: z.string().trim().min(1).optional()
     })
     .superRefine((plan, context) => {
@@ -197,7 +186,7 @@ export const ResearchResultSchema = z
     .object({
         summary: z.string().min(1),
         hypothesis: z.string().min(1),
-        outcome: z.enum(domainValues(RESEARCH_OUTCOME)),
+        outcome: z.enum(RESEARCH_OUTCOME),
         evidence: z.array(ResearchEvidenceSchema),
         sources: z.array(ResearchSourceCandidateSchema).default([]),
         execution_plan: ResearchExecutionPlanSchema.optional(),
@@ -261,7 +250,7 @@ export const ResearchResultSchema = z
     });
 
 export const CriticResultSchema = z.object({
-    verdict: z.enum(domainValues(CRITIC_VERDICT)),
+    verdict: z.enum(CRITIC_VERDICT),
     summary: z.string().min(1),
     issues: z.array(z.string()),
     counterexamples: z.array(z.string()),
@@ -273,8 +262,8 @@ export const CriticResultSchema = z.object({
 
 export const VerifierResultSchema = z
     .object({
-        verdict: z.enum(domainValues(VERIFIER_VERDICT)),
-        claim_index: z.number().int().nonnegative(),
+        verdict: z.enum(VERIFIER_VERDICT),
+        claim_index: z.int().nonnegative(),
         result_statement: z.string().min(1),
         evidence_artifact_paths: z.array(z.string()).max(0),
         execution_plan: ResearchExecutionPlanSchema.optional(),
