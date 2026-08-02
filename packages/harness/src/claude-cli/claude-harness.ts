@@ -25,14 +25,12 @@ import type {
     SubscriptionHarnessOptions
 } from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
-const ClaudeAuthStatusSchema = z
-    .object({
-        loggedIn: z.literal(true),
-        authMethod: z.literal(HarnessAuthenticationMethods.CLAUDE_AI),
-        apiProvider: z.literal(ClaudeApiProviders.FIRST_PARTY),
-        subscriptionType: z.string().trim().min(1)
-    })
-    .passthrough();
+const ClaudeAuthStatusSchema = z.looseObject({
+    loggedIn: z.literal(true),
+    authMethod: z.literal(HarnessAuthenticationMethods.CLAUDE_AI),
+    apiProvider: z.literal(ClaudeApiProviders.FIRST_PARTY),
+    subscriptionType: z.string().trim().min(1)
+});
 
 export class ClaudeHarness extends SubscriptionCliHarness {
     readonly kind = HarnessKinds.CLAUDE;

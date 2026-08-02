@@ -11,13 +11,11 @@ import {
 } from "#src/model-api-policy/model-api-policy.const";
 import type { ModelApiPolicyResult } from "#src/model-api-policy/model-api-policy.types";
 
-const HookInputSchema = z
-    .object({
-        hook_event_name: z.literal(ModelApiPolicyHookEvent.PRE_TOOL_USE),
-        tool_name: z.string().min(1),
-        tool_input: z.unknown()
-    })
-    .passthrough();
+const HookInputSchema = z.looseObject({
+    hook_event_name: z.literal(ModelApiPolicyHookEvent.PRE_TOOL_USE),
+    tool_name: z.string().min(1),
+    tool_input: z.unknown()
+});
 
 const writeToolNames: readonly string[] = MODEL_API_POLICY_WRITE_TOOLS;
 
