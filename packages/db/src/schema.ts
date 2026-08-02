@@ -11,6 +11,7 @@ import {
     LabState
 } from "@lab/protocol/constants";
 import type { TaskInput } from "@lab/protocol/schemas";
+import type { StatusSnapshot } from "@lab/protocol/status";
 import {
     bigint,
     boolean,
@@ -247,6 +248,20 @@ export const events = pgTable(
         uniqueIndex("events_id_unique").on(table.id),
         index("events_lab_sequence_idx").on(table.labId, table.sequence)
     ]
+);
+
+export const runtimeCheckpoints = pgTable(
+    "runtime_checkpoints",
+    {
+        labId: text("lab_id")
+            .primaryKey()
+            .references(() => labs.id, { onDelete: "cascade" }),
+        revision: bigint("revision", { mode: "number" }).notNull().default(1),
+        snapshot: jsonb("snapshot").$type<StatusSnapshot>().notNull(),
+        lastEventSequence: bigint("last_event_sequence", { mode: "number" }),
+        persistedAt: timestamp("persisted_at", { withTimezone: true }).notNull().defaultNow()
+    },
+    (table) => [index("runtime_checkpoints_persisted_at_idx").on(table.persistedAt)]
 );
 
 export const capabilityRequests = pgTable(

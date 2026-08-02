@@ -15,6 +15,13 @@
             "when": 1785674562525,
             "tag": "0001_wealthy_gladiator",
             "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "7",
+            "when": 1785675152939,
+            "tag": "0002_outstanding_ricochet",
+            "breakpoints": true
         }
     ]
 }
