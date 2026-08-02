@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { EXECUTION_STATUS } from "#src/constants";
 import { ArtifactDirectoryExistsError } from "#src/errors";
 import { runExperiment } from "#src/run";
@@ -103,6 +103,8 @@ describe("runExperiment", () => {
     it("writes a running manifest before completion and records external cancellation", async () => {
         const root = await temporaryRoot();
         const artifactDirectory = join(root, "cancelled-attempt");
+        const manifestPath = join(artifactDirectory, "execution.json");
+        const stdoutPath = join(artifactDirectory, "stdout.log");
         const controller = new AbortController();
         const execution = runExperiment(
             {
@@ -115,10 +117,10 @@ describe("runExperiment", () => {
             controller.signal
         );
 
-        await delay(50);
-        const runningManifest = JSON.parse(
-            await readFile(join(artifactDirectory, "execution.json"), "utf8")
-        );
+        await vi.waitFor(async () => {
+            await expect(readFile(stdoutPath, "utf8")).resolves.toBe("started");
+        });
+        const runningManifest = JSON.parse(await readFile(manifestPath, "utf8"));
         expect(runningManifest.status).toBe(EXECUTION_STATUS.RUNNING);
         controller.abort(new Error("test cancellation"));
 
@@ -183,8 +185,4 @@ async function temporaryRoot(): Promise<string> {
 
 function sha256(value: string): string {
     return createHash("sha256").update(value).digest("hex");
-}
-
-async function delay(milliseconds: number): Promise<void> {
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
 }
