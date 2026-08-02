@@ -19,8 +19,10 @@ import {
 import {
     EXPERIMENT_COMMAND,
     EXPERIMENT_COMMAND_TEXT,
+    EXPERIMENT_ERROR,
     EXPERIMENT_FOOTER,
     EXPERIMENT_HYPOTHESIS,
+    EXPERIMENT_OUTPUT_PATH,
     EXPERIMENT_STATUS,
     EXPERIMENT_STATUS_TONE
 } from "#src/experiments/experiment-card.const";
@@ -76,8 +78,15 @@ export function ExperimentCard({ experiment }: ExperimentCardProps) {
                         />
                         <code className={EXPERIMENT_COMMAND_TEXT}>{experiment.command}</code>
                     </p>
+                    {experiment.error === undefined ? null : (
+                        <p className={EXPERIMENT_ERROR}>{experiment.error}</p>
+                    )}
+                    {experiment.output_path === undefined ? null : (
+                        <p className={EXPERIMENT_OUTPUT_PATH}>{experiment.output_path}</p>
+                    )}
                     <ItemFooter className={EXPERIMENT_FOOTER}>
                         <span>{experiment.id}</span>
+                        <span>{experiment.evaluator}</span>
                         <span>Started {formatDate(experiment.started_at)}</span>
                         <span>{experimentDuration(experiment)}</span>
                         {experiment.exit_code !== undefined ? (

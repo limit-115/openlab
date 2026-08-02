@@ -20,5 +20,11 @@ export const EXPERIMENT_COMMAND =
 
 export const EXPERIMENT_COMMAND_TEXT = "font-mono text-sm break-all" as const;
 
+/** A failed run explains itself in full: the reason wraps rather than clips so it stays readable. */
+export const EXPERIMENT_ERROR = "text-sm break-words text-destructive" as const;
+
+/** The output path is where an operator looks next, so it is shown whole and stays copyable. */
+export const EXPERIMENT_OUTPUT_PATH = "break-all text-sm text-muted-foreground" as const;
+
 export const EXPERIMENT_FOOTER =
     "flex-wrap justify-start gap-x-4 gap-y-1 text-sm text-muted-foreground" as const;
