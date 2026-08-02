@@ -30,6 +30,11 @@
   large implementation file.
 - Style the frontend with Tailwind utility classes only. Do not add stylesheet files, CSS modules, or
   inline style objects. Tailwind configuration and its single entry stylesheet are the only exceptions.
+- Add a shadcn component with `pnpm shadcn add <component>` and never let it overwrite a component
+  that already exists. Answer `n` to every overwrite prompt; `--yes` accepts them all, and the
+  registry version silently undoes local fixes and reintroduces banned styles. Bring the generated
+  file up to these rules before using it: drop the `.ts` and `.tsx` import specifiers and run
+  `pnpm format`.
 - Use a monospace font only where literal code is rendered: JSON payloads, source, and shell commands.
   Identifiers, timestamps, counts, metrics, and file paths are prose and use the sans-serif face.
 - Letter-spacing is forbidden. Never use `tracking-*` utilities or a `letter-spacing` declaration.
