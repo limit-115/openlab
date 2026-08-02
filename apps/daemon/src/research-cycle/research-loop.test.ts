@@ -25,7 +25,10 @@ import type { HarnessEvent } from "@lab/harness/harness-event.types";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import {
+    CapabilityResourceClass,
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
@@ -63,6 +66,7 @@ const EvaluatorComparison = {
 
 const CapabilityFixture = {
     NEED: "An active local product-subscription CLI session",
+    RESOURCE_CLASS: CapabilityResourceClass.ACCOUNT,
     REASON: "The previously authenticated subscription session became unavailable",
     PROVISIONING_HINT: "Restore the interactive subscription login and retry",
     RESOURCE_REFERENCE: "toolchain://codex/subscription-session",
@@ -71,6 +75,7 @@ const CapabilityFixture = {
 
 const DatasetCapabilityFixture = {
     NEED: "Held-out production-shaped benchmark dataset",
+    RESOURCE_CLASS: CapabilityResourceClass.PRIVATE_DATA,
     REASON: "The indexing direction cannot validate representativeness without the dataset",
     PROVISIONING_HINT: "Attach a read-only dataset snapshot to the research workspace",
     DIRECTION_TITLE: "Indexing"
@@ -298,6 +303,7 @@ class ScriptedHarness implements AgentHarness {
             if (datasetBlocked) {
                 const capabilityRequest = {
                     need: DatasetCapabilityFixture.NEED,
+                    resource_class: DatasetCapabilityFixture.RESOURCE_CLASS,
                     reason: DatasetCapabilityFixture.REASON,
                     provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT
                 };
@@ -454,6 +460,7 @@ class ScriptedHarness implements AgentHarness {
                     capability_requests: [
                         {
                             need: DatasetCapabilityFixture.NEED,
+                            resource_class: DatasetCapabilityFixture.RESOURCE_CLASS,
                             reason: DatasetCapabilityFixture.REASON,
                             provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT
                         }
@@ -883,6 +890,7 @@ describe.sequential("runResearchLoop", () => {
         expect(snapshot.capability_requests).toEqual([
             expect.objectContaining({
                 need: DatasetCapabilityFixture.NEED,
+                resource_class: DatasetCapabilityFixture.RESOURCE_CLASS,
                 reason: DatasetCapabilityFixture.REASON,
                 provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT,
                 status: CapabilityStatus.OPEN
@@ -1480,6 +1488,7 @@ describe.sequential("runResearchLoop", () => {
         });
         const request = await workspace.requestCapability({
             need: RecoveryContextFixture.CAPABILITY_NEED,
+            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: RecoveryContextFixture.CAPABILITY_REASON,
             provisioningHint: RecoveryContextFixture.CAPABILITY_HINT
         });

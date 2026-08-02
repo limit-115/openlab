@@ -7,7 +7,9 @@ import type {
 } from "#src/research-contract/research-contract";
 import {
     MISSING_CAPABILITY_POLICY,
+    READ_ONLY_PROVISIONING_POLICY,
     RedactedPromptValue,
+    SELF_PROVISIONING_MANDATE,
     SUBSCRIPTION_ONLY_POLICY
 } from "#src/research-prompts/research-prompts.const";
 
@@ -32,7 +34,13 @@ prescribe a solution method merely because it is familiar. Make every assumption
 it a concrete falsification test before outcome-bearing work. Consensus and model confidence are
 not evidence.
 
+Install the toolchain your directions depend on before delegating them. Researchers plan read-only
+and cannot install anything, so any benchmark, runner, profiler, or library a direction needs must
+already be on this machine when they start.
+
 ${SUBSCRIPTION_ONLY_POLICY}
+
+${SELF_PROVISIONING_MANDATE}
 
 ${MISSING_CAPABILITY_POLICY}
 
@@ -50,6 +58,8 @@ export function evaluatorPrecommitPrompt(
     return `You are planning falsifiable evaluation before any outcome-bearing research begins.
 
 ${SUBSCRIPTION_ONLY_POLICY}
+
+${SELF_PROVISIONING_MANDATE}
 
 Create one or more evaluator executable files inside the current workspace for the claims or
 assumptions this direction will test. Do not run the research, inspect outcomes, or emit a verdict.
@@ -87,6 +97,8 @@ export function researcherPrompt(
 research branches.
 
 ${SUBSCRIPTION_ONLY_POLICY}
+
+${READ_ONLY_PROVISIONING_POLICY}
 
 ${MISSING_CAPABILITY_POLICY}
 
@@ -157,6 +169,8 @@ between agents.
 
 ${SUBSCRIPTION_ONLY_POLICY}
 
+${SELF_PROVISIONING_MANDATE}
+
 ${MISSING_CAPABILITY_POLICY}
 
 Task:
@@ -211,6 +225,8 @@ the daemon alone executes your structured execution_plan. An ordinary rerun of t
 command is not independent reproduction.
 
 ${SUBSCRIPTION_ONLY_POLICY}
+
+${READ_ONLY_PROVISIONING_POLICY}
 
 ${MISSING_CAPABILITY_POLICY}
 

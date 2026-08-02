@@ -14,6 +14,7 @@ import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import {
     CapabilityRequestType,
+    type CapabilityResourceClass,
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
@@ -654,6 +655,7 @@ export class LabWorkspace {
 
     async requestCapability(input: {
         need: string;
+        resourceClass: CapabilityResourceClass;
         reason: string;
         provisioningHint: string;
     }): Promise<CapabilityRequest> {
@@ -661,6 +663,7 @@ export class LabWorkspace {
             id: `capability-${randomUUID()}`,
             type: CapabilityRequestType.CAPABILITY_REQUEST,
             need: input.need,
+            resource_class: input.resourceClass,
             reason: input.reason,
             provisioning_hint: input.provisioningHint,
             status: CapabilityStatus.OPEN,

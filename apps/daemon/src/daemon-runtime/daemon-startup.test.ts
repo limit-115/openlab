@@ -11,6 +11,7 @@ import type {
     RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime/runtime-persistence.types";
+import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
@@ -199,6 +200,7 @@ describe("daemon startup", () => {
                 if ("resourceReference" in scenario) {
                     const request = await daemon.workspace.requestCapability({
                         need: `${scenario.label} resource`,
+                        resourceClass: CapabilityResourceClass.PRIVATE_DATA,
                         reason: "The research loop requires an operator-provided resource",
                         provisioningHint: "Provide an opaque resource handle"
                     });

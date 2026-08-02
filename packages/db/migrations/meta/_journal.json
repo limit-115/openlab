@@ -57,6 +57,13 @@
             "when": 1785684320415,
             "tag": "0007_broken_captain_cross",
             "breakpoints": true
+        },
+        {
+            "idx": 8,
+            "version": "7",
+            "when": 1785701192779,
+            "tag": "0008_next_wither",
+            "breakpoints": true
         }
     ]
 }

@@ -1,7 +1,10 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import {
+    CapabilityResourceClass,
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { describe, expect, it } from "vitest";
 import { createStatusServer } from "#src/lab-status/status-server";
@@ -47,6 +50,7 @@ describe("status server", () => {
         const workspace = await LabWorkspace.initialize(directory, taskPath);
         const request = await workspace.requestCapability({
             need: "Independent dataset",
+            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs independent observations",
             provisioningHint: "Mount the dataset in the run workspace"
         });
@@ -90,6 +94,7 @@ describe("status server", () => {
         const workspace = await LabWorkspace.initialize(directory, taskPath);
         const request = await workspace.requestCapability({
             need: "Licensed dataset",
+            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs licensed observations",
             provisioningHint: "Provide a dataset or keychain reference"
         });

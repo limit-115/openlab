@@ -19,6 +19,7 @@ export async function upsertCapabilities(
                 id: capability.id,
                 labId: snapshot.lab.id,
                 need: capability.need,
+                resourceClass: capability.resource_class,
                 reason: capability.reason,
                 provisioningHint: capability.provisioning_hint,
                 status: capability.status,
@@ -31,6 +32,7 @@ export async function upsertCapabilities(
                 target: capabilityRequests.id,
                 set: {
                     need: capability.need,
+                    resourceClass: capability.resource_class,
                     reason: capability.reason,
                     provisioningHint: capability.provisioning_hint,
                     status: capability.status,

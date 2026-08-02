@@ -2,7 +2,10 @@ import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
 import { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import {
+    CapabilityResourceClass,
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
@@ -43,6 +46,10 @@ export const evidenceRelationshipEnum = pgEnum(
     domainValues(EvidenceRelationship)
 );
 export const capabilityStatusEnum = pgEnum("capability_status", domainValues(CapabilityStatus));
+export const capabilityResourceClassEnum = pgEnum(
+    "capability_resource_class",
+    domainValues(CapabilityResourceClass)
+);
 export const eventTypeEnum = pgEnum("event_type", domainValues(EventType));
 
 const timestamps = {
@@ -279,6 +286,7 @@ export const capabilityRequests = pgTable(
             .references(() => labs.id, { onDelete: "cascade" }),
         branchId: text("branch_id").references(() => branches.id, { onDelete: "set null" }),
         need: text("need").notNull(),
+        resourceClass: capabilityResourceClassEnum("resource_class").notNull(),
         reason: text("reason").notNull(),
         provisioningHint: text("provisioning_hint").notNull(),
         status: capabilityStatusEnum("status").notNull().default(CapabilityStatus.OPEN),

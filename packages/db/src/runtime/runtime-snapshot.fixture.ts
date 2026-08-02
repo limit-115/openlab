@@ -4,6 +4,7 @@ import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import {
     CapabilityRequestType,
+    CapabilityResourceClass,
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
@@ -121,9 +122,10 @@ export function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING
             {
                 id: `${labId}-capability-sandbox`,
                 type: CapabilityRequestType.CAPABILITY_REQUEST,
-                need: "A reproducible sandbox",
-                reason: "The evaluator must run independently",
-                provisioning_hint: "Provide an isolated local runtime",
+                need: "A quiescent dedicated benchmarking host",
+                resource_class: CapabilityResourceClass.HARDWARE,
+                reason: "The evaluator must measure without neighbouring load",
+                provisioning_hint: "Reserve a bare-metal host and expose it to the run",
                 status: CapabilityStatus.OPEN,
                 created_at: timestamp
             }

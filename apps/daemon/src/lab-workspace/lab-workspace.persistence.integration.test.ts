@@ -9,7 +9,10 @@ import { branches, labs, tasks } from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "@lab/db/runtime/runtime-revision-conflict";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import {
+    CapabilityResourceClass,
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
@@ -245,6 +248,7 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
 
         const request = await recoveredMissingEvidence.requestCapability({
             need: "Independent dataset",
+            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs independent observations",
             provisioningHint: "Mount the dataset in the run workspace"
         });

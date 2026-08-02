@@ -1,6 +1,8 @@
 import type { HarnessExecutionProfile } from "@lab/harness/agent-harness.const";
 import type { AgentHarness } from "@lab/harness/agent-harness.types";
+import type { HarnessCapabilityRequest } from "@lab/harness/harness-error";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
+import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import type { z } from "zod";
@@ -59,7 +61,7 @@ export async function preflightHarnesses(
                     error: error instanceof Error ? error.message : String(error)
                 });
                 if (error instanceof HarnessCapabilityError) {
-                    await workspace.requestCapability(error.capabilityRequest);
+                    await requestSubscriptionCapability(workspace, error.capabilityRequest);
                 }
                 return undefined;
             }
@@ -148,7 +150,7 @@ export async function runCriticStageWithFallback(input: {
             }
             if (error instanceof HarnessCapabilityError) {
                 capabilityFailures += 1;
-                await input.workspace.requestCapability(error.capabilityRequest);
+                await requestSubscriptionCapability(input.workspace, error.capabilityRequest);
             }
         }
     }
@@ -215,7 +217,7 @@ export async function runStageWithFallback<Output extends AgentCapabilityOutput>
             }
             if (error instanceof HarnessCapabilityError) {
                 capabilityFailures += 1;
-                await input.workspace.requestCapability(error.capabilityRequest);
+                await requestSubscriptionCapability(input.workspace, error.capabilityRequest);
             }
         }
     }
@@ -243,10 +245,27 @@ export async function persistAgentCapabilityRequests(
         requests.push(
             await workspace.requestCapability({
                 need: candidate.need,
+                resourceClass: candidate.resource_class,
                 reason: candidate.reason,
                 provisioningHint: candidate.provisioning_hint
             })
         );
     }
     return [...new Map(requests.map((request) => [request.id, request])).values()];
+}
+
+/**
+ * A harness that cannot reach its product subscription is blocked on an operator-held account,
+ * never on software the daemon or its agents could install.
+ */
+export function requestSubscriptionCapability(
+    workspace: LabWorkspace,
+    request: HarnessCapabilityRequest
+): Promise<CapabilityRequest> {
+    return workspace.requestCapability({
+        need: request.need,
+        resourceClass: CapabilityResourceClass.ACCOUNT,
+        reason: request.reason,
+        provisioningHint: request.provisioningHint
+    });
 }

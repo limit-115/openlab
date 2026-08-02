@@ -1,3 +1,4 @@
+import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
 import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
 import { describe, expect, it } from "vitest";
@@ -263,6 +264,7 @@ describe("research structured-output contracts", () => {
             capability_requests: [
                 {
                     need: "Held-out benchmark dataset",
+                    resource_class: CapabilityResourceClass.PRIVATE_DATA,
                     reason: "Independent reproduction requires disjoint inputs",
                     provisioning_hint: "Attach a read-only dataset snapshot"
                 }

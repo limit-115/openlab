@@ -1,3 +1,4 @@
+import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
 import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
@@ -36,6 +37,7 @@ const ResearchDirectionSchema = z.object({
 
 export const CapabilityRequestCandidateSchema = z.object({
     need: z.string().trim().min(1),
+    resource_class: z.enum(CapabilityResourceClass),
     reason: z.string().trim().min(1),
     provisioning_hint: z.string().trim().min(1)
 });

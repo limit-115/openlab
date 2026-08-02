@@ -3,7 +3,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
 import type { RecoverableRuntime } from "@lab/db/runtime/runtime-persistence.types";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import {
+    CapabilityResourceClass,
+    CapabilityStatus
+} from "@lab/protocol/capabilities/capability-request.const";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
@@ -197,6 +200,7 @@ describe("LabWorkspace", () => {
         const workspace = await createWorkspace();
         const input = {
             need: "Claude subscription login",
+            resourceClass: CapabilityResourceClass.ACCOUNT,
             reason: "No authenticated research harness is available",
             provisioningHint: "Run claude and sign in with claude.ai"
         };
@@ -213,6 +217,7 @@ describe("LabWorkspace", () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "Independent dataset",
+            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs independent observations",
             provisioningHint: "Mount the dataset in the run workspace"
         });
@@ -249,6 +254,7 @@ describe("LabWorkspace", () => {
             const workspace = await createWorkspace();
             const request = await workspace.requestCapability({
                 need: `${reference} resource`,
+                resourceClass: CapabilityResourceClass.PRIVATE_DATA,
                 reason: "The research branch is blocked on an operator-provided resource",
                 provisioningHint: "Provide an opaque resource handle"
             });
@@ -275,6 +281,7 @@ describe("LabWorkspace", () => {
         for (const [kind, reference] of Object.entries(SafeCapabilityReference)) {
             const request = await workspace.requestCapability({
                 need: `${kind} resource`,
+                resourceClass: CapabilityResourceClass.PRIVATE_DATA,
                 reason: "The research branch needs an operator-provided resource",
                 provisioningHint: "Provide only an opaque resource handle"
             });
@@ -295,6 +302,7 @@ describe("LabWorkspace", () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "Restricted dataset access",
+            resourceClass: CapabilityResourceClass.CREDENTIAL,
             reason: "The research branch needs licensed observations",
             provisioningHint: "Provide a keychain or dataset handle"
         });
@@ -330,6 +338,7 @@ describe("LabWorkspace", () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "Restricted corpus",
+            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The experiment requires licensed inputs",
             provisioningHint: "Provide a licensed local corpus"
         });

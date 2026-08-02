@@ -5,6 +5,7 @@ import { CodexHarness } from "@lab/harness/codex-harness";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
@@ -92,6 +93,7 @@ export async function runResearchLoop(
             if (workspace.getSnapshot().capability_requests.length === 0) {
                 await workspace.requestCapability({
                     need: "A responsive Codex or Claude CLI with an active product subscription",
+                    resourceClass: CapabilityResourceClass.ACCOUNT,
                     reason,
                     provisioningHint:
                         "Restore a local product-subscription CLI session and retry; API billing is forbidden"

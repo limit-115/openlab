@@ -55,13 +55,19 @@ export function renderCapabilities(requests: CapabilityRequest[]): string {
         return "No capability requests.";
     }
     const table = new Table({
-        head: ["ID", "Status", "Need", "Reason"],
-        colWidths: [26, 12, 28, 42],
+        head: ["ID", "Status", "Resource", "Need", "Reason"],
+        colWidths: [26, 12, 14, 24, 32],
         wordWrap: true,
         style: { head: ["cyan"], border: ["gray"] }
     });
     for (const request of requests) {
-        table.push([request.id, request.status, request.need, request.reason]);
+        table.push([
+            request.id,
+            request.status,
+            request.resource_class,
+            request.need,
+            request.reason
+        ]);
     }
     return table.toString();
 }

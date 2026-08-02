@@ -40,6 +40,7 @@ import {
 } from "#src/research-cycle/research-role-lifecycle";
 import {
     persistAgentCapabilityRequests,
+    requestSubscriptionCapability,
     selectHarness
 } from "#src/research-cycle/research-stage-run";
 import { ResearchStage } from "#src/research-cycle/research-stage-workspace.const";
@@ -201,7 +202,7 @@ export async function runResearchBranch(
                 throw error;
             }
             if (error instanceof HarnessCapabilityError) {
-                await workspace.requestCapability(error.capabilityRequest);
+                await requestSubscriptionCapability(workspace, error.capabilityRequest);
             }
             if (outcomeAttemptStarted) {
                 break;
