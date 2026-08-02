@@ -8,8 +8,7 @@ import {
     EvidenceKind,
     ExperimentStatus,
     InternalTaskStatus,
-    LabState,
-    ModelMessageRole
+    LabState
 } from "#src/constants";
 
 export const IdentifierSchema = z.string().trim().min(1).max(200);
@@ -103,34 +102,6 @@ export const LabEventSchema = z.object({
     payload: z.record(z.string(), z.unknown())
 });
 
-export const ModelMessageSchema = z.object({
-    role: z.enum(ModelMessageRole),
-    content: z.string(),
-    name: z.string().optional(),
-    tool_call_id: z.string().optional()
-});
-
-export const ModelRequestSchema = z.object({
-    messages: z.array(ModelMessageSchema).min(1),
-    response_schema: z.record(z.string(), z.unknown()).optional(),
-    tools: z.array(z.record(z.string(), z.unknown())).default([]),
-    temperature: z.number().min(0).max(2).optional(),
-    abort_after_ms: z.number().int().positive().optional()
-});
-
-export const ModelResponseSchema = z.object({
-    provider: z.string(),
-    model: z.string(),
-    content: z.string(),
-    structured: z.unknown().optional(),
-    usage: z
-        .object({
-            input_tokens: z.number().int().nonnegative(),
-            output_tokens: z.number().int().nonnegative()
-        })
-        .optional()
-});
-
 export type TaskInput = z.infer<typeof TaskInputSchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
@@ -138,5 +109,3 @@ export type InternalTask = z.infer<typeof InternalTaskSchema>;
 export type Experiment = z.infer<typeof ExperimentSchema>;
 export type CapabilityRequest = z.infer<typeof CapabilityRequestSchema>;
 export type LabEvent = z.infer<typeof LabEventSchema>;
-export type ModelRequest = z.infer<typeof ModelRequestSchema>;
-export type ModelResponse = z.infer<typeof ModelResponseSchema>;

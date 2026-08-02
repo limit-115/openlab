@@ -11,9 +11,8 @@ Local autonomous research runtime described in
 - `packages/protocol` — stable runtime contracts and JSON schemas;
 - `packages/core` — research state machine and scheduling;
 - `packages/db` — PostgreSQL persistence;
-- `packages/providers` — model-provider adapters;
+- `packages/harness` — subscription-authenticated Codex and Claude CLI harnesses;
 - `packages/executor` — local experiment execution.
 
 Operational state belongs in PostgreSQL. Files in a lab workspace are durable
 artifacts and protocol snapshots that can be inspected or exported independently.
-

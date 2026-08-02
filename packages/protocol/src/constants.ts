@@ -66,14 +66,6 @@ export const CapabilityStatus = {
 } as const;
 export type CapabilityStatus = (typeof CapabilityStatus)[keyof typeof CapabilityStatus];
 
-export const ModelMessageRole = {
-    SYSTEM: "system",
-    USER: "user",
-    ASSISTANT: "assistant",
-    TOOL: "tool"
-} as const;
-export type ModelMessageRole = (typeof ModelMessageRole)[keyof typeof ModelMessageRole];
-
 export const BranchStatus = {
     ACTIVE: "active",
     PAUSED: "paused",

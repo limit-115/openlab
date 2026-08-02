@@ -5,7 +5,6 @@
     "type": "module",
     "exports": {
         "./constants": "./src/constants.ts",
-        "./provider": "./src/provider.ts",
         "./schemas": "./src/schemas.ts",
         "./status": "./src/status.ts"
     },
