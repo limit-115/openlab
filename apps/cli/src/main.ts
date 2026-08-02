@@ -3,17 +3,23 @@ import { access } from "node:fs/promises";
 import { resolve } from "node:path";
 import { cancel, intro, isCancel, outro, text } from "@clack/prompts";
 import { startDaemon } from "@lab/daemon/server";
-import { HarnessKinds } from "@lab/harness/agent-harness.const";
+import type { HarnessKind } from "@lab/harness/agent-harness.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { Command, InvalidArgumentError } from "commander";
 import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";
 import { resolveCliConfig } from "#src/config";
+import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
 import { renderCapabilities, renderFrontier, renderStatus } from "#src/render";
 
 interface GlobalOptions {
     apiUrl: string;
     json?: boolean;
+}
+
+interface StartOptions {
+    port?: number;
+    harness?: readonly HarnessKind[];
 }
 
 const ShutdownSignal = {
@@ -66,8 +72,12 @@ program
     .description("start an autonomous run from task.json")
     .argument("[task]", "path to task JSON")
     .option("-p, --port <port>", "status API port", parsePort)
-    .option("--glm", "run every agent on GLM instead of rotating through every harness")
-    .action(async (task: string | undefined, options: { port?: number; glm?: boolean }) => {
+    .option(
+        "--harness <kinds>",
+        `rotate through only these harnesses, comma separated (${harnessKindList()})`,
+        parseHarnessKinds
+    )
+    .action(async (task: string | undefined, options: StartOptions) => {
         intro("AI Research Lab");
         let selectedTask = task;
         if (selectedTask === undefined) {
@@ -90,7 +100,7 @@ program
         const daemon = await startDaemon({
             taskPath,
             ...(options.port === undefined ? {} : { port: options.port }),
-            ...(options.glm ? { harnessKinds: [HarnessKinds.GLM] } : {})
+            ...(options.harness === undefined ? {} : { harnessKinds: options.harness })
         });
         let closing = false;
         for (const signal of Object.values(ShutdownSignal)) {
