@@ -1,0 +1,27 @@
+{
+    "name": "@lab/cli",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "bin": {
+        "lab": "./src/main.ts"
+    },
+    "imports": {
+        "#src/*": "./src/*.ts"
+    },
+    "scripts": {
+        "start": "node src/main.ts",
+        "typecheck": "tsc -p tsconfig.json",
+        "test": "vitest run --passWithNoTests",
+        "lint": "biome lint .",
+        "format": "biome format --write ."
+    },
+    "dependencies": {
+        "@clack/prompts": "1.7.0",
+        "@lab/daemon": "workspace:*",
+        "@lab/protocol": "workspace:*",
+        "cli-table3": "0.6.5",
+        "commander": "15.0.0",
+        "consola": "3.4.2"
+    }
+}

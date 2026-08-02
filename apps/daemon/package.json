@@ -1,0 +1,30 @@
+{
+    "name": "@lab/daemon",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./server": "./src/server.ts"
+    },
+    "imports": {
+        "#src/*": "./src/*.ts"
+    },
+    "scripts": {
+        "start": "node src/main.ts",
+        "typecheck": "tsc -p tsconfig.json",
+        "test": "vitest run --passWithNoTests",
+        "lint": "biome lint .",
+        "format": "biome format --write ."
+    },
+    "dependencies": {
+        "@fastify/static": "10.1.2",
+        "@lab/protocol": "workspace:*",
+        "async-mutex": "0.5.0",
+        "fastify": "5.11.0",
+        "write-file-atomic": "8.0.0",
+        "zod": "4.4.3"
+    },
+    "devDependencies": {
+        "@types/write-file-atomic": "4.0.3"
+    }
+}
