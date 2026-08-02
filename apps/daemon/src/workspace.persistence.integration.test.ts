@@ -6,7 +6,7 @@ import { EvidenceOrigin } from "@lab/core/constants";
 import { createDatabase, type DatabaseClient } from "@lab/db/client";
 import { EvidenceRelationship } from "@lab/db/constants";
 import { migrateDatabase } from "@lab/db/migrations";
-import { RuntimePersistence } from "@lab/db/runtime";
+import { RuntimePersistence, RuntimeRevisionConflictError } from "@lab/db/runtime";
 import { branches, labs, tasks } from "@lab/db/schema";
 import {
     CapabilityStatus,
@@ -70,6 +70,86 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         expect(projectedTasks.map(({ labId }) => labId).sort()).toEqual(
             [first.labId, second.labId, repeated.labId].sort()
         );
+    });
+
+    it("commits a state transition and its event in one runtime revision", async () => {
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-atomic-transition-"));
+        const taskPath = path.join(workspaceRoot, "task.json");
+        await writeFile(taskPath, JSON.stringify({ goal: "Commit one atomic transition" }));
+        const persistence = new RuntimePersistence(client.db);
+        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        const before = await persistence.load(workspace.labId);
+        if (before === undefined) {
+            throw new Error("Expected an initialized persisted runtime");
+        }
+
+        const transitioned = await workspace.transition(LabState.STOPPED, "Atomic stop");
+
+        const after = await persistence.load(workspace.labId);
+        expect(after?.checkpoint.revision).toBe(before.checkpoint.revision + 1);
+        expect(after?.checkpoint.snapshot).toEqual(transitioned);
+        expect(workspace.getSnapshot()).toEqual(transitioned);
+        expect(workspace.getEvents()).toEqual([
+            expect.objectContaining({
+                type: EventType.LAB_STATE_CHANGED,
+                payload: { state: LabState.STOPPED, reason: "Atomic stop" }
+            })
+        ]);
+        expect(await persistence.eventsAfter(workspace.labId)).toEqual([
+            expect.objectContaining({
+                type: EventType.LAB_STATE_CHANGED,
+                payload: { state: LabState.STOPPED, reason: "Atomic stop" }
+            })
+        ]);
+    });
+
+    it("rolls back a stale state transition without a ghost event or local mutation", async () => {
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-stale-transition-"));
+        const taskPath = path.join(workspaceRoot, "task.json");
+        await writeFile(taskPath, JSON.stringify({ goal: "Reject a stale transition" }));
+        const persistence = new RuntimePersistence(client.db);
+        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        const persistedBefore = await persistence.load(workspace.labId);
+        if (persistedBefore === undefined) {
+            throw new Error("Expected an initialized persisted runtime");
+        }
+        const beforeSnapshot = workspace.getSnapshot();
+        const beforeEvents = workspace.getEvents();
+        const [beforeStatusFile, beforeEventsFile] = await Promise.all([
+            readFile(path.join(workspace.runDirectory, "status.json"), "utf8"),
+            readFile(path.join(workspace.runDirectory, "events.json"), "utf8")
+        ]);
+        const externalSnapshot = structuredClone(beforeSnapshot);
+        externalSnapshot.frontier.known.push("A concurrent writer committed first");
+        const externalTimestamp = new Date(
+            Date.parse(externalSnapshot.lab.updated_at) + 1_000
+        ).toISOString();
+        externalSnapshot.lab.updated_at = externalTimestamp;
+        externalSnapshot.frontier.updated_at = externalTimestamp;
+        const externalCommit = await persistence.commit({
+            snapshot: externalSnapshot,
+            expectedRevision: persistedBefore.checkpoint.revision
+        });
+
+        await expect(workspace.transition(LabState.STOPPED, "Stale stop")).rejects.toBeInstanceOf(
+            RuntimeRevisionConflictError
+        );
+
+        expect(workspace.getSnapshot()).toEqual(beforeSnapshot);
+        expect(workspace.getEvents()).toEqual(beforeEvents);
+        await expect(
+            Promise.all([
+                readFile(path.join(workspace.runDirectory, "status.json"), "utf8"),
+                readFile(path.join(workspace.runDirectory, "events.json"), "utf8")
+            ])
+        ).resolves.toEqual([beforeStatusFile, beforeEventsFile]);
+        const persisted = await persistence.load(workspace.labId);
+        expect(persisted?.checkpoint.revision).toBe(externalCommit.revision);
+        expect(persisted?.checkpoint.snapshot.frontier.known).toContain(
+            "A concurrent writer committed first"
+        );
+        expect(persisted?.checkpoint.snapshot.lab.state).toBe(LabState.RUNNING);
+        expect(await persistence.eventsAfter(workspace.labId)).toEqual([]);
     });
 
     it("repairs corrupt filesystem snapshots from the atomic database checkpoint", async () => {

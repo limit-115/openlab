@@ -41,6 +41,23 @@ import { initialResearchIdentifiers } from "#src/research-identifiers";
 type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;
 type SnapshotUpdater = (draft: StatusSnapshot) => void;
 
+export const WorkspaceMutationAction = {
+    COMMIT: "commit",
+    SKIP: "skip"
+} as const;
+export type WorkspaceMutationAction =
+    (typeof WorkspaceMutationAction)[keyof typeof WorkspaceMutationAction];
+
+export type WorkspaceMutationUpdater = (
+    draft: StatusSnapshot,
+    event: LabEvent
+) => WorkspaceMutationAction | undefined;
+
+export interface WorkspaceMutationResult {
+    readonly snapshot: StatusSnapshot;
+    readonly event: LabEvent;
+}
+
 const EvidenceDisposition = {
     SUPPORTS: "supports",
     CONTRADICTS: "contradicts"
@@ -407,22 +424,68 @@ export class LabWorkspace {
         });
     }
 
+    async mutateWithEvent(
+        type: LabEventType,
+        payload: Readonly<Record<string, unknown>>,
+        updater: WorkspaceMutationUpdater = () => WorkspaceMutationAction.COMMIT
+    ): Promise<WorkspaceMutationResult | undefined> {
+        const mutation = await this.mutex.runExclusive(async () => {
+            const event = LabEventSchema.parse({
+                id: `event-${randomUUID()}`,
+                lab_id: this.labId,
+                type,
+                occurred_at: new Date().toISOString(),
+                payload
+            });
+            const draft = structuredClone(this.snapshot);
+            const action = updater(draft, event) ?? WorkspaceMutationAction.COMMIT;
+            if (action === WorkspaceMutationAction.SKIP) {
+                return undefined;
+            }
+            draft.recent_events = [...this.events, event].slice(-200);
+            this.touch(draft);
+            const parsed = StatusSnapshotSchema.parse(draft);
+            const committedSnapshot = await this.commitRuntime(parsed, event);
+
+            this.snapshot = committedSnapshot;
+            this.events.push(event);
+            await this.persistFilesystemSnapshot();
+            return {
+                snapshot: this.getSnapshot(),
+                event: structuredClone(event)
+            };
+        });
+        if (mutation === undefined) {
+            return undefined;
+        }
+        for (const listener of this.listeners) {
+            listener(mutation.event, mutation.snapshot);
+        }
+        return mutation;
+    }
+
     async transition(
         state: LabStateValue,
         reason?: string,
         context: LifecycleContext = {}
     ): Promise<StatusSnapshot> {
-        transitionLabState(this.snapshot.lab.state, state, context);
-        const snapshot = await this.update((draft) => {
-            draft.lab.state = state;
-            if (reason === undefined) {
-                delete draft.lab.reason;
-            } else {
-                draft.lab.reason = reason;
+        const mutation = await this.mutateWithEvent(
+            EventType.LAB_STATE_CHANGED,
+            { state, ...(reason === undefined ? {} : { reason }) },
+            (draft) => {
+                transitionLabState(draft.lab.state, state, context);
+                draft.lab.state = state;
+                if (reason === undefined) {
+                    delete draft.lab.reason;
+                } else {
+                    draft.lab.reason = reason;
+                }
             }
-        });
-        await this.appendEvent(EventType.LAB_STATE_CHANGED, { state, reason });
-        return snapshot;
+        );
+        if (mutation === undefined) {
+            throw new Error("Lab state transition was unexpectedly skipped");
+        }
+        return mutation.snapshot;
     }
 
     async hibernateForPlateau(reason: string): Promise<StatusSnapshot> {
@@ -434,23 +497,28 @@ export class LabWorkspace {
                 nextExperiments: this.snapshot.frontier.next_experiments
             })
         );
-        const snapshot = await this.update((draft) => {
-            transitionLabState(draft.lab.state, LabState.HIBERNATING, { plateauConfirmed: true });
-            draft.lab.state = LabState.HIBERNATING;
-            draft.lab.reason = reason;
-            draft.result = {
-                summary: reason,
-                report_path: reportPath,
-                limitations: [...draft.frontier.blockers]
-            };
-        });
-        await this.appendEvent(EventType.LAB_STATE_CHANGED, {
-            state: LabState.HIBERNATING,
-            reason
-        });
+        const mutation = await this.mutateWithEvent(
+            EventType.LAB_STATE_CHANGED,
+            { state: LabState.HIBERNATING, reason },
+            (draft) => {
+                transitionLabState(draft.lab.state, LabState.HIBERNATING, {
+                    plateauConfirmed: true
+                });
+                draft.lab.state = LabState.HIBERNATING;
+                draft.lab.reason = reason;
+                draft.result = {
+                    summary: reason,
+                    report_path: reportPath,
+                    limitations: [...draft.frontier.blockers]
+                };
+            }
+        );
+        if (mutation === undefined) {
+            throw new Error("Lab hibernation was unexpectedly skipped");
+        }
         await this.appendEvent(EventType.REPORT_GENERATED, { report_path: reportPath });
         await this.appendEvent(EventType.LAB_HIBERNATED, { reason });
-        return snapshot;
+        return mutation.snapshot;
     }
 
     async complete(result: VerifiedResult): Promise<StatusSnapshot> {
@@ -491,20 +559,27 @@ export class LabWorkspace {
             ),
             this.writeJson("result.json", resultFile)
         ]);
-        const snapshot = await this.update((draft) => {
-            draft.lab.state = LabState.COMPLETED;
-            delete draft.lab.reason;
-            draft.result = {
-                summary: result.summary,
-                report_path: reportPath,
-                result_path: resultPath,
-                limitations: [...result.limitations]
-            };
-        });
-        await this.appendEvent(EventType.LAB_STATE_CHANGED, {
-            state: LabState.COMPLETED,
-            verifier_verdict_id: result.independentVerifierVerdictId
-        });
+        const mutation = await this.mutateWithEvent(
+            EventType.LAB_STATE_CHANGED,
+            {
+                state: LabState.COMPLETED,
+                verifier_verdict_id: result.independentVerifierVerdictId
+            },
+            (draft) => {
+                transitionLabState(draft.lab.state, LabState.COMPLETED, context);
+                draft.lab.state = LabState.COMPLETED;
+                delete draft.lab.reason;
+                draft.result = {
+                    summary: result.summary,
+                    report_path: reportPath,
+                    result_path: resultPath,
+                    limitations: [...result.limitations]
+                };
+            }
+        );
+        if (mutation === undefined) {
+            throw new Error("Lab completion was unexpectedly skipped");
+        }
         await this.appendEvent(EventType.REPORT_GENERATED, { report_path: reportPath });
         await this.appendEvent(EventType.RESULT_GENERATED, {
             result_path: resultPath,
@@ -513,7 +588,7 @@ export class LabWorkspace {
         await this.appendEvent(EventType.LAB_COMPLETED, {
             verifier_verdict_id: result.independentVerifierVerdictId
         });
-        return snapshot;
+        return mutation.snapshot;
     }
 
     async recordEvidence(candidate: Evidence): Promise<Evidence> {
@@ -542,87 +617,48 @@ export class LabWorkspace {
     }
 
     async appendEvent(type: LabEventType, payload: Record<string, unknown>): Promise<LabEvent> {
-        const event = await this.mutex.runExclusive(async () => {
-            const event: LabEvent = {
-                id: `event-${randomUUID()}`,
-                lab_id: this.labId,
-                type,
-                occurred_at: new Date().toISOString(),
-                payload
-            };
-            const draft = structuredClone(this.snapshot);
-            draft.recent_events = [...this.events, event].slice(-200);
-            this.touch(draft);
-            const parsed = StatusSnapshotSchema.parse(draft);
-            this.snapshot = await this.commitRuntime(parsed, event);
-            this.events.push(event);
-            await this.persistFilesystemSnapshot();
-            return event;
-        });
-        const snapshot = this.getSnapshot();
-        for (const listener of this.listeners) {
-            listener(event, snapshot);
+        const mutation = await this.mutateWithEvent(type, payload);
+        if (mutation === undefined) {
+            throw new Error("Event append was unexpectedly skipped");
         }
-        return event;
+        return mutation.event;
     }
 
     async provideCapability(id: string, resourceReference: string): Promise<boolean> {
         const normalizedResourceReference =
             CapabilityResourceReferenceSchema.parse(resourceReference);
-        let providedEvent: LabEvent | undefined;
+        let accepted = false;
         let shouldWake = false;
-        const accepted = await this.mutex.runExclusive(async () => {
-            const current = this.snapshot.capability_requests.find(
-                (candidate) => candidate.id === id
-            );
-            if (current === undefined) {
-                return false;
-            }
-            if (current.status === CapabilityStatus.PROVIDED) {
-                return current.resource_reference === normalizedResourceReference;
-            }
-            if (current.status !== CapabilityStatus.OPEN) {
-                return false;
-            }
-
-            const providedAt = new Date().toISOString();
-            const draft = structuredClone(this.snapshot);
-            const request = draft.capability_requests.find((candidate) => candidate.id === id);
-            if (request === undefined) {
-                return false;
-            }
-            request.status = CapabilityStatus.PROVIDED;
-            request.resource_reference = normalizedResourceReference;
-            request.provided_at = providedAt;
-            draft.frontier.blockers = draft.frontier.blockers.filter(
-                (blocker) => blocker !== request.need
-            );
-            this.touch(draft);
-            providedEvent = {
-                id: `event-${randomUUID()}`,
-                lab_id: this.labId,
-                type: EventType.CAPABILITY_PROVIDED,
-                occurred_at: providedAt,
-                payload: {
-                    request_id: id,
-                    resource_reference: normalizedResourceReference
+        await this.mutateWithEvent(
+            EventType.CAPABILITY_PROVIDED,
+            {
+                request_id: id,
+                resource_reference: normalizedResourceReference
+            },
+            (draft, event) => {
+                const request = draft.capability_requests.find((candidate) => candidate.id === id);
+                if (request === undefined) {
+                    return WorkspaceMutationAction.SKIP;
                 }
-            };
-            draft.recent_events = [...this.events, providedEvent].slice(-200);
-            const parsed = StatusSnapshotSchema.parse(draft);
-            this.snapshot = await this.commitRuntime(parsed, providedEvent);
-            this.events.push(providedEvent);
-            await this.persistFilesystemSnapshot();
-            shouldWake = this.snapshot.lab.state === LabState.HIBERNATING;
-            return true;
-        });
+                if (request.status === CapabilityStatus.PROVIDED) {
+                    accepted = request.resource_reference === normalizedResourceReference;
+                    return WorkspaceMutationAction.SKIP;
+                }
+                if (request.status !== CapabilityStatus.OPEN) {
+                    return WorkspaceMutationAction.SKIP;
+                }
 
-        if (providedEvent !== undefined) {
-            const snapshot = this.getSnapshot();
-            for (const listener of this.listeners) {
-                listener(providedEvent, snapshot);
+                accepted = true;
+                shouldWake = draft.lab.state === LabState.HIBERNATING;
+                request.status = CapabilityStatus.PROVIDED;
+                request.resource_reference = normalizedResourceReference;
+                request.provided_at = event.occurred_at;
+                draft.frontier.blockers = draft.frontier.blockers.filter(
+                    (blocker) => blocker !== request.need
+                );
+                return WorkspaceMutationAction.COMMIT;
             }
-        }
+        );
         if (shouldWake) {
             await this.transition(LabState.RUNNING, `Capability ${id} provided`, {
                 wakeTrigger: WakeTrigger.CAPABILITY
@@ -646,28 +682,32 @@ export class LabWorkspace {
             created_at: new Date().toISOString()
         };
         let selected: CapabilityRequest = request;
-        await this.update((draft) => {
-            const existing = draft.capability_requests.find(
-                (candidate) =>
-                    candidate.status === CapabilityStatus.OPEN && candidate.need === input.need
-            );
-            if (existing !== undefined) {
-                selected = existing;
-                return;
+        await this.mutateWithEvent(
+            EventType.CAPABILITY_REQUESTED,
+            {
+                request_id: request.id,
+                need: request.need,
+                reason: request.reason
+            },
+            (draft) => {
+                const existing = draft.capability_requests.find(
+                    (candidate) =>
+                        candidate.status === CapabilityStatus.OPEN && candidate.need === input.need
+                );
+                if (existing !== undefined) {
+                    selected = existing;
+                    return WorkspaceMutationAction.SKIP;
+                }
+                draft.capability_requests.push(request);
+                if (!draft.frontier.blockers.includes(request.need)) {
+                    draft.frontier.blockers.push(request.need);
+                }
+                return WorkspaceMutationAction.COMMIT;
             }
-            draft.capability_requests.push(request);
-            if (!draft.frontier.blockers.includes(request.need)) {
-                draft.frontier.blockers.push(request.need);
-            }
-        });
+        );
         if (selected.id !== request.id) {
             return structuredClone(selected);
         }
-        await this.appendEvent(EventType.CAPABILITY_REQUESTED, {
-            request_id: request.id,
-            need: request.need,
-            reason: request.reason
-        });
         return structuredClone(request);
     }
 
