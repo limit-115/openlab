@@ -1,0 +1,24 @@
+{
+    "name": "@lab/core",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./claims": "./src/claims.ts",
+        "./frontier": "./src/frontier.ts",
+        "./lifecycle": "./src/lifecycle.ts",
+        "./scheduler": "./src/scheduler.ts"
+    },
+    "imports": {
+        "#src/*": "./src/*.ts"
+    },
+    "scripts": {
+        "typecheck": "tsc -p tsconfig.json",
+        "test": "vitest run",
+        "lint": "biome lint .",
+        "format": "biome format --write ."
+    },
+    "dependencies": {
+        "@lab/protocol": "workspace:*"
+    }
+}
