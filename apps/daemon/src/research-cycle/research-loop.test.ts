@@ -636,6 +636,38 @@ class CapabilityLossHarness extends ScriptedHarness {
     }
 }
 
+/**
+ * What a real harness does when a vendor stops serving mid-run: the run is recorded in full first,
+ * so the loss surfaces only after a completion event. That event must not disguise it as an ordinary
+ * failed run, or the scheduler stops asking the operator for the account it needs back.
+ */
+class LateCapabilityLossHarness extends ScriptedHarness {
+    readonly #promptMarker: string;
+
+    constructor(
+        kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
+        promptMarker: string
+    ) {
+        super(kind);
+        this.#promptMarker = promptMarker;
+    }
+
+    override async *run(request: HarnessRunRequest): AsyncIterable<HarnessEvent> {
+        yield* super.run(request);
+        if (request.prompt.includes(this.#promptMarker)) {
+            throw new HarnessCapabilityError(
+                this.kind,
+                "Subscription allowance ran out while the run was recorded",
+                {
+                    need: CapabilityFixture.NEED,
+                    reason: CapabilityFixture.REASON,
+                    provisioningHint: CapabilityFixture.PROVISIONING_HINT
+                }
+            );
+        }
+    }
+}
+
 class BlockingHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX;
     readonly started: Promise<void>;
@@ -1660,6 +1692,26 @@ describe.sequential("runResearchLoop", () => {
 
         expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
         expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
+        expect(workspace.getSnapshot().capability_requests).toEqual([
+            expect.objectContaining({ need: CapabilityFixture.NEED })
+        ]);
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(EventType.LAB_FAILED);
+        expect(
+            workspace.getEvents().find(({ type }) => type === EventType.PLATEAU_CONFIRMED)?.payload
+        ).toMatchObject({ capability_blocked: true });
+    });
+
+    it("keeps a capability lost after the run was recorded from reading as a run failure", async () => {
+        const workspace = await createWorkspace();
+
+        const outcome = await runResearchLoop(workspace, {
+            harnesses: [
+                new LateCapabilityLossHarness(HarnessKinds.CODEX, PromptRole.DIRECTOR),
+                new LateCapabilityLossHarness(HarnessKinds.CLAUDE, PromptRole.DIRECTOR)
+            ]
+        });
+
+        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
         expect(workspace.getSnapshot().capability_requests).toEqual([
             expect.objectContaining({ need: CapabilityFixture.NEED })
         ]);
