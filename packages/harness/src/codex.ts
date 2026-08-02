@@ -11,6 +11,7 @@ import {
 } from "#src/contract";
 import { HarnessCapabilityError, HarnessProtocolError } from "#src/errors";
 import type { HarnessEventParser, ParsedHarnessEvent } from "#src/event-parser";
+import { codexModelApiPolicyConfig } from "#src/model-api-policy";
 import type { HarnessCaptureResult } from "#src/process";
 import { SubscriptionCliHarness, type SubscriptionHarnessOptions } from "#src/subscription-harness";
 
@@ -92,6 +93,9 @@ export class CodexHarness extends SubscriptionCliHarness {
             "--json",
             "--ignore-user-config",
             "--skip-git-repo-check",
+            "--dangerously-bypass-hook-trust",
+            "--config",
+            codexModelApiPolicyConfig(),
             ...CodexPermissionArguments[CodexPermissionModes.UNRESTRICTED],
             ...(request.model === undefined ? [] : ["--model", request.model]),
             ...(responseSchemaPath === undefined ? [] : ["--output-schema", responseSchemaPath])

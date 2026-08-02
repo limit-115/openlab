@@ -143,6 +143,9 @@ describe("CodexHarness", () => {
             "--json",
             "--ignore-user-config",
             "--skip-git-repo-check",
+            "--dangerously-bypass-hook-trust",
+            "--config",
+            expect.stringContaining("hooks.PreToolUse"),
             "--dangerously-bypass-approvals-and-sandbox",
             "--output-schema",
             expect.stringMatching(/response-schema\.json$/),
@@ -225,6 +228,9 @@ describe("CodexHarness", () => {
             "--json",
             "--ignore-user-config",
             "--skip-git-repo-check",
+            "--dangerously-bypass-hook-trust",
+            "--config",
+            expect.stringContaining("hooks.PreToolUse"),
             "--dangerously-bypass-approvals-and-sandbox",
             "--model",
             "gpt-subscription-model",
@@ -323,6 +329,8 @@ describe("ClaudeHarness", () => {
             ClaudePermissionModes.BYPASS_PERMISSIONS,
             "--setting-sources",
             "",
+            "--settings",
+            expect.stringContaining('"PreToolUse"'),
             "--json-schema",
             JSON.stringify(answerSchema())
         ]);

@@ -11,6 +11,7 @@ import {
 } from "#src/contract";
 import { HarnessCapabilityError, HarnessProtocolError } from "#src/errors";
 import type { HarnessEventParser, ParsedHarnessEvent } from "#src/event-parser";
+import { claudeModelApiPolicySettings } from "#src/model-api-policy";
 import type { HarnessCaptureResult } from "#src/process";
 import { SubscriptionCliHarness, type SubscriptionHarnessOptions } from "#src/subscription-harness";
 
@@ -123,6 +124,8 @@ export class ClaudeHarness extends SubscriptionCliHarness {
                 ClaudePermissionModes.BYPASS_PERMISSIONS,
                 "--setting-sources",
                 "",
+                "--settings",
+                claudeModelApiPolicySettings(),
                 ...(request.model === undefined ? [] : ["--model", request.model]),
                 ...(request.resumeSessionId === undefined
                     ? []
