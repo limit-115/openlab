@@ -9,6 +9,7 @@ export const AttemptStatus = {
 export type AttemptStatus = (typeof AttemptStatus)[keyof typeof AttemptStatus];
 
 export const EvidenceRelationship = {
+    CITES: "cites",
     SUPPORTS: "supports",
     CONTRADICTS: "contradicts"
 } as const;

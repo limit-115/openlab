@@ -10,7 +10,9 @@ import {
     ExperimentStatus,
     ExternalEffect,
     InternalTaskStatus,
-    LabState
+    LabState,
+    SourceClassification,
+    SourceRetrievalMethod
 } from "#src/constants";
 
 export const IdentifierSchema = z.string().trim().min(1).max(200);
@@ -127,18 +129,53 @@ export const ClaimSchema = z.object({
 
 export const EvidenceKindSchema = z.enum(EvidenceKind);
 
-export const EvidenceSchema = z.object({
-    id: IdentifierSchema,
-    kind: EvidenceKindSchema,
-    claim_id: IdentifierSchema,
-    run_id: IdentifierSchema.optional(),
-    artifact_path: z.string().optional(),
-    artifact_hash: z.string().optional(),
-    summary: z.string().trim().min(1),
-    supports: z.boolean(),
-    independent: z.boolean().default(false),
-    created_at: z.string().datetime()
+export const SourceEvidenceMetadataSchema = z.object({
+    requested_url: z.url(),
+    final_url: z.url(),
+    title: z.string().trim().min(1),
+    claimed_classification: z.enum(SourceClassification),
+    retrieval_method: z.literal(SourceRetrievalMethod.DAEMON_HTTP),
+    http_status: z.number().int().min(200).max(299),
+    fetched_at: z.string().datetime()
 });
+
+export const EvidenceSchema = z
+    .object({
+        id: IdentifierSchema,
+        kind: EvidenceKindSchema,
+        claim_id: IdentifierSchema,
+        run_id: IdentifierSchema.optional(),
+        artifact_path: z.string().optional(),
+        artifact_hash: z.string().optional(),
+        summary: z.string().trim().min(1),
+        supports: z.boolean(),
+        independent: z.boolean().default(false),
+        source: SourceEvidenceMetadataSchema.optional(),
+        created_at: z.string().datetime()
+    })
+    .superRefine((evidence, context) => {
+        if (evidence.kind === EvidenceKind.SOURCE && evidence.source === undefined) {
+            context.addIssue({
+                code: "custom",
+                path: ["source"],
+                message: "Source evidence requires daemon retrieval metadata"
+            });
+        }
+        if (evidence.kind === EvidenceKind.SOURCE && evidence.supports) {
+            context.addIssue({
+                code: "custom",
+                path: ["supports"],
+                message: "A citation cannot independently support a claim"
+            });
+        }
+        if (evidence.kind !== EvidenceKind.SOURCE && evidence.source !== undefined) {
+            context.addIssue({
+                code: "custom",
+                path: ["source"],
+                message: "Only source evidence may include retrieval metadata"
+            });
+        }
+    });
 
 export const InternalTaskStatusSchema = z.enum(InternalTaskStatus);
 

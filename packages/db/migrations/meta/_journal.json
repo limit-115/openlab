@@ -50,6 +50,13 @@
             "when": 1785679153011,
             "tag": "0006_bizarre_dazzler",
             "breakpoints": true
+        },
+        {
+            "idx": 7,
+            "version": "7",
+            "when": 1785684320415,
+            "tag": "0007_broken_captain_cross",
+            "breakpoints": true
         }
     ]
 }

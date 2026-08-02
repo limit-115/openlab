@@ -9,7 +9,8 @@ import {
     type AgentRole as AgentRoleValue,
     EvidenceKind,
     ExperimentStatus,
-    type ExperimentStatus as ExperimentStatusValue
+    type ExperimentStatus as ExperimentStatusValue,
+    SourceRetrievalMethod
 } from "@lab/protocol/constants";
 import type { Evidence } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
@@ -54,7 +55,7 @@ const ExperimentAttemptStatus = {
 
 const UnboundEvidenceOrigin = {
     [EvidenceKind.EXPERIMENT]: EvidenceOrigin.MODEL_JUDGEMENT,
-    [EvidenceKind.SOURCE]: EvidenceOrigin.PRIMARY_SOURCE,
+    [EvidenceKind.SOURCE]: EvidenceOrigin.MODEL_JUDGEMENT,
     [EvidenceKind.ARTIFACT]: EvidenceOrigin.MODEL_JUDGEMENT,
     [EvidenceKind.COUNTEREXAMPLE]: EvidenceOrigin.MODEL_JUDGEMENT,
     [EvidenceKind.VERIFIER_RESULT]: EvidenceOrigin.MODEL_JUDGEMENT
@@ -369,9 +370,12 @@ async function replaceClaimEvidence(
         evidenceRecords.map((candidate) => ({
             claimId: candidate.claim_id,
             evidenceId: candidate.id,
-            relationship: candidate.supports
-                ? EvidenceRelationship.SUPPORTS
-                : EvidenceRelationship.CONTRADICTS
+            relationship:
+                candidate.kind === EvidenceKind.SOURCE
+                    ? EvidenceRelationship.CITES
+                    : candidate.supports
+                      ? EvidenceRelationship.SUPPORTS
+                      : EvidenceRelationship.CONTRADICTS
         }))
     );
 }
@@ -667,11 +671,17 @@ function projectEvidence(snapshot: StatusSnapshot, candidate: Evidence) {
         valid &&
         candidate.kind !== EvidenceKind.SOURCE &&
         candidate.kind !== EvidenceKind.VERIFIER_RESULT;
-    const origin = verifierOriginEstablished
-        ? EvidenceOrigin.VERIFIER
-        : empiricalOriginEstablished
-          ? EvidenceOrigin.EMPIRICAL
-          : UnboundEvidenceOrigin[candidate.kind];
+    const daemonFetchedSourceEstablished =
+        candidate.kind === EvidenceKind.SOURCE &&
+        candidate.source?.retrieval_method === SourceRetrievalMethod.DAEMON_HTTP &&
+        valid;
+    const origin = daemonFetchedSourceEstablished
+        ? EvidenceOrigin.DAEMON_FETCHED_SOURCE
+        : verifierOriginEstablished
+          ? EvidenceOrigin.VERIFIER
+          : empiricalOriginEstablished
+            ? EvidenceOrigin.EMPIRICAL
+            : UnboundEvidenceOrigin[candidate.kind];
 
     return {
         id: candidate.id,

@@ -16,7 +16,9 @@ import {
     EvidenceKind,
     ExperimentStatus,
     InternalTaskStatus,
-    LabState
+    LabState,
+    SourceClassification,
+    SourceRetrievalMethod
 } from "@lab/protocol/constants";
 import type { Evidence, LabEvent, TaskInput } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
@@ -292,6 +294,15 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                     valid: true,
                     complete: true,
                     reproducible: true
+                }),
+                expect.objectContaining({
+                    id: evidenceRecords[3]?.id,
+                    sourceBranchId: branchId,
+                    attemptId: experimentId,
+                    origin: EvidenceOrigin.DAEMON_FETCHED_SOURCE,
+                    valid: true,
+                    complete: true,
+                    reproducible: false
                 })
             ])
         );
@@ -310,6 +321,11 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                     claimId,
                     evidenceId: evidenceRecords[2]?.id,
                     relationship: EvidenceRelationship.CONTRADICTS
+                },
+                {
+                    claimId,
+                    evidenceId: evidenceRecords[3]?.id,
+                    relationship: EvidenceRelationship.CITES
                 }
             ])
         );
@@ -914,6 +930,27 @@ function makeEvidence(
             summary: "A bounded counterexample remains",
             supports: false,
             independent: false,
+            created_at: createdAt
+        },
+        {
+            id: `${labId}-evidence-source`,
+            kind: EvidenceKind.SOURCE,
+            claim_id: claimId,
+            run_id: experimentId,
+            artifact_path: "artifacts/source.html",
+            artifact_hash: "e".repeat(64),
+            summary: "A daemon-fetched citation",
+            supports: false,
+            independent: false,
+            source: {
+                requested_url: "https://example.com/paper",
+                final_url: "https://example.com/paper",
+                title: "Example paper",
+                claimed_classification: SourceClassification.PRIMARY,
+                retrieval_method: SourceRetrievalMethod.DAEMON_HTTP,
+                http_status: 200,
+                fetched_at: createdAt
+            },
             created_at: createdAt
         }
     ];
