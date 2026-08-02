@@ -13,6 +13,7 @@ import {
     PROVISIONING_HINT_LABEL,
     PROVISIONING_HINT_NOTE
 } from "#src/capabilities/capability-card.const";
+import { CapabilityProvisionForm } from "#src/capabilities/capability-provision-form";
 import { CopyButton } from "#src/clipboard/copy-button";
 import { Badge } from "#src/design-system/badge";
 import {
@@ -53,6 +54,10 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                         {CAPABILITY_RESOURCE_CLASS_LABEL[request.resource_class]}
                     </Badge>
                     <ItemDescription>{request.reason}</ItemDescription>
+                    <p className={PROVISIONING_HINT_NOTE}>{request.provisioning_hint}</p>
+                    {request.status === CapabilityStatus.OPEN ? (
+                        <CapabilityProvisionForm requestId={request.id} />
+                    ) : null}
                     <div className={PROVISIONING_HINT}>
                         <div className={PROVISIONING_HINT_HEADER}>
                             <span className={PROVISIONING_HINT_LABEL}>Provision via CLI</span>
@@ -63,7 +68,6 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                             />
                         </div>
                         <code className={PROVISIONING_HINT_COMMAND}>{command}</code>
-                        <p className={PROVISIONING_HINT_NOTE}>{request.provisioning_hint}</p>
                     </div>
                     <ItemFooter className={CAPABILITY_FOOTER}>
                         Requested {formatDate(request.created_at)}
