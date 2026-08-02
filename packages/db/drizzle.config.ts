@@ -4,7 +4,7 @@ const databaseUrl = process.env.DATABASE_URL;
 
 export default defineConfig({
     dialect: "postgresql",
-    schema: "./src/schema.ts",
+    schema: "./src/lab-database/lab-schema.ts",
     out: "./migrations",
     ...(databaseUrl === undefined ? {} : { dbCredentials: { url: databaseUrl } })
 });
