@@ -3,6 +3,7 @@ import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";
 import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
+import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
 import { RuntimePersistence } from "#src/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "#src/runtime/runtime-revision-conflict";
 import {
@@ -162,6 +163,40 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             running.lastEventSequence
         );
         expect(noReplay).toEqual([]);
+    });
+
+    it("refuses a checkpoint written before a protocol change without hiding recoverable labs", async () => {
+        const staleTask = makeTask(testLabId("stale-contract"));
+        const staleSnapshot = makeSnapshot(staleTask);
+        await persistence.initialize({
+            task: staleTask,
+            workspacePath: "/tmp/lab-stale-contract",
+            snapshot: staleSnapshot,
+            event: makeEvent(EventType.LAB_STARTED, staleSnapshot.lab.id, "event-stale-contract")
+        });
+        const [staleCapability] = staleSnapshot.capability_requests;
+        if (staleCapability === undefined) {
+            throw new Error("Expected the snapshot fixture to carry a capability request");
+        }
+        const { resource_class: _dropped, ...withoutResourceClass } = staleCapability;
+        await client.sql`
+            UPDATE runtime_checkpoints
+            SET snapshot = jsonb_set(
+                snapshot,
+                '{capability_requests}',
+                ${JSON.stringify([withoutResourceClass])}::jsonb
+            )
+            WHERE lab_id = ${staleSnapshot.lab.id}
+        `;
+
+        await expect(persistence.load(staleSnapshot.lab.id)).rejects.toBeInstanceOf(
+            IncompatibleCheckpointError
+        );
+        const recoverable = await persistence.listRecoverable();
+        expect(recoverable.map(({ checkpoint }) => checkpoint.snapshot.lab.id)).not.toContain(
+            staleSnapshot.lab.id
+        );
+        expect(recoverable.length).toBeGreaterThan(0);
     });
 
     it("loads a checkpoint through a new database client after process restart", async () => {

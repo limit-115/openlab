@@ -2,6 +2,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
+import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
 import type { RecoverableRuntime } from "@lab/db/runtime/runtime-persistence.types";
 import {
     CapabilityResourceClass,
@@ -90,6 +91,30 @@ describe("LabWorkspace", () => {
 
         expect(recovered.labId).toBe(workspace.labId);
         expect(recovered.recovered).toBe(true);
+    });
+
+    it("starts a fresh run when the pointed-at checkpoint predates the protocol", async () => {
+        const workspace = await createWorkspace();
+        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
+        const taskPath = path.join(workspaceRoot, "task.json");
+
+        const started = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, {
+            ...recoveryOnlyPersistence([]),
+            initialize: async ({ snapshot, evidence }) => ({
+                snapshot,
+                evidence: [...(evidence ?? [])],
+                revision: 1
+            }),
+            load: async (labId) => {
+                if (labId !== workspace.labId) {
+                    return undefined;
+                }
+                throw new IncompatibleCheckpointError(labId);
+            }
+        });
+
+        expect(started.labId).not.toBe(workspace.labId);
+        expect(started.recovered).toBe(false);
     });
 
     it("selects the latest matching database runtime when the pointer is corrupt", async () => {

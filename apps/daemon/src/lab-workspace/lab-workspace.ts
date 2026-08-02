@@ -4,6 +4,7 @@ import path from "node:path";
 import { transitionLabState } from "@lab/core/lab-lifecycle/lab-state-transitions";
 import type { LifecycleContext } from "@lab/core/lab-lifecycle/lab-state-transitions.types";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
+import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
 import type {
     PersistedLabEvent,
     PersistedRuntime,
@@ -240,7 +241,10 @@ export class LabWorkspace {
         runtimePersistence: WorkspaceRuntimePersistence
     ): Promise<LabWorkspace | undefined> {
         resolveRunDirectory(workspaceRoot, current.run_directory);
-        const persisted = await runtimePersistence.load(current.lab_id);
+        const persisted = await LabWorkspace.loadResumableRuntime(
+            runtimePersistence,
+            current.lab_id
+        );
         if (persisted === undefined) {
             return undefined;
         }
@@ -253,6 +257,24 @@ export class LabWorkspace {
             return undefined;
         }
         return LabWorkspace.loadPersistedRuntime(workspaceRoot, persisted, runtimePersistence);
+    }
+
+    /**
+     * A checkpoint written before a protocol change describes a run this build cannot act on, so it
+     * joins a mismatched task and a terminal state as a reason to start fresh rather than resume.
+     */
+    private static async loadResumableRuntime(
+        runtimePersistence: WorkspaceRuntimePersistence,
+        labId: string
+    ): Promise<PersistedRuntime | undefined> {
+        try {
+            return await runtimePersistence.load(labId);
+        } catch (error) {
+            if (error instanceof IncompatibleCheckpointError) {
+                return undefined;
+            }
+            throw error;
+        }
     }
 
     private static async loadPersistedRuntime(

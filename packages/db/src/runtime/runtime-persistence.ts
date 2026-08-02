@@ -4,6 +4,7 @@ import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events, labs, runtimeCheckpoints } from "#src/lab-database/lab-schema";
+import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
 import { terminalTimestamps } from "#src/runtime/lab-terminal-timestamps";
 import {
     checkpointResult,
@@ -196,11 +197,19 @@ export class RuntimePersistence {
             .orderBy(desc(runtimeCheckpoints.persistedAt))
             .limit(limit);
 
-        return Promise.all(
+        const runtimes = await Promise.all(
             records.map(async (record) => {
-                return toPersistedRuntime(this.#database, record);
+                try {
+                    return await toPersistedRuntime(this.#database, record);
+                } catch (error) {
+                    if (error instanceof IncompatibleCheckpointError) {
+                        return undefined;
+                    }
+                    throw error;
+                }
             })
         );
+        return runtimes.filter((runtime): runtime is RecoverableRuntime => runtime !== undefined);
     }
 
     async eventsAfter(

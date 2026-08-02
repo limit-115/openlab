@@ -6,6 +6,7 @@ import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { desc, eq } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events, runtimeCheckpoints } from "#src/lab-database/lab-schema";
+import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
 import { toLabEvent } from "#src/runtime/runtime-event-log";
 import { assertRuntimeMetadata, parseEvidence } from "#src/runtime/runtime-metadata-validation";
 import { RuntimePersistenceLimit } from "#src/runtime/runtime-persistence.const";
@@ -32,9 +33,7 @@ export async function toPersistedRuntime(
     database: RuntimeDatabase,
     record: PersistedRuntimeRecord
 ): Promise<PersistedRuntime> {
-    const task = TaskInputSchema.parse(record.task);
-    const snapshot = StatusSnapshotSchema.parse(record.snapshot);
-    const evidenceRecords = parseEvidence(record.evidence);
+    const { task, snapshot, evidenceRecords } = readCheckpointContract(record);
     assertRuntimeMetadata(record.labId, task, record.workspacePath, snapshot);
     return {
         task,
@@ -46,6 +45,27 @@ export async function toPersistedRuntime(
         ),
         persistedAt: record.persistedAt.toISOString()
     };
+}
+
+/**
+ * Contract state written by an older build parses into nothing this process can act on. It is
+ * reported as an incompatible checkpoint so a caller can decline to resume it, while genuine
+ * corruption keeps failing through the metadata assertions.
+ */
+function readCheckpointContract(record: PersistedRuntimeRecord): {
+    task: TaskInput;
+    snapshot: StatusSnapshot;
+    evidenceRecords: Evidence[];
+} {
+    try {
+        return {
+            task: TaskInputSchema.parse(record.task),
+            snapshot: StatusSnapshotSchema.parse(record.snapshot),
+            evidenceRecords: parseEvidence(record.evidence)
+        };
+    } catch (error) {
+        throw new IncompatibleCheckpointError(record.labId, { cause: error });
+    }
 }
 
 export async function withRecentEvents(
