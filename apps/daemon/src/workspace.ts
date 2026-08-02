@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import type { LifecycleContext } from "@lab/core/lifecycle";
+import { transitionLabState } from "@lab/core/lifecycle";
 import type { CapabilityRequest, LabEvent, LabState, TaskInput } from "@lab/protocol/schemas";
 import { LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
@@ -10,6 +12,14 @@ import writeFileAtomic from "write-file-atomic";
 
 type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;
 type SnapshotUpdater = (draft: StatusSnapshot) => void;
+
+export interface VerifiedResult {
+    summary: string;
+    supportingEvidenceIds: readonly string[];
+    independentVerifierVerdictId: string;
+    limitations: readonly string[];
+    knownCounterexamples: readonly string[];
+}
 
 export class LabWorkspace {
     readonly runDirectory: string;
@@ -173,7 +183,12 @@ export class LabWorkspace {
         });
     }
 
-    async transition(state: LabState, reason?: string): Promise<StatusSnapshot> {
+    async transition(
+        state: LabState,
+        reason?: string,
+        context: LifecycleContext = {}
+    ): Promise<StatusSnapshot> {
+        transitionLabState(this.snapshot.lab.state, state, context);
         const snapshot = await this.update((draft) => {
             draft.lab.state = state;
             if (reason === undefined) {
@@ -183,6 +198,69 @@ export class LabWorkspace {
             }
         });
         await this.appendEvent("lab.state_changed", { state, reason });
+        return snapshot;
+    }
+
+    async hibernateForPlateau(reason: string): Promise<StatusSnapshot> {
+        const reportPath = path.join(this.runDirectory, "report.md");
+        await writeFileAtomic(reportPath, this.renderReport("Plateau report", reason));
+        const snapshot = await this.update((draft) => {
+            transitionLabState(draft.lab.state, "HIBERNATING", { plateauConfirmed: true });
+            draft.lab.state = "HIBERNATING";
+            draft.lab.reason = reason;
+            draft.result = {
+                summary: reason,
+                report_path: reportPath,
+                limitations: [...draft.frontier.blockers]
+            };
+        });
+        await this.appendEvent("lab.state_changed", { state: "HIBERNATING", reason });
+        return snapshot;
+    }
+
+    async complete(result: VerifiedResult): Promise<StatusSnapshot> {
+        const reportPath = path.join(this.runDirectory, "report.md");
+        const resultPath = path.join(this.runDirectory, "result.json");
+        const resultFile = {
+            lab_id: this.labId,
+            status: "COMPLETED",
+            result: result.summary,
+            supporting_evidence_ids: result.supportingEvidenceIds,
+            independent_verifier_verdict_id: result.independentVerifierVerdictId,
+            limitations: result.limitations,
+            known_counterexamples: result.knownCounterexamples,
+            completed_at: new Date().toISOString()
+        };
+        const context: LifecycleContext = {
+            completion: {
+                resultStatement: result.summary,
+                supportingEvidenceIds: result.supportingEvidenceIds,
+                independentVerifierVerdictId: result.independentVerifierVerdictId,
+                limitations: result.limitations,
+                knownCounterexamples: result.knownCounterexamples,
+                reportPath,
+                resultPath
+            }
+        };
+        transitionLabState(this.snapshot.lab.state, "COMPLETED", context);
+        await Promise.all([
+            writeFileAtomic(reportPath, this.renderReport("Verified result", result.summary)),
+            this.writeJson("result.json", resultFile)
+        ]);
+        const snapshot = await this.update((draft) => {
+            draft.lab.state = "COMPLETED";
+            delete draft.lab.reason;
+            draft.result = {
+                summary: result.summary,
+                report_path: reportPath,
+                result_path: resultPath,
+                limitations: [...result.limitations]
+            };
+        });
+        await this.appendEvent("lab.state_changed", {
+            state: "COMPLETED",
+            verifier_verdict_id: result.independentVerifierVerdictId
+        });
         return snapshot;
     }
 
@@ -225,6 +303,11 @@ export class LabWorkspace {
                 request_id: id,
                 resource_reference: resourceReference
             });
+            if (this.snapshot.lab.state === "HIBERNATING") {
+                await this.transition("RUNNING", `Capability ${id} provided`, {
+                    wakeTrigger: "capability"
+                });
+            }
         }
         return provided;
     }
@@ -292,6 +375,17 @@ export class LabWorkspace {
             path.join(this.runDirectory, fileName),
             `${JSON.stringify(value, null, 4)}\n`
         );
+    }
+
+    private renderReport(title: string, summary: string): string {
+        const snapshot = this.snapshot;
+        const claims = snapshot.claims.length
+            ? snapshot.claims.map((claim) => `- [${claim.status}] ${claim.statement}`).join("\n")
+            : "- No claims recorded.";
+        const blockers = snapshot.frontier.blockers.length
+            ? snapshot.frontier.blockers.map((blocker) => `- ${blocker}`).join("\n")
+            : "- None.";
+        return `# ${title}\n\n## Goal\n\n${snapshot.lab.goal}\n\n## Summary\n\n${summary}\n\n## Claims\n\n${claims}\n\n## Blockers and limitations\n\n${blockers}\n`;
     }
 
     private static async readCurrentPointer(

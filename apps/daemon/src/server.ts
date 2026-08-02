@@ -52,7 +52,7 @@ export function createStatusServer(
         if (current.lab.state !== "HIBERNATING") {
             return reply.code(409).send({ error: `Cannot wake lab from ${current.lab.state}` });
         }
-        return workspace.transition("RUNNING", "External wake command");
+        return workspace.transition("RUNNING", "External wake command", { wakeTrigger: "user" });
     });
 
     app.post("/api/stop", async () => workspace.transition("STOPPED", "External stop command"));

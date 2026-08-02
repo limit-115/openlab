@@ -67,4 +67,29 @@ describe("LabWorkspace", () => {
         expect(workspace.getSnapshot().capability_requests).toHaveLength(1);
         expect(workspace.getSnapshot().frontier.blockers).toContain(input.need);
     });
+
+    it("writes a report before hibernating on a plateau", async () => {
+        const workspace = await createWorkspace();
+
+        await workspace.hibernateForPlateau("No informative experiments remain");
+
+        expect(workspace.getSnapshot().lab.state).toBe("HIBERNATING");
+        await expect(
+            readFile(path.join(workspace.runDirectory, "report.md"), "utf8")
+        ).resolves.toContain("Plateau report");
+    });
+
+    it("refuses completion without supporting evidence", async () => {
+        const workspace = await createWorkspace();
+
+        await expect(
+            workspace.complete({
+                summary: "A result",
+                supportingEvidenceIds: [],
+                independentVerifierVerdictId: "verdict-1",
+                limitations: [],
+                knownCounterexamples: []
+            })
+        ).rejects.toThrow("supporting evidence");
+    });
 });
