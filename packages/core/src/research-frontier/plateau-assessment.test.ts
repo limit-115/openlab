@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ProgressKind, SchedulerLane } from "#src/constants";
-import { assessPlateau, type ResearchFrontier } from "#src/frontier";
+import { assessPlateau } from "#src/research-frontier/plateau-assessment";
+import { ProgressKind } from "#src/research-frontier/progress-kind.const";
+import type { ResearchFrontier } from "#src/research-frontier/research-frontier.types";
+import { SchedulerLane } from "#src/scheduling/scheduler-lane.const";
 
 const frontier: ResearchFrontier = {
     observedSince: new Date("2026-08-01T00:00:00Z"),

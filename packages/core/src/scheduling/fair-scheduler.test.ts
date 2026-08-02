@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { SchedulerLane, type SchedulerLane as SchedulerLaneValue } from "#src/constants";
-import { FairScheduler, type SchedulableTask } from "#src/scheduler";
+import { FairScheduler } from "#src/scheduling/fair-scheduler";
+import type { SchedulableTask } from "#src/scheduling/fair-scheduler.types";
+import {
+    SchedulerLane,
+    type SchedulerLane as SchedulerLaneValue
+} from "#src/scheduling/scheduler-lane.const";
 
 function task(id: string, lane: SchedulerLaneValue, priority = 0): SchedulableTask {
     return { id, lane, priority, queuedAt: new Date("2026-08-02T00:00:00Z") };

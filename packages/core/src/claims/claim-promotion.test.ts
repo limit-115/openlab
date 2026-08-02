@@ -1,14 +1,9 @@
 import { ClaimStatus, EvidenceKind } from "@lab/protocol/constants";
 import type { Claim, Evidence } from "@lab/protocol/schemas";
 import { describe, expect, it } from "vitest";
-import {
-    type AssessedEvidence,
-    assessClaimPromotion,
-    collectStaleDependents,
-    deduplicateEvidence,
-    transitionClaim
-} from "#src/claims";
-import { EvidenceOrigin } from "#src/constants";
+import type { AssessedEvidence } from "#src/claims/claim-evidence.types";
+import { assessClaimPromotion, transitionClaim } from "#src/claims/claim-promotion";
+import { EvidenceOrigin } from "#src/claims/evidence-origin.const";
 
 const now = "2026-08-02T00:00:00.000Z";
 
@@ -75,23 +70,6 @@ describe("claim promotion", () => {
         );
 
         expect(decision.allowed).toBe(true);
-    });
-
-    it("does not count the same run and artifact twice", () => {
-        const first = evidence();
-        const duplicate = evidence({ id: "evidence-2" });
-
-        expect(deduplicateEvidence([first, duplicate])).toEqual([first]);
-    });
-
-    it("propagates refuted assumptions through dependent claims", () => {
-        const stale = collectStaleDependents(new Set(["assumption-1"]), [
-            { claimId: "claim-1", dependencyIds: ["assumption-1"] },
-            { claimId: "claim-2", dependencyIds: ["claim-1"] },
-            { claimId: "claim-3", dependencyIds: ["other"] }
-        ]);
-
-        expect([...stale]).toEqual(["claim-1", "claim-2"]);
     });
 
     it("allows a stale claim to re-enter testing and clears stale state", () => {

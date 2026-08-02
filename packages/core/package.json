@@ -4,11 +4,26 @@
     "private": true,
     "type": "module",
     "exports": {
-        "./claims": "./src/claims.ts",
-        "./constants": "./src/constants.ts",
-        "./frontier": "./src/frontier.ts",
-        "./lifecycle": "./src/lifecycle.ts",
-        "./scheduler": "./src/scheduler.ts"
+        "./claims/claim-evidence": "./src/claims/claim-evidence.ts",
+        "./claims/claim-evidence.types": "./src/claims/claim-evidence.types.ts",
+        "./claims/claim-promotion": "./src/claims/claim-promotion.ts",
+        "./claims/claim-promotion.types": "./src/claims/claim-promotion.types.ts",
+        "./claims/claim-staleness": "./src/claims/claim-staleness.ts",
+        "./claims/claim-staleness.types": "./src/claims/claim-staleness.types.ts",
+        "./claims/evidence-origin.const": "./src/claims/evidence-origin.const.ts",
+        "./lab-lifecycle/completion-evidence": "./src/lab-lifecycle/completion-evidence.ts",
+        "./lab-lifecycle/completion-evidence.types": "./src/lab-lifecycle/completion-evidence.types.ts",
+        "./lab-lifecycle/lab-state-transitions": "./src/lab-lifecycle/lab-state-transitions.ts",
+        "./lab-lifecycle/lab-state-transitions.types": "./src/lab-lifecycle/lab-state-transitions.types.ts",
+        "./lab-lifecycle/wake-trigger.const": "./src/lab-lifecycle/wake-trigger.const.ts",
+        "./research-frontier/plateau-assessment": "./src/research-frontier/plateau-assessment.ts",
+        "./research-frontier/plateau-assessment.types": "./src/research-frontier/plateau-assessment.types.ts",
+        "./research-frontier/progress-kind.const": "./src/research-frontier/progress-kind.const.ts",
+        "./research-frontier/research-frontier.types": "./src/research-frontier/research-frontier.types.ts",
+        "./scheduling/fair-scheduler": "./src/scheduling/fair-scheduler.ts",
+        "./scheduling/fair-scheduler.const": "./src/scheduling/fair-scheduler.const.ts",
+        "./scheduling/fair-scheduler.types": "./src/scheduling/fair-scheduler.types.ts",
+        "./scheduling/scheduler-lane.const": "./src/scheduling/scheduler-lane.const.ts"
     },
     "imports": {
         "#src/*": "./src/*.ts"

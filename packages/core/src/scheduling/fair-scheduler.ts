@@ -1,23 +1,10 @@
-import { domainValues } from "@lab/protocol/constants";
-import { SchedulerLane, type SchedulerLane as SchedulerLaneValue } from "#src/constants";
-
-const schedulerLaneValues = domainValues(SchedulerLane);
-
-export interface SchedulableTask {
-    readonly id: string;
-    readonly lane: SchedulerLaneValue;
-    readonly priority: number;
-    readonly queuedAt: Date;
-}
-
-export type SchedulerWeights = Readonly<Record<SchedulerLaneValue, number>>;
-
-export const defaultSchedulerWeights: SchedulerWeights = {
-    [SchedulerLane.PROMISING]: 3,
-    [SchedulerLane.EXPLORATION]: 1,
-    [SchedulerLane.ADVERSARIAL]: 1,
-    [SchedulerLane.REPRODUCTION]: 1
-};
+import { defaultSchedulerWeights } from "#src/scheduling/fair-scheduler.const";
+import type { SchedulableTask, SchedulerWeights } from "#src/scheduling/fair-scheduler.types";
+import {
+    SchedulerLane,
+    type SchedulerLane as SchedulerLaneValue,
+    schedulerLaneValues
+} from "#src/scheduling/scheduler-lane.const";
 
 export class FairScheduler<Task extends SchedulableTask> {
     readonly #laneOrder: readonly SchedulerLaneValue[];

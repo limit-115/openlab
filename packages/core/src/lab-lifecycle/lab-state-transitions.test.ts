@@ -1,7 +1,8 @@
 import { LabState } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
-import { WakeTrigger } from "#src/constants";
-import { assessLifecycleTransition, type CompletionEvidence } from "#src/lifecycle";
+import type { CompletionEvidence } from "#src/lab-lifecycle/completion-evidence.types";
+import { assessLifecycleTransition } from "#src/lab-lifecycle/lab-state-transitions";
+import { WakeTrigger } from "#src/lab-lifecycle/wake-trigger.const";
 
 const completion: CompletionEvidence = {
     resultStatement: "The result is verified",
