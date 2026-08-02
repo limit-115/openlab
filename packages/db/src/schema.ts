@@ -25,7 +25,7 @@ import {
     timestamp,
     uniqueIndex
 } from "drizzle-orm/pg-core";
-import { AttemptStatus, EvidenceRelationship } from "#src/constants";
+import { AttemptStatus, EvidenceRelationship, ExternalEffect } from "#src/constants";
 
 export const labStateEnum = pgEnum("lab_state", domainValues(LabState));
 export const branchStatusEnum = pgEnum("branch_status", domainValues(BranchStatus));
@@ -33,6 +33,7 @@ export const agentRoleEnum = pgEnum("agent_role", domainValues(AgentRole));
 export const schedulerLaneEnum = pgEnum("scheduler_lane", domainValues(SchedulerLane));
 export const taskStatusEnum = pgEnum("task_status", domainValues(InternalTaskStatus));
 export const attemptStatusEnum = pgEnum("attempt_status", domainValues(AttemptStatus));
+export const externalEffectEnum = pgEnum("external_effect", domainValues(ExternalEffect));
 export const claimStatusEnum = pgEnum("claim_status", domainValues(ClaimStatus));
 export const evidenceKindEnum = pgEnum("evidence_kind", domainValues(EvidenceKind));
 export const evidenceOriginEnum = pgEnum("evidence_origin", domainValues(EvidenceOrigin));
@@ -139,6 +140,9 @@ export const attempts = pgTable(
         exitCode: integer("exit_code"),
         error: text("error"),
         reconciliationKey: text("reconciliation_key"),
+        externalEffect: externalEffectEnum("external_effect")
+            .notNull()
+            .default(ExternalEffect.NONE),
         startedAt: timestamp("started_at", { withTimezone: true }),
         finishedAt: timestamp("finished_at", { withTimezone: true }),
         ...timestamps

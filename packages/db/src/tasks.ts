@@ -2,7 +2,12 @@ import type { SchedulerLane } from "@lab/core/constants";
 import { type AgentRole, InternalTaskStatus } from "@lab/protocol/constants";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Database } from "#src/client";
-import { AttemptStatus, type AttemptStatus as AttemptStatusValue } from "#src/constants";
+import {
+    AttemptStatus,
+    type AttemptStatus as AttemptStatusValue,
+    ExternalEffect,
+    type ExternalEffect as ExternalEffectValue
+} from "#src/constants";
 import { attempts, tasks } from "#src/schema";
 
 export type TaskRecord = typeof tasks.$inferSelect;
@@ -37,6 +42,7 @@ export interface StartAttemptInput {
     readonly inputs?: Readonly<Record<string, unknown>>;
     readonly environment?: Readonly<Record<string, string>>;
     readonly reconciliationKey?: string;
+    readonly externalEffect?: ExternalEffectValue;
     readonly now?: Date;
 }
 
@@ -148,6 +154,7 @@ export class TaskRepository {
 
     async startAttempt(input: StartAttemptInput): Promise<AttemptRecord> {
         const now = input.now ?? new Date();
+        assertReconciliationKey(input.reconciliationKey);
         return this.#database.transaction(async (transaction) => {
             const [task] = await transaction
                 .update(tasks)
@@ -178,6 +185,7 @@ export class TaskRepository {
                     inputs: { ...(input.inputs ?? {}) },
                     environment: { ...(input.environment ?? {}) },
                     reconciliationKey: input.reconciliationKey,
+                    externalEffect: input.externalEffect ?? ExternalEffect.NONE,
                     startedAt: now,
                     createdAt: now,
                     updatedAt: now
@@ -219,6 +227,7 @@ export class TaskRepository {
             }
 
             const retry = input.retryAt !== undefined;
+            assertRetryIsSafe(attempt.externalEffect, attempt.reconciliationKey, retry);
             const [task] = await transaction
                 .update(tasks)
                 .set({
@@ -240,7 +249,8 @@ export class TaskRepository {
                     and(
                         eq(tasks.id, input.taskId),
                         eq(tasks.leaseOwner, input.workerId),
-                        eq(tasks.status, InternalTaskStatus.RUNNING)
+                        eq(tasks.status, InternalTaskStatus.RUNNING),
+                        gt(tasks.leaseExpiresAt, now)
                     )
                 )
                 .returning({ id: tasks.id });
@@ -295,5 +305,21 @@ export class TaskRepository {
             `);
             return taskIds;
         });
+    }
+}
+
+export function assertRetryIsSafe(
+    externalEffect: ExternalEffectValue,
+    reconciliationKey: string | null,
+    retry: boolean
+): void {
+    if (retry && externalEffect === ExternalEffect.IRREVERSIBLE && reconciliationKey === null) {
+        throw new Error("An irreversible external action cannot be retried without reconciliation");
+    }
+}
+
+function assertReconciliationKey(reconciliationKey: string | undefined): void {
+    if (reconciliationKey !== undefined && reconciliationKey.trim().length === 0) {
+        throw new Error("Reconciliation key must not be empty");
     }
 }

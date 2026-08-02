@@ -36,8 +36,8 @@ export interface AddEvidenceInput {
     readonly summary: string;
     readonly supports: boolean;
     readonly independent?: boolean;
-    readonly valid?: boolean;
-    readonly complete?: boolean;
+    readonly valid: boolean;
+    readonly complete: boolean;
     readonly reproducible?: boolean;
     readonly now?: Date;
 }
@@ -84,6 +84,7 @@ export class ClaimRepository {
     }
 
     async addEvidence(input: AddEvidenceInput): Promise<void> {
+        assertEvidenceIntegrity(input);
         const now = input.now ?? new Date();
         await this.#database.transaction(async (transaction) => {
             await transaction
@@ -101,8 +102,8 @@ export class ClaimRepository {
                     artifactHash: input.artifactHash,
                     summary: input.summary,
                     independent: input.independent ?? false,
-                    valid: input.valid ?? true,
-                    complete: input.complete ?? true,
+                    valid: input.valid,
+                    complete: input.complete,
                     reproducible: input.reproducible ?? false,
                     createdAt: now
                 })
@@ -203,6 +204,26 @@ export class ClaimRepository {
             }
             return transitioned;
         });
+    }
+}
+
+export function assertEvidenceIntegrity(input: AddEvidenceInput): void {
+    if (input.fingerprint.trim().length === 0) {
+        throw new Error("Evidence fingerprint must not be empty");
+    }
+    if (input.summary.trim().length === 0) {
+        throw new Error("Evidence summary must not be empty");
+    }
+    const hasArtifactPath = input.artifactPath !== undefined;
+    const hasArtifactHash = input.artifactHash !== undefined;
+    if (hasArtifactPath !== hasArtifactHash) {
+        throw new Error("Evidence artifact path and hash must be recorded together");
+    }
+    if (input.artifactPath !== undefined && input.artifactPath.trim().length === 0) {
+        throw new Error("Evidence artifact path must not be empty");
+    }
+    if (input.artifactHash !== undefined && input.artifactHash.trim().length === 0) {
+        throw new Error("Evidence artifact hash must not be empty");
     }
 }
 
