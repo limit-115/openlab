@@ -6,6 +6,7 @@ import { ProvideCapabilitySchema } from "@lab/protocol/capabilities/provide-capa
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import Fastify, { type FastifyInstance } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
+import { registerAgentActivityRoute } from "#src/lab-status/agent-activity-route";
 import { CapabilityResponseError } from "#src/lab-status/status-server.const";
 import type { StatusServerOptions } from "#src/lab-status/status-server.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
@@ -25,6 +26,10 @@ export function createStatusServer(
             root: options.dashboardRoot,
             prefix: "/"
         });
+    }
+
+    if (options.activity !== undefined) {
+        registerAgentActivityRoute(app, options.activity);
     }
 
     app.get("/health", async () => ({ ok: true, lab_id: workspace.labId }));

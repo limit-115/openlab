@@ -36,6 +36,7 @@ export async function startDaemon(
             dependencies.researchLoop ?? runResearchLoop
         );
         app = createStatusServer(workspace, {
+            activity,
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel,
             onStop: () =>
