@@ -9,7 +9,7 @@ import type {
     RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime";
-import { CapabilityStatus, LabState } from "@lab/protocol/constants";
+import { CapabilityStatus, EventType, LabState } from "@lab/protocol/constants";
 import type { Evidence } from "@lab/protocol/schemas";
 import { describe, expect, it } from "vitest";
 import { ResearchLoopOutcomeStatus } from "#src/research-loop";
@@ -18,6 +18,13 @@ import { LabWorkspace } from "#src/workspace";
 
 const TestDatabase = {
     URL: "postgres://test:test@127.0.0.1:5432/test"
+} as const;
+
+const UnsafeCapabilityReference = {
+    OPENAI_KEY: "sk-proj-abcdefghijklmnopqrstuvwxyz012345",
+    BEARER_TOKEN: "Bearer abcdefghijklmnopqrstuvwxyz012345",
+    LONG_TOKEN: "a".repeat(96),
+    API_KEY_PLAINTEXT: "api-key: abcdefghijklmnopqrstuvwxyz"
 } as const;
 
 class InMemoryRuntimePersistence {
@@ -175,6 +182,45 @@ describe("status server", () => {
             status: CapabilityStatus.PROVIDED,
             resource_reference: "dataset://independent/v1"
         });
+        await server.close();
+    });
+
+    it("returns 400 for credential payloads without persisting or publishing them", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-secret-route-test-"));
+        const taskPath = path.join(directory, "task.json");
+        await writeFile(taskPath, JSON.stringify({ goal: "Use an opaque capability handle" }));
+        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const request = await workspace.requestCapability({
+            need: "Licensed dataset",
+            reason: "The verifier needs licensed observations",
+            provisioningHint: "Provide a dataset or keychain reference"
+        });
+        const server = createStatusServer(workspace);
+
+        for (const reference of Object.values(UnsafeCapabilityReference)) {
+            const response = await server.inject({
+                method: "POST",
+                url: `/api/capabilities/${request.id}/provide`,
+                payload: { resource_reference: reference }
+            });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.json()).toEqual({ error: "Invalid capability resource reference" });
+        }
+
+        expect(
+            workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
+        ).toMatchObject({ status: CapabilityStatus.OPEN });
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+            EventType.CAPABILITY_PROVIDED
+        );
+        const persistedState = JSON.stringify({
+            snapshot: workspace.getSnapshot(),
+            events: workspace.getEvents()
+        });
+        for (const reference of Object.values(UnsafeCapabilityReference)) {
+            expect(persistedState).not.toContain(reference);
+        }
         await server.close();
     });
 

@@ -11,6 +11,19 @@ import { LabWorkspace, type WorkspaceRuntimePersistence } from "#src/workspace";
 
 const directories: string[] = [];
 
+const SafeCapabilityReference = {
+    DATASET: "dataset://independent/v1",
+    KEYCHAIN: "keychain://ai-research-lab/licensed-corpus",
+    FILE: "file:///tmp/licensed-corpus"
+} as const;
+
+const UnsafeCapabilityReference = {
+    OPENAI_KEY: "sk-proj-abcdefghijklmnopqrstuvwxyz012345",
+    BEARER_TOKEN: "Bearer abcdefghijklmnopqrstuvwxyz012345",
+    LONG_TOKEN: "a".repeat(96),
+    API_KEY_PLAINTEXT: "api-key: abcdefghijklmnopqrstuvwxyz"
+} as const;
+
 afterEach(() => {
     directories.length = 0;
 });
@@ -211,6 +224,63 @@ describe("LabWorkspace", () => {
         ).toHaveLength(1);
     });
 
+    it("accepts safe dataset, keychain, and file resource handles", async () => {
+        const workspace = await createWorkspace();
+
+        for (const [kind, reference] of Object.entries(SafeCapabilityReference)) {
+            const request = await workspace.requestCapability({
+                need: `${kind} resource`,
+                reason: "The research branch needs an operator-provided resource",
+                provisioningHint: "Provide only an opaque resource handle"
+            });
+
+            await expect(workspace.provideCapability(request.id, reference)).resolves.toBe(true);
+            expect(
+                workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
+                    ?.resource_reference
+            ).toBe(reference);
+        }
+
+        expect(
+            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_PROVIDED)
+        ).toHaveLength(Object.values(SafeCapabilityReference).length);
+    });
+
+    it("rejects raw credential payloads before persisting or emitting an event", async () => {
+        const workspace = await createWorkspace();
+        const request = await workspace.requestCapability({
+            need: "Restricted dataset access",
+            reason: "The research branch needs licensed observations",
+            provisioningHint: "Provide a keychain or dataset handle"
+        });
+
+        for (const reference of Object.values(UnsafeCapabilityReference)) {
+            await expect(workspace.provideCapability(request.id, reference)).rejects.toThrow();
+        }
+
+        const unchangedRequest = workspace
+            .getSnapshot()
+            .capability_requests.find(({ id }) => id === request.id);
+        expect(unchangedRequest?.status).toBe(CapabilityStatus.OPEN);
+        expect(unchangedRequest).not.toHaveProperty("resource_reference");
+        expect(unchangedRequest).not.toHaveProperty("provided_at");
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+            EventType.CAPABILITY_PROVIDED
+        );
+        const persistedState = JSON.stringify({
+            snapshot: workspace.getSnapshot(),
+            events: workspace.getEvents()
+        });
+        const persistedFiles = await Promise.all([
+            readFile(path.join(workspace.runDirectory, "status.json"), "utf8"),
+            readFile(path.join(workspace.runDirectory, "events.json"), "utf8")
+        ]);
+        for (const reference of Object.values(UnsafeCapabilityReference)) {
+            expect(persistedState).not.toContain(reference);
+            expect(persistedFiles).not.toContainEqual(expect.stringContaining(reference));
+        }
+    });
+
     it("rejects capability resources for requests that are not open", async () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
@@ -226,7 +296,7 @@ describe("LabWorkspace", () => {
         });
 
         await expect(
-            workspace.provideCapability(request.id, "corpus://restricted/v1")
+            workspace.provideCapability(request.id, "dataset://restricted/v1")
         ).resolves.toBe(false);
         await expect(workspace.provideCapability(request.id, "   ")).rejects.toThrow(
             "must not be empty"

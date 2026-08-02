@@ -3,6 +3,7 @@ import { AgentStatus, BranchStatus } from "#src/constants";
 import {
     AgentRoleSchema,
     CapabilityRequestSchema,
+    CapabilityResourceReferenceSchema,
     ClaimSchema,
     ExperimentSchema,
     IdentifierSchema,
@@ -64,7 +65,7 @@ export const StatusSnapshotSchema = z.object({
 });
 
 export const ProvideCapabilitySchema = z.object({
-    resource_reference: z.string().trim().min(1)
+    resource_reference: CapabilityResourceReferenceSchema
 });
 
 export type BranchSummary = z.infer<typeof BranchSummarySchema>;

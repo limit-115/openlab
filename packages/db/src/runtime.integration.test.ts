@@ -369,7 +369,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             throw new Error("Projection fixture must contain a capability request");
         }
         capability.status = CapabilityStatus.PROVIDED;
-        capability.resource_reference = "sandbox://reproducible/v1";
+        capability.resource_reference = "toolchain://sandbox/reproducible-v1";
         capability.provided_at = updated.lab.updated_at;
 
         const committed = await persistence.commit({

@@ -16,11 +16,11 @@ describe("LabApiClient", () => {
         vi.stubGlobal("fetch", fetchMock);
         const api = new LabApiClient("http://127.0.0.1:4317/");
 
-        await expect(api.provide("request one", "file:/tmp/research-dataset.csv")).resolves.toEqual(
-            {
-                accepted: true
-            }
-        );
+        await expect(
+            api.provide("request one", "file:///tmp/research-dataset.csv")
+        ).resolves.toEqual({
+            accepted: true
+        });
         expect(fetchMock).toHaveBeenCalledWith(
             "http://127.0.0.1:4317/api/capabilities/request%20one/provide",
             expect.objectContaining({ method: "POST" })

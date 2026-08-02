@@ -20,7 +20,12 @@ import {
     type LabState as LabStateValue
 } from "@lab/protocol/constants";
 import type { CapabilityRequest, Evidence, LabEvent, TaskInput } from "@lab/protocol/schemas";
-import { EvidenceSchema, LabEventSchema, TaskInputSchema } from "@lab/protocol/schemas";
+import {
+    CapabilityResourceReferenceSchema,
+    EvidenceSchema,
+    LabEventSchema,
+    TaskInputSchema
+} from "@lab/protocol/schemas";
 import type { StatusSnapshot } from "@lab/protocol/status";
 import { StatusSnapshotSchema } from "@lab/protocol/status";
 import { Mutex } from "async-mutex";
@@ -552,10 +557,8 @@ export class LabWorkspace {
     }
 
     async provideCapability(id: string, resourceReference: string): Promise<boolean> {
-        const normalizedResourceReference = resourceReference.trim();
-        if (normalizedResourceReference.length === 0) {
-            throw new Error("Resource reference must not be empty");
-        }
+        const normalizedResourceReference =
+            CapabilityResourceReferenceSchema.parse(resourceReference);
         let providedEvent: LabEvent | undefined;
         let shouldWake = false;
         const accepted = await this.mutex.runExclusive(async () => {

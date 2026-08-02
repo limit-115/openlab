@@ -59,7 +59,7 @@ const CapabilityFixture = {
     NEED: "An active local product-subscription CLI session",
     REASON: "The previously authenticated subscription session became unavailable",
     PROVISIONING_HINT: "Restore the interactive subscription login and retry",
-    RESOURCE_REFERENCE: "subscription-session://restored/v1",
+    RESOURCE_REFERENCE: "toolchain://codex/subscription-session",
     CONTEXT_TYPE: "provided_capability"
 } as const;
 
@@ -402,12 +402,14 @@ class FailingOnceHarness extends ScriptedHarness {
 
 class UnavailableHarness implements AgentHarness {
     readonly kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE;
+    preflightCalls = 0;
 
     constructor(kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE) {
         this.kind = kind;
     }
 
     preflight(): Promise<HarnessPreflight> {
+        this.preflightCalls += 1;
         throw new HarnessCapabilityError(this.kind, "Subscription login is unavailable", {
             need: `${this.kind} subscription login`,
             reason: "The authenticated product subscription is unavailable",
@@ -836,6 +838,8 @@ describe.sequential("runResearchLoop", () => {
             expect(run.prompt).toContain(CapabilityFixture.RESOURCE_REFERENCE);
             expect(run.prompt).toContain("provided_at");
             expect(run.prompt).toContain(provided.provided_at);
+            expect(run.prompt).not.toContain('"need":');
+            expect(run.prompt).not.toContain('"provisioning_hint":');
         }
     });
 
@@ -898,6 +902,35 @@ describe.sequential("runResearchLoop", () => {
             .map(({ payload }) => payload.branch_id);
         expect(new Set(recoveredDirectorBranchIds).size).toBe(1);
         expect(recoveredDirectorBranchIds).not.toContain(initialIds.branchId);
+    });
+
+    it("never treats a provided subscription reference as harness authentication", async () => {
+        const workspace = await createWorkspace();
+        const harness = new UnavailableHarness(HarnessKinds.CODEX);
+        const first = await runResearchLoop(workspace, { harnesses: [harness] });
+        expect(first.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        const request = workspace.getSnapshot().capability_requests[0];
+        if (request === undefined) {
+            throw new Error("Expected a subscription capability request");
+        }
+        await workspace.provideCapability(request.id, CapabilityFixture.RESOURCE_REFERENCE);
+
+        const second = await runResearchLoop(workspace, { harnesses: [harness] });
+
+        expect(second.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
+        expect(harness.preflightCalls).toBe(2);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
+        expect(workspace.getSnapshot().capability_requests).toEqual([
+            expect.objectContaining({
+                id: request.id,
+                status: CapabilityStatus.PROVIDED,
+                resource_reference: CapabilityFixture.RESOURCE_REFERENCE
+            }),
+            expect.objectContaining({ status: CapabilityStatus.OPEN })
+        ]);
+        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+            EventType.HARNESS_RUN_STARTED
+        );
     });
 
     it("hibernates when every preflighted harness loses a critical-stage capability", async () => {

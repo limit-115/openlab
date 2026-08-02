@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CapabilityRequestType, CapabilityStatus, LabState } from "#src/constants";
 import { CapabilityRequestSchema } from "#src/schemas";
-import { StatusSnapshotSchema } from "#src/status";
+import { ProvideCapabilitySchema, StatusSnapshotSchema } from "#src/status";
 
 describe("StatusSnapshotSchema", () => {
     it("applies empty collection defaults", () => {
@@ -58,5 +58,28 @@ describe("StatusSnapshotSchema", () => {
                 created_at: "2026-08-02T09:00:00.000Z"
             })
         ).toThrow("requires its resource reference and timestamp");
+    });
+});
+
+describe("ProvideCapabilitySchema", () => {
+    it("accepts an opaque resource handle", () => {
+        expect(
+            ProvideCapabilitySchema.parse({
+                resource_reference: " keychain://ai-research-lab/licensed-corpus "
+            })
+        ).toEqual({
+            resource_reference: "keychain://ai-research-lab/licensed-corpus"
+        });
+    });
+
+    it.each([
+        "sk-proj-abcdefghijklmnopqrstuvwxyz012345",
+        "Bearer abcdefghijklmnopqrstuvwxyz012345",
+        "a".repeat(96),
+        "api-key: abcdefghijklmnopqrstuvwxyz"
+    ])("rejects credential material instead of accepting %s", (resourceReference) => {
+        expect(() =>
+            ProvideCapabilitySchema.parse({ resource_reference: resourceReference })
+        ).toThrow();
     });
 });

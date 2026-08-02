@@ -20,6 +20,10 @@ const PromiseSettlementStatus = {
     REJECTED: "rejected"
 } as const;
 
+const CapabilityResponseError = {
+    INVALID_RESOURCE_REFERENCE: "Invalid capability resource reference"
+} as const;
+
 export interface RunningDaemon {
     app: FastifyInstance;
     workspace: LabWorkspace;
@@ -95,7 +99,13 @@ export function createStatusServer(
     app.post<{ Params: { id: string } }>(
         "/api/capabilities/:id/provide",
         async (request, reply) => {
-            const input = ProvideCapabilitySchema.parse(request.body);
+            const parsedInput = ProvideCapabilitySchema.safeParse(request.body);
+            if (!parsedInput.success) {
+                return reply.code(400).send({
+                    error: CapabilityResponseError.INVALID_RESOURCE_REFERENCE
+                });
+            }
+            const input = parsedInput.data;
             const capability = workspace
                 .getSnapshot()
                 .capability_requests.find(({ id }) => id === request.params.id);
