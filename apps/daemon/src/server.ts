@@ -7,7 +7,7 @@ import { LabState } from "@lab/protocol/constants";
 import { ProvideCapabilitySchema } from "@lab/protocol/status";
 import Fastify, { type FastifyInstance } from "fastify";
 import { bootstrapResearch } from "#src/bootstrap";
-import { type DaemonOptions, resolveDaemonConfig } from "#src/config";
+import { DaemonLogLevel, type DaemonOptions, resolveDaemonConfig } from "#src/config";
 import { type DaemonDatabase, openDaemonDatabase } from "#src/database";
 import {
     type ResearchLoopOptions,
@@ -29,6 +29,7 @@ export interface RunningDaemon {
 
 export interface StatusServerOptions {
     dashboardRoot?: string;
+    logLevel?: (typeof DaemonLogLevel)[keyof typeof DaemonLogLevel];
     onWake?: () => void;
     onStop?: () => Promise<void>;
 }
@@ -47,7 +48,7 @@ export function createStatusServer(
 ): FastifyInstance {
     const app = Fastify({
         logger: {
-            level: process.env.LAB_LOG_LEVEL ?? "info"
+            level: options.logLevel ?? DaemonLogLevel.INFO
         }
     });
 
@@ -170,6 +171,7 @@ export async function startDaemon(
         );
         app = createStatusServer(workspace, {
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
+            logLevel: config.logLevel,
             onWake: () => controller?.start(),
             onStop: () =>
                 controller?.cancel(new Error("External stop command")) ?? Promise.resolve()

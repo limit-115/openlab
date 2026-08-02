@@ -7,6 +7,16 @@ const DatabaseProtocol = {
     POSTGRESQL: "postgresql:"
 } as const;
 
+export const DaemonLogLevel = {
+    TRACE: "trace",
+    DEBUG: "debug",
+    INFO: "info",
+    WARN: "warn",
+    ERROR: "error",
+    FATAL: "fatal",
+    SILENT: "silent"
+} as const;
+
 const DatabaseUrlSchema = z
     .url()
     .refine(
@@ -32,6 +42,7 @@ export interface DaemonConfig {
     workspaceRoot: string;
     dashboardRoot: string;
     databaseUrl: string;
+    logLevel: (typeof DaemonLogLevel)[keyof typeof DaemonLogLevel];
 }
 
 export function resolveDaemonConfig(options: DaemonOptions): DaemonConfig {
@@ -41,6 +52,7 @@ export function resolveDaemonConfig(options: DaemonOptions): DaemonConfig {
             LAB_PORT: z.coerce.number().int().min(0).max(65535).default(4318),
             LAB_HOME: z.string().min(1).optional(),
             LAB_DASHBOARD_ROOT: z.string().min(1).optional(),
+            LAB_LOG_LEVEL: z.enum(DaemonLogLevel).default(DaemonLogLevel.INFO),
             DATABASE_URL: DatabaseUrlSchema
         },
         runtimeEnv: {
@@ -62,6 +74,7 @@ export function resolveDaemonConfig(options: DaemonOptions): DaemonConfig {
             environment.LAB_DASHBOARD_ROOT ??
                 path.join(import.meta.dirname, "..", "..", "dashboard", "dist")
         ),
-        databaseUrl: environment.DATABASE_URL
+        databaseUrl: environment.DATABASE_URL,
+        logLevel: environment.LAB_LOG_LEVEL
     };
 }

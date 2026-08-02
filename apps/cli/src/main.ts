@@ -7,6 +7,7 @@ import type { StatusSnapshot } from "@lab/protocol/status";
 import { Command, InvalidArgumentError } from "commander";
 import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";
+import { resolveCliConfig } from "#src/config";
 import { renderCapabilities, renderFrontier, renderStatus } from "#src/render";
 
 interface GlobalOptions {
@@ -23,6 +24,8 @@ const ShutdownExitCode = {
     [ShutdownSignal.INTERRUPT]: 130,
     [ShutdownSignal.TERMINATE]: 143
 } as const;
+
+const cliConfig = resolveCliConfig();
 
 function parsePort(value: string): number {
     const port = Number.parseInt(value, 10);
@@ -52,11 +55,7 @@ const program = new Command()
     .name("lab")
     .description("Run and inspect the local autonomous AI research lab")
     .version("0.1.0")
-    .option(
-        "--api-url <url>",
-        "local daemon URL",
-        process.env.LAB_API_URL ?? "http://127.0.0.1:4318"
-    )
+    .option("--api-url <url>", "local daemon URL", cliConfig.apiUrl)
     .option("--json", "print machine-readable JSON")
     .showSuggestionAfterError()
     .showHelpAfterError();
