@@ -1,8 +1,12 @@
 import { createHash } from "node:crypto";
-import type { EvidenceOrigin as EvidenceOriginValue } from "@lab/core/constants";
+import type {
+    EvidenceOrigin as EvidenceOriginValue,
+    SchedulerLane as SchedulerLaneValue
+} from "@lab/core/constants";
 import { EvidenceOrigin, SchedulerLane } from "@lab/core/constants";
 import {
     AgentRole,
+    type AgentRole as AgentRoleValue,
     EvidenceKind,
     ExperimentStatus,
     type ExperimentStatus as ExperimentStatusValue
@@ -24,11 +28,17 @@ import {
 } from "#src/schema";
 
 const RuntimeProjectionDefaults = {
-    BRANCH_LANE: SchedulerLane.EXPLORATION,
-    TASK_LANE: SchedulerLane.EXPLORATION,
+    EMPTY_BRANCH_LANE: SchedulerLane.EXPLORATION,
     TASK_PRIORITY: 0,
     FIRST_ATTEMPT_NUMBER: 1
 } as const;
+
+const AgentRoleSchedulerLane = {
+    [AgentRole.DIRECTOR]: SchedulerLane.EXPLORATION,
+    [AgentRole.RESEARCHER]: SchedulerLane.EXPLORATION,
+    [AgentRole.CRITIC]: SchedulerLane.ADVERSARIAL,
+    [AgentRole.VERIFIER]: SchedulerLane.REPRODUCTION
+} as const satisfies Record<AgentRoleValue, SchedulerLaneValue>;
 
 const ExperimentAttemptStatus = {
     [ExperimentStatus.PLANNED]: AttemptStatus.PLANNED,
@@ -88,6 +98,7 @@ async function upsertBranches(
     projectionAt: Date
 ): Promise<void> {
     for (const branch of snapshot.branches) {
+        const lane = branchSchedulerLane(snapshot, branch.id);
         const records = await database
             .insert(branches)
             .values({
@@ -96,7 +107,7 @@ async function upsertBranches(
                 title: branch.title,
                 approach: branch.approach,
                 status: branch.status,
-                lane: RuntimeProjectionDefaults.BRANCH_LANE,
+                lane,
                 createdAt: projectionAt,
                 updatedAt: projectionAt
             })
@@ -106,6 +117,7 @@ async function upsertBranches(
                     title: branch.title,
                     approach: branch.approach,
                     status: branch.status,
+                    lane,
                     updatedAt: projectionAt
                 },
                 setWhere: eq(branches.labId, snapshot.lab.id)
@@ -131,7 +143,7 @@ async function upsertTasks(
                 contextRefs: task.context_refs,
                 status: task.status,
                 role: task.role,
-                lane: RuntimeProjectionDefaults.TASK_LANE,
+                lane: AgentRoleSchedulerLane[task.role],
                 priority: RuntimeProjectionDefaults.TASK_PRIORITY,
                 attempt: task.attempt,
                 availableAt: projectionAt,
@@ -146,6 +158,7 @@ async function upsertTasks(
                     contextRefs: task.context_refs,
                     status: task.status,
                     role: task.role,
+                    lane: AgentRoleSchedulerLane[task.role],
                     attempt: task.attempt,
                     updatedAt: projectionAt
                 },
@@ -154,6 +167,22 @@ async function upsertTasks(
             .returning({ id: tasks.id });
         assertUpserted(records, "task", task.id);
     }
+}
+
+function branchSchedulerLane(snapshot: StatusSnapshot, branchId: string): SchedulerLaneValue {
+    const taskLanes = new Set(
+        snapshot.tasks
+            .filter((task) => task.branch_id === branchId)
+            .map((task) => AgentRoleSchedulerLane[task.role])
+    );
+    const [lane, conflictingLane] = taskLanes;
+    if (lane === undefined) {
+        return RuntimeProjectionDefaults.EMPTY_BRANCH_LANE;
+    }
+    if (conflictingLane !== undefined) {
+        throw new Error(`Branch ${branchId} contains tasks from multiple scheduler lanes`);
+    }
+    return lane;
 }
 
 async function upsertAttempts(
