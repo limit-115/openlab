@@ -1,8 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { evaluateModelApiCommand, ModelApiPolicyDecision } from "@lab/harness/model-api-policy";
-import type { ValidatedArtifact } from "#src/artifact";
-import { validateFileArtifact } from "#src/artifact";
+import { evaluateModelApiCommand } from "@lab/harness/model-api-policy";
+import { ModelApiPolicyDecision } from "@lab/harness/model-api-policy.const";
+import type { ValidatedArtifact } from "#src/artifact-integrity/file-artifact";
+import { validateFileArtifact } from "#src/artifact-integrity/file-artifact";
 import {
     SourceFetchLimits,
     SourceFetchOutcome,

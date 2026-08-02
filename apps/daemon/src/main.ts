@@ -1,4 +1,4 @@
-import { startDaemon } from "#src/server";
+import { startDaemon } from "#src/daemon-runtime/daemon-startup";
 
 const taskPath = process.argv[2];
 if (taskPath === undefined) {

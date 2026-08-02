@@ -1,4 +1,4 @@
-import type { ValidatedArtifact } from "#src/artifact";
+import type { ValidatedArtifact } from "#src/artifact-integrity/file-artifact";
 
 export const SourceFetchOutcome = {
     REJECTED: "rejected",
