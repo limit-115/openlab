@@ -9,8 +9,7 @@ import {
     MISSING_CAPABILITY_POLICY,
     READ_ONLY_PROVISIONING_POLICY,
     RedactedPromptValue,
-    SELF_PROVISIONING_MANDATE,
-    SUBSCRIPTION_ONLY_POLICY
+    SELF_PROVISIONING_MANDATE
 } from "#src/research-prompts/research-prompts.const";
 
 function taskContext(task: TaskInput): string {
@@ -38,8 +37,6 @@ Install the toolchain your directions depend on before delegating them. Research
 and cannot install anything, so any benchmark, runner, profiler, or library a direction needs must
 already be on this machine when they start.
 
-${SUBSCRIPTION_ONLY_POLICY}
-
 ${SELF_PROVISIONING_MANDATE}
 
 ${MISSING_CAPABILITY_POLICY}
@@ -56,8 +53,6 @@ export function evaluatorPrecommitPrompt(
     direction: DirectorPlan["directions"][number]
 ): string {
     return `You are planning falsifiable evaluation before any outcome-bearing research begins.
-
-${SUBSCRIPTION_ONLY_POLICY}
 
 ${SELF_PROVISIONING_MANDATE}
 
@@ -95,8 +90,6 @@ export function researcherPrompt(
 ): string {
     return `You are an independent researcher. You have not received conclusions from other
 research branches.
-
-${SUBSCRIPTION_ONLY_POLICY}
 
 ${READ_ONLY_PROVISIONING_POLICY}
 
@@ -167,8 +160,6 @@ assumptions, fabricated measurements, leakage, cherry-picking, evaluator bugs, a
 Run additional checks in the current workspace when they are informative. Do not reward agreement
 between agents.
 
-${SUBSCRIPTION_ONLY_POLICY}
-
 ${SELF_PROVISIONING_MANDATE}
 
 ${MISSING_CAPABILITY_POLICY}
@@ -223,8 +214,6 @@ claim as untrusted. Plan an independent reproduction of the strongest result fro
 reconstructed artifacts and actively test the critic's concerns. Do not run commands or write files;
 the daemon alone executes your structured execution_plan. An ordinary rerun of the researcher's
 command is not independent reproduction.
-
-${SUBSCRIPTION_ONLY_POLICY}
 
 ${READ_ONLY_PROVISIONING_POLICY}
 

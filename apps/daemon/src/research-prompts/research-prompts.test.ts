@@ -7,14 +7,10 @@ import {
 import {
     criticPrompt,
     directorPrompt,
-    evaluatorPrecommitPrompt,
     researcherPrompt,
     verifierPrompt
 } from "#src/research-prompts/research-prompts";
-import {
-    MISSING_CAPABILITY_POLICY,
-    SUBSCRIPTION_ONLY_POLICY
-} from "#src/research-prompts/research-prompts.const";
+import { MISSING_CAPABILITY_POLICY } from "#src/research-prompts/research-prompts.const";
 
 const task = {
     goal: "Find a faster algorithm",
@@ -85,78 +81,6 @@ describe("research prompts", () => {
         expect(prompt).toContain("Data structure");
         expect(prompt).not.toContain("Vectorization");
         expect(prompt).toContain("target_kind");
-    });
-
-    it("injects the immutable subscription-only policy into every agent prompt", () => {
-        const plan = {
-            operational_goal: "Measure a speedup",
-            assumptions: [],
-            claims: [
-                {
-                    statement: "Candidate is faster",
-                    evaluator: "Benchmark",
-                    success_condition: "Lower runtime"
-                }
-            ],
-            directions: [
-                {
-                    title: "Index",
-                    approach: "Index lookup",
-                    rationale: "Lookup is expensive",
-                    objective: "Measure indexing"
-                },
-                {
-                    title: "Batch",
-                    approach: "Batch lookup",
-                    rationale: "Calls are independent",
-                    objective: "Measure batching"
-                }
-            ],
-            capability_requests: []
-        };
-        const criticism = {
-            verdict: CRITIC_VERDICT.CREDIBLE,
-            summary: "Credible",
-            issues: [],
-            counterexamples: [],
-            claims_to_verify: ["Candidate is faster"],
-            next_experiments: [],
-            verification_evaluator: {
-                target_kind: RESEARCH_TARGET_KIND.CLAIM,
-                target_index: 0,
-                evaluator_path: "verify",
-                args: [],
-                success_contract: "Lower runtime"
-            },
-            capability_requests: []
-        };
-        const branchResults = [
-            {
-                summary: "Measured",
-                hypothesis: "Faster",
-                outcome: RESEARCH_OUTCOME.SUPPORTED,
-                evidence: [],
-                sources: [],
-                limitations: [],
-                next_experiments: [],
-                capability_requests: [],
-                capability_blocked: false
-            }
-        ];
-        const direction = plan.directions[0];
-        if (direction === undefined) {
-            throw new Error("Expected a research direction fixture");
-        }
-
-        const prompts = [
-            directorPrompt(task),
-            evaluatorPrecommitPrompt(task, plan, direction),
-            researcherPrompt(task, plan, direction, []),
-            criticPrompt(task, plan, branchResults),
-            verifierPrompt(task, plan, branchResults, criticism)
-        ];
-
-        expect(prompts.every((prompt) => prompt.includes(SUBSCRIPTION_ONLY_POLICY))).toBe(true);
     });
 
     it("requires concrete missing-resource requests without stopping available work", () => {
