@@ -49,6 +49,11 @@ const ResearchDirectionSchema = z.object({
     objective: z.string().min(1)
 });
 
+const EvaluatorCommandSchema = z.object({
+    file: z.string().min(1),
+    args: z.array(z.string())
+});
+
 export const DirectorPlanSchema = z.object({
     operational_goal: z.string().min(1),
     assumptions: z.array(AssumptionSchema),
@@ -57,9 +62,11 @@ export const DirectorPlanSchema = z.object({
 });
 
 const ResearchEvidenceSchema = z.object({
+    claim_index: z.number().int().nonnegative(),
     summary: z.string().min(1),
     artifact_paths: z.array(z.string()),
-    contradicts_hypothesis: z.boolean()
+    contradicts_hypothesis: z.boolean(),
+    evaluator_command: EvaluatorCommandSchema
 });
 
 export const ResearchResultSchema = z.object({
@@ -82,7 +89,9 @@ export const CriticResultSchema = z.object({
 
 export const VerifierResultSchema = z.object({
     verdict: z.enum(domainValues(VERIFIER_VERDICT)),
+    claim_index: z.number().int().nonnegative(),
     result_statement: z.string().min(1),
+    evaluator_command: EvaluatorCommandSchema,
     evidence_artifact_paths: z.array(z.string()),
     limitations: z.array(z.string()),
     known_counterexamples: z.array(z.string())

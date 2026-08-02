@@ -52,6 +52,12 @@ ${JSON.stringify(direction, null, 4)}
 Candidate claims and their precommitted evaluators:
 ${JSON.stringify(plan.claims, null, 4)}
 
+Every evidence item must identify its zero-based claim_index and reference material artifact files
+that you actually created inside the current isolated workspace. An assertion without a real artifact
+is not evidence. It must also return an evaluator command as executable file plus argv, without shell
+syntax. The daemon—not you—will execute it and only a successful recorded evaluator manifest may
+promote a claim.
+
 Return only the requested structured result.`;
 }
 
@@ -99,6 +105,13 @@ ${JSON.stringify(results, null, 4)}
 
 Adversarial review:
 ${JSON.stringify(criticism, null, 4)}
+
+Select the zero-based claim_index you independently tested. A reproduced verdict must reference
+material artifact files created by your own reproduction inside this clean workspace. Paths copied
+from a research branch are not independent verifier evidence. Run an explicit evaluator command and
+return its executable file and argv separately, without shell syntax. The daemon will execute this
+command itself and treat only its recorded manifest, exit status, stdout, and stderr as evaluator
+evidence. A self-written claim that the evaluator passed is not evidence.
 
 Return only the requested structured verdict.`;
 }
