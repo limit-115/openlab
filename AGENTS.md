@@ -42,9 +42,13 @@
 - Biome is the formatter and linter for every workspace. Use four spaces and no trailing commas. Run
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
-- Run model agents only through locally authenticated Codex or Claude CLI harnesses. Subscription
-  authentication is mandatory. Never call a model API, accept an API key, or silently fall back to
-  usage-based billing.
+- Run model agents only through a locally authenticated agent CLI harness. Subscription billing is
+  mandatory and preflight must prove it before a run starts. Never write a model API client, and never
+  accept, store, or prompt for a credential: a harness may only read one that a local vendor sign-in
+  already provisioned on this machine.
+- Pin every model endpoint a harness talks to. Vendors serve subscription quota and pay-as-you-go
+  billing from the same credential on different hosts or paths, so a configurable base URL is a silent
+  path to usage-based billing.
 - Define every finite domain value set (events, statuses, states, roles, lanes, result kinds) as a
   named `const` object with `as const`, and infer its union type from that object. Zod schemas and all
   comparisons must use those constants. Do not use TypeScript `enum` or domain magic strings.
