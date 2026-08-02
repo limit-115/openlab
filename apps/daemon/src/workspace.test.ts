@@ -72,13 +72,19 @@ describe("LabWorkspace", () => {
 
     it("writes a report before hibernating on a plateau", async () => {
         const workspace = await createWorkspace();
+        await workspace.update((draft) => {
+            draft.frontier.blockers = ["Independent dataset is unavailable"];
+            draft.frontier.next_experiments = ["Acquire an independent dataset"];
+        });
 
         await workspace.hibernateForPlateau("No informative experiments remain");
 
         expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
-        await expect(
-            readFile(path.join(workspace.runDirectory, "report.md"), "utf8")
-        ).resolves.toContain("Plateau report");
+        const report = await readFile(path.join(workspace.runDirectory, "report.md"), "utf8");
+        expect(report).toContain("Plateau report");
+        expect(report).toContain("## Evidence");
+        expect(report).toContain("Independent dataset is unavailable");
+        expect(report).toContain("Acquire an independent dataset");
     });
 
     it("refuses completion without supporting evidence", async () => {

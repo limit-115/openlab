@@ -29,6 +29,18 @@ import { validateFileArtifact } from "#src/artifact";
 
 type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;
 type SnapshotUpdater = (draft: StatusSnapshot) => void;
+
+const EvidenceDisposition = {
+    SUPPORTS: "supports",
+    CONTRADICTS: "contradicts"
+} as const;
+
+interface ReportDetails {
+    readonly supportingEvidenceIds?: readonly string[];
+    readonly limitations?: readonly string[];
+    readonly knownCounterexamples?: readonly string[];
+    readonly nextExperiments?: readonly string[];
+}
 export type WorkspaceRuntimePersistence = Pick<
     RuntimePersistence,
     "initialize" | "load" | "commit" | "eventsAfter"
@@ -285,7 +297,13 @@ export class LabWorkspace {
 
     async hibernateForPlateau(reason: string): Promise<StatusSnapshot> {
         const reportPath = path.join(this.runDirectory, "report.md");
-        await writeFileAtomic(reportPath, this.renderReport("Plateau report", reason));
+        await writeFileAtomic(
+            reportPath,
+            this.renderReport("Plateau report", reason, {
+                limitations: this.snapshot.frontier.blockers,
+                nextExperiments: this.snapshot.frontier.next_experiments
+            })
+        );
         const snapshot = await this.update((draft) => {
             transitionLabState(draft.lab.state, LabState.HIBERNATING, { plateauConfirmed: true });
             draft.lab.state = LabState.HIBERNATING;
@@ -332,7 +350,15 @@ export class LabWorkspace {
         };
         transitionLabState(this.snapshot.lab.state, LabState.COMPLETED, context);
         await Promise.all([
-            writeFileAtomic(reportPath, this.renderReport("Verified result", result.summary)),
+            writeFileAtomic(
+                reportPath,
+                this.renderReport("Verified result", result.summary, {
+                    supportingEvidenceIds: result.supportingEvidenceIds,
+                    limitations: result.limitations,
+                    knownCounterexamples: result.knownCounterexamples,
+                    nextExperiments: this.snapshot.frontier.next_experiments
+                })
+            ),
             this.writeJson("result.json", resultFile)
         ]);
         const snapshot = await this.update((draft) => {
@@ -669,15 +695,63 @@ export class LabWorkspace {
         );
     }
 
-    private renderReport(title: string, summary: string): string {
+    private renderReport(title: string, summary: string, details: ReportDetails = {}): string {
         const snapshot = this.snapshot;
-        const claims = snapshot.claims.length
-            ? snapshot.claims.map((claim) => `- [${claim.status}] ${claim.statement}`).join("\n")
-            : "- No claims recorded.";
-        const blockers = snapshot.frontier.blockers.length
-            ? snapshot.frontier.blockers.map((blocker) => `- ${blocker}`).join("\n")
-            : "- None.";
-        return `# ${title}\n\n## Goal\n\n${snapshot.lab.goal}\n\n## Summary\n\n${summary}\n\n## Claims\n\n${claims}\n\n## Blockers and limitations\n\n${blockers}\n`;
+        const selectedEvidenceIds = new Set(details.supportingEvidenceIds ?? []);
+        const evidence = this.evidence.map((item) => {
+            const disposition = item.supports
+                ? EvidenceDisposition.SUPPORTS
+                : EvidenceDisposition.CONTRADICTS;
+            const selected = selectedEvidenceIds.has(item.id) ? " [completion evidence]" : "";
+            const artifact =
+                item.artifact_path === undefined
+                    ? ""
+                    : `; artifact: ${path.relative(this.runDirectory, item.artifact_path)}`;
+            return `${item.id}${selected} (${item.kind}, ${disposition}): ${item.summary}${artifact}`;
+        });
+        const counterexamples = [
+            ...(details.knownCounterexamples ?? []),
+            ...snapshot.claims
+                .filter(({ status }) => status === ClaimStatus.REFUTED)
+                .map(({ statement }) => statement),
+            ...this.evidence.filter(({ supports }) => !supports).map(({ summary }) => summary)
+        ];
+        const limitations = details.limitations ?? snapshot.frontier.blockers;
+        const nextExperiments = details.nextExperiments ?? snapshot.frontier.next_experiments;
+
+        return `# ${title}
+
+## Goal
+
+${snapshot.lab.goal}
+
+## Summary
+
+${summary}
+
+## Claims
+
+${markdownList(
+    snapshot.claims.map((claim) => `[${claim.status}] ${claim.statement}`),
+    "No claims recorded."
+)}
+
+## Evidence
+
+${markdownList(evidence, "No material evidence recorded.")}
+
+## Known counterexamples and negative results
+
+${markdownList([...new Set(counterexamples)], "None recorded.")}
+
+## Blockers and limitations
+
+${markdownList([...new Set(limitations)], "None recorded.")}
+
+## Next experiments
+
+${markdownList([...new Set(nextExperiments)], "No informative experiment remains.")}
+`;
     }
 
     private static async readCurrentPointer(
@@ -711,4 +785,8 @@ export class LabWorkspace {
         }
         return JSON.stringify(left) === JSON.stringify(right);
     }
+}
+
+function markdownList(items: readonly string[], empty: string): string {
+    return items.length === 0 ? `- ${empty}` : items.map((item) => `- ${item}`).join("\n");
 }
