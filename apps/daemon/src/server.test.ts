@@ -1,8 +1,10 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { LabState } from "@lab/protocol/constants";
 import { describe, expect, it } from "vitest";
-import { createStatusServer } from "#src/server";
+import { ResearchLoopOutcomeStatus } from "#src/research-loop";
+import { createStatusServer, startDaemon } from "#src/server";
 import { LabWorkspace } from "#src/workspace";
 
 async function createTestServer() {
@@ -48,5 +50,55 @@ describe("status server", () => {
         expect(response.statusCode).toBe(200);
         expect(response.body).toContain("dashboard");
         await server.close();
+    });
+
+    it("restarts background research after waking a hibernating run", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-daemon-research-test-"));
+        const taskPath = path.join(directory, "task.json");
+        const workspaceRoot = path.join(directory, "workspace");
+        await writeFile(taskPath, JSON.stringify({ goal: "Resume autonomous research" }));
+        let runs = 0;
+        let secondRunCancelled = false;
+        let releaseFirstRun: () => void = () => undefined;
+        const firstRunReleased = new Promise<void>((resolve) => {
+            releaseFirstRun = resolve;
+        });
+        const daemon = await startDaemon(
+            { taskPath, workspaceRoot, port: 0 },
+            {
+                researchLoop: async (workspace, { signal }) => {
+                    runs += 1;
+                    if (runs === 1) {
+                        const reason = "Test plateau";
+                        await workspace.hibernateForPlateau(reason);
+                        await firstRunReleased;
+                        return { status: ResearchLoopOutcomeStatus.HIBERNATING, reason };
+                    }
+                    await new Promise<void>((resolve) => {
+                        signal?.addEventListener(
+                            "abort",
+                            () => {
+                                secondRunCancelled = true;
+                                resolve();
+                            },
+                            { once: true }
+                        );
+                    });
+                    return { status: ResearchLoopOutcomeStatus.CANCELLED };
+                }
+            }
+        );
+        await expect
+            .poll(() => daemon.workspace.getSnapshot().lab.state)
+            .toBe(LabState.HIBERNATING);
+
+        const response = await daemon.app.inject({ method: "POST", url: "/api/wake" });
+
+        expect(response.statusCode).toBe(200);
+        expect(runs).toBe(1);
+        releaseFirstRun();
+        await expect.poll(() => runs).toBe(2);
+        await daemon.close();
+        expect(secondRunCancelled).toBe(true);
     });
 });

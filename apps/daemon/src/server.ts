@@ -7,6 +7,11 @@ import { ProvideCapabilitySchema } from "@lab/protocol/status";
 import Fastify, { type FastifyInstance } from "fastify";
 import { bootstrapResearch } from "#src/bootstrap";
 import { type DaemonOptions, resolveDaemonConfig } from "#src/config";
+import {
+    type ResearchLoopOptions,
+    type ResearchLoopOutcome,
+    runResearchLoop
+} from "#src/research-loop";
 import { LabWorkspace } from "#src/workspace";
 
 export interface RunningDaemon {
@@ -18,6 +23,15 @@ export interface RunningDaemon {
 
 export interface StatusServerOptions {
     dashboardRoot?: string;
+    onWake?: () => void;
+    onStop?: () => Promise<void>;
+}
+
+export interface DaemonDependencies {
+    researchLoop?: (
+        workspace: LabWorkspace,
+        options: ResearchLoopOptions
+    ) => Promise<ResearchLoopOutcome>;
 }
 
 export function createStatusServer(
@@ -54,14 +68,21 @@ export function createStatusServer(
         if (current.lab.state !== LabState.HIBERNATING) {
             return reply.code(409).send({ error: `Cannot wake lab from ${current.lab.state}` });
         }
-        return workspace.transition(LabState.RUNNING, "External wake command", {
+        const snapshot = await workspace.transition(LabState.RUNNING, "External wake command", {
             wakeTrigger: WakeTrigger.USER
         });
+        options.onWake?.();
+        return snapshot;
     });
 
-    app.post("/api/stop", async () =>
-        workspace.transition(LabState.STOPPED, "External stop command")
-    );
+    app.post("/api/stop", async (_request, reply) => {
+        await options.onStop?.();
+        const current = workspace.getSnapshot();
+        if (current.lab.state !== LabState.RUNNING && current.lab.state !== LabState.HIBERNATING) {
+            return reply.code(409).send({ error: `Cannot stop lab from ${current.lab.state}` });
+        }
+        return workspace.transition(LabState.STOPPED, "External stop command");
+    });
 
     app.post<{ Params: { id: string } }>(
         "/api/capabilities/:id/provide",
@@ -73,6 +94,9 @@ export function createStatusServer(
             );
             if (!provided) {
                 return reply.code(404).send({ error: "Capability request not found" });
+            }
+            if (workspace.getSnapshot().lab.state === LabState.RUNNING) {
+                options.onWake?.();
             }
             return reply.code(202).send({ accepted: true });
         }
@@ -124,24 +148,95 @@ export function createStatusServer(
     return app;
 }
 
-export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon> {
+export async function startDaemon(
+    options: DaemonOptions,
+    dependencies: DaemonDependencies = {}
+): Promise<RunningDaemon> {
     const config = resolveDaemonConfig(options);
     const workspace = await LabWorkspace.openOrCreate(config.workspaceRoot, config.taskPath);
     const dashboardRoot = await existingDirectory(config.dashboardRoot);
+    const controller = new ResearchLoopController(
+        workspace,
+        dependencies.researchLoop ?? runResearchLoop
+    );
     const app = createStatusServer(workspace, {
-        ...(dashboardRoot === undefined ? {} : { dashboardRoot })
+        ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
+        onWake: () => controller.start(),
+        onStop: () => controller.cancel(new Error("External stop command"))
     });
     await app.listen({ host: config.host, port: config.port });
     const address = app.server.address() as AddressInfo;
     const url = `http://${config.host}:${address.port}`;
     await bootstrapResearch(workspace);
+    controller.start();
 
     return {
         app,
         workspace,
         url,
-        close: () => app.close()
+        close: async () => {
+            await controller.cancel(new Error("Daemon closing"));
+            await app.close();
+        }
     };
+}
+
+class ResearchLoopController {
+    readonly #workspace: LabWorkspace;
+    readonly #run: (
+        workspace: LabWorkspace,
+        options: ResearchLoopOptions
+    ) => Promise<ResearchLoopOutcome>;
+    #abortController: AbortController | undefined;
+    #running: Promise<ResearchLoopOutcome> | undefined;
+    #restartRequested = false;
+
+    constructor(
+        workspace: LabWorkspace,
+        run: (workspace: LabWorkspace, options: ResearchLoopOptions) => Promise<ResearchLoopOutcome>
+    ) {
+        this.#workspace = workspace;
+        this.#run = run;
+    }
+
+    start(): void {
+        if (this.#workspace.getSnapshot().lab.state !== LabState.RUNNING) {
+            return;
+        }
+        if (this.#running !== undefined) {
+            this.#restartRequested = true;
+            return;
+        }
+        const abortController = new AbortController();
+        this.#abortController = abortController;
+        const running = this.#run(this.#workspace, { signal: abortController.signal });
+        this.#running = running;
+        const clear = () => {
+            if (this.#running === running) {
+                this.#running = undefined;
+                this.#abortController = undefined;
+                if (this.#restartRequested) {
+                    this.#restartRequested = false;
+                    this.start();
+                }
+            }
+        };
+        void running.then(clear, clear);
+    }
+
+    async cancel(reason: Error): Promise<void> {
+        const running = this.#running;
+        if (running === undefined) {
+            return;
+        }
+        this.#restartRequested = false;
+        this.#abortController?.abort(reason);
+        try {
+            await running;
+        } catch {
+            // A daemon shutdown or stop must still close transport and settle lifecycle state.
+        }
+    }
 }
 
 async function existingDirectory(candidate: string): Promise<string | undefined> {
