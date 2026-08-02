@@ -1,0 +1,67 @@
+import type { SchedulerLane } from "@lab/core/scheduler";
+import { and, asc, eq } from "drizzle-orm";
+import type { Database } from "#src/client";
+import { branches } from "#src/schema";
+
+export type BranchRecord = typeof branches.$inferSelect;
+
+export interface CreateBranchInput {
+    readonly id: string;
+    readonly labId: string;
+    readonly title: string;
+    readonly approach: string;
+    readonly lane: SchedulerLane;
+    readonly isolated?: boolean;
+    readonly now?: Date;
+}
+
+export class BranchRepository {
+    readonly #database: Database;
+
+    constructor(database: Database) {
+        this.#database = database;
+    }
+
+    async create(input: CreateBranchInput): Promise<BranchRecord> {
+        const now = input.now ?? new Date();
+        const [record] = await this.#database
+            .insert(branches)
+            .values({
+                id: input.id,
+                labId: input.labId,
+                title: input.title,
+                approach: input.approach,
+                lane: input.lane,
+                isolated: input.isolated ?? true,
+                createdAt: now,
+                updatedAt: now
+            })
+            .returning();
+        if (record === undefined) {
+            throw new Error(`Failed to create branch ${input.id}`);
+        }
+        return record;
+    }
+
+    async listActive(labId: string): Promise<BranchRecord[]> {
+        return this.#database
+            .select()
+            .from(branches)
+            .where(and(eq(branches.labId, labId), eq(branches.status, "active")))
+            .orderBy(asc(branches.createdAt));
+    }
+
+    async close(branchId: string, reason: string, now = new Date()): Promise<void> {
+        if (reason.trim().length === 0) {
+            throw new Error("A branch close reason must not be empty");
+        }
+        const [record] = await this.#database
+            .update(branches)
+            .set({ status: "closed", closedReason: reason, updatedAt: now })
+            .where(and(eq(branches.id, branchId), eq(branches.status, "active")))
+            .returning({ id: branches.id });
+        if (record === undefined) {
+            throw new Error(`Branch ${branchId} is not active`);
+        }
+    }
+}

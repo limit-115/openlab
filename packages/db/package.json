@@ -1,0 +1,36 @@
+{
+    "name": "@lab/db",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./branches": "./src/branches.ts",
+        "./capabilities": "./src/capabilities.ts",
+        "./claims": "./src/claims.ts",
+        "./client": "./src/client.ts",
+        "./events": "./src/events.ts",
+        "./labs": "./src/labs.ts",
+        "./schema": "./src/schema.ts",
+        "./tasks": "./src/tasks.ts"
+    },
+    "imports": {
+        "#src/*": "./src/*.ts"
+    },
+    "scripts": {
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "typecheck": "tsc -p tsconfig.json",
+        "test": "vitest run",
+        "lint": "biome lint .",
+        "format": "biome format --write ."
+    },
+    "dependencies": {
+        "@lab/core": "workspace:*",
+        "@lab/protocol": "workspace:*",
+        "drizzle-orm": "0.45.2",
+        "postgres": "3.4.9"
+    },
+    "devDependencies": {
+        "drizzle-kit": "0.31.10"
+    }
+}
