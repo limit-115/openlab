@@ -22,7 +22,6 @@ export const ClaudeOutputFormats = {
 } as const;
 
 export const ClaudeSyntheticToolNames = {
-    INPUT: "tool_input",
     TOOL: "claude_tool",
     RESULT: "tool_result"
 } as const;

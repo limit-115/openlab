@@ -6,7 +6,7 @@ import {
     HarnessKinds,
     HarnessRunStatuses
 } from "#src/agent-harness/agent-harness.const";
-import { HarnessEventTypes } from "#src/agent-harness/harness-event.const";
+import { HarnessEventTypes, HarnessToolPhases } from "#src/agent-harness/harness-event.const";
 import { ClaudePermissionModes, ClaudeSessionDefaults } from "#src/claude-cli/claude-cli.const";
 import { ClaudeHarness } from "#src/claude-cli/claude-harness";
 import {
@@ -36,12 +36,14 @@ const ClaudeTestNativeSubtypes = {
 } as const;
 
 const ClaudeTestContentBlockTypes = {
-    TEXT: "text"
+    TEXT: "text",
+    TOOL_USE: "tool_use"
 } as const;
 
 const ClaudeTestStreamEventTypes = {
     CONTENT_BLOCK_DELTA: "content_block_delta",
-    TEXT_DELTA: "text_delta"
+    TEXT_DELTA: "text_delta",
+    INPUT_JSON_DELTA: "input_json_delta"
 } as const;
 
 const ClaudeTestResultSubtypes = {
@@ -171,6 +173,67 @@ describe("ClaudeHarness", () => {
             },
             sessionId: "claude-session"
         });
+    });
+
+    it("reports the tool an agent called, not the fragments of its arguments", async () => {
+        const runner = new FakeHarnessProcessRunner([
+            captureSuccess(ClaudeTestCliValues.VERSION),
+            captureSuccess(
+                JSON.stringify({
+                    loggedIn: true,
+                    authMethod: HarnessAuthenticationMethods.CLAUDE_AI,
+                    apiProvider: ClaudeTestApiProviders.FIRST_PARTY,
+                    subscriptionType: ClaudeTestSubscriptionTypes.MAX
+                })
+            )
+        ]);
+        runner.nextStream = streamSuccess([
+            {
+                type: ClaudeTestNativeEventTypes.SYSTEM,
+                subtype: ClaudeTestNativeSubtypes.INIT,
+                session_id: "tool-session"
+            },
+            ...['{"comm', 'and": "pnpm', ' vitest run"}'].map((partial_json) => ({
+                type: ClaudeTestNativeEventTypes.STREAM_EVENT,
+                session_id: "tool-session",
+                event: {
+                    type: ClaudeTestStreamEventTypes.CONTENT_BLOCK_DELTA,
+                    delta: { type: ClaudeTestStreamEventTypes.INPUT_JSON_DELTA, partial_json }
+                }
+            })),
+            {
+                type: ClaudeTestNativeEventTypes.ASSISTANT,
+                session_id: "tool-session",
+                message: {
+                    content: [
+                        {
+                            type: ClaudeTestContentBlockTypes.TOOL_USE,
+                            id: "toolu_01",
+                            name: "Bash",
+                            input: { command: "pnpm vitest run" }
+                        }
+                    ]
+                }
+            },
+            {
+                type: ClaudeTestNativeEventTypes.RESULT,
+                subtype: ClaudeTestResultSubtypes.SUCCESS,
+                is_error: false,
+                session_id: "tool-session"
+            }
+        ]);
+        const harness = new ClaudeHarness({ runner, environment: testEnvironment() });
+
+        const events = await Array.fromAsync(harness.run(await harnessRequest("claude-tool")));
+        const tools = events.filter((event) => event.type === HarnessEventTypes.TOOL);
+
+        expect(tools).toEqual([
+            expect.objectContaining({
+                toolName: "Bash",
+                callId: "toolu_01",
+                phase: HarnessToolPhases.STARTED
+            })
+        ]);
     });
 
     it("rejects non-subscription and third-party auth JSON", async () => {

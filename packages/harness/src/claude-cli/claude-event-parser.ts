@@ -103,16 +103,14 @@ export class ClaudeEventParser implements HarnessEventParser {
                 const text = readString(delta?.thinking);
                 return text ? [{ type: HarnessEventTypes.REASONING_DELTA, text }] : [];
             }
+            /**
+             * A tool's arguments are streamed as dozens of partial-JSON fragments that name
+             * neither the tool nor what it acts on, and there is nothing to attach them to: the
+             * delta carries no call id. The tool_use block that closes the message carries the
+             * whole call, so the fragments are dropped rather than reported as calls of their own.
+             */
             case ClaudeDeltaTypes.INPUT_JSON:
-                return [
-                    {
-                        type: HarnessEventTypes.TOOL,
-                        phase: HarnessToolPhases.UPDATED,
-                        toolName: ClaudeSyntheticToolNames.INPUT,
-                        callId: null,
-                        payload: delta
-                    }
-                ];
+                return [];
             default:
                 return [];
         }
