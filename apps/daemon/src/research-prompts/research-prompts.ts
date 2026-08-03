@@ -7,6 +7,7 @@ import type {
 } from "#src/research-contract/research-contract";
 import {
     AUTONOMOUS_EXECUTION_MANDATE,
+    EVALUATOR_VERDICT_CONTRACT,
     MATERIAL_ARTIFACT_POLICY,
     MISSING_CAPABILITY_POLICY,
     RedactedPromptValue,
@@ -64,10 +65,14 @@ ${SELF_PROVISIONING_MANDATE}
 Create one or more evaluator executable files inside the current workspace for the claims or
 assumptions this direction will test. Do not run the research, inspect outcomes, or emit a verdict.
 Each evaluator must be a non-trivial executable regular file that reads the daemon JSON input from
-stdin and emits exactly one JSON verdict matching the requested schema. It must evaluate the supplied
-artifact files, echo their hashes and the daemon binding, implement the frozen success_contract, and
-report at least one concrete check. A constant success script is invalid. Return contained evaluator
-paths, immutable argv, target_kind, target_index, and an explicit success_contract.
+stdin and emits exactly one JSON verdict in the shape below. It must evaluate the supplied artifact
+files and implement the frozen success_contract. A constant success script is invalid. Return
+contained evaluator paths, immutable argv, target_kind, target_index, and an explicit
+success_contract.
+
+${EVALUATOR_VERDICT_CONTRACT}
+
+That verdict is what the file you write emits when the daemon runs it, not what you return now.
 
 Task:
 ${taskContext(task)}
@@ -182,8 +187,11 @@ ${JSON.stringify(results, null, 4)}
 
 Before independent reproduction starts, create an alternate non-trivial executable evaluator inside
 this clean critic workspace. Return it as verification_evaluator with immutable argv, claim target,
-and success_contract. It must read daemon JSON input from stdin and produce the required structured
-verdict bound to the target and every artifact hash. It may not reuse a researcher evaluator.
+and success_contract. It may not reuse a researcher evaluator.
+
+${EVALUATOR_VERDICT_CONTRACT}
+
+That verdict is what the evaluator file emits when the daemon runs it, not what you return now.
 
 Return only the requested structured result.`;
 }

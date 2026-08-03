@@ -1,16 +1,22 @@
 import { describe, expect, it } from "vitest";
+import { EvaluatorStructuredVerdictSchema } from "#src/research-contract/research-contract";
 import {
     CRITIC_VERDICT,
+    EVALUATOR_VERDICT,
     RESEARCH_OUTCOME,
     RESEARCH_TARGET_KIND
 } from "#src/research-contract/research-contract.const";
 import {
     criticPrompt,
     directorPrompt,
+    evaluatorPrecommitPrompt,
     researcherPrompt,
     verifierPrompt
 } from "#src/research-prompts/research-prompts";
-import { MISSING_CAPABILITY_POLICY } from "#src/research-prompts/research-prompts.const";
+import {
+    EVALUATOR_VERDICT_CONTRACT,
+    MISSING_CAPABILITY_POLICY
+} from "#src/research-prompts/research-prompts.const";
 
 const task = {
     goal: "Find a faster algorithm",
@@ -80,6 +86,49 @@ describe("research prompts", () => {
         expect(prompt).toContain("Data structure");
         expect(prompt).not.toContain("Vectorization");
         expect(prompt).toContain("target_kind");
+    });
+
+    it("names every verdict field the daemon parses to whoever writes an evaluator", () => {
+        const checks = EvaluatorStructuredVerdictSchema.shape.checks.element.shape;
+        const contract = [
+            ...Object.keys(EvaluatorStructuredVerdictSchema.shape),
+            ...Object.keys(checks),
+            ...Object.values(EVALUATOR_VERDICT)
+        ];
+
+        expect(contract.filter((field) => !EVALUATOR_VERDICT_CONTRACT.includes(field))).toEqual([]);
+    });
+
+    it("hands the verdict contract to both roles that write an evaluator", () => {
+        const plan = {
+            operational_goal: "Measure a speedup",
+            assumptions: [],
+            claims: [
+                {
+                    statement: "Candidate is faster",
+                    evaluator: "Benchmark",
+                    success_condition: "Lower runtime"
+                }
+            ],
+            directions: [
+                {
+                    title: "Index",
+                    approach: "Index lookup",
+                    rationale: "Lookup is expensive",
+                    objective: "Measure indexing"
+                }
+            ],
+            capability_requests: []
+        };
+        const direction = plan.directions[0];
+        if (direction === undefined) {
+            throw new Error("Expected a research direction fixture");
+        }
+
+        expect(evaluatorPrecommitPrompt(task, plan, direction)).toContain(
+            EVALUATOR_VERDICT_CONTRACT
+        );
+        expect(criticPrompt(task, plan, [])).toContain(EVALUATOR_VERDICT_CONTRACT);
     });
 
     it("requires concrete missing-resource requests without stopping available work", () => {
