@@ -100,7 +100,7 @@ function ToolLine({ call }: { call: TranscriptToolCall }) {
 
 function DiagnosticLine({ diagnostic }: { diagnostic: TranscriptDiagnostic }) {
     return (
-        <p className={cn("text-sm break-words", DIAGNOSTIC_TONE[diagnostic.level])}>
+        <p className={cn("text-sm wrap-anywhere", DIAGNOSTIC_TONE[diagnostic.level])}>
             {diagnostic.message}
         </p>
     );

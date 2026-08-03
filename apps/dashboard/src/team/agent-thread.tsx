@@ -40,7 +40,7 @@ export const AgentThread = memo(function AgentThread({ agent, task }: AgentThrea
 
             {task === undefined ? null : <p className="text-sm">{task.objective}</p>}
             {activity.error === null ? null : (
-                <p className="text-sm break-words text-destructive">{activity.error}</p>
+                <p className="text-sm wrap-anywhere text-destructive">{activity.error}</p>
             )}
 
             <Separator />

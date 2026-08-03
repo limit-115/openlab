@@ -31,14 +31,21 @@ export const ROSTER_ROLE = "text-sm font-semibold capitalize" as const;
 
 export const ROSTER_EXECUTION = "text-sm text-muted-foreground" as const;
 
-export const ROSTER_OBJECTIVE = "text-sm break-words" as const;
+/**
+ * An entry is a way in rather than the place an agent is read, so the objective is cut to two
+ * lines. Opening the agent is what shows it whole, and the roster stays a list you can scan.
+ */
+export const ROSTER_OBJECTIVE = "line-clamp-2 text-sm wrap-anywhere" as const;
 
-export const ROSTER_LINE = "flex flex-wrap gap-x-2 text-sm" as const;
+export const ROSTER_LINE = "flex min-w-0 gap-x-2 text-sm" as const;
 
-export const ROSTER_VERB = "font-medium" as const;
+export const ROSTER_VERB = "flex-none font-medium" as const;
 
-/** A command or a path is shown whole here too: the roster is read, not skimmed past. */
-export const ROSTER_DETAIL = "min-w-0 break-words text-muted-foreground" as const;
+/**
+ * A command runs to hundreds of characters and would bury every other agent in the roster, so it
+ * ends in an ellipsis here. The thread prints the same call in full, one click away.
+ */
+export const ROSTER_DETAIL = "min-w-0 truncate text-muted-foreground" as const;
 
 export const AGENT_THREAD = "flex min-w-0 flex-col gap-3 rounded-2xl border p-4" as const;
 
@@ -60,17 +67,22 @@ export const TRANSCRIPT_ENTRIES = "flex flex-col gap-2" as const;
  */
 export const TRANSCRIPT_INITIAL_SCROLL = "instant" as const;
 
-export const TRANSCRIPT_TEXT = "border-l-2 pl-3 text-sm whitespace-pre-wrap break-words" as const;
+export const TRANSCRIPT_TEXT = "border-l-2 pl-3 text-sm whitespace-pre-wrap wrap-anywhere" as const;
 
 export const TRANSCRIPT_TOOL = "flex flex-wrap items-baseline gap-2 text-sm" as const;
 
-export const TRANSCRIPT_DETAIL = "min-w-0 break-words text-muted-foreground" as const;
+/**
+ * `wrap-anywhere` rather than `break-words`: both fold a long path onto the next line, but only
+ * this one lets the element measure smaller than that path, and a column sized to an unbreakable
+ * argument is what pushes the thread out over the roster.
+ */
+export const TRANSCRIPT_DETAIL = "min-w-0 wrap-anywhere text-muted-foreground" as const;
 
 export const TRANSCRIPT_THINKING_TRIGGER =
     "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" as const;
 
 /** Full paths stay readable by wrapping, because an operator has to be able to copy them. */
-export const AGENT_ARTIFACTS = "break-all text-sm text-muted-foreground" as const;
+export const AGENT_ARTIFACTS = "wrap-anywhere text-sm text-muted-foreground" as const;
 
 export const PHASE_LABEL: Record<AgentActivityPhase, string> = {
     [AgentActivityPhase.STARTING]: "Starting",
