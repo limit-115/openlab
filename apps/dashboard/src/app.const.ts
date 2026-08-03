@@ -1,5 +1,9 @@
-/** The horizontal frame shared by the header, the dashboard grid and the footer. */
-export const PAGE_FRAME = "mx-auto w-full max-w-420 px-4 sm:px-6 lg:px-12" as const;
+/**
+ * The horizontal frame shared by the header, the dashboard grid and the footer. It stops well
+ * short of the viewport edge on a wide screen, so a line of text stays a readable length instead
+ * of stretching across the whole monitor.
+ */
+export const PAGE_FRAME = "mx-auto w-full max-w-320 px-4 sm:px-6 lg:px-12" as const;
 
 export const APP_SHELL = "min-h-screen" as const;
 
