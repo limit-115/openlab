@@ -24,9 +24,10 @@ export class CapabilityRepository {
                 labId: input.labId,
                 branchId: input.branchId,
                 need: input.need,
-                resourceClass: input.resourceClass,
                 reason: input.reason,
                 provisioningHint: input.provisioningHint,
+                selfProvisioningAttempt: input.selfProvisioningAttempt,
+                blocking: input.blocking,
                 createdAt: now,
                 updatedAt: now
             })
@@ -37,16 +38,16 @@ export class CapabilityRepository {
         return toCapabilityRequest(record);
     }
 
-    async provide(requestId: string, resourceReference: string, now = new Date()): Promise<void> {
-        if (resourceReference.trim().length === 0) {
-            throw new Error("Resource reference must not be empty");
+    async answer(requestId: string, answer: string, now = new Date()): Promise<void> {
+        if (answer.trim().length === 0) {
+            throw new Error("Capability answer must not be empty");
         }
         const [record] = await this.#database
             .update(capabilityRequests)
             .set({
-                status: CapabilityStatus.PROVIDED,
-                resourceReference,
-                providedAt: now,
+                status: CapabilityStatus.ANSWERED,
+                answer,
+                answeredAt: now,
                 updatedAt: now
             })
             .where(
@@ -67,14 +68,15 @@ function toCapabilityRequest(record: typeof capabilityRequests.$inferSelect): Ca
         id: record.id,
         type: CapabilityRequestType.CAPABILITY_REQUEST,
         need: record.need,
-        resource_class: record.resourceClass,
         reason: record.reason,
         provisioning_hint: record.provisioningHint,
-        status: record.status,
-        ...(record.resourceReference === null
+        ...(record.selfProvisioningAttempt === null
             ? {}
-            : { resource_reference: record.resourceReference }),
-        ...(record.providedAt === null ? {} : { provided_at: record.providedAt.toISOString() }),
+            : { self_provisioning_attempt: record.selfProvisioningAttempt }),
+        blocking: record.blocking,
+        status: record.status,
+        ...(record.answer === null ? {} : { answer: record.answer }),
+        ...(record.answeredAt === null ? {} : { answered_at: record.answeredAt.toISOString() }),
         created_at: record.createdAt.toISOString()
     };
 }

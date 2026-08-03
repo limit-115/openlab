@@ -4,7 +4,6 @@ import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import {
     CapabilityRequestType,
-    CapabilityResourceClass,
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
@@ -123,9 +122,11 @@ export function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING
                 id: `${labId}-capability-sandbox`,
                 type: CapabilityRequestType.CAPABILITY_REQUEST,
                 need: "A quiescent dedicated benchmarking host",
-                resource_class: CapabilityResourceClass.HARDWARE,
                 reason: "The evaluator must measure without neighbouring load",
                 provisioning_hint: "Reserve a bare-metal host and expose it to the run",
+                self_provisioning_attempt:
+                    "Pinned cores and stopped local services, and the variance stayed above the effect size",
+                blocking: true,
                 status: CapabilityStatus.OPEN,
                 created_at: timestamp
             }

@@ -178,13 +178,13 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         if (staleCapability === undefined) {
             throw new Error("Expected the snapshot fixture to carry a capability request");
         }
-        const { resource_class: _dropped, ...withoutResourceClass } = staleCapability;
+        const { provisioning_hint: _dropped, ...withoutProvisioningHint } = staleCapability;
         await client.sql`
             UPDATE runtime_checkpoints
             SET snapshot = jsonb_set(
                 snapshot,
                 '{capability_requests}',
-                ${JSON.stringify([withoutResourceClass])}::jsonb
+                ${JSON.stringify([withoutProvisioningHint])}::jsonb
             )
             WHERE lab_id = ${staleSnapshot.lab.id}
         `;

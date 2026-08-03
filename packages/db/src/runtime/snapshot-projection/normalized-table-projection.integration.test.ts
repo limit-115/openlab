@@ -133,9 +133,9 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
         if (capability === undefined) {
             throw new Error("Projection fixture must contain a capability request");
         }
-        capability.status = CapabilityStatus.PROVIDED;
-        capability.resource_reference = "toolchain://sandbox/reproducible-v1";
-        capability.provided_at = updated.lab.updated_at;
+        capability.status = CapabilityStatus.ANSWERED;
+        capability.answer = "Not reserving a host for this; pin the cores and report the variance";
+        capability.answered_at = updated.lab.updated_at;
 
         const committed = await persistence.commit({
             snapshot: updated,
@@ -173,9 +173,9 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
             })
         ).toEqual(
             expect.objectContaining({
-                status: CapabilityStatus.PROVIDED,
-                resourceReference: capability.resource_reference,
-                providedAt: new Date(updated.lab.updated_at)
+                status: CapabilityStatus.ANSWERED,
+                answer: capability.answer,
+                answeredAt: new Date(updated.lab.updated_at)
             })
         );
         expect(
@@ -183,8 +183,8 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
         ).toEqual([
             expect.objectContaining({
                 id: capability.id,
-                resource_reference: capability.resource_reference,
-                provided_at: capability.provided_at
+                answer: capability.answer,
+                answered_at: capability.answered_at
             })
         ]);
 

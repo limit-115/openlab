@@ -64,6 +64,13 @@
             "when": 1785701192779,
             "tag": "0008_next_wither",
             "breakpoints": true
+        },
+        {
+            "idx": 9,
+            "version": "7",
+            "when": 1785759239616,
+            "tag": "0009_amazing_zombie",
+            "breakpoints": true
         }
     ]
 }

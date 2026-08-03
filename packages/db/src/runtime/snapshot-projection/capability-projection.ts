@@ -10,21 +10,23 @@ export async function upsertCapabilities(
     projectionAt: Date
 ): Promise<void> {
     for (const capability of snapshot.capability_requests) {
-        const providedAt =
-            capability.provided_at === undefined ? null : new Date(capability.provided_at);
-        const resourceReference = capability.resource_reference ?? null;
+        const answeredAt =
+            capability.answered_at === undefined ? null : new Date(capability.answered_at);
+        const answer = capability.answer ?? null;
+        const selfProvisioningAttempt = capability.self_provisioning_attempt ?? null;
         const records = await database
             .insert(capabilityRequests)
             .values({
                 id: capability.id,
                 labId: snapshot.lab.id,
                 need: capability.need,
-                resourceClass: capability.resource_class,
                 reason: capability.reason,
                 provisioningHint: capability.provisioning_hint,
+                selfProvisioningAttempt,
+                blocking: capability.blocking,
                 status: capability.status,
-                resourceReference,
-                providedAt,
+                answer,
+                answeredAt,
                 createdAt: new Date(capability.created_at),
                 updatedAt: projectionAt
             })
@@ -32,12 +34,13 @@ export async function upsertCapabilities(
                 target: capabilityRequests.id,
                 set: {
                     need: capability.need,
-                    resourceClass: capability.resource_class,
                     reason: capability.reason,
                     provisioningHint: capability.provisioning_hint,
+                    selfProvisioningAttempt,
+                    blocking: capability.blocking,
                     status: capability.status,
-                    resourceReference,
-                    providedAt,
+                    answer,
+                    answeredAt,
                     updatedAt: projectionAt
                 },
                 setWhere: eq(capabilityRequests.labId, snapshot.lab.id)
