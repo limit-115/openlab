@@ -13,6 +13,7 @@ import { createStatusServer } from "#src/lab-status/status-server";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { createHarnesses } from "#src/research-cycle/harness-roster";
 import { runResearchLoop } from "#src/research-cycle/research-loop";
+import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 export async function startDaemon(
     options: DaemonOptions,
@@ -31,6 +32,7 @@ export async function startDaemon(
         );
         const dashboardRoot = await existingDirectory(config.dashboardRoot);
         const activity = new AgentActivityHub();
+        const subscriptions = new SubscriptionAllowanceReadings();
         controller = new ResearchLoopController(
             workspace,
             activity,
@@ -39,6 +41,7 @@ export async function startDaemon(
         );
         app = createStatusServer(workspace, {
             activity,
+            subscriptions,
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel,
             onStop: () =>

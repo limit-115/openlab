@@ -3,9 +3,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { createStatusServer } from "#src/lab-status/status-server";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 async function createTestServer() {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
@@ -124,6 +126,37 @@ describe("status server", () => {
 
         expect(response.statusCode).toBe(200);
         expect(response.body).toContain("dashboard");
+        await server.close();
+    });
+
+    it("serves every subscription against the schema the dashboard validates with", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-subscriptions-test-"));
+        const taskPath = path.join(directory, "task.json");
+        await writeFile(taskPath, JSON.stringify({ goal: "Watch the subscriptions" }));
+        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const server = createStatusServer(workspace, {
+            subscriptions: new SubscriptionAllowanceReadings({
+                read: async (kind) => ({
+                    kind,
+                    plan: "max",
+                    windows: [{ durationMinutes: 300, usedPercent: 41, resetsAt: null }]
+                })
+            })
+        });
+
+        const response = await server.inject({ method: "GET", url: "/api/subscriptions" });
+
+        expect(response.statusCode).toBe(200);
+        expect(SubscriptionAllowanceRosterSchema.parse(response.json())).toHaveLength(3);
+        await server.close();
+    });
+
+    it("leaves the subscriptions route unserved when no readings were wired in", async () => {
+        const server = await createTestServer();
+
+        const response = await server.inject({ method: "GET", url: "/api/subscriptions" });
+
+        expect(response.statusCode).toBe(404);
         await server.close();
     });
 

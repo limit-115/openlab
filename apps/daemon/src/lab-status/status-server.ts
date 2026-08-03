@@ -10,6 +10,7 @@ import { registerAgentActivityRoute } from "#src/lab-status/agent-activity-route
 import { CapabilityResponseError } from "#src/lab-status/status-server.const";
 import type { StatusServerOptions } from "#src/lab-status/status-server.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { SUBSCRIPTION_ALLOWANCE_ROUTE } from "#src/subscription-allowance/subscription-allowance.const";
 
 export function createStatusServer(
     workspace: LabWorkspace,
@@ -30,6 +31,11 @@ export function createStatusServer(
 
     if (options.activity !== undefined) {
         registerAgentActivityRoute(app, options.activity);
+    }
+
+    if (options.subscriptions !== undefined) {
+        const subscriptions = options.subscriptions;
+        app.get(SUBSCRIPTION_ALLOWANCE_ROUTE, async () => subscriptions.readAll());
     }
 
     app.get("/health", async () => ({ ok: true, lab_id: workspace.labId }));
