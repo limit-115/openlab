@@ -1,63 +1,56 @@
 import { describe, expect, it } from "vitest";
 import {
     CapabilityRequestType,
-    CapabilityResourceClass,
     CapabilityStatus
 } from "#src/capabilities/capability-request.const";
 import { CapabilityRequestSchema } from "#src/capabilities/capability-request.schema";
 
+const openRequest = {
+    id: "capability-dataset",
+    type: CapabilityRequestType.CAPABILITY_REQUEST,
+    need: "Independent dataset",
+    reason: "The verifier needs independent observations",
+    provisioning_hint: "Mount the dataset in the lab workspace",
+    self_provisioning_attempt: "Reconstructed the corpus from public mirrors and came up short",
+    created_at: "2026-08-02T09:00:00.000Z"
+} as const;
+
 describe("CapabilityRequestSchema", () => {
-    it("preserves a provided capability resource as protocol state", () => {
-        const providedAt = "2026-08-02T10:00:00.000Z";
-
+    it("carries an operator refusal as the answer rather than losing it", () => {
         const capability = CapabilityRequestSchema.parse({
-            id: "capability-dataset",
-            type: CapabilityRequestType.CAPABILITY_REQUEST,
-            need: "Independent dataset",
-            resource_class: CapabilityResourceClass.PRIVATE_DATA,
-            reason: "The verifier needs independent observations",
-            provisioning_hint: "Mount the dataset in the lab workspace",
-            status: CapabilityStatus.PROVIDED,
-            resource_reference: "dataset://independent/v1",
-            provided_at: providedAt,
-            created_at: "2026-08-02T09:00:00.000Z"
+            ...openRequest,
+            status: CapabilityStatus.ANSWERED,
+            answer: "Not giving you this one, reconstruct it from the public mirrors yourself",
+            answered_at: "2026-08-02T10:00:00.000Z"
         });
 
-        expect(capability).toMatchObject({
-            resource_class: CapabilityResourceClass.PRIVATE_DATA,
-            status: CapabilityStatus.PROVIDED,
-            resource_reference: "dataset://independent/v1",
-            provided_at: providedAt
-        });
+        expect(capability.answer).toBe(
+            "Not giving you this one, reconstruct it from the public mirrors yourself"
+        );
     });
 
-    it("rejects a provided capability without operational resource state", () => {
+    it("rejects an answered request that records no answer", () => {
         expect(() =>
             CapabilityRequestSchema.parse({
-                id: "capability-dataset",
-                type: CapabilityRequestType.CAPABILITY_REQUEST,
-                need: "Independent dataset",
-                resource_class: CapabilityResourceClass.PRIVATE_DATA,
-                reason: "The verifier needs independent observations",
-                provisioning_hint: "Mount the dataset in the lab workspace",
-                status: CapabilityStatus.PROVIDED,
-                created_at: "2026-08-02T09:00:00.000Z"
+                ...openRequest,
+                status: CapabilityStatus.ANSWERED,
+                answered_at: "2026-08-02T10:00:00.000Z"
             })
-        ).toThrow("requires its resource reference and timestamp");
+        ).toThrow("requires the operator answer and its timestamp");
     });
 
-    it("keeps installable tooling outside the resource class domain", () => {
-        expect(() =>
-            CapabilityRequestSchema.parse({
-                id: "capability-hyperfine",
-                type: CapabilityRequestType.CAPABILITY_REQUEST,
-                need: "Locally installed hyperfine and pytest",
-                resource_class: "tooling",
-                reason: "The benchmark needs a statistically sound timer",
-                provisioning_hint: "Run brew install hyperfine",
-                status: CapabilityStatus.OPEN,
-                created_at: "2026-08-02T09:00:00.000Z"
-            })
-        ).toThrow();
+    it("leaves a fresh request open and non-blocking", () => {
+        const capability = CapabilityRequestSchema.parse(openRequest);
+
+        expect(capability.status).toBe(CapabilityStatus.OPEN);
+        expect(capability.blocking).toBe(false);
+    });
+
+    it("accepts a daemon-raised request that attempted no provisioning of its own", () => {
+        const { self_provisioning_attempt: _omitted, ...daemonRaised } = openRequest;
+
+        const capability = CapabilityRequestSchema.parse(daemonRaised);
+
+        expect(capability.self_provisioning_attempt).toBeUndefined();
     });
 });

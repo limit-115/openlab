@@ -48,8 +48,7 @@ export const EventType = {
     FRONTIER_UPDATED: "frontier.updated",
     PLATEAU_CONFIRMED: "plateau.confirmed",
     CAPABILITY_REQUESTED: "capability.requested",
-    CAPABILITY_PROVIDED: "capability.provided",
-    CAPABILITY_OBSOLETE: "capability.obsolete",
+    CAPABILITY_ANSWERED: "capability.answered",
     REPORT_GENERATED: "report.generated",
     RESULT_GENERATED: "result.generated"
 } as const;
