@@ -7,10 +7,10 @@ import { AgentTranscript } from "#src/team/agent-transcript";
 import type { WatchedAgent } from "#src/team/agent-transcript.types";
 import {
     AGENT_ARTIFACTS,
-    AGENT_CARD,
     AGENT_CARD_HEADER,
     AGENT_EXECUTION,
     AGENT_STATUS_GROUP,
+    AGENT_THREAD,
     HARNESS_LABEL,
     PHASE_LABEL,
     PHASE_TONE,
@@ -18,21 +18,23 @@ import {
     RUN_STATUS_TONE
 } from "#src/team/team-panel.const";
 
-interface AgentCardProps {
+interface AgentThreadProps {
     agent: WatchedAgent;
     task: InternalTask | undefined;
 }
 
 /**
- * The store hands back the very same agent when a frame belonged to somebody else, so a card only
- * redraws for its own agent rather than every time any of them says a word.
+ * The agent being read, in full: what it runs on, what it was given, and everything it has said.
+ *
+ * The store hands back the very same agent when a frame belonged to somebody else, so the thread
+ * only redraws for the agent on screen rather than every time any of them says a word.
  */
-export const AgentCard = memo(function AgentCard({ agent, task }: AgentCardProps) {
+export const AgentThread = memo(function AgentThread({ agent, task }: AgentThreadProps) {
     const { activity } = agent;
     const { execution } = activity;
 
     return (
-        <article className={AGENT_CARD}>
+        <article className={AGENT_THREAD}>
             <header className={AGENT_CARD_HEADER}>
                 <div className="min-w-0">
                     <h3 className="text-sm font-semibold capitalize">{activity.role}</h3>

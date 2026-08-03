@@ -9,7 +9,7 @@ import {
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { TranscriptEntry, WatchedAgent } from "#src/team/agent-transcript.types";
@@ -54,8 +54,10 @@ describe("TeamPanel", () => {
             />
         );
 
+        const thread = screen.getByRole("article");
+
         expect(screen.queryByText(REASONING)).toBeNull();
-        await userEvent.click(screen.getByRole("button", { name: /Thinking/ }));
+        await userEvent.click(within(thread).getByRole("button", { name: /Thinking/ }));
 
         expect(screen.getByText(REASONING)).toBeVisible();
     });
@@ -134,6 +136,51 @@ describe("TeamPanel", () => {
 
         expect(card?.textContent).toContain("Using a tool");
         expect(card?.textContent).toContain("Running");
+    });
+
+    it("reads a second agent without losing sight of the first", async () => {
+        const critic = watchedActivity({
+            agent_id: "agent-critic-0-1",
+            task_id: "task-critic-0-1",
+            role: AgentRole.CRITIC
+        });
+        render(
+            <TeamPanel
+                agents={[
+                    agent([
+                        {
+                            id: "run-9f0c:2",
+                            kind: AgentActivityFrameKind.THINKING,
+                            turn: 0,
+                            text: REASONING,
+                            sealed: true
+                        }
+                    ]),
+                    agent(
+                        [
+                            {
+                                id: "run-critic:1",
+                                kind: AgentActivityFrameKind.TOOL,
+                                toolName: "Bash",
+                                callId: "toolu_02",
+                                phase: AgentToolPhase.COMPLETED,
+                                detail: COMMAND
+                            }
+                        ],
+                        critic
+                    )
+                ]}
+                tasks={[TASK]}
+            />
+        );
+
+        const roster = screen.getByRole("list", { name: "Agents" });
+        expect(within(screen.getByRole("article")).queryByText(COMMAND)).toBeNull();
+
+        await userEvent.click(within(roster).getByRole("button", { name: /critic/i }));
+
+        expect(within(screen.getByRole("article")).getByText(COMMAND)).toBeVisible();
+        expect(within(roster).getByRole("button", { name: /researcher/i })).toBeVisible();
     });
 
     it("says so plainly when the lab is running nobody", () => {
