@@ -100,7 +100,7 @@ describe("App", () => {
         );
     });
 
-    it("wakes a hibernating lab from the header and settles on the state it reports", async () => {
+    it("wakes a hibernating lab from the control island and settles on the state it reports", async () => {
         const hibernating = {
             ...statusFixture,
             lab: { ...statusFixture.lab, state: LabState.HIBERNATING }

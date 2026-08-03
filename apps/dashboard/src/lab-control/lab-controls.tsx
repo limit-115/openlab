@@ -1,7 +1,7 @@
 import type { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-    LAB_CONTROL_COLUMN,
+    LAB_CONTROL_DOCK,
     LAB_CONTROL_FAILURE,
     LAB_CONTROL_GROUP,
     LAB_CONTROL_ORIGIN_STATES,
@@ -16,8 +16,8 @@ interface LabControlsProps {
 }
 
 /**
- * The lifecycle controls beside the state readout. Only the transitions the current state allows are
- * offered, so a settled run shows none at all.
+ * The lifecycle controls, on an island floating over the corner of the page. Only the transitions
+ * the current state allows are offered, so a settled run leaves the corner empty.
  */
 export function LabControls({ state }: LabControlsProps) {
     const queryClient = useQueryClient();
@@ -35,7 +35,7 @@ export function LabControls({ state }: LabControlsProps) {
     }
 
     return (
-        <div className={LAB_CONTROL_COLUMN}>
+        <div className={LAB_CONTROL_DOCK}>
             <div className={LAB_CONTROL_GROUP}>
                 {offered.map((action) => (
                     <LabControlButton

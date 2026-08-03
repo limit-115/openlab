@@ -48,8 +48,17 @@ export const KEEP_RUN_LABEL = "Keep running" as const;
 /** Shown when the daemon is gone, which reads nothing like a refusal the operator can act on. */
 export const LAB_CONTROL_UNREACHABLE = "The lab daemon did not answer." as const;
 
-export const LAB_CONTROL_COLUMN = "flex flex-col items-end gap-1.5" as const;
+/**
+ * The controls float over the corner of the page instead of sitting in the header. Ending a run is
+ * something the operator reaches for a few times a session, and it was crowding a header whose job
+ * is to say where you are and how the lab is doing.
+ */
+export const LAB_CONTROL_DOCK =
+    "fixed right-4 bottom-4 z-30 flex flex-col items-end gap-1.5 sm:right-6 lg:right-12" as const;
 
-export const LAB_CONTROL_GROUP = "flex flex-wrap items-center justify-end gap-2" as const;
+/** Chrome of its own, because the island lies over whatever the page happens to be showing. */
+export const LAB_CONTROL_GROUP =
+    "flex flex-wrap items-center justify-end gap-2 rounded-4xl border bg-background/85 p-1.5 shadow-lg backdrop-blur-lg" as const;
 
-export const LAB_CONTROL_FAILURE = "text-sm text-destructive" as const;
+export const LAB_CONTROL_FAILURE =
+    "rounded-2xl border bg-background/85 px-3 py-1.5 text-sm text-destructive shadow-lg backdrop-blur-lg" as const;

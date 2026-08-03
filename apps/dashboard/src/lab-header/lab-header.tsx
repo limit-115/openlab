@@ -4,11 +4,9 @@ import { NavLink } from "react-router";
 import { PAGE_FRAME } from "#src/app.const";
 import { DASHBOARD_VIEWS } from "#src/dashboard-routes/dashboard-routes.const";
 import { cn } from "#src/design-system/class-names";
-import { LabControls } from "#src/lab-control/lab-controls";
 import {
     LAB_HEADER_BAR,
     LAB_HEADER_ROW,
-    LAB_HEADER_RUNTIME,
     LAB_HEADER_VIEW,
     LAB_HEADER_VIEW_CURRENT,
     LAB_HEADER_VIEWS
@@ -55,10 +53,7 @@ export function LabHeader({ snapshot, stream }: LabHeaderProps) {
                     ))}
                 </nav>
 
-                <div className={LAB_HEADER_RUNTIME}>
-                    <RuntimeStrip snapshot={snapshot} stream={stream} />
-                    <LabControls state={snapshot.lab.state} />
-                </div>
+                <RuntimeStrip snapshot={snapshot} stream={stream} />
             </div>
         </header>
     );

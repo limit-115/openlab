@@ -5,8 +5,10 @@ import { ActivityIcon } from "lucide-react";
 import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/lab-header/lab-uptime";
 import {
+    RUNTIME_AGENT_COUNT,
+    RUNTIME_ICON,
+    RUNTIME_READING,
     RUNTIME_STRIP,
-    RUNTIME_STRIP_LABEL,
     RUNTIME_STRIP_VALUE,
     STATE_DOT,
     STATE_DOT_TONE
@@ -32,26 +34,18 @@ export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
 
     return (
         <div className={RUNTIME_STRIP} role="status" aria-label="Lab runtime status">
-            <div className="flex items-center gap-2.5">
+            <span className={RUNTIME_READING}>
                 <span
                     className={cn(STATE_DOT, STATE_DOT_TONE[snapshot.lab.state])}
                     aria-hidden="true"
                 />
-                <div className="flex flex-col">
-                    <span className={RUNTIME_STRIP_LABEL}>State</span>
-                    <strong className={RUNTIME_STRIP_VALUE}>{snapshot.lab.state}</strong>
-                </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-                <ActivityIcon
-                    className="size-4 flex-none text-muted-foreground"
-                    aria-hidden="true"
-                />
-                <div className="flex flex-col">
-                    <span className={RUNTIME_STRIP_LABEL}>Runtime · {activeAgents} active</span>
-                    <strong className={RUNTIME_STRIP_VALUE}>{formatDuration(uptime)}</strong>
-                </div>
-            </div>
+                <strong className={RUNTIME_STRIP_VALUE}>{snapshot.lab.state}</strong>
+            </span>
+            <span className={RUNTIME_READING}>
+                <ActivityIcon className={RUNTIME_ICON} aria-hidden="true" />
+                <strong className={RUNTIME_STRIP_VALUE}>{formatDuration(uptime)}</strong>
+                <span className={RUNTIME_AGENT_COUNT}>· {activeAgents} active</span>
+            </span>
             <ConnectionBadge stream={stream} />
         </div>
     );
