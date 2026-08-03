@@ -2,9 +2,11 @@ import type { LucideIcon } from "lucide-react";
 import { Badge } from "#src/design-system/badge";
 import {
     FRONTIER_COLUMN,
+    FRONTIER_COLUMN_EMPTY,
     FRONTIER_COLUMN_HEADER,
     FRONTIER_COLUMN_TITLE,
-    FRONTIER_ITEM_LIST
+    FRONTIER_ITEM_LIST,
+    FRONTIER_ITEM_SCROLLER
 } from "#src/research-frontier/frontier-column.const";
 
 interface FrontierColumnProps {
@@ -22,13 +24,15 @@ export function FrontierColumn({ title, icon: Icon, items }: FrontierColumnProps
                 <Badge variant="outline">{items.length}</Badge>
             </header>
             {items.length > 0 ? (
-                <ul className={FRONTIER_ITEM_LIST}>
-                    {items.map((item, index) => (
-                        <li key={`${title}-${index.toString()}`}>{item}</li>
-                    ))}
-                </ul>
+                <div className={FRONTIER_ITEM_SCROLLER}>
+                    <ul className={FRONTIER_ITEM_LIST}>
+                        {items.map((item, index) => (
+                            <li key={`${title}-${index.toString()}`}>{item}</li>
+                        ))}
+                    </ul>
+                </div>
             ) : (
-                <p className="text-sm text-muted-foreground">Nothing recorded</p>
+                <p className={FRONTIER_COLUMN_EMPTY}>Nothing recorded</p>
             )}
         </article>
     );
