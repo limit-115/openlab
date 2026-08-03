@@ -6,7 +6,7 @@ afterEach(() => {
 });
 
 describe("LabApiClient", () => {
-    it("posts capability references as JSON", async () => {
+    it("posts the operator answer as JSON", async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             new Response(JSON.stringify({ accepted: true }), {
                 status: 202,
@@ -17,13 +17,16 @@ describe("LabApiClient", () => {
         const api = new LabApiClient("http://127.0.0.1:4317/");
 
         await expect(
-            api.provide("request one", "file:///tmp/research-dataset.csv")
+            api.answer("request one", "Not giving you this one, build it yourself")
         ).resolves.toEqual({
             accepted: true
         });
         expect(fetchMock).toHaveBeenCalledWith(
-            "http://127.0.0.1:4317/api/capabilities/request%20one/provide",
-            expect.objectContaining({ method: "POST" })
+            "http://127.0.0.1:4317/api/capabilities/request%20one/answer",
+            expect.objectContaining({
+                method: "POST",
+                body: JSON.stringify({ answer: "Not giving you this one, build it yourself" })
+            })
         );
     });
 

@@ -55,8 +55,8 @@ export function renderCapabilities(requests: CapabilityRequest[]): string {
         return "No capability requests.";
     }
     const table = new Table({
-        head: ["ID", "Status", "Resource", "Need", "Reason"],
-        colWidths: [26, 12, 14, 24, 32],
+        head: ["ID", "Status", "Need", "Tried alone", "Your answer"],
+        colWidths: [26, 12, 26, 26, 26],
         wordWrap: true,
         style: { head: ["cyan"], border: ["gray"] }
     });
@@ -64,9 +64,9 @@ export function renderCapabilities(requests: CapabilityRequest[]): string {
         table.push([
             request.id,
             request.status,
-            request.resource_class,
             request.need,
-            request.reason
+            request.self_provisioning_attempt ?? "",
+            request.answer ?? ""
         ]);
     }
     return table.toString();

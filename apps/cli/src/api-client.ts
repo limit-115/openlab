@@ -45,11 +45,11 @@ export class LabApiClient {
         return this.request<StatusSnapshot>("/api/stop", { method: "POST" });
     }
 
-    provide(id: string, resourceReference: string): Promise<{ accepted: boolean }> {
-        return this.request(`/api/capabilities/${encodeURIComponent(id)}/provide`, {
+    answer(id: string, answer: string): Promise<{ accepted: boolean }> {
+        return this.request(`/api/capabilities/${encodeURIComponent(id)}/answer`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ resource_reference: resourceReference })
+            body: JSON.stringify({ answer })
         });
     }
 

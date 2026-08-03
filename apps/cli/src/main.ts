@@ -149,13 +149,13 @@ program
     });
 
 program
-    .command("provide")
-    .description("attach a resource reference to a capability request")
+    .command("answer")
+    .description("answer a capability request in your own words")
     .argument("<request-id>")
-    .argument("<resource-reference>")
-    .action(async (id: string, resourceReference: string, _options, command: Command) => {
-        await client(command).provide(id, resourceReference);
-        consola.success(`Capability ${id} provided`);
+    .argument("<answer>")
+    .action(async (id: string, answer: string, _options, command: Command) => {
+        await client(command).answer(id, answer);
+        consola.success(`Capability ${id} answered`);
     });
 
 program
