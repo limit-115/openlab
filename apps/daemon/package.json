@@ -4,6 +4,9 @@
     "private": true,
     "type": "module",
     "exports": {
+        "./run-purge/run-purge": "./src/run-purge/run-purge.ts",
+        "./run-purge/run-purge.const": "./src/run-purge/run-purge.const.ts",
+        "./run-purge/run-purge.types": "./src/run-purge/run-purge.types.ts",
         "./server": "./src/daemon-runtime/daemon-startup.ts"
     },
     "imports": {
