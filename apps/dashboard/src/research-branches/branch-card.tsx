@@ -9,12 +9,14 @@ import { cn } from "#src/design-system/class-names";
 import {
     BRANCH_CARD,
     BRANCH_CARD_APPROACH,
+    BRANCH_CARD_COUNTS,
     BRANCH_CARD_META,
     BRANCH_CARD_STATUS,
     BRANCH_CARD_STATUS_TONE,
     BRANCH_CARD_SUMMARY,
     BRANCH_CARD_TITLE,
-    BRANCH_PROGRESS
+    BRANCH_PROGRESS,
+    BRANCH_PROGRESS_TONE
 } from "#src/research-branches/branch-card.const";
 
 interface BranchCardProps {
@@ -53,15 +55,24 @@ export function BranchCard({ branch, agents, tasks }: BranchCardProps) {
                     <span className={BRANCH_CARD_APPROACH}>{branch.approach}</span>
                 </span>
                 <span className={BRANCH_CARD_META}>
-                    <Badge variant="outline">
-                        <BotIcon aria-hidden="true" /> {agents.length}
-                    </Badge>
-                    <Badge variant="outline">
-                        <ListTodoIcon aria-hidden="true" /> {runningTasks}/{tasks.length}
-                    </Badge>
+                    <span className={BRANCH_CARD_COUNTS}>
+                        <Badge variant="outline">
+                            <BotIcon aria-hidden="true" /> {agents.length}
+                        </Badge>
+                        <Badge variant="outline">
+                            <ListTodoIcon aria-hidden="true" /> {runningTasks}/{tasks.length}
+                        </Badge>
+                    </span>
+                    {branch.progress ? (
+                        <Badge
+                            variant={BRANCH_PROGRESS_TONE[branch.status]}
+                            className={BRANCH_PROGRESS}
+                        >
+                            {branch.progress}
+                        </Badge>
+                    ) : null}
                 </span>
             </div>
-            {branch.progress ? <p className={BRANCH_PROGRESS}>{branch.progress}</p> : null}
         </li>
     );
 }
