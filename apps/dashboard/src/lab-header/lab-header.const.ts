@@ -6,3 +6,6 @@ export const LAB_HEADER_ROW =
 
 /** Keeps the lifecycle controls with the state they act on rather than at the far end of the row. */
 export const LAB_HEADER_RUNTIME = "flex flex-wrap items-center gap-x-6 gap-y-3" as const;
+
+/** The views sit in the header because it is the only navigation the dashboard has. */
+export const LAB_HEADER_VIEWS = "w-fit" as const;

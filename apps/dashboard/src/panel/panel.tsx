@@ -8,14 +8,7 @@ import {
     CardHeader,
     CardTitle
 } from "#src/design-system/card";
-import { cn } from "#src/design-system/class-names";
-import {
-    PANEL_ACTION,
-    PANEL_FRAME,
-    PANEL_HEADER,
-    PANEL_ICON,
-    PANEL_TITLE
-} from "#src/panel/panel.const";
+import { PANEL_ACTION, PANEL_HEADER, PANEL_ICON, PANEL_TITLE } from "#src/panel/panel.const";
 
 interface PanelProps {
     title: string;
@@ -25,8 +18,6 @@ interface PanelProps {
     /** Rendered beside the title on wide panels and below it on narrow ones. */
     action?: ReactNode;
     children: ReactNode;
-    /** Anchor target for the header section navigation. */
-    id?: string;
     className?: string;
     contentClassName?: string;
 }
@@ -37,12 +28,11 @@ export function Panel({
     icon: Icon,
     action,
     children,
-    id,
     className,
     contentClassName
 }: PanelProps) {
     return (
-        <Card id={id} className={cn(PANEL_FRAME, className)}>
+        <Card className={className}>
             <CardHeader className={PANEL_HEADER}>
                 <CardTitle className={PANEL_TITLE}>
                     <span className={PANEL_ICON} aria-hidden="true">

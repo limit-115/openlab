@@ -19,7 +19,6 @@ export function EventsPanel({ events }: EventsPanelProps) {
 
     return (
         <Panel
-            id="events"
             title="Event stream"
             description="Significant activity"
             icon={ActivityIcon}

@@ -1,5 +1,3 @@
-export const PANEL_FRAME = "scroll-mt-24" as const;
-
 /**
  * Below `sm` the header becomes a single column so a wide action, such as the claim filter, drops
  * under the title instead of overrunning it.

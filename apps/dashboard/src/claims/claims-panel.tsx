@@ -33,7 +33,6 @@ export function ClaimsPanel({ claims }: ClaimsPanelProps) {
 
     return (
         <Panel
-            id="evidence"
             title="Claims"
             description="Evidence ledger"
             icon={ShieldCheckIcon}

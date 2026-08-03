@@ -14,7 +14,6 @@ interface TeamPanelProps {
 export function TeamPanel({ agents, tasks }: TeamPanelProps) {
     return (
         <Panel
-            id="team"
             title="Team"
             description="Every agent the lab is running, and what each is doing"
             icon={UsersIcon}

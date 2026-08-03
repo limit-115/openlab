@@ -1,11 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, Outlet, useLocation } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { APP_FOOTER, APP_SHELL, DASHBOARD, PAGE_FRAME } from "#src/app.const";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
-import { DashboardRoute, VIEW_TABS } from "#src/dashboard-routes/dashboard-routes.const";
 import { cn } from "#src/design-system/class-names";
-import { Tabs, TabsList, TabsTrigger } from "#src/design-system/tabs";
 import { LabHeader } from "#src/lab-header/lab-header";
 import { fetchStatus, statusQueryKey } from "#src/live-status/status-client";
 import { useLiveStatus } from "#src/live-status/status-stream";
@@ -47,24 +45,10 @@ export function App() {
 
     return (
         <div className={APP_SHELL}>
-            <LabHeader
-                snapshot={snapshot}
-                stream={stream}
-                showSections={pathname === DashboardRoute.OVERVIEW}
-            />
-            <Tabs value={pathname} className={cn(PAGE_FRAME, "pt-6")}>
-                <TabsList>
-                    {VIEW_TABS.map((tab) => (
-                        <TabsTrigger key={tab.route} value={tab.route} asChild>
-                            <Link to={tab.route}>{tab.label}</Link>
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-
-                <div className={DASHBOARD}>
-                    <Outlet context={snapshot} />
-                </div>
-            </Tabs>
+            <LabHeader snapshot={snapshot} stream={stream} view={pathname} />
+            <main className={cn(PAGE_FRAME, DASHBOARD)}>
+                <Outlet context={snapshot} />
+            </main>
             <footer className={cn(PAGE_FRAME, APP_FOOTER)}>
                 <span>AI Research Lab · Local runtime</span>
                 <span>Lifecycle controls sit beside the state in the header</span>

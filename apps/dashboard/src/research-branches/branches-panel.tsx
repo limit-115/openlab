@@ -18,7 +18,6 @@ interface BranchesPanelProps {
 export function BranchesPanel({ branches, agents, tasks }: BranchesPanelProps) {
     return (
         <Panel
-            id="operations"
             title="Branches & agents"
             description="Independent directions"
             icon={GitBranchIcon}

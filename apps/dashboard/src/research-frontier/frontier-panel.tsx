@@ -26,7 +26,6 @@ export function FrontierPanel({ frontier }: FrontierPanelProps) {
 
     return (
         <Panel
-            id="frontier"
             title="Research frontier"
             description="Current knowledge boundary"
             icon={CompassIcon}
