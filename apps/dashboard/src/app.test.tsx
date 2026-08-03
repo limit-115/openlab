@@ -87,11 +87,17 @@ describe("App", () => {
         );
     });
 
-    it("names the harness, model and effort behind a running agent", async () => {
+    it("reads the stage of the cycle the lab is on off its agents", async () => {
         respondWith(statusFixture);
         renderDashboard();
 
-        expect(await screen.findByText("Codex · gpt-5.6-sol · medium effort")).toBeInTheDocument();
+        const cycle = await screen.findByRole("list", { name: "Research cycle" });
+        const researchers = within(cycle).getByText("Researchers").closest("li");
+
+        expect(researchers?.textContent).toContain("1 working");
+        expect(within(cycle).getByText("Verifier").closest("li")?.textContent).toContain(
+            "Not reached yet"
+        );
     });
 
     it("wakes a hibernating lab from the header and settles on the state it reports", async () => {

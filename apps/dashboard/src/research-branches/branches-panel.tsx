@@ -1,5 +1,4 @@
 import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
-import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import type { BranchSummary } from "@lab/protocol/branches/branch-summary.types";
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { GitBranchIcon } from "lucide-react";
@@ -25,13 +24,12 @@ export function BranchesPanel({ branches, agents, tasks }: BranchesPanelProps) {
         >
             {branches.length > 0 ? (
                 <ul className={BRANCH_LIST}>
-                    {branches.map((branch, index) => (
+                    {branches.map((branch) => (
                         <BranchCard
                             key={branch.id}
                             branch={branch}
                             agents={agents.filter((agent) => agent.branch_id === branch.id)}
                             tasks={tasks.filter((task) => task.branch_id === branch.id)}
-                            initiallyOpen={index < 2 && branch.status === BranchStatus.ACTIVE}
                         />
                     ))}
                 </ul>
