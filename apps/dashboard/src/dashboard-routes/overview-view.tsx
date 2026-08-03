@@ -23,7 +23,7 @@ export function OverviewView() {
                 agents={snapshot.agents}
                 tasks={snapshot.tasks}
             />
-            <ClaimsPanel claims={snapshot.claims} />
+            <ClaimsPanel claims={snapshot.claims} experiments={snapshot.experiments} />
             <ExperimentsPanel experiments={snapshot.experiments} />
             <EventsPanel events={snapshot.recent_events} />
         </>
