@@ -74,7 +74,6 @@ export async function* replayAgentActivity(
 
     for (const [kind, turn] of openTurns) {
         yield {
-            agent_id: activity.agent_id,
             run_id: activity.run_id,
             sequence: turn.sequence,
             occurred_at: turn.occurred_at,
@@ -94,7 +93,6 @@ export async function* replayAgentActivity(
     const outcome = await readFinishedRunOutcome(activity.artifact_directory);
     if (outcome !== undefined) {
         yield {
-            agent_id: activity.agent_id,
             run_id: activity.run_id,
             sequence: lastSequence + 1,
             occurred_at: outcome.finishedAt,

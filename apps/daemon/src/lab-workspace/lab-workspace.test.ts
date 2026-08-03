@@ -4,14 +4,17 @@ import path from "node:path";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
 import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
 import type { RecoverableRuntime } from "@lab/db/runtime/runtime-persistence.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import type { Finding } from "@lab/protocol/findings/finding.types";
+import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { afterEach, describe, expect, it } from "vitest";
-import { validateFileArtifact } from "#src/artifact-integrity/file-artifact";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import type { WorkspaceRuntimePersistence } from "#src/lab-workspace/lab-workspace.types";
 
@@ -29,15 +32,73 @@ async function createWorkspace(): Promise<LabWorkspace> {
     return LabWorkspace.initialize(directory, taskPath);
 }
 
+/** Fills a workspace with the bet, run and claim a verdict needs something to point at. */
+async function claimFinding(workspace: LabWorkspace, confirmed: boolean): Promise<Finding> {
+    const timestamp = new Date().toISOString();
+    const finding: Finding = {
+        id: "finding-1",
+        assumption_id: "assumption-1",
+        run_id: "run-researcher-1",
+        claim: "Reordering eviction by recency removes the stall",
+        work: "Patched the allocator and measured the workload forty times",
+        artifact_paths: [],
+        status: confirmed ? FindingStatus.CONFIRMED : FindingStatus.UNVERIFIED,
+        created_at: timestamp
+    };
+    await workspace.update((draft) => {
+        draft.assumptions.push({
+            id: "assumption-1",
+            cycle: 0,
+            statement: "The eviction order is the bottleneck",
+            rationale: "Nobody measures eviction under this access pattern",
+            status: AssumptionStatus.RESEARCHING,
+            created_at: timestamp,
+            updated_at: timestamp
+        });
+        draft.runs.push(
+            {
+                id: "run-researcher-1",
+                role: AgentRole.RESEARCHER,
+                assumption_id: "assumption-1",
+                objective: "Spend the eviction bet",
+                status: AgentRunStatus.SUCCEEDED,
+                cwd: "/tmp/researcher",
+                started_at: timestamp
+            },
+            {
+                id: "run-verifier-1",
+                role: AgentRole.VERIFIER,
+                assumption_id: "assumption-1",
+                objective: "Check the eviction claim",
+                status: AgentRunStatus.SUCCEEDED,
+                cwd: "/tmp/verifier",
+                started_at: timestamp
+            }
+        );
+        draft.findings.push(finding);
+        if (confirmed) {
+            draft.verdicts.push({
+                id: "verdict-1",
+                finding_id: finding.id,
+                run_id: "run-verifier-1",
+                confirmed: true,
+                reasoning: "Rebuilt the workload from scratch and the stall was gone",
+                created_at: timestamp
+            });
+        }
+    });
+    return finding;
+}
+
 describe("LabWorkspace", () => {
     it("creates canonical protocol snapshots", async () => {
         const workspace = await createWorkspace();
 
         expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
-        const claims = JSON.parse(
-            await readFile(path.join(workspace.runDirectory, "claims.json"), "utf8")
+        const journal = JSON.parse(
+            await readFile(path.join(workspace.runDirectory, "assumptions.json"), "utf8")
         );
-        expect(claims).toEqual([]);
+        expect(journal).toEqual([]);
     });
 
     it("persists and publishes state transitions", async () => {
@@ -70,11 +131,7 @@ describe("LabWorkspace", () => {
 
         const started = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, {
             ...recoveryOnlyPersistence([]),
-            initialize: async ({ snapshot, evidence }) => ({
-                snapshot,
-                evidence: [...(evidence ?? [])],
-                revision: 1
-            }),
+            initialize: async ({ snapshot }) => ({ snapshot, revision: 1 }),
             load: async (labId) => {
                 if (labId !== workspace.labId) {
                     return undefined;
@@ -207,27 +264,6 @@ describe("LabWorkspace", () => {
         expect(workspace.getSnapshot().capability_requests).toHaveLength(1);
     });
 
-    it("blocks the frontier only on a request the agent could not work around", async () => {
-        const workspace = await createWorkspace();
-
-        const stalling = await workspace.requestCapability({
-            need: "Claude subscription login",
-            reason: "No authenticated research harness is available",
-            provisioningHint: "Run claude and sign in with claude.ai",
-            blocking: true
-        });
-        const aside = await workspace.requestCapability({
-            need: "Fresh funds on the public testnet",
-            reason: "One live-network check would sharpen an otherwise complete direction",
-            provisioningHint: "Send testnet coins to an address the run controls",
-            selfProvisioningAttempt: "Ran the whole comparison against a local validator instead",
-            blocking: false
-        });
-
-        expect(workspace.getSnapshot().frontier.blockers).toContain(stalling.need);
-        expect(workspace.getSnapshot().frontier.blockers).not.toContain(aside.need);
-    });
-
     it("settles a request on a refusal as completely as on a handover", async () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
@@ -238,7 +274,7 @@ describe("LabWorkspace", () => {
                 "Rebuilt it from public mirrors, which overlap the training set",
             blocking: true
         });
-        await workspace.hibernateForPlateau("Waiting for the independent dataset");
+        await workspace.hibernate("Waiting for the independent dataset");
 
         await expect(
             workspace.answerCapability(request.id, "  Not giving you this one, build it yourself  ")
@@ -252,7 +288,6 @@ describe("LabWorkspace", () => {
             answer: "Not giving you this one, build it yourself"
         });
         expect(answered?.answered_at).toBeDefined();
-        expect(workspace.getSnapshot().frontier.blockers).not.toContain(request.need);
         expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
     });
 
@@ -260,12 +295,12 @@ describe("LabWorkspace", () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "A licensed corpus",
-            reason: "The research branch is blocked on an operator-held resource",
+            reason: "The bet is blocked on an operator-held resource",
             provisioningHint: "Point the run at a local copy",
             selfProvisioningAttempt: "Searched the public mirrors and found only redistributions",
             blocking: true
         });
-        await workspace.hibernateForPlateau("Waiting for a capability");
+        await workspace.hibernate("Waiting for a capability");
 
         await expect(
             workspace.answerCapability(request.id, "Mounted at /srv/corpora/licensed-v3")
@@ -327,110 +362,51 @@ describe("LabWorkspace", () => {
         ).toBe(CapabilityStatus.OPEN);
     });
 
-    it("writes a report before hibernating on a plateau", async () => {
+    it("writes a report of the spent bets before hibernating", async () => {
         const workspace = await createWorkspace();
+        await claimFinding(workspace, false);
         await workspace.update((draft) => {
-            draft.frontier.blockers = ["Independent dataset is unavailable"];
-            draft.frontier.next_experiments = ["Acquire an independent dataset"];
+            const [assumption] = draft.assumptions;
+            if (assumption === undefined) {
+                throw new Error("Expected the seeded assumption");
+            }
+            assumption.status = AssumptionStatus.EXHAUSTED;
+            assumption.outcome = "Eviction order made no difference under any load";
         });
 
-        await workspace.hibernateForPlateau("No informative experiments remain");
+        await workspace.hibernate("The director has nowhere else to look");
 
         expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
         const report = await readFile(path.join(workspace.runDirectory, "report.md"), "utf8");
-        expect(report).toContain("Plateau report");
-        expect(report).toContain("## Evidence");
-        expect(report).toContain("Independent dataset is unavailable");
-        expect(report).toContain("Acquire an independent dataset");
+        expect(report).toContain("Hibernation report");
+        expect(report).toContain("Eviction order made no difference under any load");
     });
 
-    it("refuses completion without supporting evidence", async () => {
+    it("refuses a breakthrough that no verifier confirmed", async () => {
         const workspace = await createWorkspace();
+        const finding = await claimFinding(workspace, false);
 
-        await expect(
-            workspace.complete({
-                summary: "A result",
-                supportingEvidenceIds: [],
-                independentVerifierVerdictId: "verdict-1",
-                limitations: [],
-                knownCounterexamples: []
-            })
-        ).rejects.toThrow("supporting evidence");
-    });
-
-    it("persists evidence only against the recorded artifact hash", async () => {
-        const workspace = await createWorkspace();
-        const artifactPath = path.join(workspace.runDirectory, "measurement.json");
-        await writeFile(artifactPath, JSON.stringify({ elapsed_ms: 12 }));
-        const artifact = await validateFileArtifact(workspace.runDirectory, artifactPath);
-
-        await workspace.recordEvidence({
-            id: "evidence-measurement",
-            kind: EvidenceKind.ARTIFACT,
-            claim_id: "claim-speed",
-            artifact_path: artifact.path,
-            artifact_hash: artifact.sha256,
-            summary: "Measured elapsed time",
-            supports: true,
-            independent: false,
-            created_at: new Date().toISOString()
-        });
-
-        const persisted = JSON.parse(
-            await readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8")
+        await expect(workspace.recordBreakthrough(finding)).rejects.toThrow(
+            "carries no confirming verdict"
         );
-        expect(persisted).toHaveLength(1);
-        expect(workspace.inspect("evidence-measurement")).toMatchObject({
-            artifact_hash: artifact.sha256
-        });
-    });
-
-    it("wakes a hibernating lab after committing valid evidence", async () => {
-        const workspace = await createWorkspace();
-        const artifactPath = path.join(workspace.runDirectory, "new-source.txt");
-        await writeFile(artifactPath, "Independent material evidence");
-        const artifact = await validateFileArtifact(workspace.runDirectory, artifactPath);
-        await workspace.hibernateForPlateau("Waiting for new evidence");
-
-        await workspace.recordEvidence({
-            id: "evidence-new-source",
-            kind: EvidenceKind.ARTIFACT,
-            claim_id: "claim-new-source",
-            artifact_path: artifact.path,
-            artifact_hash: artifact.sha256,
-            summary: "An independent source became available",
-            supports: true,
-            independent: true,
-            created_at: new Date().toISOString()
-        });
-
         expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
-        expect(
-            workspace
-                .getEvents()
-                .findLast(
-                    (event) =>
-                        event.type === EventType.LAB_STATE_CHANGED &&
-                        event.payload.state === LabState.RUNNING
-                )?.payload
-        ).toMatchObject({ wake_trigger: WakeTrigger.EVIDENCE });
-        await expect(
-            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8")
-        ).resolves.toContain("evidence-new-source");
     });
 
-    it("rejects fabricated completion evidence ids", async () => {
+    it("pauses the lab on a confirmed finding and writes the result out", async () => {
         const workspace = await createWorkspace();
+        const finding = await claimFinding(workspace, true);
 
-        await expect(
-            workspace.complete({
-                summary: "A fabricated result",
-                supportingEvidenceIds: ["evidence-missing"],
-                independentVerifierVerdictId: "evidence-missing",
-                limitations: [],
-                knownCounterexamples: []
-            })
-        ).rejects.toThrow("unknown evidence");
+        const snapshot = await workspace.recordBreakthrough(finding);
+
+        expect(snapshot.lab.state).toBe(LabState.BREAKTHROUGH);
+        expect(snapshot.breakthrough_finding_id).toBe(finding.id);
+        const result = JSON.parse(
+            await readFile(path.join(workspace.runDirectory, "result.json"), "utf8")
+        );
+        expect(result).toMatchObject({ claim: finding.claim, verdict_id: "verdict-1" });
+        expect(
+            workspace.getEvents().some(({ type }) => type === EventType.BREAKTHROUGH_RECORDED)
+        ).toBe(true);
     });
 });
 
@@ -446,7 +422,7 @@ function makeRecoverableRuntime(
     return {
         task: structuredClone(task),
         workspacePath,
-        checkpoint: { snapshot, evidence: [], revision: 1 },
+        checkpoint: { snapshot, revision: 1 },
         persistedAt
     };
 }

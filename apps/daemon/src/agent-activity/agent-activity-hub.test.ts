@@ -1,11 +1,9 @@
 import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import { HarnessEventTypes, HarnessToolPhases } from "@lab/harness/harness-event.const";
-import {
-    AgentActivityPhase,
-    AgentRunStatus
-} from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { describe, expect, it } from "vitest";
 import { ACTIVITY_RETAINED_RUNS } from "#src/agent-activity/agent-activity.const";
 import {
@@ -21,10 +19,8 @@ function collect(hub: AgentActivityHub): AgentActivityFrame[] {
     return frames;
 }
 
-function finish(hub: AgentActivityHub, agentId: string, updatedAt: string): void {
-    const run = hub.startRun(
-        activityIdentity({ agent_id: agentId, run_id: `run-${agentId}`, started_at: updatedAt })
-    );
+function finish(hub: AgentActivityHub, runId: string, updatedAt: string): void {
+    const run = hub.startRun(activityIdentity({ run_id: runId, started_at: updatedAt }));
     for (const event of harnessEvents([
         { type: HarnessEventTypes.RUN_COMPLETED, result: harnessRunResult() }
     ])) {
@@ -74,23 +70,22 @@ describe("AgentActivityHub", () => {
         });
     });
 
-    it("ignores a run the agent has already moved on from", () => {
+    it("keeps concurrent runs on their own lines", () => {
         const hub = new AgentActivityHub();
-        const abandoned = hub.startRun(activityIdentity({ run_id: "run-codex" }));
+        const codex = hub.startRun(activityIdentity({ run_id: "run-codex" }));
         hub.startRun(activityIdentity({ run_id: "run-claude" }));
         const frames = collect(hub);
 
         for (const event of harnessEvents([
-            { type: HarnessEventTypes.ASSISTANT_COMPLETED, text: "from the retired attempt" }
+            { type: HarnessEventTypes.ASSISTANT_COMPLETED, text: "from the codex researcher" }
         ])) {
-            abandoned.publish(event);
+            codex.publish(event);
         }
 
-        expect(frames).toEqual([]);
-        expect(hub.roster()[0]).toMatchObject({
-            run_id: "run-claude",
-            status: AgentRunStatus.RUNNING
-        });
+        expect(frames.map(({ run_id }) => run_id)).toEqual(["run-codex"]);
+        expect(hub.roster().find(({ run_id }) => run_id === "run-claude")?.phase).toBe(
+            AgentActivityPhase.STARTING
+        );
     });
 
     it("closes a run whose harness stream ended without saying how it went", () => {
@@ -134,16 +129,16 @@ describe("AgentActivityHub", () => {
     it("evicts the oldest finished runs but keeps every running one", () => {
         const hub = new AgentActivityHub();
         for (let index = 0; index < ACTIVITY_RETAINED_RUNS + 4; index += 1) {
-            finish(hub, `agent-${String(index).padStart(3, "0")}`, minute(index));
+            finish(hub, `run-${String(index).padStart(3, "0")}`, minute(index));
         }
-        hub.startRun(activityIdentity({ agent_id: "agent-live", run_id: "run-live" }));
+        hub.startRun(activityIdentity({ run_id: "run-live" }));
 
         const roster = hub.roster();
-        const retained = roster.map(({ agent_id }: AgentActivity) => agent_id);
+        const retained = roster.map(({ run_id }: AgentActivity) => run_id);
 
-        expect(retained).toContain("agent-live");
-        expect(retained).not.toContain("agent-000");
-        expect(retained).toContain("agent-035");
+        expect(retained).toContain("run-live");
+        expect(retained).not.toContain("run-000");
+        expect(retained).toContain("run-035");
     });
 
     it("stops delivering to a listener that unsubscribed", () => {

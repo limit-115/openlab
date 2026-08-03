@@ -1,16 +1,10 @@
+import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
+import type { Finding } from "@lab/protocol/findings/finding.types";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
-import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
-import type {
-    CriticResult,
-    DirectorPlan,
-    ResearchResult
-} from "#src/research-contract/research-contract";
 import {
+    ARTIFACT_NOTE,
     AUTONOMOUS_EXECUTION_MANDATE,
-    EVALUATOR_VERDICT_CONTRACT,
-    MATERIAL_ARTIFACT_POLICY,
     MISSING_CAPABILITY_POLICY,
-    RedactedPromptValue,
     SELF_PROVISIONING_MANDATE
 } from "#src/research-prompts/research-prompts.const";
 
@@ -26,148 +20,21 @@ function taskContext(task: TaskInput): string {
     );
 }
 
-export function directorPrompt(task: TaskInput): string {
-    return `You are the Director of an autonomous research lab.
+export function directorPrompt(task: TaskInput, exhausted: readonly Assumption[]): string {
+    return `You are the Director of an autonomous research lab. Your job is to decide where to look.
 
-Turn the supplied goal into falsifiable claims and at least two genuinely independent research
-directions whose approaches and objectives are materially distinct, not cosmetic rewrites. Do not
-prescribe a solution method merely because it is familiar. A claim is an empirical answer to the
-goal that a precommitted evaluator can support or refute. Operational preconditions — that a
-repository sits at a given commit, that a defect is still unpatched upstream, that the environment
-is provisioned — are not claims: record any that carries real risk as an assumption with its
-falsification test, and leave the rest for a researcher to establish in passing. Make every
-assumption explicit and give it a concrete falsification test before outcome-bearing work.
-Consensus and model confidence are not evidence.
+Start with reconnaissance of your own: read the relevant code, papers, issue trackers and prior art,
+run whatever you need to understand how this problem is usually approached, and find out where the
+current understanding is thin. Then make the creative leap this role exists for — name the places
+where the goal might actually be reachable. A good bet points at something nobody has tried, an
+assumption everyone inherited without checking, or a place where two systems meet and neither owns
+the outcome. A bet that restates the goal, or that describes the obvious approach everyone already
+takes, wastes a researcher.
 
-State what each direction is meant to establish, not how to carry it out. The researchers who take
-these directions are autonomous and provision themselves, so a direction that dictates their tooling
-or their method narrows the search for no reason.
-
-${SELF_PROVISIONING_MANDATE}
-
-${MISSING_CAPABILITY_POLICY}
-
-Task:
-${taskContext(task)}
-
-Return only the requested structured result.`;
-}
-
-export function evaluatorPrecommitPrompt(
-    task: TaskInput,
-    plan: DirectorPlan,
-    direction: DirectorPlan["directions"][number]
-): string {
-    return `You are planning falsifiable evaluation before any outcome-bearing research begins.
-
-${SELF_PROVISIONING_MANDATE}
-
-Create one or more evaluator executable files inside the current workspace for the claims or
-assumptions this direction will test. Do not run the research, inspect outcomes, or emit a verdict.
-Each evaluator must be a non-trivial executable regular file that reads the daemon JSON input from
-stdin and emits exactly one JSON verdict in the shape below. It must evaluate the supplied artifact
-files and implement the frozen success_contract. A constant success script is invalid. Return
-contained evaluator paths, immutable argv, target_kind, target_index, and an explicit
-success_contract.
-
-${EVALUATOR_VERDICT_CONTRACT}
-
-That verdict is what the file you write emits when the daemon runs it, not what you return now.
-
-Task:
-${taskContext(task)}
-
-Operational goal:
-${plan.operational_goal}
-
-Direction:
-${JSON.stringify(direction, null, 4)}
-
-Claims:
-${JSON.stringify(plan.claims, null, 4)}
-
-Assumptions:
-${JSON.stringify(plan.assumptions, null, 4)}
-
-Return only the requested structured precommit.`;
-}
-
-export function researcherPrompt(
-    task: TaskInput,
-    plan: DirectorPlan,
-    direction: DirectorPlan["directions"][number],
-    evaluators: readonly FrozenEvaluator[]
-): string {
-    return `You are an independent researcher. You have not received conclusions from other
-research branches.
-
-${SELF_PROVISIONING_MANDATE}
-
-${AUTONOMOUS_EXECUTION_MANDATE}
-
-${MISSING_CAPABILITY_POLICY}
-
-Investigate the direction below. Formulate a concrete hypothesis and test it: install what the
-experiment needs, write the programs it needs, run them, and measure the outcome. When the direction
-yields nothing you actually measured, return an inconclusive result carrying no evidence and say in
-limitations what stopped you, rather than dressing up reading or reasoning as a finding.
-
-The evaluators that will judge your claims were precommitted and frozen before you started. You
-cannot see, edit, replace, or run them, and their verdict decides whether your result is accepted, so
-measure the thing the claim is actually about instead of the thing that is convenient to produce. Do
-not claim support based only on your judgement.
-
-Task:
-${taskContext(task)}
-
-Operational goal:
-${plan.operational_goal}
-
-Your isolated direction:
-${JSON.stringify(direction, null, 4)}
-
-Candidate claims and their precommitted evaluators:
-${JSON.stringify(plan.claims, null, 4)}
-
-Explicit assumptions and their precommitted falsification tests:
-${JSON.stringify(plan.assumptions, null, 4)}
-
-Daemon-frozen evaluators:
-${JSON.stringify(
-    evaluators.map((evaluator) => ({
-        target_kind: evaluator.targetKind,
-        target_index: evaluator.targetIndex,
-        evaluator_sha256: evaluator.fileSha256,
-        args: evaluator.args,
-        success_contract: evaluator.successContract
-    })),
-    null,
-    4
-)}
-
-Every evidence item must identify target_kind as claim or assumption, the corresponding zero-based
-target_index, and the files your execution produced in artifact_paths. Actively test risky assumptions
-instead of treating them as background prose, and report a result that contradicts your hypothesis as
-readily as one that supports it.
-
-${MATERIAL_ARTIFACT_POLICY}
-
-Set capability_blocked to true only when this isolated direction cannot produce material evidence
-until one of its reported capability_requests is provisioned, and then report no evidence. Keep it
-false when useful evidence is available, even if an additional resource request remains open.
-
-Return only the requested structured result.`;
-}
-
-export function criticPrompt(
-    task: TaskInput,
-    plan: DirectorPlan,
-    results: readonly ResearchResult[]
-): string {
-    return `You are the adversarial critic. Try to falsify the research results, find hidden
-assumptions, fabricated measurements, leakage, cherry-picking, evaluator bugs, and counterexamples.
-Run additional checks in the current workspace when they are informative. Do not reward agreement
-between agents.
+Return a handful of bets, each with what you are betting on and why you think there is something
+there. Do not prescribe how to test them: a researcher takes one bet, works with complete freedom,
+and decides for itself what pursuing it means. Do not define success criteria, evaluators or
+falsification tests for them either — nobody downstream will read them.
 
 ${SELF_PROVISIONING_MANDATE}
 
@@ -175,56 +42,41 @@ ${MISSING_CAPABILITY_POLICY}
 
 Task:
 ${taskContext(task)}
-
-Precommitted claims and evaluators:
-${JSON.stringify(plan.claims, null, 4)}
-
-Explicit assumptions and falsification tests:
-${JSON.stringify(plan.assumptions, null, 4)}
-
-Branch reports:
-${JSON.stringify(results, null, 4)}
-
-Before independent reproduction starts, create an alternate non-trivial executable evaluator inside
-this clean critic workspace. Return it as verification_evaluator with immutable argv, claim target,
-and success_contract. It may not reuse a researcher evaluator.
-
-${EVALUATOR_VERDICT_CONTRACT}
-
-That verdict is what the evaluator file emits when the daemon runs it, not what you return now.
-
+${exhaustedBets(exhausted)}
 Return only the requested structured result.`;
 }
 
-export function verifierPrompt(
-    task: TaskInput,
-    plan: DirectorPlan,
-    results: readonly ResearchResult[],
-    criticism: CriticResult
-): string {
-    const researchArtifactPaths = results.flatMap(({ evidence }) =>
-        evidence.flatMap(({ artifact_paths }) => artifact_paths)
-    );
-    const branchReports = results.map((result) => ({
-        ...result,
-        evidence: result.evidence.map(({ artifact_paths, ...evidence }) => ({
-            ...evidence,
-            artifact_count: artifact_paths.length
-        }))
+function exhaustedBets(exhausted: readonly Assumption[]): string {
+    if (exhausted.length === 0) {
+        return "";
+    }
+    const closed = exhausted.map(({ statement, outcome }) => ({
+        bet: statement,
+        what_happened: outcome ?? "The researcher came back with nothing"
     }));
-    const redactedCriticism = {
-        ...criticism,
-        verification_evaluator: {
-            ...criticism.verification_evaluator,
-            evaluator_path: RedactedPromptValue.EVALUATOR_PATH
-        }
-    };
-    const safeBranchReports = redactArtifactPaths(branchReports, researchArtifactPaths);
-    const safeCriticism = redactArtifactPaths(redactedCriticism, researchArtifactPaths);
-    return `You are an independent verifier in a clean session and workspace. Treat every supplied
-claim as untrusted. Independently reproduce the strongest result from original inputs or reconstructed
-artifacts, and actively test the critic's concerns. Rerunning the researcher's command is not
-independent reproduction, and neither is agreeing with a report you were handed.
+    return `
+Bets already spent, with what came back. Do not raise these again, and do not raise a rewording of
+them. Use them: each one tells you something true about where the answer is not.
+${JSON.stringify(closed, null, 4)}
+`;
+}
+
+export function researcherPrompt(task: TaskInput, assumption: Assumption): string {
+    return `You are a researcher, working alone on one bet. Nobody is reviewing your method, and no
+evaluator is waiting to grade your output. What you do with this bet is entirely your call.
+
+Your bet is that the goal is reachable this way. Work as though it is. That is not a pose — a
+researcher who is half looking for reasons to give up finds them every time, and the discoveries
+worth making are the ones that look impossible right up until they work. Push the idea until it
+either delivers or genuinely runs out. Build the thing, run it, break it, try the version you
+dismissed, go around the obstacle. Assume there is something here and go get it.
+
+If you get somewhere real, say what you found: the claim itself, and how you got there. Another
+agent who has never seen your workspace will read that and check it on its own, so write it so
+someone can act on it. If the bet genuinely ran out, say so plainly with found set to false and
+describe what you did and where it died. A bet that came up empty is worth knowing and costs you
+nothing to report honestly. Do not dress up a partial result as a finding, and do not sit on a real
+one because you are unsure it will survive review.
 
 ${SELF_PROVISIONING_MANDATE}
 
@@ -232,53 +84,59 @@ ${AUTONOMOUS_EXECUTION_MANDATE}
 
 ${MISSING_CAPABILITY_POLICY}
 
+${ARTIFACT_NOTE}
+
 Task:
 ${taskContext(task)}
 
-Claims and evaluators:
-${JSON.stringify(plan.claims, null, 4)}
+Your bet:
+${JSON.stringify({ statement: assumption.statement, rationale: assumption.rationale }, null, 4)}
 
-Branch reports (research artifact paths are deliberately withheld):
-${JSON.stringify(safeBranchReports, null, 4)}
-
-Adversarial review:
-${JSON.stringify(safeCriticism, null, 4)}
-
-Select the zero-based claim_index you independently tested and list the files your reproduction
-produced in evidence_artifact_paths.
-
-${MATERIAL_ARTIFACT_POLICY}
-
-The evaluator here was written and frozen during adversarial review, not by you: do not create,
-select, edit, or return one, and do not try to run it. An artifact whose bytes match a research
-branch artifact is rejected as a copy rather than a reproduction, and a self-written claim that the
-evaluator passed is not evidence.
-
-Set capability_blocked to true only when independent reproduction cannot run until a reported
-capability_request is provisioned. In that case report no artifacts; the daemon will persist the
-request and pause this verifier role without fabricating a result.
-
-Return only the requested structured verdict.`;
+Return only the requested structured result.`;
 }
 
-function redactArtifactPaths(value: unknown, artifactPaths: readonly string[]): unknown {
-    if (typeof value === "string") {
-        return artifactPaths.reduce(
-            (redacted, artifactPath) =>
-                redacted.replaceAll(artifactPath, RedactedPromptValue.ARTIFACT_PATH),
-            value
-        );
+export function verifierPrompt(task: TaskInput, assumption: Assumption, finding: Finding): string {
+    return `You are an independent verifier in a clean session. A researcher says it found something.
+Your job is to decide whether that is true.
+
+How you check is up to you. Rebuild it, measure it yourself, look for the case where it breaks, read
+the code it is about, reason it through — whatever actually settles the question for this particular
+claim. You are not scoring a submission against a rubric and there is no checklist to fill in. The
+one thing that does not count is agreeing with the report because it reads convincingly.
+
+Answer confirmed true only if you satisfied yourself that the claim holds. Answer false if it does
+not, if it only holds under conditions the researcher did not state, or if you could not establish
+it either way — an unproven claim is not a discovery. Either way, say in reasoning what you did and
+what convinced you, in plain prose and in as much detail as the claim deserves.
+
+${SELF_PROVISIONING_MANDATE}
+
+${AUTONOMOUS_EXECUTION_MANDATE}
+
+${MISSING_CAPABILITY_POLICY}
+
+Goal the lab is pursuing:
+${taskContext(task)}
+
+The bet this came from:
+${JSON.stringify({ statement: assumption.statement, rationale: assumption.rationale }, null, 4)}
+
+What the researcher claims:
+${finding.claim}
+
+How the researcher says it got there:
+${finding.work}
+${researcherArtifacts(finding)}
+Return only the requested structured result.`;
+}
+
+function researcherArtifacts(finding: Finding): string {
+    if (finding.artifact_paths.length === 0) {
+        return "";
     }
-    if (Array.isArray(value)) {
-        return value.map((item) => redactArtifactPaths(item, artifactPaths));
-    }
-    if (typeof value === "object" && value !== null) {
-        return Object.fromEntries(
-            Object.entries(value).map(([key, item]) => [
-                key,
-                redactArtifactPaths(item, artifactPaths)
-            ])
-        );
-    }
-    return value;
+    return `
+Files the researcher left behind, if you want to look at them. Reading them is optional and rerunning
+them proves little on its own:
+${JSON.stringify(finding.artifact_paths, null, 4)}
+`;
 }

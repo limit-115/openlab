@@ -5,11 +5,11 @@ import {
     type HarnessToolPhase,
     HarnessToolPhases
 } from "@lab/harness/harness-event.const";
-import { AgentRunStatus } from "@lab/protocol/agent-activity/agent-activity.const";
 import {
     AgentDiagnosticLevel,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 
 /**
  * The harness package owns its own finite domains and never depends on the wire protocol, so a
@@ -35,9 +35,9 @@ export const ActivityDiagnosticLevel: Record<HarnessDiagnosticLevel, AgentDiagno
 };
 
 /**
- * How many runs the roster keeps. A lab mints fresh agent identifiers every cycle, so finished runs
- * are evicted oldest first once the roster is this long. Running ones are never evicted: their
- * number is bounded by how many agents the loop starts at once.
+ * How many runs the roster keeps. A lab starts fresh runs every cycle, so finished ones are evicted
+ * oldest first once the roster is this long. Running ones are never evicted: their number is
+ * bounded by how many agents the loop starts at once.
  */
 export const ACTIVITY_RETAINED_RUNS = 32;
 

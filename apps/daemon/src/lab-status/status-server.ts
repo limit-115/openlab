@@ -34,7 +34,7 @@ export function createStatusServer(
 
     app.get("/health", async () => ({ ok: true, lab_id: workspace.labId }));
     app.get("/api/status", async () => workspace.getSnapshot());
-    app.get("/api/frontier", async () => workspace.getSnapshot().frontier);
+    app.get("/api/assumptions", async () => workspace.getSnapshot().assumptions);
     app.get("/api/capabilities", async () => workspace.getSnapshot().capability_requests);
     app.get<{ Params: { id: string } }>("/api/inspect/:id", async (request, reply) => {
         const item = workspace.inspect(request.params.id);

@@ -33,7 +33,6 @@ export class HarnessEventTranslator {
 
     translate(event: HarnessEvent): AgentActivityFrame | undefined {
         const base = {
-            agent_id: this.#identity.agent_id,
             run_id: this.#identity.run_id,
             sequence: event.sequence,
             occurred_at: event.occurredAt
@@ -112,7 +111,7 @@ export class HarnessEventTranslator {
     }
 
     private textFrame(
-        base: Pick<AgentActivityFrame, "agent_id" | "run_id" | "sequence" | "occurred_at">,
+        base: Pick<AgentActivityFrame, "run_id" | "sequence" | "occurred_at">,
         event: HarnessTextEvent,
         kind: AgentTextFrameKind,
         sealed: boolean

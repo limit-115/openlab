@@ -11,13 +11,9 @@ import type {
     RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime/runtime-persistence.types";
-
-import type { Evidence } from "@lab/protocol/evidence/evidence.types";
-import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { describe, expect, it } from "vitest";
-import { validateFileArtifact } from "#src/artifact-integrity/file-artifact";
 import { startDaemon } from "#src/daemon-runtime/daemon-startup";
 import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
 
@@ -25,17 +21,7 @@ const TestDatabase = {
     URL: "postgres://test:test@127.0.0.1:5432/test"
 } as const;
 
-const AutomaticWakeScenario = {
-    EVIDENCE: {
-        label: "evidence",
-        trigger: WakeTrigger.EVIDENCE
-    },
-    CAPABILITY: {
-        label: "capability",
-        trigger: WakeTrigger.CAPABILITY,
-        answer: "Mounted at /srv/corpora/independent-v1"
-    }
-} as const;
+const CAPABILITY_ANSWER = "Mounted at /srv/corpora/independent-v1" as const;
 
 class InMemoryRuntimePersistence {
     #checkpoint: RuntimeCheckpoint | undefined;
@@ -49,7 +35,7 @@ class InMemoryRuntimePersistence {
         }
         this.#task = structuredClone(input.task);
         this.#workspacePath = input.workspacePath;
-        return this.#store(input.snapshot, input.evidence ?? [], 1, input.event);
+        return this.#store(input.snapshot, 1, input.event);
     }
 
     async load(labId: string): Promise<PersistedRuntime | undefined> {
@@ -72,12 +58,7 @@ class InMemoryRuntimePersistence {
         if (this.#checkpoint?.revision !== input.expectedRevision) {
             throw new Error(`Unexpected runtime revision ${input.expectedRevision}`);
         }
-        return this.#store(
-            input.snapshot,
-            input.evidence ?? this.#checkpoint.evidence,
-            input.expectedRevision + 1,
-            input.event
-        );
+        return this.#store(input.snapshot, input.expectedRevision + 1, input.event);
     }
 
     async eventsAfter(labId: string, afterSequence = 0, limit = 200): Promise<PersistedLabEvent[]> {
@@ -110,7 +91,6 @@ class InMemoryRuntimePersistence {
 
     #store(
         snapshot: RuntimeCheckpoint["snapshot"],
-        evidence: readonly Evidence[],
         revision: number,
         event?: InitializeRuntimeInput["event"]
     ): CommitRuntimeResult {
@@ -121,7 +101,6 @@ class InMemoryRuntimePersistence {
         }
         const checkpoint: RuntimeCheckpoint = {
             snapshot: structuredClone(snapshot),
-            evidence: [...structuredClone(evidence)],
             revision,
             ...(appendedEvent === undefined ? {} : { lastEventSequence: appendedEvent.sequence })
         };
@@ -134,119 +113,93 @@ class InMemoryRuntimePersistence {
 }
 
 describe("daemon startup", () => {
-    it.each(Object.values(AutomaticWakeScenario))(
-        "starts research exactly once after a committed $label wake transition",
-        async (scenario) => {
-            const directory = await mkdtemp(path.join(tmpdir(), "lab-daemon-trigger-test-"));
-            const taskPath = path.join(directory, "task.json");
-            const workspaceRoot = path.join(directory, "workspace");
-            await writeFile(taskPath, JSON.stringify({ goal: "Resume autonomous research" }));
-            let runs = 0;
-            let markFirstRunReady: () => void = () => undefined;
-            const firstRunReady = new Promise<void>((resolveReady) => {
-                markFirstRunReady = resolveReady;
-            });
-            const daemon = await startDaemon(
-                { taskPath, workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
-                {
-                    openDatabase: async () => ({
-                        persistence: new InMemoryRuntimePersistence(),
-                        close: async () => undefined
-                    }),
-                    researchLoop: async (workspace, { signal }) => {
-                        runs += 1;
-                        if (runs === 1) {
-                            const reason = "Test plateau";
-                            await workspace.hibernateForPlateau(reason);
-                            await new Promise<void>((resolveWake) => {
-                                const unsubscribe = workspace.subscribe((event, snapshot) => {
-                                    if (
-                                        event.type === EventType.LAB_STATE_CHANGED &&
-                                        snapshot.lab.state === LabState.RUNNING
-                                    ) {
-                                        unsubscribe();
-                                        resolveWake();
-                                    }
-                                });
-                                signal?.addEventListener(
-                                    "abort",
-                                    () => {
-                                        unsubscribe();
-                                        resolveWake();
-                                    },
-                                    { once: true }
-                                );
-                                markFirstRunReady();
+    it("starts research exactly once after a committed capability wake transition", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-daemon-trigger-test-"));
+        const taskPath = path.join(directory, "task.json");
+        const workspaceRoot = path.join(directory, "workspace");
+        await writeFile(taskPath, JSON.stringify({ goal: "Resume autonomous research" }));
+        let runs = 0;
+        let markFirstRunReady: () => void = () => undefined;
+        const firstRunReady = new Promise<void>((resolveReady) => {
+            markFirstRunReady = resolveReady;
+        });
+        const daemon = await startDaemon(
+            { taskPath, workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
+            {
+                openDatabase: async () => ({
+                    persistence: new InMemoryRuntimePersistence(),
+                    close: async () => undefined
+                }),
+                researchLoop: async (workspace, { signal }) => {
+                    runs += 1;
+                    if (runs === 1) {
+                        const reason = "Test plateau";
+                        await workspace.hibernate(reason);
+                        await new Promise<void>((resolveWake) => {
+                            const unsubscribe = workspace.subscribe((event, snapshot) => {
+                                if (
+                                    event.type === EventType.LAB_STATE_CHANGED &&
+                                    snapshot.lab.state === LabState.RUNNING
+                                ) {
+                                    unsubscribe();
+                                    resolveWake();
+                                }
                             });
-                            if (signal?.aborted === true) {
-                                return { status: ResearchLoopOutcomeStatus.CANCELLED };
-                            }
-                            return { status: ResearchLoopOutcomeStatus.HIBERNATING, reason };
+                            signal?.addEventListener(
+                                "abort",
+                                () => {
+                                    unsubscribe();
+                                    resolveWake();
+                                },
+                                { once: true }
+                            );
+                            markFirstRunReady();
+                        });
+                        if (signal?.aborted === true) {
+                            return { status: ResearchLoopOutcomeStatus.CANCELLED };
                         }
-                        return { status: ResearchLoopOutcomeStatus.CANCELLED };
+                        return { status: ResearchLoopOutcomeStatus.HIBERNATING, reason };
                     }
+                    return { status: ResearchLoopOutcomeStatus.CANCELLED };
                 }
-            );
-
-            try {
-                await firstRunReady;
-                expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
-
-                if ("answer" in scenario) {
-                    const request = await daemon.workspace.requestCapability({
-                        need: `${scenario.label} resource`,
-                        reason: "The research loop requires an operator-held resource",
-                        provisioningHint: "Point the run at a local copy",
-                        selfProvisioningAttempt: "Searched the public mirrors and came up short",
-                        blocking: true
-                    });
-                    const response = await daemon.app.inject({
-                        method: "POST",
-                        url: `/api/capabilities/${request.id}/answer`,
-                        payload: { answer: scenario.answer }
-                    });
-                    expect(response.statusCode).toBe(202);
-                } else {
-                    const artifactPath = path.join(
-                        daemon.workspace.runDirectory,
-                        "daemon-wake-evidence.txt"
-                    );
-                    await writeFile(artifactPath, "New durable evidence is available");
-                    const artifact = await validateFileArtifact(
-                        daemon.workspace.runDirectory,
-                        artifactPath
-                    );
-                    await daemon.workspace.recordEvidence({
-                        id: "evidence-daemon-wake",
-                        kind: EvidenceKind.ARTIFACT,
-                        claim_id: "claim-daemon-wake",
-                        artifact_path: artifact.path,
-                        artifact_hash: artifact.sha256,
-                        summary: "New durable evidence is available",
-                        supports: true,
-                        independent: true,
-                        created_at: new Date().toISOString()
-                    });
-                }
-
-                expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
-                expect(
-                    daemon.workspace
-                        .getEvents()
-                        .findLast(
-                            (event) =>
-                                event.type === EventType.LAB_STATE_CHANGED &&
-                                event.payload.state === LabState.RUNNING
-                        )?.payload
-                ).toMatchObject({ wake_trigger: scenario.trigger });
-                await expect.poll(() => runs).toBe(2);
-                await new Promise<void>((resolveTurn) => setImmediate(resolveTurn));
-                expect(runs).toBe(2);
-            } finally {
-                await daemon.close();
             }
+        );
+
+        try {
+            await firstRunReady;
+            expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
+
+            const request = await daemon.workspace.requestCapability({
+                need: "An independent corpus",
+                reason: "The research loop requires an operator-held resource",
+                provisioningHint: "Point the run at a local copy",
+                selfProvisioningAttempt: "Searched the public mirrors and came up short",
+                blocking: true
+            });
+            const response = await daemon.app.inject({
+                method: "POST",
+                url: `/api/capabilities/${request.id}/answer`,
+                payload: { answer: CAPABILITY_ANSWER }
+            });
+            expect(response.statusCode).toBe(202);
+
+            expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+            expect(
+                daemon.workspace
+                    .getEvents()
+                    .findLast(
+                        (event) =>
+                            event.type === EventType.LAB_STATE_CHANGED &&
+                            event.payload.state === LabState.RUNNING
+                    )?.payload
+            ).toMatchObject({ wake_trigger: WakeTrigger.CAPABILITY });
+            await expect.poll(() => runs).toBe(2);
+            await new Promise<void>((resolveTurn) => setImmediate(resolveTurn));
+            expect(runs).toBe(2);
+        } finally {
+            await daemon.close();
         }
-    );
+    });
 
     it("unsubscribes the research controller when the daemon closes", async () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-daemon-close-test-"));
@@ -269,22 +222,16 @@ describe("daemon startup", () => {
         );
         await expect.poll(() => runs).toBe(1);
 
-        await daemon.close();
-        const artifactPath = path.join(daemon.workspace.runDirectory, "after-close-evidence.txt");
-        await writeFile(artifactPath, "Evidence committed after transport shutdown");
-        const artifact = await validateFileArtifact(daemon.workspace.runDirectory, artifactPath);
-        await daemon.workspace.hibernateForPlateau("Test listener cleanup");
-        await daemon.workspace.recordEvidence({
-            id: "evidence-after-close",
-            kind: EvidenceKind.ARTIFACT,
-            claim_id: "claim-after-close",
-            artifact_path: artifact.path,
-            artifact_hash: artifact.sha256,
-            summary: "Evidence committed after transport shutdown",
-            supports: true,
-            independent: true,
-            created_at: new Date().toISOString()
+        const request = await daemon.workspace.requestCapability({
+            need: "An independent corpus",
+            reason: "The research loop requires an operator-held resource",
+            provisioningHint: "Point the run at a local copy",
+            selfProvisioningAttempt: "Searched the public mirrors and came up short",
+            blocking: true
         });
+        await daemon.close();
+        await daemon.workspace.hibernate("Test listener cleanup");
+        await daemon.workspace.answerCapability(request.id, CAPABILITY_ANSWER);
         await new Promise<void>((resolveTurn) => setImmediate(resolveTurn));
 
         expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);

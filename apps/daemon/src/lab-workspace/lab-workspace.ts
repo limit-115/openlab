@@ -10,20 +10,13 @@ import type {
     PersistedRuntime,
     RecoverableRuntime
 } from "@lab/db/runtime/runtime-persistence.types";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
-import { BranchProgress } from "@lab/protocol/branches/branch-progress.const";
-import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
 import {
     CapabilityRequestType,
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
-import { EvidenceSchema } from "@lab/protocol/evidence/evidence.schema";
-import type { Evidence } from "@lab/protocol/evidence/evidence.types";
-import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import type { Finding } from "@lab/protocol/findings/finding.types";
 import {
     EventType,
     type EventType as LabEventType
@@ -38,10 +31,8 @@ import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.s
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
-import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { Mutex } from "async-mutex";
 import writeFileAtomic from "write-file-atomic";
-import { validateFileArtifact } from "#src/artifact-integrity/file-artifact";
 import { type LabReportSubject, renderLabReport } from "#src/lab-workspace/lab-report";
 import {
     type CurrentPointer,
@@ -58,12 +49,10 @@ import {
 import type {
     SnapshotUpdater,
     StatusListener,
-    VerifiedResult,
     WorkspaceMutationResult,
     WorkspaceMutationUpdater,
     WorkspaceRuntimePersistence
 } from "#src/lab-workspace/lab-workspace.types";
-import { initialResearchIdentifiers } from "#src/research-cycle/research-identifiers";
 
 export class LabWorkspace {
     readonly runDirectory: string;
@@ -73,7 +62,6 @@ export class LabWorkspace {
     private readonly mutex = new Mutex();
     private readonly listeners = new Set<StatusListener>();
     private readonly events: LabEvent[];
-    private readonly evidence: Evidence[];
     private runtimePersistence: WorkspaceRuntimePersistence | undefined;
     private runtimeRevision: number | undefined;
     private snapshot: StatusSnapshot;
@@ -82,7 +70,6 @@ export class LabWorkspace {
         runDirectory: string,
         snapshot: StatusSnapshot,
         events: LabEvent[],
-        evidence: Evidence[],
         recovered: boolean,
         runtimePersistence?: WorkspaceRuntimePersistence,
         runtimeRevision?: number
@@ -91,7 +78,6 @@ export class LabWorkspace {
         this.labId = snapshot.lab.id;
         this.snapshot = snapshot;
         this.events = events;
-        this.evidence = evidence;
         this.recovered = recovered;
         this.runtimePersistence = runtimePersistence;
         this.runtimeRevision = runtimeRevision;
@@ -111,9 +97,10 @@ export class LabWorkspace {
                     current.pointer.run_directory
                 );
                 const existingTask = await workspace.getTask();
-                const state = workspace.getSnapshot().lab.state;
-                const recoverable = state === LabState.RUNNING || state === LabState.HIBERNATING;
-                if (recoverable && LabWorkspace.tasksMatch(existingTask, requestedTask)) {
+                if (
+                    LabWorkspace.isResumable(workspace.getSnapshot().lab.state) &&
+                    LabWorkspace.tasksMatch(existingTask, requestedTask)
+                ) {
                     return workspace;
                 }
             } else {
@@ -154,7 +141,6 @@ export class LabWorkspace {
     ): Promise<LabWorkspace> {
         const task = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
         const labId = `lab-${randomUUID()}`;
-        const initialIds = initialResearchIdentifiers(labId);
         const runDirectory = path.join(workspaceRoot, WorkspaceLayout.RUNS_DIRECTORY, labId);
         const now = new Date().toISOString();
         const snapshot = StatusSnapshotSchema.parse({
@@ -165,50 +151,11 @@ export class LabWorkspace {
                 started_at: now,
                 updated_at: now,
                 uptime_ms: 0
-            },
-            frontier: {
-                known: task.context,
-                open_questions:
-                    task.success_criteria.length > 0
-                        ? task.success_criteria
-                        : ["Define a falsifiable success criterion"],
-                blockers: [],
-                next_experiments: ["Operationalize the research goal"],
-                updated_at: now
-            },
-            branches: [
-                {
-                    id: initialIds.branchId,
-                    title: "Goal operationalization",
-                    approach: "Clarify claims, evaluators, and independent research directions",
-                    status: BranchStatus.ACTIVE,
-                    progress: BranchProgress.QUEUED
-                }
-            ],
-            agents: [
-                {
-                    id: initialIds.agentId,
-                    branch_id: initialIds.branchId,
-                    role: AgentRole.DIRECTOR,
-                    status: AgentStatus.WORKING,
-                    current_task_id: initialIds.taskId
-                }
-            ],
-            tasks: [
-                {
-                    id: initialIds.taskId,
-                    branch_id: initialIds.branchId,
-                    objective: "Turn the goal into testable claims without prescribing a method",
-                    context_refs: [],
-                    status: InternalTaskStatus.QUEUED,
-                    attempt: 1,
-                    role: AgentRole.DIRECTOR
-                }
-            ]
+            }
         });
 
         await mkdir(runDirectory, { recursive: true });
-        const workspace = new LabWorkspace(runDirectory, snapshot, [], [], false);
+        const workspace = new LabWorkspace(runDirectory, snapshot, [], false);
         await workspace.writeJson("task.json", task);
         await workspace.persistFilesystemSnapshot();
         if (runtimePersistence !== undefined) {
@@ -224,14 +171,13 @@ export class LabWorkspace {
 
     static async load(workspaceRoot: string, runDirectory: string): Promise<LabWorkspace> {
         const resolvedRunDirectory = resolveRunDirectory(workspaceRoot, runDirectory);
-        const [snapshotSource, eventsSource, storedEvidence] = await Promise.all([
+        const [snapshotSource, eventsSource] = await Promise.all([
             readFile(path.join(resolvedRunDirectory, "status.json"), "utf8"),
-            readFile(path.join(resolvedRunDirectory, "events.json"), "utf8"),
-            LabWorkspace.readOptionalEvidence(resolvedRunDirectory)
+            readFile(path.join(resolvedRunDirectory, "events.json"), "utf8")
         ]);
         const snapshot = StatusSnapshotSchema.parse(JSON.parse(snapshotSource));
         const events = LabEventSchema.array().parse(JSON.parse(eventsSource));
-        return new LabWorkspace(resolvedRunDirectory, snapshot, events, storedEvidence, true);
+        return new LabWorkspace(resolvedRunDirectory, snapshot, events, true);
     }
 
     private static async loadFromRuntime(
@@ -252,8 +198,7 @@ export class LabWorkspace {
         if (!LabWorkspace.tasksMatch(persisted.task, requestedTask)) {
             return undefined;
         }
-        const state = persisted.checkpoint.snapshot.lab.state;
-        if (state !== LabState.RUNNING && state !== LabState.HIBERNATING) {
+        if (!LabWorkspace.isResumable(persisted.checkpoint.snapshot.lab.state)) {
             return undefined;
         }
         return LabWorkspace.loadPersistedRuntime(workspaceRoot, persisted, runtimePersistence);
@@ -291,7 +236,6 @@ export class LabWorkspace {
             runDirectory,
             persisted.checkpoint.snapshot,
             events,
-            persisted.checkpoint.evidence,
             true,
             runtimePersistence,
             persisted.checkpoint.revision
@@ -359,6 +303,10 @@ export class LabWorkspace {
         resolveRunDirectory(workspaceRoot, persisted.workspacePath);
     }
 
+    private static isResumable(state: LabStateValue): boolean {
+        return state === LabState.RUNNING || state === LabState.HIBERNATING;
+    }
+
     getTask(): Promise<TaskInput> {
         return readFile(path.join(this.runDirectory, "task.json"), "utf8").then((value) =>
             TaskInputSchema.parse(JSON.parse(value))
@@ -373,18 +321,13 @@ export class LabWorkspace {
         return structuredClone(this.events);
     }
 
-    getEvidence(): Evidence[] {
-        return structuredClone(this.evidence);
-    }
-
     inspect(id: string): unknown | undefined {
         const snapshot = this.snapshot;
         return (
-            snapshot.claims.find((claim) => claim.id === id) ??
-            this.evidence.find((evidence) => evidence.id === id) ??
-            snapshot.experiments.find((experiment) => experiment.id === id) ??
-            snapshot.tasks.find((task) => task.id === id) ??
-            snapshot.branches.find((branch) => branch.id === id)
+            snapshot.assumptions.find((assumption) => assumption.id === id) ??
+            snapshot.findings.find((finding) => finding.id === id) ??
+            snapshot.verdicts.find((verdict) => verdict.id === id) ??
+            snapshot.runs.find((run) => run.id === id)
         );
     }
 
@@ -473,29 +416,21 @@ export class LabWorkspace {
         return mutation.snapshot;
     }
 
-    async hibernateForPlateau(reason: string): Promise<StatusSnapshot> {
+    /** Puts the lab to sleep once its bets are spent, or once nothing can run it. */
+    async hibernate(reason: string): Promise<StatusSnapshot> {
         const reportPath = path.join(this.runDirectory, "report.md");
         await writeFileAtomic(
             reportPath,
-            renderLabReport(this.reportSubject(), "Plateau report", reason, {
-                limitations: this.snapshot.frontier.blockers,
-                nextExperiments: this.snapshot.frontier.next_experiments
-            })
+            renderLabReport(this.reportSubject(), "Hibernation report", reason)
         );
         const mutation = await this.mutateWithEvent(
             EventType.LAB_STATE_CHANGED,
             { state: LabState.HIBERNATING, reason },
             (draft) => {
-                transitionLabState(draft.lab.state, LabState.HIBERNATING, {
-                    plateauConfirmed: true
-                });
+                transitionLabState(draft.lab.state, LabState.HIBERNATING);
                 draft.lab.state = LabState.HIBERNATING;
                 draft.lab.reason = reason;
-                draft.result = {
-                    summary: reason,
-                    report_path: reportPath,
-                    limitations: [...draft.frontier.blockers]
-                };
+                draft.result = { summary: reason, report_path: reportPath, limitations: [] };
             }
         );
         if (mutation === undefined) {
@@ -506,104 +441,61 @@ export class LabWorkspace {
         return mutation.snapshot;
     }
 
-    async complete(result: VerifiedResult): Promise<StatusSnapshot> {
-        const supportingEvidence = await this.validateCompletionEvidence(result);
+    /**
+     * The lab's one terminal success. It is reachable only from a finding a verifier confirmed, so
+     * the confirmed finding is the argument rather than a summary the caller composed.
+     */
+    async recordBreakthrough(finding: Finding): Promise<StatusSnapshot> {
+        const verdict = this.snapshot.verdicts.find(({ finding_id }) => finding_id === finding.id);
+        if (verdict === undefined || !verdict.confirmed) {
+            throw new Error(`Finding ${finding.id} carries no confirming verdict`);
+        }
         const reportPath = path.join(this.runDirectory, "report.md");
         const resultPath = path.join(this.runDirectory, "result.json");
-        const resultFile = {
-            lab_id: this.labId,
-            status: LabState.COMPLETED,
-            result: result.summary,
-            supporting_evidence_ids: result.supportingEvidenceIds,
-            independent_verifier_verdict_id: result.independentVerifierVerdictId,
-            limitations: result.limitations,
-            known_counterexamples: result.knownCounterexamples,
-            completed_at: new Date().toISOString()
-        };
-        const context: LifecycleContext = {
-            completion: {
-                resultStatement: result.summary,
-                supportingEvidenceIds: result.supportingEvidenceIds,
-                independentVerifierVerdictId: result.independentVerifierVerdictId,
-                limitations: result.limitations,
-                knownCounterexamples: result.knownCounterexamples,
-                reportPath,
-                resultPath
-            }
-        };
-        transitionLabState(this.snapshot.lab.state, LabState.COMPLETED, context);
         await Promise.all([
             writeFileAtomic(
                 reportPath,
-                renderLabReport(this.reportSubject(), "Verified result", result.summary, {
-                    supportingEvidenceIds: result.supportingEvidenceIds,
-                    limitations: result.limitations,
-                    knownCounterexamples: result.knownCounterexamples,
-                    nextExperiments: this.snapshot.frontier.next_experiments
-                })
+                renderLabReport(this.reportSubject(), "Breakthrough", finding.claim)
             ),
-            this.writeJson("result.json", resultFile)
+            this.writeJson("result.json", {
+                lab_id: this.labId,
+                status: LabState.BREAKTHROUGH,
+                claim: finding.claim,
+                work: finding.work,
+                artifact_paths: finding.artifact_paths,
+                verdict: verdict.reasoning,
+                finding_id: finding.id,
+                verdict_id: verdict.id,
+                recorded_at: new Date().toISOString()
+            })
         ]);
+        const context: LifecycleContext = { confirmedFindingId: finding.id };
         const mutation = await this.mutateWithEvent(
             EventType.LAB_STATE_CHANGED,
-            {
-                state: LabState.COMPLETED,
-                verifier_verdict_id: result.independentVerifierVerdictId
-            },
+            { state: LabState.BREAKTHROUGH, finding_id: finding.id, verdict_id: verdict.id },
             (draft) => {
-                transitionLabState(draft.lab.state, LabState.COMPLETED, context);
-                draft.lab.state = LabState.COMPLETED;
-                delete draft.lab.reason;
+                transitionLabState(draft.lab.state, LabState.BREAKTHROUGH, context);
+                draft.lab.state = LabState.BREAKTHROUGH;
+                draft.lab.reason = finding.claim;
+                draft.breakthrough_finding_id = finding.id;
                 draft.result = {
-                    summary: result.summary,
+                    summary: finding.claim,
                     report_path: reportPath,
                     result_path: resultPath,
-                    limitations: [...result.limitations]
+                    limitations: []
                 };
             }
         );
         if (mutation === undefined) {
-            throw new Error("Lab completion was unexpectedly skipped");
+            throw new Error("Breakthrough was unexpectedly skipped");
         }
         await this.appendEvent(EventType.REPORT_GENERATED, { report_path: reportPath });
-        await this.appendEvent(EventType.RESULT_GENERATED, {
-            result_path: resultPath,
-            supporting_evidence_ids: supportingEvidence.map(({ id }) => id)
-        });
-        await this.appendEvent(EventType.LAB_COMPLETED, {
-            verifier_verdict_id: result.independentVerifierVerdictId
+        await this.appendEvent(EventType.BREAKTHROUGH_RECORDED, {
+            finding_id: finding.id,
+            verdict_id: verdict.id,
+            result_path: resultPath
         });
         return mutation.snapshot;
-    }
-
-    async recordEvidence(candidate: Evidence): Promise<Evidence> {
-        const evidence = EvidenceSchema.parse(candidate);
-        await this.validateStoredEvidenceArtifact(evidence);
-
-        const recorded = await this.mutex.runExclusive(async () => {
-            const existing = this.evidence.find(({ id }) => id === evidence.id);
-            if (existing !== undefined) {
-                if (JSON.stringify(existing) !== JSON.stringify(evidence)) {
-                    throw new Error(
-                        `Evidence id already exists with different content: ${evidence.id}`
-                    );
-                }
-                return { evidence: structuredClone(existing), shouldWake: false };
-            }
-            const nextEvidence = [...this.evidence, evidence];
-            const draft = structuredClone(this.snapshot);
-            const shouldWake = draft.lab.state === LabState.HIBERNATING;
-            this.touch(draft);
-            const parsed = StatusSnapshotSchema.parse(draft);
-            this.snapshot = await this.commitRuntime(parsed, undefined, nextEvidence);
-            this.evidence.splice(0, this.evidence.length, ...nextEvidence);
-            await this.persistFilesystemSnapshot();
-            return { evidence: structuredClone(evidence), shouldWake };
-        });
-        if (recorded.shouldWake) {
-            await this.wakeIfHibernating("Durable evidence recorded", WakeTrigger.EVIDENCE);
-        }
-        return recorded.evidence;
     }
 
     async appendEvent(type: LabEventType, payload: Record<string, unknown>): Promise<LabEvent> {
@@ -644,9 +536,6 @@ export class LabWorkspace {
                 request.status = CapabilityStatus.ANSWERED;
                 request.answer = normalizedAnswer;
                 request.answered_at = event.occurred_at;
-                draft.frontier.blockers = draft.frontier.blockers.filter(
-                    (blocker) => blocker !== request.need
-                );
                 return WorkspaceMutationAction.COMMIT;
             }
         );
@@ -672,11 +561,6 @@ export class LabWorkspace {
         );
     }
 
-    /**
-     * Only a request the agent declared it cannot work around becomes a frontier blocker. An ask
-     * raised alongside work that continues is visible to the operator without standing in as a
-     * reason the lab is stuck.
-     */
     async requestCapability(input: {
         need: string;
         reason: string;
@@ -715,9 +599,6 @@ export class LabWorkspace {
                     return WorkspaceMutationAction.SKIP;
                 }
                 draft.capability_requests.push(request);
-                if (request.blocking && !draft.frontier.blockers.includes(request.need)) {
-                    draft.frontier.blockers.push(request.need);
-                }
                 return WorkspaceMutationAction.COMMIT;
             }
         );
@@ -743,7 +624,6 @@ export class LabWorkspace {
             this.runtimePersistence = runtimePersistence;
             this.runtimeRevision = checkpoint.revision;
             this.snapshot = checkpoint.snapshot;
-            this.evidence.splice(0, this.evidence.length, ...checkpoint.evidence);
             const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, this.labId);
             this.events.splice(0, this.events.length, ...events);
             await this.persistFilesystemSnapshot();
@@ -755,13 +635,11 @@ export class LabWorkspace {
             task,
             workspacePath: this.runDirectory,
             snapshot: this.snapshot,
-            evidence: this.evidence,
             ...(firstEvent === undefined ? {} : { event: firstEvent })
         });
         for (const event of remainingEvents) {
             initialized = await runtimePersistence.commit({
                 snapshot: this.snapshot,
-                evidence: this.evidence,
                 expectedRevision: initialized.revision,
                 event
             });
@@ -769,14 +647,12 @@ export class LabWorkspace {
         this.runtimePersistence = runtimePersistence;
         this.runtimeRevision = initialized.revision;
         this.snapshot = initialized.snapshot;
-        this.evidence.splice(0, this.evidence.length, ...initialized.evidence);
         await this.persistFilesystemSnapshot();
     }
 
     private async commitRuntime(
         snapshot: StatusSnapshot,
-        event?: LabEvent,
-        evidenceRecords: readonly Evidence[] = this.evidence
+        event?: LabEvent
     ): Promise<StatusSnapshot> {
         if (this.runtimePersistence === undefined) {
             return snapshot;
@@ -786,7 +662,6 @@ export class LabWorkspace {
         }
         const committed = await this.runtimePersistence.commit({
             snapshot,
-            evidence: evidenceRecords,
             expectedRevision: this.runtimeRevision,
             ...(event === undefined ? {} : { event })
         });
@@ -801,91 +676,29 @@ export class LabWorkspace {
             0,
             now.getTime() - new Date(snapshot.lab.started_at).getTime()
         );
-        snapshot.frontier.updated_at = snapshot.lab.updated_at;
     }
 
     private async persistFilesystemSnapshot(): Promise<void> {
         await Promise.all([
             this.writeJson("status.json", this.snapshot),
             this.writeJson("events.json", this.events),
-            this.writeJson("claims.json", this.snapshot.claims),
-            this.writeJson("experiments.json", this.snapshot.experiments),
-            this.writeJson("evidence.json", this.evidence)
+            this.writeJson("assumptions.json", this.researchJournal())
         ]);
     }
 
-    private async validateCompletionEvidence(result: VerifiedResult): Promise<Evidence[]> {
-        if (result.supportingEvidenceIds.length === 0) {
-            throw new Error("Completion requires supporting evidence");
-        }
-        const requestedIds = [...new Set(result.supportingEvidenceIds)];
-        if (requestedIds.length !== result.supportingEvidenceIds.length) {
-            throw new Error("Completion evidence ids must be unique");
-        }
-        const selected = requestedIds.map((id) => {
-            const evidence = this.evidence.find((candidate) => candidate.id === id);
-            if (evidence === undefined) {
-                throw new Error(`Completion references unknown evidence: ${id}`);
-            }
-            return evidence;
-        });
-        const verifier = selected.find(({ id }) => id === result.independentVerifierVerdictId);
-        if (
-            verifier === undefined ||
-            verifier.kind !== EvidenceKind.VERIFIER_RESULT ||
-            !verifier.independent ||
-            !verifier.supports
-        ) {
-            throw new Error("Completion requires material evidence from an independent verifier");
-        }
-        if (
-            !selected.some(
-                ({ kind, supports }) => kind !== EvidenceKind.VERIFIER_RESULT && supports
-            )
-        ) {
-            throw new Error("Completion requires supporting material evidence before verification");
-        }
-        if (
-            selected.some(({ supports, claim_id }) => !supports || claim_id !== verifier.claim_id)
-        ) {
-            throw new Error("Completion evidence must support the independently verified claim");
-        }
-
-        const claim = this.snapshot.claims.find(({ id }) => id === verifier.claim_id);
-        if (claim === undefined || claim.status !== ClaimStatus.REPRODUCED) {
-            throw new Error("Completion requires a reproduced claim");
-        }
-        if (selected.some(({ id }) => !claim.supporting_evidence_ids.includes(id))) {
-            throw new Error("Completion evidence is not linked to the reproduced claim");
-        }
-
-        await Promise.all(
-            selected.map((evidence) => this.validateStoredEvidenceArtifact(evidence))
-        );
-        return selected;
-    }
-
-    private async validateStoredEvidenceArtifact(evidence: Evidence) {
-        if (evidence.artifact_path === undefined || evidence.artifact_hash === undefined) {
-            throw new Error(`Evidence must reference a hashed material artifact: ${evidence.id}`);
-        }
-        const artifact = await validateFileArtifact(this.runDirectory, evidence.artifact_path);
-        if (artifact.sha256 !== evidence.artifact_hash) {
-            throw new Error(`Evidence artifact changed after recording: ${evidence.id}`);
-        }
-        return artifact;
-    }
-
-    private static async readOptionalEvidence(runDirectory: string): Promise<Evidence[]> {
-        try {
-            const source = await readFile(path.join(runDirectory, "evidence.json"), "utf8");
-            return EvidenceSchema.array().parse(JSON.parse(source));
-        } catch (error) {
-            if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-                return [];
-            }
-            throw error;
-        }
+    /** The run's readable history: each bet with what was claimed under it and what came back. */
+    private researchJournal(): unknown {
+        return this.snapshot.assumptions.map((assumption) => ({
+            ...assumption,
+            findings: this.snapshot.findings
+                .filter(({ assumption_id }) => assumption_id === assumption.id)
+                .map((finding) => ({
+                    ...finding,
+                    verdict: this.snapshot.verdicts.find(
+                        ({ finding_id }) => finding_id === finding.id
+                    )
+                }))
+        }));
     }
 
     private static async readAllRuntimeEvents(
@@ -931,7 +744,6 @@ export class LabWorkspace {
     private reportSubject(): LabReportSubject {
         return {
             snapshot: this.snapshot,
-            evidence: this.evidence,
             runDirectory: this.runDirectory
         };
     }

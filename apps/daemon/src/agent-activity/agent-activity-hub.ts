@@ -1,8 +1,7 @@
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
 import {
     AgentActivityPhase,
-    AgentActivityPhaseByFrameKind,
-    AgentRunStatus
+    AgentActivityPhaseByFrameKind
 } from "@lab/protocol/agent-activity/agent-activity.const";
 import type {
     AgentActivity,
@@ -10,6 +9,7 @@ import type {
 } from "@lab/protocol/agent-activity/agent-activity.types";
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { ACTIVITY_RETAINED_RUNS } from "#src/agent-activity/agent-activity.const";
 import type {
     AgentActivityListener,
@@ -32,7 +32,7 @@ export class AgentActivityHub {
     readonly #listeners = new Set<AgentActivityListener>();
 
     startRun(identity: AgentRunIdentity): AgentActivityRun {
-        this.#runs.set(identity.agent_id, {
+        this.#runs.set(identity.run_id, {
             ...identity,
             session_id: null,
             phase: AgentActivityPhase.STARTING,
@@ -68,8 +68,8 @@ export class AgentActivityHub {
     }
 
     private apply(frame: AgentActivityFrame): AgentActivity | undefined {
-        const current = this.#runs.get(frame.agent_id);
-        if (current === undefined || current.run_id !== frame.run_id) {
+        const current = this.#runs.get(frame.run_id);
+        if (current === undefined) {
             return undefined;
         }
 
@@ -86,7 +86,7 @@ export class AgentActivityHub {
                 : {}),
             updated_at: frame.occurred_at
         };
-        this.#runs.set(frame.agent_id, updated);
+        this.#runs.set(frame.run_id, updated);
         return updated;
     }
 
@@ -101,7 +101,7 @@ export class AgentActivityHub {
             if (this.#runs.size <= ACTIVITY_RETAINED_RUNS) {
                 return;
             }
-            this.#runs.delete(activity.agent_id);
+            this.#runs.delete(activity.run_id);
         }
     }
 }
@@ -138,7 +138,6 @@ class HubAgentActivityRun implements AgentActivityRun {
         this.#finished = true;
         this.#lastSequence += 1;
         this.#record({
-            agent_id: this.#identity.agent_id,
             run_id: this.#identity.run_id,
             sequence: this.#lastSequence,
             occurred_at: new Date().toISOString(),

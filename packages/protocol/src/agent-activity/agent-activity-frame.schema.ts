@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { AgentRunStatus } from "#src/agent-activity/agent-activity.const";
 import {
     AgentRunIdentitySchema,
     AgentUsageSchema
@@ -9,10 +8,10 @@ import {
     AgentDiagnosticLevel,
     AgentToolPhase
 } from "#src/agent-activity/agent-activity-frame.const";
+import { AgentRunStatus } from "#src/agent-runs/agent-run-status.const";
 import { IdentifierSchema } from "#src/entity-identity/entity-identifier.schema";
 
 const FrameBaseSchema = z.object({
-    agent_id: IdentifierSchema,
     run_id: IdentifierSchema,
     /**
      * The harness event's own position within its run. Live frames and frames replayed from the

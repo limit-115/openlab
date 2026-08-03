@@ -21,10 +21,8 @@ export const ARTIFACT_DIRECTORY =
 
 export function activityIdentity(overrides: Partial<AgentRunIdentity> = {}): AgentRunIdentity {
     return {
-        agent_id: "agent-researcher-0-1",
-        run_id: "run-9f0c",
-        branch_id: "branch-researcher-0-1",
-        task_id: "task-researcher-0-1",
+        run_id: "run-researcher-9f0c",
+        assumption_id: "assumption-cache-eviction",
         role: AgentRole.RESEARCHER,
         execution: {
             harness: AgentHarnessKind.CLAUDE,

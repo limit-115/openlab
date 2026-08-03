@@ -1,22 +1,48 @@
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
-import { EvidenceRelationship } from "@lab/db/claims/evidence-relationship.const";
 import { createDatabase, type DatabaseClient } from "@lab/db/lab-database/lab-database-client";
-import { branches, labs, tasks } from "@lab/db/lab-database/lab-schema";
+import { agentRuns, assumptions, labs } from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "@lab/db/runtime/runtime-revision-conflict";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
-import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
-import { initialResearchIdentifiers } from "#src/research-cycle/research-identifiers";
+
+/** Seeds one bet and the run that took it, which is the smallest projectable research state. */
+async function seedBet(workspace: LabWorkspace, statement: string): Promise<string> {
+    const id = `assumption-${randomUUID()}`;
+    await workspace.update((draft) => {
+        const timestamp = draft.lab.updated_at;
+        draft.assumptions.push({
+            id,
+            cycle: 0,
+            statement,
+            rationale: "Recorded by an integration test",
+            status: AssumptionStatus.RESEARCHING,
+            created_at: timestamp,
+            updated_at: timestamp
+        });
+        draft.runs.push({
+            id: `run-${id}`,
+            role: AgentRole.RESEARCHER,
+            assumption_id: id,
+            objective: statement,
+            status: AgentRunStatus.RUNNING,
+            cwd: workspace.runDirectory,
+            started_at: timestamp
+        });
+    });
+    return id;
+}
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
@@ -59,15 +85,15 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         );
 
         expect(new Set([first.labId, second.labId, repeated.labId]).size).toBe(3);
-        const projectedBranches = await client.db.select().from(branches);
-        const projectedTasks = await client.db.select().from(tasks);
-        expect(new Set(projectedBranches.map(({ id }) => id)).size).toBe(3);
-        expect(new Set(projectedTasks.map(({ id }) => id)).size).toBe(3);
-        expect(projectedBranches.map(({ labId }) => labId).sort()).toEqual(
-            [first.labId, second.labId, repeated.labId].sort()
+        await seedBet(first, "The first lab bets here");
+        await seedBet(repeated, "The rerun bets somewhere else");
+        const projectedAssumptions = await client.db.select().from(assumptions);
+        const projectedRuns = await client.db.select().from(agentRuns);
+        expect(projectedAssumptions.map(({ labId }) => labId).sort()).toEqual(
+            [first.labId, repeated.labId].sort()
         );
-        expect(projectedTasks.map(({ labId }) => labId).sort()).toEqual(
-            [first.labId, second.labId, repeated.labId].sort()
+        expect(projectedRuns.map(({ labId }) => labId).sort()).toEqual(
+            [first.labId, repeated.labId].sort()
         );
     });
 
@@ -119,12 +145,19 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             readFile(path.join(workspace.runDirectory, "events.json"), "utf8")
         ]);
         const externalSnapshot = structuredClone(beforeSnapshot);
-        externalSnapshot.frontier.known.push("A concurrent writer committed first");
         const externalTimestamp = new Date(
             Date.parse(externalSnapshot.lab.updated_at) + 1_000
         ).toISOString();
         externalSnapshot.lab.updated_at = externalTimestamp;
-        externalSnapshot.frontier.updated_at = externalTimestamp;
+        externalSnapshot.assumptions.push({
+            id: "assumption-concurrent-writer",
+            cycle: 0,
+            statement: "A concurrent writer committed first",
+            rationale: "Recorded by another process",
+            status: AssumptionStatus.OPEN,
+            created_at: externalTimestamp,
+            updated_at: externalTimestamp
+        });
         const externalCommit = await persistence.commit({
             snapshot: externalSnapshot,
             expectedRevision: persistedBefore.checkpoint.revision
@@ -144,9 +177,9 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         ).resolves.toEqual([beforeStatusFile, beforeEventsFile]);
         const persisted = await persistence.load(workspace.labId);
         expect(persisted?.checkpoint.revision).toBe(externalCommit.revision);
-        expect(persisted?.checkpoint.snapshot.frontier.known).toContain(
-            "A concurrent writer committed first"
-        );
+        expect(
+            persisted?.checkpoint.snapshot.assumptions.map(({ statement }) => statement)
+        ).toContain("A concurrent writer committed first");
         expect(persisted?.checkpoint.snapshot.lab.state).toBe(LabState.RUNNING);
         expect(await persistence.eventsAfter(workspace.labId)).toEqual([]);
     });
@@ -157,93 +190,54 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         await writeFile(taskPath, JSON.stringify({ goal: "Recover the authoritative state" }));
         const persistence = new RuntimePersistence(client.db);
         const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
-        const initialIds = initialResearchIdentifiers(workspace.labId);
 
         await workspace.appendEvent(EventType.LAB_STARTED, { source: "integration-test" });
+        const assumptionId = await seedBet(workspace, "PostgreSQL checkpoint survived");
         await workspace.update((draft) => {
-            draft.frontier.known.push("PostgreSQL checkpoint survived");
-            draft.claims.push({
-                id: "claim-durable-evidence",
-                branch_id: initialIds.branchId,
-                statement: "PostgreSQL preserves material evidence",
-                status: ClaimStatus.TESTING,
-                assumption_ids: [],
-                supporting_evidence_ids: ["evidence-durable"],
-                contradicting_evidence_ids: [],
-                stale: false,
-                created_at: draft.lab.updated_at,
-                updated_at: draft.lab.updated_at
+            const timestamp = draft.lab.updated_at;
+            draft.findings.push({
+                id: "finding-durable",
+                assumption_id: assumptionId,
+                run_id: `run-${assumptionId}`,
+                claim: "PostgreSQL preserves what the researcher claimed",
+                work: "Wrote the claim, restarted the runtime, read it back",
+                artifact_paths: [],
+                status: FindingStatus.UNVERIFIED,
+                created_at: timestamp
             });
         });
-        const artifactDirectory = path.join(workspace.runDirectory, "artifacts");
-        const artifactPath = path.join(artifactDirectory, "durable-evidence.json");
-        const artifactContents = JSON.stringify({ reproduced: true });
-        await mkdir(artifactDirectory, { recursive: true });
-        await writeFile(artifactPath, artifactContents);
-        const recordedEvidence = {
-            id: "evidence-durable",
-            kind: EvidenceKind.EXPERIMENT,
-            claim_id: "claim-durable-evidence",
-            artifact_path: "artifacts/durable-evidence.json",
-            artifact_hash: createHash("sha256").update(artifactContents).digest("hex"),
-            summary: "The material artifact survived a runtime restart",
-            supports: true,
-            independent: false,
-            created_at: new Date().toISOString()
-        } as const;
-        await workspace.recordEvidence(recordedEvidence);
         await Promise.all([
             writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt"),
             writeFile(path.join(workspace.runDirectory, "events.json"), "corrupt"),
-            writeFile(path.join(workspace.runDirectory, "evidence.json"), "corrupt")
+            writeFile(path.join(workspace.runDirectory, "assumptions.json"), "corrupt")
         ]);
 
         const recovered = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, persistence);
 
         expect(recovered.recovered).toBe(true);
         expect(recovered.labId).toBe(workspace.labId);
-        expect(recovered.getSnapshot().frontier.known).toContain("PostgreSQL checkpoint survived");
+        expect(recovered.getSnapshot().assumptions.map(({ statement }) => statement)).toContain(
+            "PostgreSQL checkpoint survived"
+        );
+        expect(recovered.getSnapshot().findings.map(({ id }) => id)).toEqual(["finding-durable"]);
         expect(recovered.getEvents().map(({ type }) => type)).toContain(EventType.LAB_STARTED);
-        expect(recovered.getEvidence()).toEqual([recordedEvidence]);
         await expect(
             readFile(path.join(workspace.runDirectory, "status.json"), "utf8").then(JSON.parse)
         ).resolves.toMatchObject({ lab: { id: workspace.labId } });
         await expect(
-            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8").then(JSON.parse)
-        ).resolves.toEqual([recordedEvidence]);
+            readFile(path.join(workspace.runDirectory, "assumptions.json"), "utf8").then(JSON.parse)
+        ).resolves.toMatchObject([{ id: assumptionId, findings: [{ id: "finding-durable" }] }]);
         expect(
-            await client.db.query.evidence.findFirst({
-                where: (evidence, { eq }) => eq(evidence.id, recordedEvidence.id)
+            await client.db.query.findings.findFirst({
+                where: (finding, { eq }) => eq(finding.id, "finding-durable")
             })
         ).toMatchObject({
             labId: workspace.labId,
-            sourceBranchId: initialIds.branchId,
-            origin: EvidenceOrigin.MODEL_JUDGEMENT,
-            valid: true,
-            complete: true,
-            reproducible: false
-        });
-        expect(
-            await client.db.query.claimEvidence.findFirst({
-                where: (link, { eq }) => eq(link.evidenceId, recordedEvidence.id)
-            })
-        ).toMatchObject({
-            claimId: "claim-durable-evidence",
-            relationship: EvidenceRelationship.SUPPORTS
+            assumptionId,
+            status: FindingStatus.UNVERIFIED
         });
 
-        await unlink(path.join(workspace.runDirectory, "evidence.json"));
-        const recoveredMissingEvidence = await LabWorkspace.openOrCreate(
-            workspaceRoot,
-            taskPath,
-            persistence
-        );
-        expect(recoveredMissingEvidence.getEvidence()).toEqual([recordedEvidence]);
-        await expect(
-            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8").then(JSON.parse)
-        ).resolves.toEqual([recordedEvidence]);
-
-        const request = await recoveredMissingEvidence.requestCapability({
+        const request = await recovered.requestCapability({
             need: "Independent dataset",
             reason: "The verifier needs independent observations",
             provisioningHint: "Mount the dataset in the run workspace",
@@ -251,10 +245,7 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
                 "Rebuilt it from public mirrors, which overlap the training set",
             blocking: true
         });
-        await recoveredMissingEvidence.answerCapability(
-            request.id,
-            "Mounted at /srv/corpora/independent-v1"
-        );
+        await recovered.answerCapability(request.id, "Mounted at /srv/corpora/independent-v1");
         await writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt");
 
         const recoveredCapabilityWorkspace = await LabWorkspace.openOrCreate(
@@ -270,9 +261,6 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             answer: "Mounted at /srv/corpora/independent-v1"
         });
         expect(capability?.answered_at).toBeDefined();
-        expect(recoveredCapabilityWorkspace.getSnapshot().frontier.blockers).not.toContain(
-            request.need
-        );
         expect(
             await client.db.query.capabilityRequests.findFirst({
                 where: (capability, { eq }) => eq(capability.id, request.id)
@@ -311,15 +299,15 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             task: "corrupt-b-task",
             status: "corrupt-b-status",
             events: "corrupt-b-events",
-            evidence: "corrupt-b-evidence"
+            assumptions: "corrupt-b-assumptions"
         } as const;
         await Promise.all([
             writeFile(path.join(second.runDirectory, "task.json"), corruptedSecondFiles.task),
             writeFile(path.join(second.runDirectory, "status.json"), corruptedSecondFiles.status),
             writeFile(path.join(second.runDirectory, "events.json"), corruptedSecondFiles.events),
             writeFile(
-                path.join(second.runDirectory, "evidence.json"),
-                corruptedSecondFiles.evidence
+                path.join(second.runDirectory, "assumptions.json"),
+                corruptedSecondFiles.assumptions
             ),
             writeFile(
                 path.join(workspaceRoot, "current.json"),
@@ -348,13 +336,13 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
                 readFile(path.join(second.runDirectory, "task.json"), "utf8"),
                 readFile(path.join(second.runDirectory, "status.json"), "utf8"),
                 readFile(path.join(second.runDirectory, "events.json"), "utf8"),
-                readFile(path.join(second.runDirectory, "evidence.json"), "utf8")
+                readFile(path.join(second.runDirectory, "assumptions.json"), "utf8")
             ])
         ).resolves.toEqual([
             corruptedSecondFiles.task,
             corruptedSecondFiles.status,
             corruptedSecondFiles.events,
-            corruptedSecondFiles.evidence
+            corruptedSecondFiles.assumptions
         ]);
     });
 
@@ -394,14 +382,12 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         await writeFile(taskPath, JSON.stringify(task));
         const persistence = new RuntimePersistence(client.db);
         const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
-        await workspace.update((draft) => {
-            draft.frontier.known.push("Latest database state");
-        });
+        await seedBet(workspace, "Latest database state");
         await Promise.all([
             unlink(path.join(workspaceRoot, "current.json")),
             writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt"),
             writeFile(path.join(workspace.runDirectory, "events.json"), "corrupt"),
-            writeFile(path.join(workspace.runDirectory, "evidence.json"), "corrupt"),
+            writeFile(path.join(workspace.runDirectory, "assumptions.json"), "corrupt"),
             writeFile(path.join(workspace.runDirectory, "task.json"), "corrupt")
         ]);
 
@@ -409,12 +395,10 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
 
         expect(recovered.recovered).toBe(true);
         expect(recovered.labId).toBe(workspace.labId);
-        expect(recovered.getSnapshot().frontier.known).toContain("Latest database state");
-        expect(recovered.getEvidence()).toEqual([]);
+        expect(recovered.getSnapshot().assumptions.map(({ statement }) => statement)).toContain(
+            "Latest database state"
+        );
         await expect(recovered.getTask()).resolves.toEqual(task);
-        await expect(
-            readFile(path.join(workspace.runDirectory, "evidence.json"), "utf8").then(JSON.parse)
-        ).resolves.toEqual([]);
         await expect(readCurrentPointer(workspaceRoot)).resolves.toEqual({
             lab_id: workspace.labId,
             run_directory: workspace.runDirectory
@@ -433,7 +417,7 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         await writeFile(taskPath, JSON.stringify(task));
         const persistence = new RuntimePersistence(client.db);
         const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
-        await workspace.appendEvent(EventType.FRONTIER_UPDATED, {
+        await workspace.appendEvent(EventType.ASSUMPTIONS_PROPOSED, {
             source: "corrupt-pointer-test"
         });
         await Promise.all([
@@ -446,7 +430,9 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
 
         expect(recovered.recovered).toBe(true);
         expect(recovered.labId).toBe(workspace.labId);
-        expect(recovered.getEvents().map(({ type }) => type)).toContain(EventType.FRONTIER_UPDATED);
+        expect(recovered.getEvents().map(({ type }) => type)).toContain(
+            EventType.ASSUMPTIONS_PROPOSED
+        );
         await expect(readCurrentPointer(workspaceRoot)).resolves.toEqual({
             lab_id: workspace.labId,
             run_directory: workspace.runDirectory

@@ -22,19 +22,6 @@ export type AgentActivityStreamEvent =
     (typeof AgentActivityStreamEvent)[keyof typeof AgentActivityStreamEvent];
 
 /**
- * How an agent's harness run ended, or that it has not ended yet. The harness package owns its own
- * run statuses and never depends on this contract, so the daemon translates between the two.
- */
-export const AgentRunStatus = {
-    RUNNING: "running",
-    SUCCEEDED: "succeeded",
-    FAILED: "failed",
-    TIMED_OUT: "timed_out",
-    CANCELLED: "cancelled"
-} as const;
-export type AgentRunStatus = (typeof AgentRunStatus)[keyof typeof AgentRunStatus];
-
-/**
  * What each frame says the agent is now doing. Diagnostics and usage report on work already
  * described by another frame, so they leave the phase where they found it.
  *

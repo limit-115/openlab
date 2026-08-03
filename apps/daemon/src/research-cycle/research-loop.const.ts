@@ -1,5 +1,5 @@
 export const ResearchLoopOutcomeStatus = {
-    COMPLETED: "completed",
+    BREAKTHROUGH: "breakthrough",
     HIBERNATING: "hibernating",
     CANCELLED: "cancelled",
     FAILED: "failed"
@@ -12,5 +12,9 @@ export const PromiseSettlement = {
     REJECTED: "rejected"
 } as const;
 
-export const DEFAULT_PLATEAU_INACTIVITY_MS = 60_000;
 export const DEFAULT_CYCLE_BACKOFF_MS = 5_000;
+
+export const HibernationReason = {
+    NO_HARNESS: "No subscription-authenticated agent CLI harness is available",
+    NO_DIRECTION: "The director could not name anywhere else worth looking"
+} as const;

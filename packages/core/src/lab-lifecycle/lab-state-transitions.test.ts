@@ -21,7 +21,7 @@ describe("lab lifecycle", () => {
         );
         expect(
             assessLifecycleTransition(LabState.HIBERNATING, LabState.RUNNING, {
-                wakeTrigger: WakeTrigger.FINDING
+                wakeTrigger: WakeTrigger.CAPABILITY
             }).allowed
         ).toBe(true);
         expect(

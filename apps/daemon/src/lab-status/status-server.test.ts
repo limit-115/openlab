@@ -147,10 +147,8 @@ describe("status server", () => {
         expect(response.json().files).toEqual(
             expect.arrayContaining([
                 "artifacts/experiment-1/metrics.json",
-                "claims.json",
+                "assumptions.json",
                 "events.json",
-                "evidence.json",
-                "experiments.json",
                 "status.json",
                 "task.json"
             ])

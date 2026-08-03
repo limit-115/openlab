@@ -1,4 +1,3 @@
-import { basename } from "node:path";
 import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import type {
     AgentHarness,
@@ -8,10 +7,8 @@ import type {
 import { HarnessAbortedError, HarnessCapabilityError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
 import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { requiredById } from "#src/lab-workspace/snapshot-entities";
 import {
-    SnapshotAgentRole,
     SnapshotEffortLevel,
     SnapshotHarnessKind
 } from "#src/research-cycle/structured-agent-run.const";
@@ -30,20 +27,15 @@ export class StructuredAgentRunError extends Error {
     }
 }
 
+/**
+ * Runs one agent session and hands back what it returned. The run's own lifecycle — that it started,
+ * how it ended — is journalled by the caller, so this stays responsible for the harness stream and
+ * the live activity plane alone.
+ */
 export async function runStructuredAgent<Output>(
     input: StructuredAgentRunInput<Output>
 ): Promise<StructuredAgentRunOutput<Output>> {
-    const {
-        workspace,
-        activity,
-        harness,
-        stage,
-        branchId,
-        agentId,
-        taskId,
-        agentWorkspace,
-        signal
-    } = input;
+    const { workspace, activity, harness, runId, agentWorkspace, signal } = input;
     const request: HarnessRunRequest = {
         prompt: input.prompt,
         cwd: agentWorkspace.cwd,
@@ -54,35 +46,20 @@ export async function runStructuredAgent<Output>(
             : { executionProfile: input.executionProfile })
     };
     const execution = agentExecution(harness, request);
-    await workspace.mutateWithEvent(
-        EventType.HARNESS_RUN_STARTED,
-        {
-            harness: execution.harness,
-            model: execution.model,
-            effort: execution.effort,
-            stage,
-            branch_id: branchId,
-            task_id: taskId,
-            cwd: agentWorkspace.cwd
-        },
-        (draft) => {
-            requiredById(draft.agents, agentId).execution = execution;
-        }
-    );
+    await workspace.update((draft) => {
+        requiredById(draft.runs, runId).execution = execution;
+    });
 
     const activityRun = activity.startRun({
-        agent_id: agentId,
-        run_id: basename(agentWorkspace.artifactDirectory),
-        branch_id: branchId,
-        task_id: taskId,
-        role: SnapshotAgentRole[stage],
+        run_id: runId,
+        ...(input.assumptionId === undefined ? {} : { assumption_id: input.assumptionId }),
+        role: agentWorkspace.role,
         execution,
         artifact_directory: agentWorkspace.artifactDirectory,
         started_at: new Date().toISOString()
     });
 
     let completed: HarnessRunResult | undefined;
-    let terminalEventRecorded = false;
     try {
         for await (const event of harness.run(request, signal)) {
             activityRun.publish(event);
@@ -114,45 +91,9 @@ export async function runStructuredAgent<Output>(
             );
         }
 
-        const value = input.schema.parse(completed.structuredOutput);
-        await workspace.appendEvent(EventType.HARNESS_RUN_SUCCEEDED, {
-            harness: harness.kind,
-            stage,
-            branch_id: branchId,
-            task_id: taskId,
-            session_id: completed.sessionId,
-            manifest_path: completed.artifacts.manifest.path,
-            manifest_sha256: completed.artifacts.manifest.sha256
-        });
-        terminalEventRecorded = true;
-        return { value, result: completed };
+        return { value: input.schema.parse(completed.structuredOutput), result: completed };
     } catch (error) {
         activityRun.abandon(error instanceof Error ? error.message : String(error));
-        if (!terminalEventRecorded) {
-            const cancelled =
-                signal?.aborted === true ||
-                error instanceof HarnessAbortedError ||
-                completed?.status === HarnessRunStatuses.CANCELLED;
-            const eventType = cancelled
-                ? EventType.HARNESS_RUN_CANCELLED
-                : completed?.status === HarnessRunStatuses.TIMED_OUT
-                  ? EventType.HARNESS_RUN_TIMED_OUT
-                  : EventType.HARNESS_RUN_FAILED;
-            await workspace.appendEvent(eventType, {
-                harness: harness.kind,
-                stage,
-                branch_id: branchId,
-                task_id: taskId,
-                session_id: completed?.sessionId ?? null,
-                error: error instanceof Error ? error.message : String(error),
-                ...(completed === undefined
-                    ? {}
-                    : {
-                          manifest_path: completed.artifacts.manifest.path,
-                          manifest_sha256: completed.artifacts.manifest.sha256
-                      })
-            });
-        }
         if (
             error instanceof StructuredAgentRunError ||
             error instanceof HarnessCapabilityError ||

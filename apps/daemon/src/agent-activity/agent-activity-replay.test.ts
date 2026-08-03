@@ -5,13 +5,11 @@ import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import { HarnessEventTypes, HarnessToolPhases } from "@lab/harness/harness-event.const";
 import type { HarnessEvent } from "@lab/harness/harness-event.types";
 import { HarnessArtifactFiles } from "@lab/harness/harness-run-artifacts.const";
-import {
-    AgentActivityPhase,
-    AgentRunStatus
-} from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { describe, expect, it } from "vitest";
 import { activityIdentity, harnessEvents } from "#src/agent-activity/agent-activity.fixture";
 import { replayAgentActivity } from "#src/agent-activity/agent-activity-replay";
@@ -131,7 +129,6 @@ describe("replayAgentActivity", () => {
         );
 
         expect((await replay(activity)).at(-1)).toEqual({
-            agent_id: activity.agent_id,
             run_id: activity.run_id,
             sequence: TRANSCRIPT.length + 1,
             occurred_at: "2026-08-03T10:05:00.000Z",

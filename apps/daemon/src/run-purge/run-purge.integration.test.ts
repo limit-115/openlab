@@ -1,10 +1,10 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
 import { createDatabase, type DatabaseClient } from "@lab/db/lab-database/lab-database-client";
-import { branches, claims, events, labs } from "@lab/db/lab-database/lab-schema";
+import { agentRuns, assumptions, events, findings, labs } from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { writeCurrentPointer } from "#src/lab-workspace/lab-run-pointer";
@@ -41,18 +41,27 @@ describeDatabase("purgeRuns", () => {
             input: { goal: `Goal for ${labId}`, context: [], success_criteria: [] },
             workspacePath: `/tmp/${labId}`
         });
-        await client.db.insert(branches).values({
-            id: `branch-${labId}`,
+        await client.db.insert(assumptions).values({
+            id: `assumption-${labId}`,
             labId,
-            title: `Branch for ${labId}`,
-            approach: "Investigate",
-            lane: SchedulerLane.EXPLORATION
+            statement: `Bet for ${labId}`,
+            rationale: "Seeded by an integration test"
         });
-        await client.db.insert(claims).values({
-            id: `claim-${labId}`,
+        await client.db.insert(agentRuns).values({
+            id: `run-${labId}`,
             labId,
-            branchId: `branch-${labId}`,
-            statement: `Claim for ${labId}`
+            assumptionId: `assumption-${labId}`,
+            role: AgentRole.RESEARCHER,
+            objective: `Spend the bet for ${labId}`,
+            cwd: `/tmp/${labId}`
+        });
+        await client.db.insert(findings).values({
+            id: `finding-${labId}`,
+            labId,
+            assumptionId: `assumption-${labId}`,
+            runId: `run-${labId}`,
+            claim: `Claim for ${labId}`,
+            work: "Seeded by an integration test"
         });
         await client.db.insert(events).values({
             id: `event-${labId}`,
@@ -72,7 +81,7 @@ describeDatabase("purgeRuns", () => {
         return workspaceRoot;
     }
 
-    it("cascades the delete to branches, claims, and events", async () => {
+    it("cascades the delete to assumptions, findings, and events", async () => {
         await seedLab("lab-alpha");
         const workspaceRoot = await seedWorkspace(["lab-alpha"]);
 
@@ -84,8 +93,8 @@ describeDatabase("purgeRuns", () => {
 
         expect(result.purgedLabRowCount).toBe(1);
         expect(result.purgedDirectoryCount).toBe(1);
-        expect(await client.db.select().from(branches)).toEqual([]);
-        expect(await client.db.select().from(claims)).toEqual([]);
+        expect(await client.db.select().from(assumptions)).toEqual([]);
+        expect(await client.db.select().from(findings)).toEqual([]);
         expect(await client.db.select().from(events)).toEqual([]);
     });
 
@@ -107,8 +116,8 @@ describeDatabase("purgeRuns", () => {
         expect(result.purgedLabIds).toEqual(["lab-alpha"]);
         expect(result.keptLabId).toBe("lab-beta");
         expect((await client.db.select().from(labs)).map((row) => row.id)).toEqual(["lab-beta"]);
-        expect((await client.db.select().from(claims)).map((row) => row.id)).toEqual([
-            "claim-lab-beta"
+        expect((await client.db.select().from(findings)).map((row) => row.id)).toEqual([
+            "finding-lab-beta"
         ]);
     });
 

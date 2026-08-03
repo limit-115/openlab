@@ -3,18 +3,15 @@ import type { AgentHarness, HarnessRunResult } from "@lab/harness/agent-harness.
 import type { z } from "zod";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
-import type { ResearchStage } from "#src/research-cycle/research-stage-workspace.const";
-import type { ResearchWorkspace } from "#src/research-cycle/research-stage-workspace.types";
+import type { AgentWorkspace } from "#src/research-cycle/agent-workspace.types";
 
 export interface StructuredAgentRunInput<Output> {
     readonly workspace: LabWorkspace;
     readonly activity: AgentActivityHub;
     readonly harness: AgentHarness;
-    readonly stage: ResearchStage;
-    readonly branchId: string;
-    readonly agentId: string;
-    readonly taskId: string;
-    readonly agentWorkspace: ResearchWorkspace;
+    readonly runId: string;
+    readonly assumptionId?: string;
+    readonly agentWorkspace: AgentWorkspace;
     readonly prompt: string;
     readonly schema: z.ZodType<Output>;
     readonly signal?: AbortSignal;
