@@ -22,8 +22,11 @@ export const TEAM_ROSTER = "grid list-none gap-2 lg:sticky lg:top-24" as const;
 export const ROSTER_ENTRY =
     "flex w-full min-w-0 flex-col gap-1 rounded-2xl border p-3 text-left transition-colors hover:bg-muted/50 motion-reduce:transition-none" as const;
 
-/** The one being read is marked on the entry itself, not only by what fills the other column. */
-export const ROSTER_ENTRY_SELECTED = "border-primary/50 bg-muted/60" as const;
+/**
+ * The one being read is marked on the entry itself, not only by what fills the other column. The
+ * border carries it alone: filling the entry would fight the hover the roster already answers with.
+ */
+export const ROSTER_ENTRY_SELECTED = "border-primary/50" as const;
 
 export const ROSTER_ENTRY_TOP = "flex flex-wrap items-center gap-x-2 gap-y-1" as const;
 
