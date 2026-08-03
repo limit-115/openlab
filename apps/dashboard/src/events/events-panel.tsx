@@ -3,7 +3,7 @@ import { RadioIcon } from "lucide-react";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
 import { EventEntry } from "#src/events/event-entry";
-import { EVENT_STREAM, LIVE_LABEL } from "#src/events/events-panel.const";
+import { EVENT_STREAM, EVENT_STREAM_TAGS, LIVE_LABEL } from "#src/events/events-panel.const";
 import { SIGNAL_PULSE } from "#src/live-status/connection-badge.const";
 import { Panel } from "#src/panel/panel";
 import { PANEL_SCROLLER } from "#src/panel/panel.const";
@@ -23,9 +23,12 @@ export function EventsPanel({ events }: EventsPanelProps) {
             title="Event stream"
             description="Significant activity"
             action={
-                <span className={LIVE_LABEL}>
+                <span className={EVENT_STREAM_TAGS}>
                     {ordered.length > 0 ? <Badge variant="outline">{ordered.length}</Badge> : null}
-                    <RadioIcon className={cn("size-4", SIGNAL_PULSE)} aria-hidden="true" /> Live
+                    <Badge>
+                        <RadioIcon className={SIGNAL_PULSE} aria-hidden="true" />
+                        {LIVE_LABEL}
+                    </Badge>
                 </span>
             }
         >
