@@ -1,6 +1,8 @@
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { CapabilityAnswerForm } from "#src/capabilities/capability-answer-form";
 import {
+    BLOCKING_LABEL,
     CAPABILITY_CARD,
     CAPABILITY_CARD_OPEN,
     CAPABILITY_HEADER,
@@ -8,18 +10,19 @@ import {
     CAPABILITY_PAIR_LABEL,
     CAPABILITY_PAIR_VALUE,
     CAPABILITY_PAIRS,
-    CAPABILITY_RESOURCE_CLASS_LABEL,
     CAPABILITY_SETTLED,
     CAPABILITY_TAGS,
     CAPABILITY_WAITING,
     COPY_PROVISIONING_COMMAND_LABEL,
     HOW_TO_PROVIDE,
+    NOTHING_TRIED,
     PROVISION_VIA_CLI,
     PROVISIONING_HINT_COMMAND,
     PROVISIONING_HINT_HEADER,
-    WHAT_THIS_UNBLOCKS
+    WHAT_IT_TRIED,
+    WHAT_THIS_UNBLOCKS,
+    YOUR_ANSWER
 } from "#src/capabilities/capability-card.const";
-import { CapabilityProvisionForm } from "#src/capabilities/capability-provision-form";
 import { CopyButton } from "#src/clipboard/copy-button";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
@@ -33,7 +36,7 @@ interface CapabilityCardProps {
 }
 
 export function CapabilityCard({ request }: CapabilityCardProps) {
-    const command = `lab provide ${request.id} <resource-reference>`;
+    const command = `lab answer ${request.id} <answer>`;
     const open = request.status === CapabilityStatus.OPEN;
 
     return (
@@ -44,9 +47,7 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                     <p className={CAPABILITY_NEED}>{request.need}</p>
                 </div>
                 <div className={CAPABILITY_TAGS}>
-                    <Badge variant="outline">
-                        {CAPABILITY_RESOURCE_CLASS_LABEL[request.resource_class]}
-                    </Badge>
+                    {request.blocking ? <Badge variant="outline">{BLOCKING_LABEL}</Badge> : null}
                     <StatusTag status={request.status} />
                 </div>
             </header>
@@ -55,6 +56,12 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                 <div className="flex min-w-0 flex-col gap-1">
                     <p className={CAPABILITY_PAIR_LABEL}>{WHAT_THIS_UNBLOCKS}</p>
                     <p className={CAPABILITY_PAIR_VALUE}>{request.reason}</p>
+                </div>
+                <div className="flex min-w-0 flex-col gap-1">
+                    <p className={CAPABILITY_PAIR_LABEL}>{WHAT_IT_TRIED}</p>
+                    <p className={CAPABILITY_PAIR_VALUE}>
+                        {request.self_provisioning_attempt ?? NOTHING_TRIED}
+                    </p>
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
                     <p className={CAPABILITY_PAIR_LABEL}>{HOW_TO_PROVIDE}</p>
@@ -69,9 +76,15 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                     </div>
                     <code className={PROVISIONING_HINT_COMMAND}>{command}</code>
                 </div>
+                {request.answer === undefined ? null : (
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <p className={CAPABILITY_PAIR_LABEL}>{YOUR_ANSWER}</p>
+                        <p className={CAPABILITY_PAIR_VALUE}>{request.answer}</p>
+                    </div>
+                )}
             </div>
 
-            {open ? <CapabilityProvisionForm requestId={request.id} /> : null}
+            {open ? <CapabilityAnswerForm requestId={request.id} /> : null}
         </article>
     );
 }
@@ -89,9 +102,9 @@ function WaitedFor({ request }: CapabilityRequestProps) {
 
     return (
         <p className={CAPABILITY_SETTLED}>
-            {request.provided_at === undefined
+            {request.answered_at === undefined
                 ? `Requested ${formatDate(request.created_at)}`
-                : `Provided ${formatDate(request.provided_at)}`}
+                : `Answered ${formatDate(request.answered_at)}`}
         </p>
     );
 }

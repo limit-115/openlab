@@ -4,7 +4,6 @@ import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import {
     CapabilityRequestType,
-    CapabilityResourceClass,
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
@@ -98,9 +97,11 @@ export const statusFixture: StatusSnapshot = {
             id: "capability-dataset",
             type: CapabilityRequestType.CAPABILITY_REQUEST,
             need: "Independent road-network benchmark dataset",
-            resource_class: CapabilityResourceClass.PRIVATE_DATA,
             reason: "Reproduction needs data not used during heuristic development",
             provisioning_hint: "Provide a local path or downloadable dataset URL",
+            self_provisioning_attempt:
+                "Rebuilt a road network from OpenStreetMap extracts, which overlaps the development set",
+            blocking: true,
             status: CapabilityStatus.OPEN,
             created_at: now
         }

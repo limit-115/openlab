@@ -1,20 +1,17 @@
-import { CAPABILITY_UNREACHABLE } from "#src/capabilities/capability-provision.const";
-import type { CapabilityProvision } from "#src/capabilities/capability-provision.types";
+import { CAPABILITY_UNREACHABLE } from "#src/capabilities/capability-answer.const";
+import type { CapabilityAnswer } from "#src/capabilities/capability-answer.types";
 
 /**
- * Hands a resource to an open capability request. A refusal keeps the daemon's own wording, because
- * it names what the request already settled as.
+ * Settles an open capability request. A refusal keeps the daemon's own wording, because it names
+ * what the request already settled as.
  */
-export async function provideCapability({
-    id,
-    resourceReference
-}: CapabilityProvision): Promise<void> {
+export async function answerCapability({ id, answer }: CapabilityAnswer): Promise<void> {
     let response: Response;
     try {
-        response = await fetch(`/api/capabilities/${encodeURIComponent(id)}/provide`, {
+        response = await fetch(`/api/capabilities/${encodeURIComponent(id)}/answer`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({ resource_reference: resourceReference })
+            body: JSON.stringify({ answer })
         });
     } catch {
         throw new Error(CAPABILITY_UNREACHABLE);

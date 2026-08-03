@@ -83,7 +83,7 @@ describe("App", () => {
 
         await user.click(screen.getByRole("button", { name: "Copy the provisioning command" }));
         expect(writeText).toHaveBeenLastCalledWith(
-            `lab provide ${statusFixture.capability_requests[0]?.id} <resource-reference>`
+            `lab answer ${statusFixture.capability_requests[0]?.id} <answer>`
         );
     });
 

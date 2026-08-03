@@ -28,6 +28,5 @@ export const STATUS_TAG_TONE: Record<TaggedStatus, BadgeVariant> = {
     [ExperimentStatus.PLANNED]: PENDING_TONE,
     [ExperimentStatus.TIMED_OUT]: ADVERSE_TONE,
     [CapabilityStatus.OPEN]: RUNNING_TONE,
-    [CapabilityStatus.PROVIDED]: SETTLED_TONE,
-    [CapabilityStatus.OBSOLETE]: PENDING_TONE
+    [CapabilityStatus.ANSWERED]: SETTLED_TONE
 };
