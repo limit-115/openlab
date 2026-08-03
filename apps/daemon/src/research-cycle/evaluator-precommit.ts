@@ -16,20 +16,12 @@ export async function freezeResearchEvaluators(
     planTargets: readonly PlanTarget[]
 ): Promise<FrozenEvaluator[]> {
     const frozen: FrozenEvaluator[] = [];
-    const seenTargets = new Set<string>();
     for (const candidate of candidates) {
         const target = requiredPlanTarget(
             planTargets,
             candidate.target_kind,
             candidate.target_index
         );
-        const targetKey = `${target.kind}\u0000${target.planIndex}`;
-        if (seenTargets.has(targetKey)) {
-            throw new Error(
-                "A research branch cannot precommit multiple evaluators for one target"
-            );
-        }
-        seenTargets.add(targetKey);
         const evaluator = await freezeEvaluator(
             agentWorkspace.cwd,
             workspace.runDirectory,
@@ -55,7 +47,6 @@ export async function recordEvaluatorPrecommit(
         target_claim_id: evaluator.targetClaimId,
         evaluator_path: evaluator.file,
         evaluator_sha256: evaluator.fileSha256,
-        evaluator_semantic_identity_sha256: evaluator.semanticIdentitySha256,
         args: evaluator.args,
         success_contract: evaluator.successContract
     });

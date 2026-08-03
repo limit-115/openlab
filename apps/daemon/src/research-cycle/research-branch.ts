@@ -36,7 +36,6 @@ import {
     requestSubscriptionCapability,
     selectHarness
 } from "#src/research-cycle/research-stage-run";
-import { assertCleanAgentWorkspace } from "#src/research-cycle/research-stage-workspace";
 import { ResearchStage } from "#src/research-cycle/research-stage-workspace.const";
 import type { ResearchWorkspace } from "#src/research-cycle/research-stage-workspace.types";
 import {
@@ -99,7 +98,6 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
                 planTargets
             );
             const researchWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
-            await assertCleanAgentWorkspace(researchWorkspace);
             await prepareResearchAttempt(
                 workspace,
                 ids,
@@ -110,12 +108,6 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
                 offset + 1
             );
             attemptPrepared = true;
-            /**
-             * The researcher installs tooling and runs its own experiments from here on, so a failure
-             * after this point may already have changed the machine or the outside world. Another
-             * harness would repeat those effects rather than retry a pure planning call.
-             */
-            outcomeAttemptStarted = true;
             const run = await runStructuredAgent({
                 workspace,
                 activity,
@@ -129,6 +121,12 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
                 schema: ResearchResultSchema,
                 ...(signal === undefined ? {} : { signal })
             });
+            /**
+             * The researcher ran its own experiments and has returned them. A harness failure before
+             * this point cost nothing but a call and is worth retrying elsewhere; from here the work
+             * has already happened, and another harness would repeat its effects rather than retry it.
+             */
+            outcomeAttemptStarted = true;
             const capabilityRequests = await persistAgentCapabilityRequests(
                 workspace,
                 run.value.capability_requests
@@ -169,10 +167,6 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
             return {
                 result: recorded.result,
                 evidence: recorded.evidence,
-                evaluatorIdentities: frozenEvaluators.map(
-                    ({ semanticIdentitySha256 }) => semanticIdentitySha256
-                ),
-                artifactSha256s: recorded.artifactSha256s,
                 issues: [...issues, ...recordedSources.issues, ...recorded.issues]
             };
         } catch (error) {
@@ -196,7 +190,7 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
     }
 
     await failRoleTask(workspace, ids, false);
-    return { evidence: [], evaluatorIdentities: [], artifactSha256s: [], issues };
+    return { evidence: [], issues };
 }
 
 async function prepareResearchBranch(

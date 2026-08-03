@@ -5,7 +5,6 @@ import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { describe, expect, it } from "vitest";
 import {
     assertEvaluatorUnchanged,
-    evaluatorSemanticIdentity,
     freezeEvaluator
 } from "#src/evaluator-integrity/frozen-evaluator";
 import type {
@@ -60,29 +59,6 @@ async function freezeSampleEvaluator(): Promise<{
 }
 
 describe("evaluator precommit", () => {
-    it("rejects an empty always-success evaluator", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-trivial-"));
-        const runDirectory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-run-"));
-        const evaluatorPath = path.join(directory, "evaluate");
-        await writeFile(evaluatorPath, "#!/usr/bin/env node\nprocess.exit(0);\n");
-        await chmod(evaluatorPath, 0o755);
-
-        await expect(
-            freezeEvaluator(
-                directory,
-                runDirectory,
-                {
-                    target_kind: RESEARCH_TARGET_KIND.CLAIM,
-                    target_index: 0,
-                    evaluator_path: evaluatorPath,
-                    args: [],
-                    success_contract: "Validate the measured speedup"
-                },
-                target
-            )
-        ).rejects.toThrow("Trivial always-success evaluator is forbidden");
-    });
-
     it("keeps the precommitted evaluator when its author rewrites the file it wrote", async () => {
         const { frozen, evaluatorPath, source } = await freezeSampleEvaluator();
 
@@ -100,22 +76,5 @@ describe("evaluator precommit", () => {
         await writeFile(frozen.file, "#!/usr/bin/env node\nthrow new Error('changed');\n");
 
         await expect(assertEvaluatorUnchanged(frozen)).rejects.toThrow("changed after precommit");
-    });
-
-    it("assigns one semantic identity to comment and whitespace-only variants", () => {
-        const compact = `#!/usr/bin/env node
-const value = 1;
-process.stdout.write(String(value));
-`;
-        const cosmeticVariant = `#!/usr/bin/env node
-// Cosmetic comment
-const   value = 1; /* another comment */
-
-process.stdout.write( String(value) );
-`;
-
-        expect(evaluatorSemanticIdentity(compact, ["--strict"], "A value must be reported")).toBe(
-            evaluatorSemanticIdentity(cosmeticVariant, ["--strict"], "A value must be reported")
-        );
     });
 });

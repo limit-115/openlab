@@ -14,7 +14,6 @@ export interface FrozenEvaluator {
     readonly targetStatementSha256: string;
     readonly file: string;
     readonly fileSha256: string;
-    readonly semanticIdentitySha256: string;
     readonly args: readonly string[];
     readonly successContract: string;
 }

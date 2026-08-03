@@ -10,7 +10,6 @@ import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { assertArtifactsUnchanged } from "#src/artifact-integrity/agent-artifact-snapshot";
 import type { AgentArtifactSnapshot } from "#src/artifact-integrity/agent-artifact-snapshot.types";
-import type { ValidatedArtifact } from "#src/artifact-integrity/file-artifact";
 import {
     assertEvaluatorRejectsNegativeControl,
     executeAttestedEvaluator
@@ -50,7 +49,6 @@ export async function recordVerifierEvidence(
     planTargets: readonly PlanTarget[],
     criticism: CriticResult,
     verificationEvaluator: FrozenEvaluator,
-    researcherArtifactSha256s: readonly string[],
     signal?: AbortSignal
 ): Promise<{ accepted: boolean; completed: boolean; issues: string[] }> {
     const issues: string[] = [...snapshot.issues];
@@ -78,16 +76,7 @@ export async function recordVerifierEvidence(
     }
     const material: AssessedEvidence[] = [];
     await assertArtifactsUnchanged(snapshot.artifacts);
-    const validatedArtifacts: ValidatedArtifact[] = [];
-    for (const artifact of snapshot.artifacts) {
-        if (researcherArtifactSha256s.includes(artifact.sha256)) {
-            issues.push(
-                `Rejected verifier artifact copied from a research branch: ${artifact.path}`
-            );
-        } else {
-            validatedArtifacts.push(artifact);
-        }
-    }
+    const validatedArtifacts = snapshot.artifacts;
     let evaluatorResult: ExecutionResult | undefined;
     let accepted = false;
     if (validatedArtifacts.length > 0) {

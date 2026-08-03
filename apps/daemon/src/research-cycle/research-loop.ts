@@ -210,10 +210,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         taskId: directorIds.taskId,
         createAgentWorkspace,
         prompt: directorPrompt(task),
-        schema: directorPlanSchema(task, {
-            recovered: workspace.recovered,
-            frontierBlockers: workspace.getSnapshot().frontier.blockers
-        }),
+        schema: directorPlanSchema(task),
         ...(signal === undefined ? {} : { signal })
     });
     await finishRoleTask(workspace, directorIds, BranchStatus.CLOSED);
@@ -254,8 +251,6 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         }
         return {
             evidence: [],
-            evaluatorIdentities: [],
-            artifactSha256s: [],
             issues: [result.reason instanceof Error ? result.reason.message : String(result.reason)]
         };
     });
@@ -269,12 +264,6 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         result === undefined ? [] : [result]
     );
     const issues = branchResults.flatMap(({ issues }) => issues);
-    const researcherEvaluatorIdentities = branchResults.flatMap(
-        ({ evaluatorIdentities }) => evaluatorIdentities
-    );
-    const researcherArtifactSha256s = branchResults.flatMap(
-        ({ artifactSha256s }) => artifactSha256s
-    );
     if (successfulResults.length === 0) {
         const nextExperiments: string[] = [];
         await updateFrontier(workspace, [], nextExperiments, issues);
@@ -298,7 +287,6 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         createAgentWorkspace,
         prompt: criticPrompt(task, plan, successfulResults),
         planTargets,
-        researcherEvaluatorIdentities,
         ...(signal === undefined ? {} : { signal })
     });
     const criticism = criticRun.value;
@@ -363,7 +351,6 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
             planTargets,
             criticism,
             verificationEvaluator,
-            researcherArtifactSha256s,
             signal
         );
     } catch (error) {

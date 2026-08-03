@@ -177,11 +177,9 @@ export async function recordResearchEvidence(
 ): Promise<{
     result: ResearchResult;
     evidence: MaterialEvidence[];
-    artifactSha256s: string[];
     issues: string[];
 }> {
     const evidence: MaterialEvidence[] = [];
-    const artifactSha256s: string[] = [];
     const issues: string[] = [];
     const normalizedEvidence: ResearchResult["evidence"] = [];
     for (const item of result.evidence) {
@@ -207,8 +205,6 @@ export async function recordResearchEvidence(
             );
             continue;
         }
-        artifactSha256s.push(...validatedArtifacts.map(({ sha256 }) => sha256));
-
         const frozenEvaluator = frozenEvaluators.find(
             ({ targetKind, targetIndex }) =>
                 targetKind === item.target_kind && targetIndex === item.target_index
@@ -330,7 +326,6 @@ export async function recordResearchEvidence(
     return {
         result: { ...result, evidence: normalizedEvidence },
         evidence,
-        artifactSha256s: uniqueStrings(artifactSha256s),
         issues
     };
 }

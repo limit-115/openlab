@@ -40,12 +40,12 @@ import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
-import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { describe, expect, it } from "vitest";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import { ExperimentEvaluator } from "#src/daemon-execution/experiment-record.const";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import {
     CRITIC_VERDICT,
@@ -138,25 +138,14 @@ class ScriptedHarness implements AgentHarness {
     readonly #criticVerdict: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
     readonly #falsifyAssumption: boolean;
     readonly #missingVerifierArtifacts: boolean;
-    readonly #mutateEvaluatorAfterOutcome: boolean;
-    readonly #trivialEvaluator: boolean;
     readonly #requestDatasetForIndexing: boolean;
     readonly #disguisedConstantEvaluator: boolean;
-    readonly #precommitOutcomeOnly: boolean;
-    readonly #copiedVerifierArtifact: boolean;
-    readonly #trivialCriticEvaluator: boolean;
-    readonly #cosmeticCriticEvaluator: boolean;
     readonly #blockingVerifierEvaluator: boolean;
-    readonly #irreversibleOutcomeTimeout: boolean;
-    readonly #fabricatedVerifierArtifactPath: boolean;
     readonly #mutateOutcomeDuringEvaluation: boolean;
-    readonly #inspectOutcomeEnvironment: boolean;
     readonly #requestVerifierCapability: boolean;
-    readonly #protectedControlPlaneDirection: boolean;
     readonly #sourceCandidateUrl: string | undefined;
     readonly #sourceOnly: boolean;
     readonly #researchEvaluatorPaths: string[] = [];
-    readonly #precomputedArtifactPaths: string[] = [];
 
     constructor(
         kind: typeof HarnessKinds.CODEX | typeof HarnessKinds.CLAUDE,
@@ -164,21 +153,11 @@ class ScriptedHarness implements AgentHarness {
             criticVerdict?: (typeof CRITIC_VERDICT)[keyof typeof CRITIC_VERDICT];
             falsifyAssumption?: boolean;
             missingVerifierArtifacts?: boolean;
-            mutateEvaluatorAfterOutcome?: boolean;
-            trivialEvaluator?: boolean;
             requestDatasetForIndexing?: boolean;
             disguisedConstantEvaluator?: boolean;
-            precommitOutcomeOnly?: boolean;
-            copiedVerifierArtifact?: boolean;
-            trivialCriticEvaluator?: boolean;
-            cosmeticCriticEvaluator?: boolean;
             blockingVerifierEvaluator?: boolean;
-            irreversibleOutcomeTimeout?: boolean;
-            fabricatedVerifierArtifactPath?: boolean;
             mutateOutcomeDuringEvaluation?: boolean;
-            inspectOutcomeEnvironment?: boolean;
             requestVerifierCapability?: boolean;
-            protectedControlPlaneDirection?: boolean;
             sourceCandidateUrl?: string;
             sourceOnly?: boolean;
         } = {}
@@ -187,21 +166,11 @@ class ScriptedHarness implements AgentHarness {
         this.#criticVerdict = options.criticVerdict ?? CRITIC_VERDICT.CREDIBLE;
         this.#falsifyAssumption = options.falsifyAssumption ?? false;
         this.#missingVerifierArtifacts = options.missingVerifierArtifacts ?? false;
-        this.#mutateEvaluatorAfterOutcome = options.mutateEvaluatorAfterOutcome ?? false;
-        this.#trivialEvaluator = options.trivialEvaluator ?? false;
         this.#requestDatasetForIndexing = options.requestDatasetForIndexing ?? false;
         this.#disguisedConstantEvaluator = options.disguisedConstantEvaluator ?? false;
-        this.#precommitOutcomeOnly = options.precommitOutcomeOnly ?? false;
-        this.#copiedVerifierArtifact = options.copiedVerifierArtifact ?? false;
-        this.#trivialCriticEvaluator = options.trivialCriticEvaluator ?? false;
-        this.#cosmeticCriticEvaluator = options.cosmeticCriticEvaluator ?? false;
         this.#blockingVerifierEvaluator = options.blockingVerifierEvaluator ?? false;
-        this.#irreversibleOutcomeTimeout = options.irreversibleOutcomeTimeout ?? false;
-        this.#fabricatedVerifierArtifactPath = options.fabricatedVerifierArtifactPath ?? false;
         this.#mutateOutcomeDuringEvaluation = options.mutateOutcomeDuringEvaluation ?? false;
-        this.#inspectOutcomeEnvironment = options.inspectOutcomeEnvironment ?? false;
         this.#requestVerifierCapability = options.requestVerifierCapability ?? false;
-        this.#protectedControlPlaneDirection = options.protectedControlPlaneDirection ?? false;
         this.#sourceCandidateUrl = options.sourceCandidateUrl;
         this.#sourceOnly = options.sourceOnly ?? false;
     }
@@ -238,19 +207,12 @@ class ScriptedHarness implements AgentHarness {
                     }
                 ],
                 directions: [
-                    this.#protectedControlPlaneDirection
-                        ? {
-                              title: DormantCapabilityFixture.DIRECTION_TITLE,
-                              approach: DormantCapabilityFixture.DIRECTION_APPROACH,
-                              rationale: DormantCapabilityFixture.DIRECTION_RATIONALE,
-                              objective: DormantCapabilityFixture.DIRECTION_OBJECTIVE
-                          }
-                        : {
-                              title: "Indexing",
-                              approach: "Change the lookup index",
-                              rationale: "Lookup dominates runtime",
-                              objective: "Measure indexed lookup"
-                          },
+                    {
+                        title: "Indexing",
+                        approach: "Change the lookup index",
+                        rationale: "Lookup dominates runtime",
+                        objective: "Measure indexed lookup"
+                    },
                     {
                         title: "Batching",
                         approach: "Batch independent operations",
@@ -268,26 +230,19 @@ class ScriptedHarness implements AgentHarness {
             const successContract = this.#falsifyAssumption
                 ? "The held-out workload must be representative"
                 : "Measured elapsed_ms must be below 20";
-            const evaluatorSource = this.#trivialEvaluator
-                ? "#!/usr/bin/env node\nprocess.exit(0);\n"
-                : this.#disguisedConstantEvaluator
-                  ? constantSupportingEvaluatorProgram()
-                  : evaluatorProgram({
-                        field: this.#falsifyAssumption ? "representative" : "elapsed_ms",
-                        expected: this.#falsifyAssumption ? "true" : "20",
-                        successContract,
-                        supportsWhen: this.#falsifyAssumption
-                            ? EvaluatorComparison.TRUTHY
-                            : EvaluatorComparison.LESS_THAN,
-                        mutateArtifact: this.#mutateOutcomeDuringEvaluation
-                    });
+            const evaluatorSource = this.#disguisedConstantEvaluator
+                ? constantSupportingEvaluatorProgram()
+                : evaluatorProgram({
+                      field: this.#falsifyAssumption ? "representative" : "elapsed_ms",
+                      expected: this.#falsifyAssumption ? "true" : "20",
+                      successContract,
+                      supportsWhen: this.#falsifyAssumption
+                          ? EvaluatorComparison.TRUTHY
+                          : EvaluatorComparison.LESS_THAN,
+                      mutateArtifact: this.#mutateOutcomeDuringEvaluation
+                  });
             await writeFile(evaluatorPath, evaluatorSource);
             await chmod(evaluatorPath, 0o755);
-            if (this.#precommitOutcomeOnly) {
-                const precomputedArtifactPath = path.join(request.cwd, "precomputed-result.json");
-                await writeFile(precomputedArtifactPath, JSON.stringify({ elapsed_ms: 12 }));
-                this.#precomputedArtifactPaths.push(precomputedArtifactPath);
-            }
             output = {
                 evaluators: [
                     {
@@ -304,14 +259,6 @@ class ScriptedHarness implements AgentHarness {
             const datasetBlocked =
                 this.#requestDatasetForIndexing &&
                 request.prompt.includes(`"title": "${DatasetCapabilityFixture.DIRECTION_TITLE}"`);
-            if (this.#mutateEvaluatorAfterOutcome) {
-                const frozenEvaluatorPath = this.#researchEvaluatorPaths.shift();
-                if (frozenEvaluatorPath !== undefined) {
-                    await writeFile(frozenEvaluatorPath, "#!/usr/bin/env node\nprocess.exit(0);\n");
-                }
-            } else {
-                this.#researchEvaluatorPaths.shift();
-            }
             const sourceCandidates =
                 this.#sourceCandidateUrl === undefined
                     ? []
@@ -354,20 +301,14 @@ class ScriptedHarness implements AgentHarness {
                     capability_blocked: false
                 };
             } else {
-                const artifactPath = this.#precommitOutcomeOnly
-                    ? (this.#precomputedArtifactPaths.shift() ?? "missing-precomputed-artifact")
-                    : path.join(
-                          request.cwd,
-                          this.#irreversibleOutcomeTimeout
-                              ? "irreversible-result.json"
-                              : `measurement-${this.requests.length}.json`
-                      );
-                const outputContent = JSON.stringify(
+                const measurement = JSON.stringify(
                     this.#falsifyAssumption ? { representative: false } : { elapsed_ms: 12 }
                 );
-                const outputExpression = this.#inspectOutcomeEnvironment
-                    ? `JSON.stringify({ elapsed_ms: 12, outcome_env: { home: process.env.HOME, codex_home: process.env.CODEX_HOME, claude_config_dir: process.env.CLAUDE_CONFIG_DIR, provider_api_keys_absent: [["OPENAI", "API", "KEY"], ["ANTHROPIC", "API", "KEY"], [["CO", "DEX"].join(""), "API", "KEY"]].map((parts) => parts.join("_")).every((name) => process.env[name] === undefined), auth_marker_visible: await (async () => { try { await (await import("node:fs/promises")).access((await import("node:path")).join(process.env.CODEX_HOME, "auth-marker")); return true; } catch { return false; } })() } })`
-                    : JSON.stringify(outputContent);
+                const artifactPath = path.join(
+                    request.cwd,
+                    `measurement-${this.requests.length}.json`
+                );
+                await writeFile(artifactPath, measurement);
                 output = {
                     summary: "A recorded benchmark supports the claim",
                     hypothesis: "The candidate lowers elapsed time",
@@ -381,61 +322,32 @@ class ScriptedHarness implements AgentHarness {
                                 : RESEARCH_TARGET_KIND.CLAIM,
                             target_index: 0,
                             summary: "Recorded benchmark samples",
-                            artifact_paths: this.#precommitOutcomeOnly ? [artifactPath] : [],
+                            artifact_paths: [artifactPath],
                             contradicts_hypothesis: this.#falsifyAssumption
                         }
                     ],
                     sources: sourceCandidates,
-                    execution_plan: {
-                        file: process.execPath,
-                        args: [
-                            "--input-type=module",
-                            "-e",
-                            this.#irreversibleOutcomeTimeout
-                                ? `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression}); await new Promise((resolve) => setTimeout(resolve, 10_000))`
-                                : `await (await import("node:fs/promises")).writeFile(${JSON.stringify(path.basename(artifactPath))}, ${outputExpression})`
-                        ],
-                        declared_output_paths: [path.basename(artifactPath)],
-                        timeout_ms: this.#irreversibleOutcomeTimeout ? 50 : 300_000,
-                        external_effect: this.#irreversibleOutcomeTimeout
-                            ? ExternalEffect.IRREVERSIBLE
-                            : ExternalEffect.NONE,
-                        ...(this.#irreversibleOutcomeTimeout
-                            ? { reconciliation_key: "irreversible-operation" }
-                            : {})
-                    },
                     limitations: [],
                     next_experiments: []
                 };
             }
         } else if (request.prompt.includes(PromptRole.CRITIC)) {
             const evaluatorPath = path.join(request.cwd, "verify-independent");
-            const successContract = this.#cosmeticCriticEvaluator
-                ? "Measured elapsed_ms must be below 20"
-                : "Independent elapsed_ms must be below 15";
-            const evaluatorSource = this.#trivialCriticEvaluator
-                ? "#!/usr/bin/env node\nprocess.exit(0);\n"
-                : this.#cosmeticCriticEvaluator
-                  ? `${evaluatorProgram({
-                        field: "elapsed_ms",
-                        expected: "20",
-                        successContract,
-                        supportsWhen: EvaluatorComparison.LESS_THAN
-                    })}\n// Cosmetic critic-only comment\n`
-                  : this.#blockingVerifierEvaluator
-                    ? evaluatorProgram({
-                          field: "elapsed_ms",
-                          expected: "15",
-                          successContract,
-                          supportsWhen: EvaluatorComparison.LESS_THAN,
-                          delayMs: 10_000
-                      })
-                    : evaluatorProgram({
-                          field: "elapsed_ms",
-                          expected: "15",
-                          successContract,
-                          supportsWhen: EvaluatorComparison.LESS_THAN
-                      });
+            const successContract = "Independent elapsed_ms must be below 15";
+            const evaluatorSource = this.#blockingVerifierEvaluator
+                ? evaluatorProgram({
+                      field: "elapsed_ms",
+                      expected: "15",
+                      successContract,
+                      supportsWhen: EvaluatorComparison.LESS_THAN,
+                      delayMs: 10_000
+                  })
+                : evaluatorProgram({
+                      field: "elapsed_ms",
+                      expected: "15",
+                      successContract,
+                      supportsWhen: EvaluatorComparison.LESS_THAN
+                  });
             await writeFile(evaluatorPath, evaluatorSource);
             await chmod(evaluatorPath, 0o755);
             output = {
@@ -455,7 +367,7 @@ class ScriptedHarness implements AgentHarness {
                     target_kind: RESEARCH_TARGET_KIND.CLAIM,
                     target_index: 0,
                     evaluator_path: evaluatorPath,
-                    args: [this.#cosmeticCriticEvaluator ? "--structured" : "--independent"],
+                    args: ["--independent"],
                     success_contract: successContract
                 }
             };
@@ -491,29 +403,14 @@ class ScriptedHarness implements AgentHarness {
                 return;
             }
             const artifactPath = path.join(request.cwd, "independent-reproduction.json");
-            if (this.#fabricatedVerifierArtifactPath) {
-                await writeFile(
-                    artifactPath,
-                    JSON.stringify({ elapsed_ms: this.#copiedVerifierArtifact ? 12 : 11 })
-                );
+            if (!this.#missingVerifierArtifacts) {
+                await writeFile(artifactPath, JSON.stringify({ elapsed_ms: 11 }));
             }
             output = {
                 verdict: VERIFIER_VERDICT.REPRODUCED,
                 claim_index: 0,
                 result_statement: "An independent benchmark reproduced the speedup",
-                evidence_artifact_paths: this.#fabricatedVerifierArtifactPath ? [artifactPath] : [],
-                execution_plan: {
-                    file: process.execPath,
-                    args: this.#missingVerifierArtifacts
-                        ? ["-e", "process.exit(0)"]
-                        : [
-                              "--input-type=module",
-                              "-e",
-                              `await (await import("node:fs/promises")).writeFile("independent-reproduction.json", ${JSON.stringify(JSON.stringify({ elapsed_ms: this.#copiedVerifierArtifact ? 12 : 11 }))})`
-                          ],
-                    declared_output_paths: ["independent-reproduction.json"],
-                    external_effect: ExternalEffect.NONE
-                },
+                evidence_artifact_paths: [artifactPath],
                 limitations: [],
                 known_counterexamples: []
             };
@@ -730,7 +627,7 @@ describe.sequential("runResearchLoop", () => {
         expect(workspace.getSnapshot().claims).toEqual([
             expect.objectContaining({ status: ClaimStatus.REPRODUCED })
         ]);
-        expect(workspace.getSnapshot().experiments).toHaveLength(11);
+        expect(workspace.getSnapshot().experiments).toHaveLength(8);
         expect(
             workspace
                 .getSnapshot()
@@ -767,19 +664,21 @@ describe.sequential("runResearchLoop", () => {
         const verifierRequest = [...codex.requests, ...claude.requests].find(({ prompt }) =>
             prompt.includes(PromptRole.VERIFIER)
         );
-        expect(verifierRequest?.executionProfile).toBe(HarnessExecutionProfiles.READ_ONLY);
         expect(verifierRequest?.prompt).not.toContain('"artifact_paths"');
         for (const request of [...codex.requests, ...claude.requests].filter(({ prompt }) =>
             prompt.includes(PromptRole.RESEARCHER)
         )) {
-            expect(request.executionProfile).toBe(HarnessExecutionProfiles.READ_ONLY);
             expect(verifierRequest?.prompt).not.toContain(request.cwd);
         }
+        expect(
+            [...codex.requests, ...claude.requests].some(
+                ({ executionProfile }) => executionProfile === HarnessExecutionProfiles.READ_ONLY
+            )
+        ).toBe(false);
         expect(workspace.getSnapshot().experiments).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    evaluator: "Daemon-owned outcome executor",
-                    external_effect: ExternalEffect.NONE,
+                    evaluator: ExperimentEvaluator.AGENT_HARNESS,
                     output_hash: expect.stringMatching(/^[a-f\d]{64}$/u)
                 })
             ])
@@ -803,7 +702,6 @@ describe.sequential("runResearchLoop", () => {
                 expect.objectContaining({
                     payload: expect.objectContaining({
                         evaluator_sha256: expect.stringMatching(/^[a-f\d]{64}$/),
-                        evaluator_semantic_identity_sha256: expect.stringMatching(/^[a-f\d]{64}$/),
                         success_contract: expect.any(String)
                     })
                 })
@@ -913,75 +811,6 @@ describe.sequential("runResearchLoop", () => {
         );
     });
 
-    it("rejects an undiagnosed lab-control-plane direction before creating its task or branch", async () => {
-        const workspace = await createWorkspace();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            protectedControlPlaneDirection: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE);
-
-        const outcome = await runResearchLoop(workspace, { harnesses: [codex, claude] });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
-        expect(
-            codex.requests.filter(({ prompt }) => prompt.includes(PromptRole.DIRECTOR))
-        ).toHaveLength(1);
-        expect(
-            claude.requests.filter(({ prompt }) => prompt.includes(PromptRole.DIRECTOR))
-        ).toHaveLength(1);
-        const snapshot = workspace.getSnapshot();
-        expect(snapshot.branches).not.toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    title: DormantCapabilityFixture.DIRECTION_TITLE,
-                    approach: DormantCapabilityFixture.DIRECTION_APPROACH
-                })
-            ])
-        );
-        expect(snapshot.tasks).not.toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    objective: DormantCapabilityFixture.DIRECTION_OBJECTIVE
-                })
-            ])
-        );
-    });
-
-    it("allows a matching repair direction only after recovering its diagnosed blocker", async () => {
-        const workspace = await createWorkspace();
-        await workspace.update((draft) => {
-            draft.frontier.blockers.push(DormantCapabilityFixture.BLOCKER);
-        });
-        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
-        const recovered = await LabWorkspace.load(workspaceRoot, workspace.runDirectory);
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            protectedControlPlaneDirection: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            protectedControlPlaneDirection: true
-        });
-
-        const outcome = await runResearchLoop(recovered, { harnesses: [codex, claude] });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
-        expect(recovered.getSnapshot().branches).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    title: DormantCapabilityFixture.DIRECTION_TITLE,
-                    approach: DormantCapabilityFixture.DIRECTION_APPROACH
-                })
-            ])
-        );
-        expect(recovered.getSnapshot().tasks).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    objective: DormantCapabilityFixture.DIRECTION_OBJECTIVE,
-                    role: AgentRole.RESEARCHER
-                })
-            ])
-        );
-    });
-
     it("persists a blocked researcher resource request while another branch completes", async () => {
         const workspace = await createWorkspace();
         const harness = new ScriptedHarness(HarnessKinds.CODEX, {
@@ -1033,39 +862,6 @@ describe.sequential("runResearchLoop", () => {
         ).toHaveLength(1);
     });
 
-    it("rejects a researcher that replaces its evaluator after the precommit", async () => {
-        const workspace = await createWorkspace();
-        const abortController = new AbortController();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            mutateEvaluatorAfterOutcome: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            mutateEvaluatorAfterOutcome: true
-        });
-
-        const outcome = await runResearchLoop(workspace, {
-            harnesses: [codex, claude],
-            signal: abortController.signal,
-            plateauInactivityMs: 1,
-            waitForPlateau: async () => {
-                const reason = new Error("Evaluator mutation observed");
-                abortController.abort(reason);
-                throw reason;
-            }
-        });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
-        const claimStatuses = workspace.getSnapshot().claims.map(({ status }) => status);
-        expect(claimStatuses).not.toContain(ClaimStatus.SUPPORTED);
-        expect(claimStatuses).not.toContain(ClaimStatus.REPRODUCED);
-        expect(workspace.getSnapshot().experiments).toEqual(
-            expect.arrayContaining([expect.objectContaining({ status: ExperimentStatus.FAILED })])
-        );
-        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
-            EventType.LAB_COMPLETED
-        );
-    });
-
     it("rejects an evaluator that mutates an immutable outcome snapshot", async () => {
         const workspace = await createWorkspace();
         const codex = new ScriptedHarness(HarnessKinds.CODEX, {
@@ -1083,34 +879,13 @@ describe.sequential("runResearchLoop", () => {
         expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
         expect(workspace.getEvidence()).toHaveLength(0);
         expect(workspace.getSnapshot().frontier.blockers).toEqual(
-            expect.arrayContaining([expect.stringContaining("changed across evaluator boundary")])
+            expect.arrayContaining([expect.stringContaining("snapshot changed after it was taken")])
         );
-    });
-
-    it("rejects verifier artifacts copied byte-for-byte from a research branch", async () => {
-        const workspace = await createWorkspace();
-        const abortController = new AbortController();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            copiedVerifierArtifact: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE);
-
-        const outcome = await runResearchLoop(workspace, {
-            harnesses: [codex, claude],
-            signal: abortController.signal,
-            waitForCycle: async () => abortController.abort(new Error("test cycle observed"))
-        });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.CANCELLED);
-        expect(workspace.getSnapshot().claims.map(({ status }) => status)).not.toContain(
-            ClaimStatus.REPRODUCED
-        );
-        expect(workspace.getSnapshot().frontier.blockers).toEqual(
-            expect.arrayContaining([expect.stringContaining("copied from a research branch")])
-        );
-        expect(
-            workspace.getSnapshot().tasks.find(({ role }) => role === AgentRole.VERIFIER)?.status
-        ).toBe(InternalTaskStatus.FAILED);
+        for (const harness of [codex, claude]) {
+            expect(
+                harness.requests.filter(({ prompt }) => prompt.includes(PromptRole.RESEARCHER))
+            ).toHaveLength(1);
+        }
     });
 
     it("propagates cancellation from the frozen verifier evaluator and cancels its role", async () => {
@@ -1174,57 +949,6 @@ describe.sequential("runResearchLoop", () => {
             ])
         );
         expect(workspace.getEvidence()).toHaveLength(0);
-    });
-
-    it("does not accept outcome artifacts created in the separate precommit workspace", async () => {
-        const workspace = await createWorkspace();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            precommitOutcomeOnly: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            precommitOutcomeOnly: true
-        });
-
-        const outcome = await runResearchLoop(workspace, {
-            harnesses: [codex, claude],
-            plateauInactivityMs: 1
-        });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
-        expect(workspace.getSnapshot().claims.map(({ status }) => status)).not.toContain(
-            ClaimStatus.SUPPORTED
-        );
-        expect([...codex.researcherInitialEntries, ...claude.researcherInitialEntries]).toEqual(
-            expect.arrayContaining([[".git"]])
-        );
-        expect(
-            workspace
-                .getSnapshot()
-                .experiments.some(({ evaluator }) => evaluator === "Daemon-owned outcome executor")
-        ).toBe(false);
-    });
-
-    it("rejects verifier artifacts created directly by the planning harness", async () => {
-        const workspace = await createWorkspace();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            fabricatedVerifierArtifactPath: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            fabricatedVerifierArtifactPath: true
-        });
-
-        const outcome = await runResearchLoop(workspace, {
-            harnesses: [codex, claude],
-            plateauInactivityMs: 1
-        });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.FAILED);
-        expect(workspace.getSnapshot().claims.map(({ status }) => status)).not.toContain(
-            ClaimStatus.REPRODUCED
-        );
-        expect(
-            workspace.getEvidence().some(({ kind }) => kind === EvidenceKind.VERIFIER_RESULT)
-        ).toBe(false);
     });
 
     it("records daemon-fetched citations with clickable report metadata across recovery", async () => {
@@ -1360,46 +1084,7 @@ describe.sequential("runResearchLoop", () => {
         }
     });
 
-    it("isolates daemon outcome processes from provider credentials and subscription homes", async () => {
-        const workspace = await createWorkspace();
-        const markerRoot = await mkdtemp(path.join(tmpdir(), "lab-outcome-auth-marker-"));
-        await writeFile(path.join(markerRoot, "auth-marker"), "must not be visible");
-        const previousCodexHome = process.env.CODEX_HOME;
-        const previousOpenAiKey = process.env.OPENAI_API_KEY;
-        const previousAnthropicKey = process.env.ANTHROPIC_API_KEY;
-        process.env.CODEX_HOME = markerRoot;
-        process.env.OPENAI_API_KEY = "test-provider-key";
-        process.env.ANTHROPIC_API_KEY = "test-provider-key";
-
-        try {
-            const outcome = await runResearchLoop(workspace, {
-                harnesses: [
-                    new ScriptedHarness(HarnessKinds.CODEX, {
-                        inspectOutcomeEnvironment: true
-                    }),
-                    new ScriptedHarness(HarnessKinds.CLAUDE, {
-                        inspectOutcomeEnvironment: true
-                    })
-                ],
-                plateauInactivityMs: 1
-            });
-
-            expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
-            const observation = await findOutcomeEnvironmentObservation(workspace);
-            expect(observation.provider_api_keys_absent).toBe(true);
-            expect(observation.auth_marker_visible).toBe(false);
-            expect(observation.home).toBe(observation.codex_home);
-            expect(observation.home).toBe(observation.claude_config_dir);
-            expect(path.basename(observation.home)).toBe(".lab-empty-model-auth");
-            expect(observation.home).not.toBe(markerRoot);
-        } finally {
-            restoreEnvironmentVariable("CODEX_HOME", previousCodexHome);
-            restoreEnvironmentVariable("OPENAI_API_KEY", previousOpenAiKey);
-            restoreEnvironmentVariable("ANTHROPIC_API_KEY", previousAnthropicKey);
-        }
-    });
-
-    it("pauses a capability-blocked verifier without executing a fabricated plan", async () => {
+    it("pauses a capability-blocked verifier without fabricating a reproduction", async () => {
         const workspace = await createWorkspace();
         const outcome = await runResearchLoop(workspace, {
             harnesses: [
@@ -1429,12 +1114,9 @@ describe.sequential("runResearchLoop", () => {
         expect(snapshot.branches.find(({ id }) => id === verifierTask.branch_id)).toMatchObject({
             status: BranchStatus.PAUSED
         });
-        expect(
-            snapshot.experiments.some(
-                ({ task_id: taskId, evaluator }) =>
-                    taskId === verifierTask.id && evaluator === "Daemon-owned outcome executor"
-            )
-        ).toBe(false);
+        expect(snapshot.experiments.some(({ task_id: taskId }) => taskId === verifierTask.id)).toBe(
+            false
+        );
         expect(snapshot.capability_requests).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
@@ -1673,41 +1355,6 @@ describe.sequential("runResearchLoop", () => {
         expect(new Set(criticDirectories).size).toBe(2);
     });
 
-    it("retries a critic whose evaluator precommit is trivial", async () => {
-        const workspace = await createWorkspace();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX);
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            trivialCriticEvaluator: true
-        });
-
-        const outcome = await runResearchLoop(workspace, { harnesses: [codex, claude] });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
-        const criticRequests = [...codex.requests, ...claude.requests].filter(({ prompt }) =>
-            prompt.includes(PromptRole.CRITIC)
-        );
-        expect(criticRequests).toHaveLength(2);
-        expect(new Set(criticRequests.map(({ cwd }) => cwd)).size).toBe(2);
-    });
-
-    it("does not treat a comment-only evaluator variant as independent", async () => {
-        const workspace = await createWorkspace();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX);
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            cosmeticCriticEvaluator: true
-        });
-
-        const outcome = await runResearchLoop(workspace, { harnesses: [codex, claude] });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.COMPLETED);
-        expect(
-            claude.requests.filter(({ prompt }) => prompt.includes(PromptRole.CRITIC))
-        ).toHaveLength(1);
-        expect(
-            codex.requests.filter(({ prompt }) => prompt.includes(PromptRole.CRITIC))
-        ).toHaveLength(1);
-    });
-
     it("preserves a failed researcher manifest as a negative experiment attempt", async () => {
         const workspace = await createWorkspace();
         const codex = new ScriptedHarness(HarnessKinds.CODEX);
@@ -1756,80 +1403,6 @@ describe.sequential("runResearchLoop", () => {
                 EventType.ATTEMPT_TIMED_OUT
             ])
         );
-    });
-
-    it("does not automatically retry an interrupted irreversible outcome attempt", async () => {
-        const workspace = await createWorkspace();
-        const codex = new ScriptedHarness(HarnessKinds.CODEX, {
-            irreversibleOutcomeTimeout: true
-        });
-        const claude = new ScriptedHarness(HarnessKinds.CLAUDE, {
-            irreversibleOutcomeTimeout: true
-        });
-
-        const outcome = await runResearchLoop(workspace, {
-            harnesses: [codex, claude],
-            plateauInactivityMs: 1
-        });
-
-        expect(outcome.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
-        expect(
-            claude.requests.filter(({ prompt }) => prompt.includes(PromptRole.RESEARCHER))
-        ).toHaveLength(1);
-        expect(
-            codex.requests.filter(({ prompt }) => prompt.includes(PromptRole.RESEARCHER))
-        ).toHaveLength(1);
-        expect(workspace.getSnapshot().experiments).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    evaluator: "Daemon-owned outcome executor",
-                    status: ExperimentStatus.TIMED_OUT,
-                    external_effect: ExternalEffect.IRREVERSIBLE,
-                    reconciliation_key: expect.stringMatching(/^irreversible-/u),
-                    output_path: expect.any(String),
-                    output_hash: expect.stringMatching(/^[a-f\d]{64}$/u)
-                })
-            ])
-        );
-        expect(
-            workspace
-                .getSnapshot()
-                .experiments.filter(
-                    ({ evaluator, external_effect: externalEffect }) =>
-                        evaluator === "Daemon-owned outcome executor" &&
-                        externalEffect === ExternalEffect.IRREVERSIBLE
-                )
-        ).toHaveLength(1);
-
-        await workspace.transition(LabState.RUNNING, "retry-safety audit", {
-            wakeTrigger: WakeTrigger.USER
-        });
-        const recoveredWorkspace = await LabWorkspace.load(
-            path.dirname(path.dirname(workspace.runDirectory)),
-            workspace.runDirectory
-        );
-        const recovered = await runResearchLoop(recoveredWorkspace, {
-            harnesses: [
-                new ScriptedHarness(HarnessKinds.CODEX, {
-                    irreversibleOutcomeTimeout: true
-                }),
-                new ScriptedHarness(HarnessKinds.CLAUDE, {
-                    irreversibleOutcomeTimeout: true
-                })
-            ],
-            plateauInactivityMs: 1
-        });
-
-        expect(recovered.status).toBe(ResearchLoopOutcomeStatus.HIBERNATING);
-        expect(
-            recoveredWorkspace
-                .getSnapshot()
-                .experiments.filter(
-                    ({ evaluator, external_effect: externalEffect }) =>
-                        evaluator === "Daemon-owned outcome executor" &&
-                        externalEffect === ExternalEffect.IRREVERSIBLE
-                )
-        ).toHaveLength(1);
     });
 
     it("does not complete when the critic refutes the candidate", async () => {
@@ -2091,66 +1664,6 @@ async function waitUntil(predicate: () => boolean): Promise<void> {
         }
         await delay(10);
     }
-}
-
-interface OutcomeEnvironmentObservation {
-    readonly home: string;
-    readonly codex_home: string;
-    readonly claude_config_dir: string;
-    readonly provider_api_keys_absent: boolean;
-    readonly auth_marker_visible: boolean;
-}
-
-async function findOutcomeEnvironmentObservation(
-    workspace: LabWorkspace
-): Promise<OutcomeEnvironmentObservation> {
-    for (const evidence of workspace.getEvidence()) {
-        if (evidence.kind !== EvidenceKind.ARTIFACT || evidence.artifact_path === undefined) {
-            continue;
-        }
-        let parsed: unknown;
-        try {
-            parsed = JSON.parse(await readFile(evidence.artifact_path, "utf8"));
-        } catch {
-            continue;
-        }
-        if (typeof parsed !== "object" || parsed === null || !("outcome_env" in parsed)) {
-            continue;
-        }
-        const outcomeEnvironment = parsed.outcome_env;
-        if (
-            typeof outcomeEnvironment !== "object" ||
-            outcomeEnvironment === null ||
-            !("home" in outcomeEnvironment) ||
-            typeof outcomeEnvironment.home !== "string" ||
-            !("codex_home" in outcomeEnvironment) ||
-            typeof outcomeEnvironment.codex_home !== "string" ||
-            !("claude_config_dir" in outcomeEnvironment) ||
-            typeof outcomeEnvironment.claude_config_dir !== "string" ||
-            !("provider_api_keys_absent" in outcomeEnvironment) ||
-            typeof outcomeEnvironment.provider_api_keys_absent !== "boolean" ||
-            !("auth_marker_visible" in outcomeEnvironment) ||
-            typeof outcomeEnvironment.auth_marker_visible !== "boolean"
-        ) {
-            continue;
-        }
-        return {
-            home: outcomeEnvironment.home,
-            codex_home: outcomeEnvironment.codex_home,
-            claude_config_dir: outcomeEnvironment.claude_config_dir,
-            provider_api_keys_absent: outcomeEnvironment.provider_api_keys_absent,
-            auth_marker_visible: outcomeEnvironment.auth_marker_visible
-        };
-    }
-    throw new Error("Expected a daemon outcome environment observation artifact");
-}
-
-function restoreEnvironmentVariable(name: string, value: string | undefined): void {
-    if (value === undefined) {
-        delete process.env[name];
-        return;
-    }
-    process.env[name] = value;
 }
 
 async function startCitationServer(status: 200 | 404): Promise<{

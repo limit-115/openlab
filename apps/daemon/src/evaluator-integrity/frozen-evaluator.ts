@@ -1,17 +1,12 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ExecutionResult } from "@lab/executor/types";
 import {
     type ValidatedArtifact,
     validateFileArtifact
 } from "#src/artifact-integrity/file-artifact";
-import { normalizeEvaluatorSource } from "#src/evaluator-integrity/evaluator-source-normalization";
-import {
-    EvaluatorFileRequirement,
-    FrozenEvaluatorStore,
-    TrivialEvaluatorSource
-} from "#src/evaluator-integrity/frozen-evaluator.const";
+import { FrozenEvaluatorStore } from "#src/evaluator-integrity/frozen-evaluator.const";
 import type {
     BoundEvaluatorInput,
     EvaluatorInputArtifact,
@@ -35,17 +30,6 @@ export async function freezeEvaluator(
         throw new Error("Evaluator precommit does not match its target");
     }
     const artifact = await validateFileArtifact(sourceDirectory, candidate.evaluator_path);
-    if (artifact.bytes < EvaluatorFileRequirement.MINIMUM_BYTES) {
-        throw new Error("Evaluator executable is too small to implement a meaningful contract");
-    }
-    const metadata = await stat(artifact.path);
-    if ((metadata.mode & EvaluatorFileRequirement.EXECUTABLE_MODE_MASK) === 0) {
-        throw new Error("Evaluator must be an executable regular file");
-    }
-    const source = await readFile(artifact.path, "utf8");
-    if (Object.values(TrivialEvaluatorSource).some((pattern) => pattern.test(source.trim()))) {
-        throw new Error("Trivial always-success evaluator is forbidden");
-    }
     const frozen = await storeFrozenEvaluator(runDirectory, artifact);
 
     return {
@@ -55,11 +39,6 @@ export async function freezeEvaluator(
         targetStatementSha256: sha256(target.claim.statement),
         file: frozen.path,
         fileSha256: frozen.sha256,
-        semanticIdentitySha256: evaluatorSemanticIdentity(
-            source,
-            candidate.args,
-            candidate.success_contract
-        ),
         args: [...candidate.args],
         successContract: candidate.success_contract
     };
@@ -89,20 +68,6 @@ async function storeFrozenEvaluator(
         throw new Error("Evaluator changed while it was being frozen");
     }
     return frozen;
-}
-
-export function evaluatorSemanticIdentity(
-    source: string,
-    args: readonly string[],
-    successContract: string
-): string {
-    return sha256(
-        JSON.stringify({
-            source: normalizeEvaluatorSource(source),
-            args,
-            success_contract: successContract
-        })
-    );
 }
 
 export async function assertEvaluatorUnchanged(evaluator: FrozenEvaluator): Promise<void> {

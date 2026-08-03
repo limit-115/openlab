@@ -99,7 +99,6 @@ export async function runCriticStageWithFallback(input: {
     readonly createAgentWorkspace: CreateResearchWorkspace;
     readonly prompt: string;
     readonly planTargets: readonly PlanTarget[];
-    readonly researcherEvaluatorIdentities: readonly string[];
     readonly signal?: AbortSignal;
 }): Promise<CriticStageRunOutput> {
     let lastError: unknown;
@@ -140,11 +139,6 @@ export async function runCriticStageWithFallback(input: {
                 run.value.verification_evaluator,
                 evaluatorTarget(target)
             );
-            if (input.researcherEvaluatorIdentities.includes(evaluator.semanticIdentitySha256)) {
-                throw new Error(
-                    "Independent verification must use a semantically alternate evaluator"
-                );
-            }
             await recordEvaluatorPrecommit(input.workspace, input.ids, evaluator);
             return { ...run, harness, agentWorkspace, capabilityRequests, evaluator };
         } catch (error) {

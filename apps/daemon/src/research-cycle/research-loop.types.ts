@@ -68,8 +68,6 @@ export interface ResearchBranchInput {
 export interface ResearchBranchResult {
     readonly result?: ResearchResult;
     readonly evidence: readonly MaterialEvidence[];
-    readonly evaluatorIdentities: readonly string[];
-    readonly artifactSha256s: readonly string[];
     readonly issues: readonly string[];
 }
 

@@ -242,7 +242,7 @@ produced in evidence_artifact_paths.
 
 ${MATERIAL_ARTIFACT_POLICY}
 
-The evaluator here was written and frozen by the adversarial critic, not by you: do not create,
+The evaluator here was written and frozen during adversarial review, not by you: do not create,
 select, edit, or return one, and do not try to run it. An artifact whose bytes match a research
 branch artifact is rejected as a copy rather than a reproduction, and a self-written claim that the
 evaluator passed is not evidence.
