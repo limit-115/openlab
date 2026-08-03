@@ -1,53 +1,50 @@
-import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import { assertUniqueEvidenceFingerprints } from "#src/runtime/snapshot-projection/evidence-fingerprint";
 import { idsOf } from "#src/runtime/snapshot-projection/projected-entity-record";
 
-export function assertProjectionRelationships(
-    snapshot: StatusSnapshot,
-    evidenceRecords: readonly Evidence[]
-): void {
-    assertUniqueIds("branch", idsOf(snapshot.branches));
-    assertUniqueIds("task", idsOf(snapshot.tasks));
-    assertUniqueIds("claim", idsOf(snapshot.claims));
-    assertUniqueIds("experiment", idsOf(snapshot.experiments));
-    assertUniqueIds("evidence", idsOf(evidenceRecords));
-    assertUniqueEvidenceFingerprints(evidenceRecords);
+export function assertProjectionRelationships(snapshot: StatusSnapshot): void {
+    assertUniqueIds("assumption", idsOf(snapshot.assumptions));
+    assertUniqueIds("agent run", idsOf(snapshot.runs));
+    assertUniqueIds("finding", idsOf(snapshot.findings));
+    assertUniqueIds("verdict", idsOf(snapshot.verdicts));
     assertUniqueIds("capability request", idsOf(snapshot.capability_requests));
 
-    const branchIds = new Set(idsOf(snapshot.branches));
-    const tasksById = new Map(snapshot.tasks.map((task) => [task.id, task]));
-    for (const task of snapshot.tasks) {
-        assertRelatedEntity("task", task.id, "branch", task.branch_id, branchIds);
-    }
-    for (const experiment of snapshot.experiments) {
-        assertRelatedEntity(
-            "experiment",
-            experiment.id,
-            "task",
-            experiment.task_id,
-            new Set(tasksById.keys())
-        );
-        const task = tasksById.get(experiment.task_id);
-        if (task !== undefined && experiment.branch_id !== task.branch_id) {
-            throw new Error(
-                `Experiment ${experiment.id} belongs to branch ${experiment.branch_id}, but its task belongs to ${task.branch_id}`
+    const assumptionIds = new Set(idsOf(snapshot.assumptions));
+    const runIds = new Set(idsOf(snapshot.runs));
+    const findingIds = new Set(idsOf(snapshot.findings));
+
+    for (const run of snapshot.runs) {
+        if (run.assumption_id !== undefined) {
+            assertRelatedEntity(
+                "agent run",
+                run.id,
+                "assumption",
+                run.assumption_id,
+                assumptionIds
             );
         }
     }
-    const claimIds = new Set(idsOf(snapshot.claims));
-    for (const claim of snapshot.claims) {
-        assertRelatedEntity("claim", claim.id, "branch", claim.branch_id, branchIds);
-        assertUniqueIds(`dependency of claim ${claim.id}`, claim.assumption_ids);
-        for (const dependencyId of claim.assumption_ids) {
-            if (dependencyId === claim.id) {
-                throw new Error(`Claim ${claim.id} cannot depend on itself`);
-            }
-            assertRelatedEntity("claim", claim.id, "claim", dependencyId, claimIds);
-        }
+    for (const finding of snapshot.findings) {
+        assertRelatedEntity(
+            "finding",
+            finding.id,
+            "assumption",
+            finding.assumption_id,
+            assumptionIds
+        );
+        assertRelatedEntity("finding", finding.id, "agent run", finding.run_id, runIds);
     }
-    for (const candidate of evidenceRecords) {
-        assertRelatedEntity("evidence", candidate.id, "claim", candidate.claim_id, claimIds);
+    for (const verdict of snapshot.verdicts) {
+        assertRelatedEntity("verdict", verdict.id, "finding", verdict.finding_id, findingIds);
+        assertRelatedEntity("verdict", verdict.id, "agent run", verdict.run_id, runIds);
+    }
+    if (snapshot.breakthrough_finding_id !== undefined) {
+        assertRelatedEntity(
+            "lab",
+            snapshot.lab.id,
+            "finding",
+            snapshot.breakthrough_finding_id,
+            findingIds
+        );
     }
 }
 

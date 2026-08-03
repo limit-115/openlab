@@ -1,2 +1,0 @@
-CREATE TYPE "public"."external_effect" AS ENUM('none', 'reversible', 'irreversible');--> statement-breakpoint
-ALTER TABLE "attempts" ADD COLUMN "external_effect" "external_effect" DEFAULT 'none' NOT NULL;

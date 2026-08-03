@@ -1,11 +1,5 @@
-import { EvidenceSchema } from "@lab/protocol/evidence/evidence.schema";
-import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
-
-export function parseEvidence(value: readonly Evidence[] | undefined): Evidence[] {
-    return EvidenceSchema.array().parse(value ?? []);
-}
 
 export function parseTimestamp(value: string, field: string): Date {
     const timestamp = new Date(value);

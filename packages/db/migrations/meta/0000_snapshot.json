@@ -1,11 +1,11 @@
 {
-    "id": "cebeea78-65b7-4611-b2f5-66bb7ef21a46",
+    "id": "ab55c407-2ff2-4025-900a-a5f88565b62f",
     "prevId": "00000000-0000-0000-0000-000000000000",
     "version": "7",
     "dialect": "postgresql",
     "tables": {
-        "public.attempts": {
-            "name": "attempts",
+        "public.agent_runs": {
+            "name": "agent_runs",
             "schema": "",
             "columns": {
                 "id": {
@@ -14,35 +14,56 @@
                     "primaryKey": true,
                     "notNull": true
                 },
-                "task_id": {
-                    "name": "task_id",
+                "lab_id": {
+                    "name": "lab_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
                 },
-                "attempt_number": {
-                    "name": "attempt_number",
-                    "type": "integer",
+                "assumption_id": {
+                    "name": "assumption_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "role": {
+                    "name": "role",
+                    "type": "agent_role",
+                    "typeSchema": "public",
                     "primaryKey": false,
                     "notNull": true
                 },
-                "worker_id": {
-                    "name": "worker_id",
+                "objective": {
+                    "name": "objective",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
                 },
                 "status": {
                     "name": "status",
-                    "type": "attempt_status",
+                    "type": "agent_run_status",
                     "typeSchema": "public",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "'planned'"
+                    "default": "'running'"
                 },
-                "command": {
-                    "name": "command",
+                "harness": {
+                    "name": "harness",
+                    "type": "agent_harness",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "model": {
+                    "name": "model",
                     "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "effort": {
+                    "name": "effort",
+                    "type": "agent_effort",
+                    "typeSchema": "public",
                     "primaryKey": false,
                     "notNull": false
                 },
@@ -50,39 +71,7 @@
                     "name": "cwd",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
-                },
-                "inputs": {
-                    "name": "inputs",
-                    "type": "jsonb",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'{}'::jsonb"
-                },
-                "environment": {
-                    "name": "environment",
-                    "type": "jsonb",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'{}'::jsonb"
-                },
-                "stdout_path": {
-                    "name": "stdout_path",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "stderr_path": {
-                    "name": "stderr_path",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "output_hash": {
-                    "name": "output_hash",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
+                    "notNull": true
                 },
                 "exit_code": {
                     "name": "exit_code",
@@ -96,8 +85,8 @@
                     "primaryKey": false,
                     "notNull": false
                 },
-                "reconciliation_key": {
-                    "name": "reconciliation_key",
+                "manifest_path": {
+                    "name": "manifest_path",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": false
@@ -106,7 +95,8 @@
                     "name": "started_at",
                     "type": "timestamp with time zone",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": true,
+                    "default": "now()"
                 },
                 "finished_at": {
                     "name": "finished_at",
@@ -130,53 +120,32 @@
                 }
             },
             "indexes": {
-                "attempts_task_number_unique": {
-                    "name": "attempts_task_number_unique",
+                "agent_runs_lab_status_idx": {
+                    "name": "agent_runs_lab_status_idx",
                     "columns": [
                         {
-                            "expression": "task_id",
+                            "expression": "lab_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
                         },
-                        {
-                            "expression": "attempt_number",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                },
-                "attempts_reconciliation_key_unique": {
-                    "name": "attempts_reconciliation_key_unique",
-                    "columns": [
-                        {
-                            "expression": "reconciliation_key",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                },
-                "attempts_running_idx": {
-                    "name": "attempts_running_idx",
-                    "columns": [
                         {
                             "expression": "status",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
-                        },
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "agent_runs_assumption_idx": {
+                    "name": "agent_runs_assumption_idx",
+                    "columns": [
                         {
-                            "expression": "task_id",
+                            "expression": "assumption_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -189,11 +158,20 @@
                 }
             },
             "foreignKeys": {
-                "attempts_task_id_tasks_id_fk": {
-                    "name": "attempts_task_id_tasks_id_fk",
-                    "tableFrom": "attempts",
-                    "tableTo": "tasks",
-                    "columnsFrom": ["task_id"],
+                "agent_runs_lab_id_labs_id_fk": {
+                    "name": "agent_runs_lab_id_labs_id_fk",
+                    "tableFrom": "agent_runs",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "agent_runs_assumption_id_assumptions_id_fk": {
+                    "name": "agent_runs_assumption_id_assumptions_id_fk",
+                    "tableFrom": "agent_runs",
+                    "tableTo": "assumptions",
+                    "columnsFrom": ["assumption_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -205,8 +183,8 @@
             "checkConstraints": {},
             "isRLSEnabled": false
         },
-        "public.branches": {
-            "name": "branches",
+        "public.assumptions": {
+            "name": "assumptions",
             "schema": "",
             "columns": {
                 "id": {
@@ -221,42 +199,35 @@
                     "primaryKey": false,
                     "notNull": true
                 },
-                "title": {
-                    "name": "title",
+                "cycle": {
+                    "name": "cycle",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "statement": {
+                    "name": "statement",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
                 },
-                "approach": {
-                    "name": "approach",
+                "rationale": {
+                    "name": "rationale",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
                 },
                 "status": {
                     "name": "status",
-                    "type": "branch_status",
+                    "type": "assumption_status",
                     "typeSchema": "public",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "'active'"
+                    "default": "'open'"
                 },
-                "lane": {
-                    "name": "lane",
-                    "type": "scheduler_lane",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "isolated": {
-                    "name": "isolated",
-                    "type": "boolean",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": true
-                },
-                "closed_reason": {
-                    "name": "closed_reason",
+                "outcome": {
+                    "name": "outcome",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": false
@@ -277,8 +248,8 @@
                 }
             },
             "indexes": {
-                "branches_lab_status_idx": {
-                    "name": "branches_lab_status_idx",
+                "assumptions_lab_status_idx": {
+                    "name": "assumptions_lab_status_idx",
                     "columns": [
                         {
                             "expression": "lab_id",
@@ -300,9 +271,9 @@
                 }
             },
             "foreignKeys": {
-                "branches_lab_id_labs_id_fk": {
-                    "name": "branches_lab_id_labs_id_fk",
-                    "tableFrom": "branches",
+                "assumptions_lab_id_labs_id_fk": {
+                    "name": "assumptions_lab_id_labs_id_fk",
+                    "tableFrom": "assumptions",
                     "tableTo": "labs",
                     "columnsFrom": ["lab_id"],
                     "columnsTo": ["id"],
@@ -332,8 +303,8 @@
                     "primaryKey": false,
                     "notNull": true
                 },
-                "branch_id": {
-                    "name": "branch_id",
+                "assumption_id": {
+                    "name": "assumption_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": false
@@ -356,6 +327,19 @@
                     "primaryKey": false,
                     "notNull": true
                 },
+                "self_provisioning_attempt": {
+                    "name": "self_provisioning_attempt",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "blocking": {
+                    "name": "blocking",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
                 "status": {
                     "name": "status",
                     "type": "capability_status",
@@ -364,14 +348,14 @@
                     "notNull": true,
                     "default": "'open'"
                 },
-                "resource_reference": {
-                    "name": "resource_reference",
+                "answer": {
+                    "name": "answer",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": false
                 },
-                "provided_at": {
-                    "name": "provided_at",
+                "answered_at": {
+                    "name": "answered_at",
                     "type": "timestamp with time zone",
                     "primaryKey": false,
                     "notNull": false
@@ -424,264 +408,13 @@
                     "onDelete": "cascade",
                     "onUpdate": "no action"
                 },
-                "capability_requests_branch_id_branches_id_fk": {
-                    "name": "capability_requests_branch_id_branches_id_fk",
+                "capability_requests_assumption_id_assumptions_id_fk": {
+                    "name": "capability_requests_assumption_id_assumptions_id_fk",
                     "tableFrom": "capability_requests",
-                    "tableTo": "branches",
-                    "columnsFrom": ["branch_id"],
+                    "tableTo": "assumptions",
+                    "columnsFrom": ["assumption_id"],
                     "columnsTo": ["id"],
                     "onDelete": "set null",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
-        },
-        "public.claim_dependencies": {
-            "name": "claim_dependencies",
-            "schema": "",
-            "columns": {
-                "claim_id": {
-                    "name": "claim_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "dependency_id": {
-                    "name": "dependency_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                }
-            },
-            "indexes": {
-                "claim_dependencies_dependency_idx": {
-                    "name": "claim_dependencies_dependency_idx",
-                    "columns": [
-                        {
-                            "expression": "dependency_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "claim_dependencies_claim_id_claims_id_fk": {
-                    "name": "claim_dependencies_claim_id_claims_id_fk",
-                    "tableFrom": "claim_dependencies",
-                    "tableTo": "claims",
-                    "columnsFrom": ["claim_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                },
-                "claim_dependencies_dependency_id_claims_id_fk": {
-                    "name": "claim_dependencies_dependency_id_claims_id_fk",
-                    "tableFrom": "claim_dependencies",
-                    "tableTo": "claims",
-                    "columnsFrom": ["dependency_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {
-                "claim_dependencies_claim_id_dependency_id_pk": {
-                    "name": "claim_dependencies_claim_id_dependency_id_pk",
-                    "columns": ["claim_id", "dependency_id"]
-                }
-            },
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
-        },
-        "public.claim_evidence": {
-            "name": "claim_evidence",
-            "schema": "",
-            "columns": {
-                "claim_id": {
-                    "name": "claim_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "evidence_id": {
-                    "name": "evidence_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "relationship": {
-                    "name": "relationship",
-                    "type": "evidence_relationship",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true
-                }
-            },
-            "indexes": {
-                "claim_evidence_evidence_idx": {
-                    "name": "claim_evidence_evidence_idx",
-                    "columns": [
-                        {
-                            "expression": "evidence_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "claim_evidence_claim_id_claims_id_fk": {
-                    "name": "claim_evidence_claim_id_claims_id_fk",
-                    "tableFrom": "claim_evidence",
-                    "tableTo": "claims",
-                    "columnsFrom": ["claim_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                },
-                "claim_evidence_evidence_id_evidence_id_fk": {
-                    "name": "claim_evidence_evidence_id_evidence_id_fk",
-                    "tableFrom": "claim_evidence",
-                    "tableTo": "evidence",
-                    "columnsFrom": ["evidence_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {
-                "claim_evidence_claim_id_evidence_id_pk": {
-                    "name": "claim_evidence_claim_id_evidence_id_pk",
-                    "columns": ["claim_id", "evidence_id"]
-                }
-            },
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
-        },
-        "public.claims": {
-            "name": "claims",
-            "schema": "",
-            "columns": {
-                "id": {
-                    "name": "id",
-                    "type": "text",
-                    "primaryKey": true,
-                    "notNull": true
-                },
-                "lab_id": {
-                    "name": "lab_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "branch_id": {
-                    "name": "branch_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "statement": {
-                    "name": "statement",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "status": {
-                    "name": "status",
-                    "type": "claim_status",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'proposed'"
-                },
-                "universal": {
-                    "name": "universal",
-                    "type": "boolean",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": false
-                },
-                "stale": {
-                    "name": "stale",
-                    "type": "boolean",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": false
-                },
-                "created_at": {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "now()"
-                },
-                "updated_at": {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "now()"
-                }
-            },
-            "indexes": {
-                "claims_lab_status_idx": {
-                    "name": "claims_lab_status_idx",
-                    "columns": [
-                        {
-                            "expression": "lab_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "claims_lab_id_labs_id_fk": {
-                    "name": "claims_lab_id_labs_id_fk",
-                    "tableFrom": "claims",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                },
-                "claims_branch_id_branches_id_fk": {
-                    "name": "claims_branch_id_branches_id_fk",
-                    "tableFrom": "claims",
-                    "tableTo": "branches",
-                    "columnsFrom": ["branch_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
                     "onUpdate": "no action"
                 }
             },
@@ -726,7 +459,8 @@
                 },
                 "type": {
                     "name": "type",
-                    "type": "text",
+                    "type": "event_type",
+                    "typeSchema": "public",
                     "primaryKey": false,
                     "notNull": true
                 },
@@ -799,8 +533,8 @@
             "checkConstraints": {},
             "isRLSEnabled": false
         },
-        "public.evidence": {
-            "name": "evidence",
+        "public.findings": {
+            "name": "findings",
             "schema": "",
             "columns": {
                 "id": {
@@ -815,34 +549,8 @@
                     "primaryKey": false,
                     "notNull": true
                 },
-                "source_branch_id": {
-                    "name": "source_branch_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "attempt_id": {
-                    "name": "attempt_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "kind": {
-                    "name": "kind",
-                    "type": "evidence_kind",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "origin": {
-                    "name": "origin",
-                    "type": "evidence_origin",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "fingerprint": {
-                    "name": "fingerprint",
+                "assumption_id": {
+                    "name": "assumption_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
@@ -851,53 +559,34 @@
                     "name": "run_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": true
                 },
-                "artifact_path": {
-                    "name": "artifact_path",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "artifact_hash": {
-                    "name": "artifact_hash",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "summary": {
-                    "name": "summary",
+                "claim": {
+                    "name": "claim",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
                 },
-                "independent": {
-                    "name": "independent",
-                    "type": "boolean",
+                "work": {
+                    "name": "work",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": true,
-                    "default": false
+                    "notNull": true
                 },
-                "valid": {
-                    "name": "valid",
-                    "type": "boolean",
+                "artifact_paths": {
+                    "name": "artifact_paths",
+                    "type": "jsonb",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": true
+                    "default": "'[]'::jsonb"
                 },
-                "complete": {
-                    "name": "complete",
-                    "type": "boolean",
+                "status": {
+                    "name": "status",
+                    "type": "finding_status",
+                    "typeSchema": "public",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": true
-                },
-                "reproducible": {
-                    "name": "reproducible",
-                    "type": "boolean",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": false
+                    "default": "'unverified'"
                 },
                 "created_at": {
                     "name": "created_at",
@@ -908,8 +597,8 @@
                 }
             },
             "indexes": {
-                "evidence_lab_fingerprint_unique": {
-                    "name": "evidence_lab_fingerprint_unique",
+                "findings_lab_status_idx": {
+                    "name": "findings_lab_status_idx",
                     "columns": [
                         {
                             "expression": "lab_id",
@@ -918,22 +607,7 @@
                             "nulls": "last"
                         },
                         {
-                            "expression": "fingerprint",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                },
-                "evidence_attempt_idx": {
-                    "name": "evidence_attempt_idx",
-                    "columns": [
-                        {
-                            "expression": "attempt_id",
+                            "expression": "status",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -946,31 +620,31 @@
                 }
             },
             "foreignKeys": {
-                "evidence_lab_id_labs_id_fk": {
-                    "name": "evidence_lab_id_labs_id_fk",
-                    "tableFrom": "evidence",
+                "findings_lab_id_labs_id_fk": {
+                    "name": "findings_lab_id_labs_id_fk",
+                    "tableFrom": "findings",
                     "tableTo": "labs",
                     "columnsFrom": ["lab_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
                 },
-                "evidence_source_branch_id_branches_id_fk": {
-                    "name": "evidence_source_branch_id_branches_id_fk",
-                    "tableFrom": "evidence",
-                    "tableTo": "branches",
-                    "columnsFrom": ["source_branch_id"],
+                "findings_assumption_id_assumptions_id_fk": {
+                    "name": "findings_assumption_id_assumptions_id_fk",
+                    "tableFrom": "findings",
+                    "tableTo": "assumptions",
+                    "columnsFrom": ["assumption_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
                 },
-                "evidence_attempt_id_attempts_id_fk": {
-                    "name": "evidence_attempt_id_attempts_id_fk",
-                    "tableFrom": "evidence",
-                    "tableTo": "attempts",
-                    "columnsFrom": ["attempt_id"],
+                "findings_run_id_agent_runs_id_fk": {
+                    "name": "findings_run_id_agent_runs_id_fk",
+                    "tableFrom": "findings",
+                    "tableTo": "agent_runs",
+                    "columnsFrom": ["run_id"],
                     "columnsTo": ["id"],
-                    "onDelete": "set null",
+                    "onDelete": "cascade",
                     "onUpdate": "no action"
                 }
             },
@@ -1035,8 +709,8 @@
                     "primaryKey": false,
                     "notNull": false
                 },
-                "completed_at": {
-                    "name": "completed_at",
+                "breakthrough_at": {
+                    "name": "breakthrough_at",
                     "type": "timestamp with time zone",
                     "primaryKey": false,
                     "notNull": false
@@ -1086,8 +760,79 @@
             "checkConstraints": {},
             "isRLSEnabled": false
         },
-        "public.tasks": {
-            "name": "tasks",
+        "public.runtime_checkpoints": {
+            "name": "runtime_checkpoints",
+            "schema": "",
+            "columns": {
+                "lab_id": {
+                    "name": "lab_id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "revision": {
+                    "name": "revision",
+                    "type": "bigint",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 1
+                },
+                "snapshot": {
+                    "name": "snapshot",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "last_event_sequence": {
+                    "name": "last_event_sequence",
+                    "type": "bigint",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "persisted_at": {
+                    "name": "persisted_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "runtime_checkpoints_persisted_at_idx": {
+                    "name": "runtime_checkpoints_persisted_at_idx",
+                    "columns": [
+                        {
+                            "expression": "persisted_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "runtime_checkpoints_lab_id_labs_id_fk": {
+                    "name": "runtime_checkpoints_lab_id_labs_id_fk",
+                    "tableFrom": "runtime_checkpoints",
+                    "tableTo": "labs",
+                    "columnsFrom": ["lab_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.verdicts": {
+            "name": "verdicts",
             "schema": "",
             "columns": {
                 "id": {
@@ -1102,85 +847,29 @@
                     "primaryKey": false,
                     "notNull": true
                 },
-                "branch_id": {
-                    "name": "branch_id",
+                "finding_id": {
+                    "name": "finding_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
                 },
-                "objective": {
-                    "name": "objective",
+                "run_id": {
+                    "name": "run_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
                 },
-                "context_refs": {
-                    "name": "context_refs",
-                    "type": "jsonb",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'[]'::jsonb"
-                },
-                "status": {
-                    "name": "status",
-                    "type": "task_status",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'queued'"
-                },
-                "role": {
-                    "name": "role",
-                    "type": "agent_role",
-                    "typeSchema": "public",
+                "confirmed": {
+                    "name": "confirmed",
+                    "type": "boolean",
                     "primaryKey": false,
                     "notNull": true
                 },
-                "lane": {
-                    "name": "lane",
-                    "type": "scheduler_lane",
-                    "typeSchema": "public",
+                "reasoning": {
+                    "name": "reasoning",
+                    "type": "text",
                     "primaryKey": false,
                     "notNull": true
-                },
-                "priority": {
-                    "name": "priority",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": 0
-                },
-                "attempt": {
-                    "name": "attempt",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": 1
-                },
-                "available_at": {
-                    "name": "available_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "now()"
-                },
-                "lease_owner": {
-                    "name": "lease_owner",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "lease_expires_at": {
-                    "name": "lease_expires_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "last_error": {
-                    "name": "last_error",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
                 },
                 "created_at": {
                     "name": "created_at",
@@ -1188,66 +877,14 @@
                     "primaryKey": false,
                     "notNull": true,
                     "default": "now()"
-                },
-                "updated_at": {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "now()"
                 }
             },
             "indexes": {
-                "tasks_lease_candidate_idx": {
-                    "name": "tasks_lease_candidate_idx",
+                "verdicts_finding_idx": {
+                    "name": "verdicts_finding_idx",
                     "columns": [
                         {
-                            "expression": "lab_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "lane",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "available_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "priority",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                },
-                "tasks_expired_lease_idx": {
-                    "name": "tasks_expired_lease_idx",
-                    "columns": [
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "lease_expires_at",
+                            "expression": "finding_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -1260,20 +897,29 @@
                 }
             },
             "foreignKeys": {
-                "tasks_lab_id_labs_id_fk": {
-                    "name": "tasks_lab_id_labs_id_fk",
-                    "tableFrom": "tasks",
+                "verdicts_lab_id_labs_id_fk": {
+                    "name": "verdicts_lab_id_labs_id_fk",
+                    "tableFrom": "verdicts",
                     "tableTo": "labs",
                     "columnsFrom": ["lab_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
                 },
-                "tasks_branch_id_branches_id_fk": {
-                    "name": "tasks_branch_id_branches_id_fk",
-                    "tableFrom": "tasks",
-                    "tableTo": "branches",
-                    "columnsFrom": ["branch_id"],
+                "verdicts_finding_id_findings_id_fk": {
+                    "name": "verdicts_finding_id_findings_id_fk",
+                    "tableFrom": "verdicts",
+                    "tableTo": "findings",
+                    "columnsFrom": ["finding_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "verdicts_run_id_agent_runs_id_fk": {
+                    "name": "verdicts_run_id_agent_runs_id_fk",
+                    "tableFrom": "verdicts",
+                    "tableTo": "agent_runs",
+                    "columnsFrom": ["run_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -1287,60 +933,78 @@
         }
     },
     "enums": {
+        "public.agent_effort": {
+            "name": "agent_effort",
+            "schema": "public",
+            "values": ["low", "medium", "high", "xhigh", "max"]
+        },
+        "public.agent_harness": {
+            "name": "agent_harness",
+            "schema": "public",
+            "values": ["codex", "claude", "glm"]
+        },
         "public.agent_role": {
             "name": "agent_role",
             "schema": "public",
-            "values": ["director", "researcher", "critic", "verifier"]
+            "values": ["director", "researcher", "verifier"]
         },
-        "public.attempt_status": {
-            "name": "attempt_status",
+        "public.agent_run_status": {
+            "name": "agent_run_status",
             "schema": "public",
-            "values": ["planned", "running", "succeeded", "failed", "timed_out", "cancelled"]
+            "values": ["running", "succeeded", "failed", "timed_out", "cancelled", "blocked"]
         },
-        "public.branch_status": {
-            "name": "branch_status",
+        "public.assumption_status": {
+            "name": "assumption_status",
             "schema": "public",
-            "values": ["active", "paused", "closed"]
+            "values": ["open", "researching", "exhausted", "confirmed"]
         },
         "public.capability_status": {
             "name": "capability_status",
             "schema": "public",
-            "values": ["open", "provided", "obsolete"]
+            "values": ["open", "answered"]
         },
-        "public.claim_status": {
-            "name": "claim_status",
+        "public.event_type": {
+            "name": "event_type",
             "schema": "public",
-            "values": ["proposed", "testing", "supported", "refuted", "reproduced"]
+            "values": [
+                "lab.started",
+                "lab.recovered",
+                "lab.state_changed",
+                "lab.woken",
+                "lab.hibernated",
+                "lab.stopped",
+                "lab.failed",
+                "harness.preflight_succeeded",
+                "harness.preflight_failed",
+                "assumptions.proposed",
+                "assumption.research_started",
+                "assumption.exhausted",
+                "assumption.confirmed",
+                "run.started",
+                "run.succeeded",
+                "run.failed",
+                "run.timed_out",
+                "run.cancelled",
+                "run.blocked",
+                "finding.claimed",
+                "verification.started",
+                "finding.confirmed",
+                "finding.refuted",
+                "breakthrough.recorded",
+                "capability.requested",
+                "capability.answered",
+                "report.generated"
+            ]
         },
-        "public.evidence_kind": {
-            "name": "evidence_kind",
+        "public.finding_status": {
+            "name": "finding_status",
             "schema": "public",
-            "values": ["experiment", "source", "artifact", "counterexample", "verifier_result"]
-        },
-        "public.evidence_origin": {
-            "name": "evidence_origin",
-            "schema": "public",
-            "values": ["empirical", "model_judgement", "primary_source", "verifier"]
-        },
-        "public.evidence_relationship": {
-            "name": "evidence_relationship",
-            "schema": "public",
-            "values": ["supports", "contradicts"]
+            "values": ["unverified", "confirmed", "refuted"]
         },
         "public.lab_state": {
             "name": "lab_state",
             "schema": "public",
-            "values": ["RUNNING", "HIBERNATING", "COMPLETED", "STOPPED", "FAILED"]
-        },
-        "public.scheduler_lane": {
-            "name": "scheduler_lane",
-            "schema": "public",
-            "values": ["promising", "exploration", "adversarial", "reproduction"]
-        },
-        "public.task_status": {
-            "name": "task_status",
-            "schema": "public",
-            "values": ["queued", "leased", "running", "succeeded", "failed", "cancelled"]
+            "values": ["RUNNING", "BREAKTHROUGH", "HIBERNATING", "STOPPED", "FAILED"]
         }
     },
     "schemas": {},

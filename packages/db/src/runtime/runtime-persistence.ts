@@ -8,7 +8,6 @@ import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoin
 import { terminalTimestamps } from "#src/runtime/lab-terminal-timestamps";
 import {
     checkpointResult,
-    loadCheckpointEvidence,
     toPersistedRuntime,
     withRecentEvents
 } from "#src/runtime/runtime-checkpoint-reader";
@@ -18,7 +17,6 @@ import {
     assertNonEmptyWorkspacePath,
     assertPageSize,
     assertRevision,
-    parseEvidence,
     parseTimestamp
 } from "#src/runtime/runtime-metadata-validation";
 import { RuntimePersistenceLimit } from "#src/runtime/runtime-persistence.const";
@@ -43,7 +41,6 @@ export class RuntimePersistence {
     async initialize(input: InitializeRuntimeInput): Promise<CommitRuntimeResult> {
         const task = TaskInputSchema.parse(input.task);
         const snapshot = StatusSnapshotSchema.parse(input.snapshot);
-        const evidenceRecords = parseEvidence(input.evidence);
         const event = parseEvent(input.event, snapshot.lab.id);
         assertNonEmptyWorkspacePath(input.workspacePath);
         if (snapshot.lab.goal !== task.goal) {
@@ -78,7 +75,6 @@ export class RuntimePersistence {
                 .values({
                     labId: snapshot.lab.id,
                     snapshot: canonicalSnapshot,
-                    evidence: evidenceRecords,
                     lastEventSequence: appendedEvent?.sequence,
                     persistedAt: updatedAt
                 })
@@ -89,8 +85,8 @@ export class RuntimePersistence {
             if (checkpoint === undefined) {
                 throw new Error(`Failed to initialize runtime checkpoint ${snapshot.lab.id}`);
             }
-            await projectRuntimeSnapshot(transaction, canonicalSnapshot, evidenceRecords);
-            return checkpointResult(canonicalSnapshot, evidenceRecords, checkpoint, appendedEvent);
+            await projectRuntimeSnapshot(transaction, canonicalSnapshot);
+            return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
         });
     }
 
@@ -100,10 +96,6 @@ export class RuntimePersistence {
         const event = parseEvent(input.event, snapshot.lab.id);
 
         return this.#database.transaction(async (transaction) => {
-            const evidenceRecords =
-                input.evidence === undefined
-                    ? await loadCheckpointEvidence(transaction, snapshot.lab.id)
-                    : parseEvidence(input.evidence);
             const appendedEvent =
                 event === undefined ? undefined : await insertEvent(transaction, event);
             const canonicalSnapshot = await withRecentEvents(
@@ -117,7 +109,6 @@ export class RuntimePersistence {
                 .set({
                     revision: sql`${runtimeCheckpoints.revision} + 1`,
                     snapshot: canonicalSnapshot,
-                    evidence: evidenceRecords,
                     ...(appendedEvent === undefined
                         ? {}
                         : { lastEventSequence: appendedEvent.sequence }),
@@ -150,8 +141,8 @@ export class RuntimePersistence {
             if (lab === undefined) {
                 throw new Error(`Lab ${snapshot.lab.id} does not exist`);
             }
-            await projectRuntimeSnapshot(transaction, canonicalSnapshot, evidenceRecords);
-            return checkpointResult(canonicalSnapshot, evidenceRecords, checkpoint, appendedEvent);
+            await projectRuntimeSnapshot(transaction, canonicalSnapshot);
+            return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
         });
     }
 
@@ -163,7 +154,6 @@ export class RuntimePersistence {
                 task: labs.input,
                 workspacePath: labs.workspacePath,
                 snapshot: runtimeCheckpoints.snapshot,
-                evidence: runtimeCheckpoints.evidence,
                 revision: runtimeCheckpoints.revision,
                 lastEventSequence: runtimeCheckpoints.lastEventSequence,
                 persistedAt: runtimeCheckpoints.persistedAt
@@ -186,7 +176,6 @@ export class RuntimePersistence {
                 task: labs.input,
                 workspacePath: labs.workspacePath,
                 snapshot: runtimeCheckpoints.snapshot,
-                evidence: runtimeCheckpoints.evidence,
                 revision: runtimeCheckpoints.revision,
                 lastEventSequence: runtimeCheckpoints.lastEventSequence,
                 persistedAt: runtimeCheckpoints.persistedAt

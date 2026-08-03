@@ -5,8 +5,8 @@ export function terminalTimestamps(snapshot: StatusSnapshot, updatedAt: Date) {
     switch (snapshot.lab.state) {
         case LabState.HIBERNATING:
             return { hibernatedAt: updatedAt };
-        case LabState.COMPLETED:
-            return { completedAt: updatedAt };
+        case LabState.BREAKTHROUGH:
+            return { breakthroughAt: updatedAt };
         case LabState.STOPPED:
             return { stoppedAt: updatedAt };
         case LabState.RUNNING:

@@ -1,1 +1,0 @@
-ALTER TYPE "public"."event_type" ADD VALUE 'evaluator.precommitted' BEFORE 'branch.created';

@@ -56,15 +56,14 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             workspacePath: "/tmp/lab-runtime-1",
             checkpoint: {
                 snapshot: initialized.snapshot,
-                evidence: [],
                 revision: 1,
                 lastEventSequence: initialized.appendedEvent?.sequence
             },
             persistedAt: snapshot.lab.updated_at
         });
-        expect(recovered?.checkpoint.snapshot.frontier).toEqual(snapshot.frontier);
-        expect(recovered?.checkpoint.snapshot.agents).toEqual(snapshot.agents);
-        expect(recovered?.checkpoint.snapshot.experiments).toEqual(snapshot.experiments);
+        expect(recovered?.checkpoint.snapshot.assumptions).toEqual(snapshot.assumptions);
+        expect(recovered?.checkpoint.snapshot.runs).toEqual(snapshot.runs);
+        expect(recovered?.checkpoint.snapshot.findings).toEqual(snapshot.findings);
         expect(recovered?.checkpoint.snapshot.result).toEqual(snapshot.result);
     });
 
@@ -79,10 +78,8 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         });
         const updated = structuredClone(snapshot);
         updated.lab.state = LabState.HIBERNATING;
-        updated.lab.reason = "Confirmed plateau";
-        updated.frontier.blockers = ["Missing independent evidence"];
+        updated.lab.reason = "The director has no further bets to place";
         updated.lab.updated_at = "2026-08-02T00:05:00.000Z";
-        updated.frontier.updated_at = updated.lab.updated_at;
         const hibernated = makeEvent(
             EventType.LAB_HIBERNATED,
             snapshot.lab.id,
@@ -104,7 +101,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         ]);
 
         const ghost = makeEvent(
-            EventType.FRONTIER_UPDATED,
+            EventType.ASSUMPTION_EXHAUSTED,
             snapshot.lab.id,
             "event-ghost",
             "2026-08-02T00:06:00.000Z"
@@ -132,19 +129,24 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             snapshot: runningSnapshot,
             event: makeEvent(EventType.LAB_STARTED, runningSnapshot.lab.id, "event-running")
         });
-        const completedTask = makeTask(testLabId("completed"));
-        const completedSnapshot = makeSnapshot(completedTask, LabState.COMPLETED);
+        const breakthroughTask = makeTask(testLabId("breakthrough"));
+        const breakthroughSnapshot = makeSnapshot(breakthroughTask, LabState.BREAKTHROUGH);
+        breakthroughSnapshot.breakthrough_finding_id = breakthroughSnapshot.findings[0]?.id;
         await persistence.initialize({
-            task: completedTask,
-            workspacePath: "/tmp/lab-completed",
-            snapshot: completedSnapshot,
-            event: makeEvent(EventType.LAB_COMPLETED, completedSnapshot.lab.id, "event-completed")
+            task: breakthroughTask,
+            workspacePath: "/tmp/lab-breakthrough",
+            snapshot: breakthroughSnapshot,
+            event: makeEvent(
+                EventType.BREAKTHROUGH_RECORDED,
+                breakthroughSnapshot.lab.id,
+                "event-breakthrough"
+            )
         });
 
         const recoverable = await persistence.listRecoverable();
         const recoverableIds = recoverable.map(({ checkpoint }) => checkpoint.snapshot.lab.id);
         expect(recoverableIds).toContain(runningSnapshot.lab.id);
-        expect(recoverableIds).not.toContain(completedSnapshot.lab.id);
+        expect(recoverableIds).not.toContain(breakthroughSnapshot.lab.id);
         expect(recoverable).toContainEqual(
             expect.objectContaining({
                 task: runningTask,

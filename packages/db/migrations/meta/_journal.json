@@ -5,78 +5,8 @@
         {
             "idx": 0,
             "version": "7",
-            "when": 1785672217131,
-            "tag": "0000_true_lily_hollister",
-            "breakpoints": true
-        },
-        {
-            "idx": 1,
-            "version": "7",
-            "when": 1785674562525,
-            "tag": "0001_wealthy_gladiator",
-            "breakpoints": true
-        },
-        {
-            "idx": 2,
-            "version": "7",
-            "when": 1785675152939,
-            "tag": "0002_outstanding_ricochet",
-            "breakpoints": true
-        },
-        {
-            "idx": 3,
-            "version": "7",
-            "when": 1785675345853,
-            "tag": "0003_cuddly_zarek",
-            "breakpoints": true
-        },
-        {
-            "idx": 4,
-            "version": "7",
-            "when": 1785676017951,
-            "tag": "0004_lowly_random",
-            "breakpoints": true
-        },
-        {
-            "idx": 5,
-            "version": "7",
-            "when": 1785678734155,
-            "tag": "0005_wet_white_queen",
-            "breakpoints": true
-        },
-        {
-            "idx": 6,
-            "version": "7",
-            "when": 1785679153011,
-            "tag": "0006_bizarre_dazzler",
-            "breakpoints": true
-        },
-        {
-            "idx": 7,
-            "version": "7",
-            "when": 1785684320415,
-            "tag": "0007_broken_captain_cross",
-            "breakpoints": true
-        },
-        {
-            "idx": 8,
-            "version": "7",
-            "when": 1785701192779,
-            "tag": "0008_next_wither",
-            "breakpoints": true
-        },
-        {
-            "idx": 9,
-            "version": "7",
-            "when": 1785759239616,
-            "tag": "0009_amazing_zombie",
-            "breakpoints": true
-        },
-        {
-            "idx": 10,
-            "version": "7",
-            "when": 1785765191597,
-            "tag": "0010_numerous_charles_xavier",
+            "when": 1785771618631,
+            "tag": "0000_far_lady_deathstrike",
             "breakpoints": true
         }
     ]

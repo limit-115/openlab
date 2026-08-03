@@ -46,8 +46,8 @@ export class LabRepository {
     }
 
     /**
-     * Deletes lab rows and, through the schema cascade, every branch, task, attempt, claim,
-     * evidence, event, checkpoint, and capability request that hangs off them. Passing a lab id
+     * Deletes lab rows and, through the schema cascade, every assumption, agent run, finding,
+     * verdict, event, checkpoint, and capability request that hangs off them. Passing a lab id
      * spares that one run. Returns the deleted lab ids.
      */
     async purge(keptLabId?: string): Promise<string[]> {
@@ -68,7 +68,7 @@ export class LabRepository {
                 stateReason: input.reason ?? null,
                 updatedAt: now,
                 ...(input.state === LabState.HIBERNATING ? { hibernatedAt: now } : {}),
-                ...(input.state === LabState.COMPLETED ? { completedAt: now } : {}),
+                ...(input.state === LabState.BREAKTHROUGH ? { breakthroughAt: now } : {}),
                 ...(input.state === LabState.STOPPED ? { stoppedAt: now } : {})
             })
             .where(and(eq(labs.id, input.labId), eq(labs.state, input.expectedState)))

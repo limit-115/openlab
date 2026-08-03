@@ -1,18 +1,17 @@
-import { SchedulerLane } from "@lab/core/scheduling/scheduler-lane.const";
-import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
+import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";
 import {
-    branches,
+    agentRuns,
+    assumptions,
     capabilityRequests,
-    claimDependencies,
-    claims,
-    tasks
+    findings,
+    verdicts
 } from "#src/lab-database/lab-schema";
 import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "#src/runtime/runtime-persistence";
@@ -47,13 +46,15 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
     it("projects checkpoint state into normalized tables and removes stale rows", async () => {
         const task = makeTask(testLabId("projection"));
         const snapshot = makeSnapshot(task);
-        const secondaryBranchId = `${snapshot.lab.id}-branch-secondary`;
-        snapshot.branches.push({
-            id: secondaryBranchId,
-            title: "Alternative",
-            approach: "Challenge the primary approach",
-            status: BranchStatus.PAUSED,
-            progress: "Deferred"
+        const abandonedAssumptionId = `${snapshot.lab.id}-assumption-abandoned`;
+        snapshot.assumptions.push({
+            id: abandonedAssumptionId,
+            cycle: 0,
+            statement: "The bottleneck is lock contention",
+            rationale: "The profile shows time in the scheduler",
+            status: AssumptionStatus.OPEN,
+            created_at: snapshot.lab.started_at,
+            updated_at: snapshot.lab.updated_at
         });
 
         await persistence.initialize({
@@ -62,111 +63,86 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
             snapshot
         });
 
-        const initialBranches = await client.db.query.branches.findMany({
-            where: eq(branches.labId, snapshot.lab.id)
-        });
-        expect(initialBranches).toHaveLength(2);
-        expect(initialBranches).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    id: snapshot.branches[0]?.id,
-                    lane: SchedulerLane.EXPLORATION,
-                    status: BranchStatus.ACTIVE
-                }),
-                expect.objectContaining({
-                    id: secondaryBranchId,
-                    status: BranchStatus.PAUSED
-                })
-            ])
+        expect(
+            await client.db.query.assumptions.findMany({
+                where: eq(assumptions.labId, snapshot.lab.id)
+            })
+        ).toHaveLength(2);
+        expect(
+            await client.db.query.agentRuns.findMany({
+                where: eq(agentRuns.labId, snapshot.lab.id)
+            })
+        ).toHaveLength(3);
+        expect(
+            await client.db.query.findings.findFirst({
+                where: eq(findings.labId, snapshot.lab.id)
+            })
+        ).toEqual(
+            expect.objectContaining({
+                id: snapshot.findings[0]?.id,
+                status: FindingStatus.UNVERIFIED,
+                artifactPaths: ["artifacts/bench.json"]
+            })
         );
-        expect(
-            await client.db.query.tasks.findMany({
-                where: eq(tasks.labId, snapshot.lab.id)
-            })
-        ).toEqual([
-            expect.objectContaining({
-                id: snapshot.tasks[0]?.id,
-                lane: SchedulerLane.EXPLORATION,
-                status: InternalTaskStatus.RUNNING,
-                attempt: 1
-            })
-        ]);
-        expect(
-            await client.db.query.claimDependencies.findMany({
-                where: eq(claimDependencies.claimId, snapshot.claims[1]?.id ?? "")
-            })
-        ).toEqual([
-            {
-                claimId: snapshot.claims[1]?.id,
-                dependencyId: snapshot.claims[0]?.id
-            }
-        ]);
-        expect(
-            await client.db.query.capabilityRequests.findMany({
-                where: eq(capabilityRequests.labId, snapshot.lab.id)
-            })
-        ).toEqual([
-            expect.objectContaining({
-                id: snapshot.capability_requests[0]?.id,
-                status: CapabilityStatus.OPEN
-            })
-        ]);
 
         const updated = structuredClone(snapshot);
         updated.lab.updated_at = "2026-08-02T00:10:00.000Z";
-        updated.frontier.updated_at = updated.lab.updated_at;
-        updated.branches = updated.branches.filter(({ id }) => id !== secondaryBranchId);
-        const projectedTask = updated.tasks[0];
-        if (projectedTask === undefined) {
-            throw new Error("Projection fixture must contain a task");
-        }
-        projectedTask.status = InternalTaskStatus.SUCCEEDED;
-        projectedTask.attempt = 2;
-        const dependentClaim = updated.claims[1];
-        if (dependentClaim === undefined) {
-            throw new Error("Projection fixture must contain a dependent claim");
-        }
-        dependentClaim.status = ClaimStatus.TESTING;
-        dependentClaim.assumption_ids = [];
-        dependentClaim.updated_at = updated.lab.updated_at;
+        updated.assumptions = updated.assumptions.filter(({ id }) => id !== abandonedAssumptionId);
+        const researchedAssumption = updated.assumptions[0];
+        const finding = updated.findings[0];
+        const verifierRun = updated.runs[2];
         const capability = updated.capability_requests[0];
-        if (capability === undefined) {
-            throw new Error("Projection fixture must contain a capability request");
+        if (
+            researchedAssumption === undefined ||
+            finding === undefined ||
+            verifierRun === undefined ||
+            capability === undefined
+        ) {
+            throw new Error(
+                "Projection fixture must carry an assumption, finding, run and request"
+            );
         }
+        finding.status = FindingStatus.CONFIRMED;
+        researchedAssumption.status = AssumptionStatus.CONFIRMED;
+        researchedAssumption.updated_at = updated.lab.updated_at;
+        verifierRun.status = AgentRunStatus.SUCCEEDED;
+        verifierRun.finished_at = updated.lab.updated_at;
+        updated.verdicts = [
+            {
+                id: `${updated.lab.id}-verdict-primary`,
+                finding_id: finding.id,
+                run_id: verifierRun.id,
+                confirmed: true,
+                reasoning: "Rebuilt the workload from scratch and the stall disappeared as claimed",
+                created_at: updated.lab.updated_at
+            }
+        ];
+        updated.breakthrough_finding_id = finding.id;
         capability.status = CapabilityStatus.ANSWERED;
         capability.answer = "Not reserving a host for this; pin the cores and report the variance";
         capability.answered_at = updated.lab.updated_at;
 
-        const committed = await persistence.commit({
-            snapshot: updated,
-            expectedRevision: 1
-        });
+        const committed = await persistence.commit({ snapshot: updated, expectedRevision: 1 });
         expect(committed.revision).toBe(2);
         expect(
-            await client.db.query.branches.findMany({
-                where: eq(branches.labId, snapshot.lab.id)
+            await client.db.query.assumptions.findMany({
+                where: eq(assumptions.labId, snapshot.lab.id)
             })
         ).toHaveLength(1);
         expect(
-            await client.db.query.tasks.findFirst({
-                where: eq(tasks.id, projectedTask.id)
-            })
+            await client.db.query.findings.findFirst({ where: eq(findings.id, finding.id) })
+        ).toEqual(expect.objectContaining({ status: FindingStatus.CONFIRMED }));
+        expect(
+            await client.db.query.verdicts.findFirst({ where: eq(verdicts.findingId, finding.id) })
+        ).toEqual(expect.objectContaining({ confirmed: true }));
+        expect(
+            await client.db.query.agentRuns.findFirst({ where: eq(agentRuns.id, verifierRun.id) })
         ).toEqual(
             expect.objectContaining({
-                status: InternalTaskStatus.SUCCEEDED,
-                attempt: 2
+                status: AgentRunStatus.SUCCEEDED,
+                finishedAt: new Date(updated.lab.updated_at)
             })
         );
-        expect(
-            await client.db.query.claims.findFirst({
-                where: eq(claims.id, dependentClaim.id)
-            })
-        ).toEqual(expect.objectContaining({ status: ClaimStatus.TESTING }));
-        expect(
-            await client.db.query.claimDependencies.findMany({
-                where: eq(claimDependencies.claimId, dependentClaim.id)
-            })
-        ).toEqual([]);
         expect(
             await client.db.query.capabilityRequests.findFirst({
                 where: eq(capabilityRequests.id, capability.id)
@@ -178,44 +154,32 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
                 answeredAt: new Date(updated.lab.updated_at)
             })
         );
-        expect(
-            (await persistence.load(snapshot.lab.id))?.checkpoint.snapshot.capability_requests
-        ).toEqual([
-            expect.objectContaining({
-                id: capability.id,
-                answer: capability.answer,
-                answered_at: capability.answered_at
-            })
-        ]);
 
         const invalid = structuredClone(updated);
-        const invalidTask = invalid.tasks[0];
-        if (invalidTask === undefined) {
-            throw new Error("Projection fixture must contain a task");
+        const orphanedFinding = invalid.findings[0];
+        if (orphanedFinding === undefined) {
+            throw new Error("Projection fixture must carry a finding");
         }
-        invalidTask.branch_id = `${snapshot.lab.id}-missing-branch`;
-        invalidTask.status = InternalTaskStatus.FAILED;
+        orphanedFinding.assumption_id = `${snapshot.lab.id}-missing-assumption`;
+        orphanedFinding.status = FindingStatus.REFUTED;
         invalid.lab.updated_at = "2026-08-02T00:11:00.000Z";
-        invalid.frontier.updated_at = invalid.lab.updated_at;
         await expect(
             persistence.commit({
                 snapshot: invalid,
                 expectedRevision: 2,
                 event: makeEvent(
-                    EventType.TASK_FAILED,
+                    EventType.FINDING_REFUTED,
                     snapshot.lab.id,
                     "event-invalid-projection",
                     invalid.lab.updated_at
                 )
             })
-        ).rejects.toThrow(`references missing branch ${invalidTask.branch_id}`);
+        ).rejects.toThrow(`references missing assumption ${orphanedFinding.assumption_id}`);
 
         expect((await persistence.load(snapshot.lab.id))?.checkpoint.revision).toBe(2);
         expect(
-            await client.db.query.tasks.findFirst({
-                where: eq(tasks.id, invalidTask.id)
-            })
-        ).toEqual(expect.objectContaining({ status: InternalTaskStatus.SUCCEEDED }));
+            await client.db.query.findings.findFirst({ where: eq(findings.id, finding.id) })
+        ).toEqual(expect.objectContaining({ status: FindingStatus.CONFIRMED }));
         expect((await persistence.eventsAfter(snapshot.lab.id)).map(({ id }) => id)).not.toContain(
             testEventId(snapshot.lab.id, "event-invalid-projection")
         );

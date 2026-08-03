@@ -1,4 +1,3 @@
-import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
@@ -9,7 +8,6 @@ export interface PersistedLabEvent extends LabEvent {
 
 export interface RuntimeCheckpoint {
     readonly snapshot: StatusSnapshot;
-    readonly evidence: Evidence[];
     readonly revision: number;
     readonly lastEventSequence?: number;
 }
@@ -27,13 +25,11 @@ export interface InitializeRuntimeInput {
     readonly task: TaskInput;
     readonly workspacePath: string;
     readonly snapshot: StatusSnapshot;
-    readonly evidence?: readonly Evidence[];
     readonly event?: LabEvent;
 }
 
 export interface CommitRuntimeInput {
     readonly snapshot: StatusSnapshot;
-    readonly evidence?: readonly Evidence[];
     readonly expectedRevision: number;
     readonly event?: LabEvent;
 }

@@ -1,19 +1,16 @@
 import { randomUUID } from "node:crypto";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
-import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import {
     CapabilityRequestType,
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
-import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
-import type { Evidence } from "@lab/protocol/evidence/evidence.types";
-import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
+import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
-import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 
 const testRunId = randomUUID();
 
@@ -37,10 +34,11 @@ export function makeTask(id = "lab-runtime"): TaskInput {
 export function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING): StatusSnapshot {
     const labId = task.id ?? "lab-runtime";
     const timestamp = "2026-08-02T00:00:00.000Z";
-    const branchId = `${labId}-branch-director`;
-    const taskId = `${labId}-task-director`;
-    const assumptionId = `${labId}-claim-assumption`;
-    const claimId = `${labId}-claim-primary`;
+    const assumptionId = `${labId}-assumption-cache`;
+    const directorRunId = `${labId}-run-director`;
+    const researcherRunId = `${labId}-run-researcher`;
+    const verifierRunId = `${labId}-run-verifier`;
+    const findingId = `${labId}-finding-primary`;
     return {
         lab: {
             id: labId,
@@ -50,75 +48,66 @@ export function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING
             updated_at: timestamp,
             uptime_ms: 0
         },
-        frontier: {
-            known: [...task.context],
-            open_questions: [...task.success_criteria],
-            blockers: [],
-            next_experiments: ["Run a controlled experiment"],
-            updated_at: timestamp
-        },
-        branches: [
-            {
-                id: branchId,
-                title: "Operationalization",
-                approach: "Produce falsifiable claims",
-                status: BranchStatus.ACTIVE,
-                progress: "Ready"
-            }
-        ],
-        agents: [
-            {
-                id: `${labId}-agent-director`,
-                branch_id: branchId,
-                role: AgentRole.DIRECTOR,
-                status: AgentStatus.WORKING,
-                current_task_id: taskId
-            }
-        ],
-        tasks: [
-            {
-                id: taskId,
-                branch_id: branchId,
-                objective: "Operationalize the goal",
-                context_refs: [],
-                status: InternalTaskStatus.RUNNING,
-                attempt: 1,
-                role: AgentRole.DIRECTOR
-            }
-        ],
-        claims: [
+        assumptions: [
             {
                 id: assumptionId,
-                branch_id: branchId,
-                statement: "The evaluator measures the target outcome",
-                status: ClaimStatus.SUPPORTED,
-                assumption_ids: [],
-                supporting_evidence_ids: [],
-                contradicting_evidence_ids: [],
-                stale: false,
-                created_at: timestamp,
-                updated_at: timestamp
-            },
-            {
-                id: claimId,
-                branch_id: branchId,
-                statement: "The primary approach is reproducible",
-                status: ClaimStatus.PROPOSED,
-                assumption_ids: [assumptionId],
-                supporting_evidence_ids: [],
-                contradicting_evidence_ids: [],
-                stale: false,
+                cycle: 0,
+                statement: "The bottleneck is the cache eviction order",
+                rationale: "Nothing in the literature measures eviction under this access pattern",
+                status: AssumptionStatus.RESEARCHING,
                 created_at: timestamp,
                 updated_at: timestamp
             }
         ],
-        experiments: [],
+        runs: [
+            {
+                id: directorRunId,
+                role: AgentRole.DIRECTOR,
+                objective: "Turn the goal into bets worth taking",
+                status: AgentRunStatus.SUCCEEDED,
+                cwd: "/tmp/lab/director",
+                started_at: timestamp,
+                finished_at: timestamp
+            },
+            {
+                id: researcherRunId,
+                role: AgentRole.RESEARCHER,
+                assumption_id: assumptionId,
+                objective: "Reach the goal through the eviction order",
+                status: AgentRunStatus.SUCCEEDED,
+                cwd: "/tmp/lab/researcher",
+                started_at: timestamp,
+                finished_at: timestamp
+            },
+            {
+                id: verifierRunId,
+                role: AgentRole.VERIFIER,
+                assumption_id: assumptionId,
+                objective: "Check the eviction claim independently",
+                status: AgentRunStatus.RUNNING,
+                cwd: "/tmp/lab/verifier",
+                started_at: timestamp
+            }
+        ],
+        findings: [
+            {
+                id: findingId,
+                assumption_id: assumptionId,
+                run_id: researcherRunId,
+                claim: "Reordering eviction by access recency removes the stall entirely",
+                work: "Patched the allocator, ran the workload 40 times, stall disappeared in all runs",
+                artifact_paths: ["artifacts/bench.json"],
+                status: FindingStatus.UNVERIFIED,
+                created_at: timestamp
+            }
+        ],
+        verdicts: [],
         capability_requests: [
             {
                 id: `${labId}-capability-sandbox`,
                 type: CapabilityRequestType.CAPABILITY_REQUEST,
                 need: "A quiescent dedicated benchmarking host",
-                reason: "The evaluator must measure without neighbouring load",
+                reason: "The measurement needs a machine without neighbouring load",
                 provisioning_hint: "Reserve a bare-metal host and expose it to the run",
                 self_provisioning_attempt:
                     "Pinned cores and stopped local services, and the variance stayed above the effect size",
@@ -148,50 +137,4 @@ export function makeEvent(
         occurred_at: occurredAt,
         payload: { source: "runtime-integration-test" }
     };
-}
-
-export function makeEvidence(
-    labId: string,
-    claimId: string,
-    experimentId: string,
-    verifierTaskId: string
-): Evidence[] {
-    const createdAt = "2026-08-02T00:01:30.000Z";
-    return [
-        {
-            id: `${labId}-evidence-experiment`,
-            kind: EvidenceKind.EXPERIMENT,
-            claim_id: claimId,
-            run_id: experimentId,
-            artifact_path: "artifacts/experiment.json",
-            artifact_hash: "a".repeat(64),
-            summary: "The evaluator measured a stable result",
-            supports: true,
-            independent: false,
-            created_at: createdAt
-        },
-        {
-            id: `${labId}-evidence-verifier`,
-            kind: EvidenceKind.VERIFIER_RESULT,
-            claim_id: claimId,
-            run_id: verifierTaskId,
-            artifact_path: "artifacts/verifier.json",
-            artifact_hash: "c".repeat(64),
-            summary: "The independent verifier reproduced the result",
-            supports: true,
-            independent: true,
-            created_at: createdAt
-        },
-        {
-            id: `${labId}-evidence-counterexample`,
-            kind: EvidenceKind.COUNTEREXAMPLE,
-            claim_id: claimId,
-            artifact_path: "artifacts/counterexample.json",
-            artifact_hash: "d".repeat(64),
-            summary: "A bounded counterexample remains",
-            supports: false,
-            independent: false,
-            created_at: createdAt
-        }
-    ];
 }
