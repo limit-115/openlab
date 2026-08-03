@@ -147,6 +147,23 @@ describe("SubscriptionAllowanceReadings", () => {
         expect(asked).toBe(2);
     });
 
+    it("asks the vendors again on a refresh however much of the interval is left", async () => {
+        let asked = 0;
+        const readings = new SubscriptionAllowanceReadings({
+            read: async (kind) => {
+                asked += 1;
+                return { kind, plan: "max", windows: [] };
+            },
+            ttlMs: TTL_MILLISECONDS,
+            now: () => 0
+        });
+
+        await readings.readAll();
+        await readings.refreshAll();
+
+        expect(asked).toBe(6);
+    });
+
     it("reads every subscription the lab can run on, not only the ones that answered", async () => {
         const readings = new SubscriptionAllowanceReadings({
             read: async (kind) => {

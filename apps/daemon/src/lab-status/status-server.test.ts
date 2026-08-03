@@ -151,6 +151,35 @@ describe("status server", () => {
         await server.close();
     });
 
+    it("re-asks the vendors for a refresh and serves the held reading to every other poll", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-subscriptions-refresh-test-"));
+        const taskPath = path.join(directory, "task.json");
+        await writeFile(taskPath, JSON.stringify({ goal: "Watch the subscriptions" }));
+        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        let asked = 0;
+        const server = createStatusServer(workspace, {
+            subscriptions: new SubscriptionAllowanceReadings({
+                read: async (kind) => {
+                    asked += 1;
+                    return { kind, plan: "max", windows: [] };
+                }
+            })
+        });
+
+        await server.inject({ method: "GET", url: "/api/subscriptions" });
+        await server.inject({ method: "GET", url: "/api/subscriptions" });
+        const polled = asked;
+        const refreshed = await server.inject({
+            method: "GET",
+            url: "/api/subscriptions?fresh=1"
+        });
+
+        expect(polled).toBe(3);
+        expect(asked).toBe(6);
+        expect(refreshed.statusCode).toBe(200);
+        await server.close();
+    });
+
     it("leaves the subscriptions route unserved when no readings were wired in", async () => {
         const server = await createTestServer();
 

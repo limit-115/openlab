@@ -42,14 +42,7 @@ export class SubscriptionAllowanceReadings {
             return Promise.resolve(cached.allowance);
         }
 
-        const pending = this.#pending.get(kind);
-        if (pending !== undefined) {
-            return pending;
-        }
-
-        const reading = this.#ask(kind, signal).finally(() => this.#pending.delete(kind));
-        this.#pending.set(kind, reading);
-        return reading;
+        return this.#ask(kind, signal);
     }
 
     readAll(signal?: AbortSignal): Promise<SubscriptionAllowance[]> {
@@ -57,11 +50,32 @@ export class SubscriptionAllowanceReadings {
     }
 
     /**
+     * Asks every vendor again however much of the interval the held reading has left. An operator
+     * who presses refresh is saying the numbers on the page are not the ones they want, and serving
+     * them the answer they are already looking at would make the button do nothing for a minute.
+     */
+    refreshAll(signal?: AbortSignal): Promise<SubscriptionAllowance[]> {
+        return Promise.all(ALL_HARNESS_KINDS.map((kind) => this.#ask(kind, signal)));
+    }
+
+    /** One request per vendor at a time, so callers arriving together join the one in flight. */
+    #ask(kind: HarnessKind, signal?: AbortSignal): Promise<SubscriptionAllowance> {
+        const pending = this.#pending.get(kind);
+        if (pending !== undefined) {
+            return pending;
+        }
+
+        const reading = this.#readVendor(kind, signal).finally(() => this.#pending.delete(kind));
+        this.#pending.set(kind, reading);
+        return reading;
+    }
+
+    /**
      * A vendor that refuses one reading has not given the allowance back. Anthropic throttles the
      * usage endpoint itself, and forgetting a spent plan on a throttled poll would send the next run
      * straight into it, so the last answer stands and only its interval restarts.
      */
-    async #ask(kind: HarnessKind, signal?: AbortSignal): Promise<SubscriptionAllowance> {
+    async #readVendor(kind: HarnessKind, signal?: AbortSignal): Promise<SubscriptionAllowance> {
         const at = this.#now();
         let allowance: SubscriptionAllowance;
         try {
