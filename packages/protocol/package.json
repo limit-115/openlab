@@ -42,6 +42,9 @@
         "./lab-status/status-snapshot.types": "./src/lab-status/status-snapshot.types.ts",
         "./research-task/task-input.schema": "./src/research-task/task-input.schema.ts",
         "./research-task/task-input.types": "./src/research-task/task-input.types.ts",
+        "./subscription-allowance/subscription-allowance.const": "./src/subscription-allowance/subscription-allowance.const.ts",
+        "./subscription-allowance/subscription-allowance.schema": "./src/subscription-allowance/subscription-allowance.schema.ts",
+        "./subscription-allowance/subscription-allowance.types": "./src/subscription-allowance/subscription-allowance.types.ts",
         "./verdicts/verdict.schema": "./src/verdicts/verdict.schema.ts",
         "./verdicts/verdict.types": "./src/verdicts/verdict.types.ts"
     },
