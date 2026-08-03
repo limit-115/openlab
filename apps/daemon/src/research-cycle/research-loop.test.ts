@@ -4,7 +4,6 @@ import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
 import {
     HarnessAuthenticationMethods,
     HarnessExecutionProfiles,
@@ -100,14 +99,6 @@ const RecoveryContextFixture = {
     CAPABILITY_REASON: "The recovered frontier references held-out traffic",
     CAPABILITY_HINT: "Attach the persisted dataset snapshot",
     RESOURCE_REFERENCE: "dataset://recovered/production-v1"
-} as const;
-
-const DormantCapabilityFixture = {
-    DIRECTION_TITLE: "Repair orchestration recovery",
-    DIRECTION_APPROACH: "Rewrite the research lab orchestrator recovery path",
-    DIRECTION_RATIONALE: "The control plane may be losing recovered tasks",
-    DIRECTION_OBJECTIVE: "Patch the research-loop scheduler and measure restored dispatch",
-    BLOCKER: "The research lab orchestrator crashes while restoring queued tasks"
 } as const;
 
 const SourceCitationFixture = {
