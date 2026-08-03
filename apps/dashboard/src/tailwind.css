@@ -8,6 +8,10 @@
 @source "../index.html";
 @source "./";
 
+/* The transcript renderer ships its classes inside its own build, where scanning `./` cannot see them. */
+@source "../node_modules/streamdown/dist/*.js";
+@source "../node_modules/@streamdown/code/dist/*.js";
+
 @layer base {
     * {
         @apply border-border outline-ring/50;

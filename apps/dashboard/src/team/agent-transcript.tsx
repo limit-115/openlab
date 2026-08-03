@@ -7,6 +7,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger
 } from "#src/design-system/collapsible";
+import { AgentProse } from "#src/team/agent-prose";
 import type {
     TranscriptDiagnostic,
     TranscriptEntry,
@@ -60,7 +61,13 @@ function TranscriptLine({ entry }: { entry: TranscriptEntry }) {
         case AgentActivityFrameKind.THINKING:
             return <ThinkingLine turn={entry} />;
         case AgentActivityFrameKind.MESSAGE:
-            return <p className={cn(TRANSCRIPT_TEXT, "border-primary/40")}>{entry.text}</p>;
+            return (
+                <AgentProse
+                    className={cn(TRANSCRIPT_TEXT, "border-primary/40")}
+                    sealed={entry.sealed}
+                    text={entry.text}
+                />
+            );
         case AgentActivityFrameKind.TOOL:
             return <ToolLine call={entry} />;
         case AgentActivityFrameKind.DIAGNOSTIC:
@@ -80,9 +87,11 @@ function ThinkingLine({ turn }: { turn: TranscriptTurn }) {
                 Thinking · {turn.text.length} characters
             </CollapsibleTrigger>
             <CollapsibleContent>
-                <p className={cn(TRANSCRIPT_TEXT, "mt-1 ml-1 border-muted text-muted-foreground")}>
-                    {turn.text}
-                </p>
+                <AgentProse
+                    className={cn(TRANSCRIPT_TEXT, "mt-1 ml-1 border-muted text-muted-foreground")}
+                    sealed={turn.sealed}
+                    text={turn.text}
+                />
             </CollapsibleContent>
         </Collapsible>
     );

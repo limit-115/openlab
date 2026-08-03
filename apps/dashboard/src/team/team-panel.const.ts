@@ -77,7 +77,8 @@ export const TRANSCRIPT_ENTRIES = "flex flex-col gap-2" as const;
  */
 export const TRANSCRIPT_INITIAL_SCROLL = "instant" as const;
 
-export const TRANSCRIPT_TEXT = "border-l-2 pl-3 text-sm whitespace-pre-wrap wrap-anywhere" as const;
+/** Where a line breaks is markdown's answer now, so the rule that held every newline is gone. */
+export const TRANSCRIPT_TEXT = "border-l-2 pl-3 text-sm wrap-anywhere" as const;
 
 export const TRANSCRIPT_TOOL = "flex flex-wrap items-baseline gap-2 text-sm" as const;
 
