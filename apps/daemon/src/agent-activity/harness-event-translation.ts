@@ -56,15 +56,26 @@ export class HarnessEventTranslator {
                 return this.textFrame(base, event, AgentActivityFrameKind.MESSAGE, false);
             case HarnessEventTypes.ASSISTANT_COMPLETED:
                 return this.textFrame(base, event, AgentActivityFrameKind.MESSAGE, true);
-            case HarnessEventTypes.TOOL:
+            case HarnessEventTypes.TOOL: {
+                const detail = toolDetail(event.payload);
+                /**
+                 * A tool frame with neither a call to attach to nor a subject to name says only
+                 * that something happened. History is replayed from files a harness has already
+                 * written, so runs recorded while one reported every fragment of a tool's
+                 * arguments are dropped on the way out as well as at the source.
+                 */
+                if (event.callId === null && detail === null) {
+                    return undefined;
+                }
                 return {
                     ...base,
                     kind: AgentActivityFrameKind.TOOL,
                     tool_name: event.toolName,
                     call_id: event.callId,
                     phase: ActivityToolPhase[event.phase],
-                    detail: toolDetail(event.payload)
+                    detail
                 };
+            }
             case HarnessEventTypes.DIAGNOSTIC:
                 return {
                     ...base,

@@ -104,6 +104,31 @@ describe("HarnessEventTranslator", () => {
         ]);
     });
 
+    it("drops a tool frame that names no call and no subject", () => {
+        const frames = translateAll(
+            harnessEvents([
+                {
+                    type: HarnessEventTypes.TOOL,
+                    phase: HarnessToolPhases.UPDATED,
+                    toolName: "tool_input",
+                    callId: null,
+                    payload: { type: "input_json_delta", partial_json: '{"comm' }
+                },
+                {
+                    type: HarnessEventTypes.TOOL,
+                    phase: HarnessToolPhases.STARTED,
+                    toolName: "Bash",
+                    callId: "toolu_01",
+                    payload: { type: "tool_use", input: { command: "pnpm vitest run" } }
+                }
+            ])
+        );
+
+        expect(frames.map((frame) => ("tool_name" in frame ? frame.tool_name : undefined))).toEqual(
+            ["Bash"]
+        );
+    });
+
     it("keeps harness plumbing and the research result out of the stream", () => {
         const frames = translateAll(
             harnessEvents([
