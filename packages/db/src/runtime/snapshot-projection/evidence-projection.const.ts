@@ -7,7 +7,6 @@ import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 
 export const UnboundEvidenceOrigin = {
     [EvidenceKind.EXPERIMENT]: EvidenceOrigin.MODEL_JUDGEMENT,
-    [EvidenceKind.SOURCE]: EvidenceOrigin.MODEL_JUDGEMENT,
     [EvidenceKind.ARTIFACT]: EvidenceOrigin.MODEL_JUDGEMENT,
     [EvidenceKind.COUNTEREXAMPLE]: EvidenceOrigin.MODEL_JUDGEMENT,
     [EvidenceKind.VERIFIER_RESULT]: EvidenceOrigin.MODEL_JUDGEMENT

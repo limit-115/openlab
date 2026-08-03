@@ -34,8 +34,6 @@
         "./evidence/evidence-kind.const": "./src/evidence/evidence-kind.const.ts",
         "./evidence/evidence.schema": "./src/evidence/evidence.schema.ts",
         "./evidence/evidence.types": "./src/evidence/evidence.types.ts",
-        "./evidence/source-evidence.const": "./src/evidence/source-evidence.const.ts",
-        "./evidence/source-evidence.schema": "./src/evidence/source-evidence.schema.ts",
         "./experiments/experiment-status.const": "./src/experiments/experiment-status.const.ts",
         "./experiments/experiment.schema": "./src/experiments/experiment.schema.ts",
         "./experiments/experiment.types": "./src/experiments/experiment.types.ts",

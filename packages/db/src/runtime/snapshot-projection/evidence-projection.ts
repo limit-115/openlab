@@ -2,7 +2,6 @@ import { EvidenceOrigin } from "@lab/core/claims/evidence-origin.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
-import { SourceRetrievalMethod } from "@lab/protocol/evidence/source-evidence.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { EvidenceRelationship } from "#src/claims/evidence-relationship.const";
@@ -67,12 +66,9 @@ export async function replaceClaimEvidence(
         evidenceRecords.map((candidate) => ({
             claimId: candidate.claim_id,
             evidenceId: candidate.id,
-            relationship:
-                candidate.kind === EvidenceKind.SOURCE
-                    ? EvidenceRelationship.CITES
-                    : candidate.supports
-                      ? EvidenceRelationship.SUPPORTS
-                      : EvidenceRelationship.CONTRADICTS
+            relationship: candidate.supports
+                ? EvidenceRelationship.SUPPORTS
+                : EvidenceRelationship.CONTRADICTS
         }))
     );
 }
@@ -111,21 +107,12 @@ function projectEvidence(snapshot: StatusSnapshot, candidate: Evidence) {
         sourceTask?.role === AgentRole.VERIFIER &&
         sourceBranchId !== claim.branch_id;
     const empiricalOriginEstablished =
-        experiment !== undefined &&
-        valid &&
-        candidate.kind !== EvidenceKind.SOURCE &&
-        candidate.kind !== EvidenceKind.VERIFIER_RESULT;
-    const daemonFetchedSourceEstablished =
-        candidate.kind === EvidenceKind.SOURCE &&
-        candidate.source?.retrieval_method === SourceRetrievalMethod.DAEMON_HTTP &&
-        valid;
-    const origin = daemonFetchedSourceEstablished
-        ? EvidenceOrigin.DAEMON_FETCHED_SOURCE
-        : verifierOriginEstablished
-          ? EvidenceOrigin.VERIFIER
-          : empiricalOriginEstablished
-            ? EvidenceOrigin.EMPIRICAL
-            : UnboundEvidenceOrigin[candidate.kind];
+        experiment !== undefined && valid && candidate.kind !== EvidenceKind.VERIFIER_RESULT;
+    const origin = verifierOriginEstablished
+        ? EvidenceOrigin.VERIFIER
+        : empiricalOriginEstablished
+          ? EvidenceOrigin.EMPIRICAL
+          : UnboundEvidenceOrigin[candidate.kind];
 
     return {
         id: candidate.id,

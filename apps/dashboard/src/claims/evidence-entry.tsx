@@ -71,12 +71,6 @@ export function EvidenceEntry({ evidence, experiment }: EvidenceEntryProps) {
                 {evidence.artifact_hash === undefined ? null : (
                     <p className={EVIDENCE_ARTIFACT}>sha256 {evidence.artifact_hash}</p>
                 )}
-                {evidence.source === undefined ? null : (
-                    <p className={EVIDENCE_ARTIFACT}>
-                        {evidence.source.title} · {evidence.source.claimed_classification} ·{" "}
-                        {evidence.source.final_url}
-                    </p>
-                )}
             </div>
         </li>
     );

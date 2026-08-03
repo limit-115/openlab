@@ -33,7 +33,6 @@ export const EVIDENCE_MISSING = "text-sm break-words text-muted-foreground" as c
 
 export const EVIDENCE_KIND_LABEL: Record<EvidenceKind, string> = {
     [EvidenceKind.EXPERIMENT]: "Experiment",
-    [EvidenceKind.SOURCE]: "Source",
     [EvidenceKind.ARTIFACT]: "Artifact",
     [EvidenceKind.COUNTEREXAMPLE]: "Counterexample",
     [EvidenceKind.VERIFIER_RESULT]: "Verifier result"

@@ -1,5 +1,4 @@
 export const EvidenceRelationship = {
-    CITES: "cites",
     SUPPORTS: "supports",
     CONTRADICTS: "contradicts"
 } as const;

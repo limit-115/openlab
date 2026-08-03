@@ -139,15 +139,6 @@ describeDatabase("Runtime snapshot attempt and evidence projection", () => {
                     valid: true,
                     complete: true,
                     reproducible: true
-                }),
-                expect.objectContaining({
-                    id: evidenceRecords[3]?.id,
-                    sourceBranchId: branchId,
-                    attemptId: experimentId,
-                    origin: EvidenceOrigin.DAEMON_FETCHED_SOURCE,
-                    valid: true,
-                    complete: true,
-                    reproducible: false
                 })
             ])
         );
@@ -166,11 +157,6 @@ describeDatabase("Runtime snapshot attempt and evidence projection", () => {
                     claimId,
                     evidenceId: evidenceRecords[2]?.id,
                     relationship: EvidenceRelationship.CONTRADICTS
-                },
-                {
-                    claimId,
-                    evidenceId: evidenceRecords[3]?.id,
-                    relationship: EvidenceRelationship.CITES
                 }
             ])
         );

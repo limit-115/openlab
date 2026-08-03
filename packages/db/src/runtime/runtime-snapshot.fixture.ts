@@ -9,10 +9,6 @@ import {
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
-import {
-    SourceClassification,
-    SourceRetrievalMethod
-} from "@lab/protocol/evidence/source-evidence.const";
 import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
@@ -195,27 +191,6 @@ export function makeEvidence(
             summary: "A bounded counterexample remains",
             supports: false,
             independent: false,
-            created_at: createdAt
-        },
-        {
-            id: `${labId}-evidence-source`,
-            kind: EvidenceKind.SOURCE,
-            claim_id: claimId,
-            run_id: experimentId,
-            artifact_path: "artifacts/source.html",
-            artifact_hash: "e".repeat(64),
-            summary: "A daemon-fetched citation",
-            supports: false,
-            independent: false,
-            source: {
-                requested_url: "https://example.com/paper",
-                final_url: "https://example.com/paper",
-                title: "Example paper",
-                claimed_classification: SourceClassification.PRIMARY,
-                retrieval_method: SourceRetrievalMethod.DAEMON_HTTP,
-                http_status: 200,
-                fetched_at: createdAt
-            },
             created_at: createdAt
         }
     ];
