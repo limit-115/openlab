@@ -1,39 +1,35 @@
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import { KeyRoundIcon } from "lucide-react";
+import { CAPABILITY_LIST } from "#src/capabilities/capabilities-panel.const";
 import { CapabilityCard } from "#src/capabilities/capability-card";
-import { Badge } from "#src/design-system/badge";
-import { ItemGroup } from "#src/design-system/item";
-import { Panel } from "#src/panel/panel";
-import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface CapabilitiesPanelProps {
     requests: CapabilityRequest[];
 }
 
+/**
+ * Nothing is drawn while the lab has everything it needs. A panel saying so would take the place a
+ * real request has to be noticed in, and there is no news in a lab that is not blocked.
+ */
 export function CapabilitiesPanel({ requests }: CapabilitiesPanelProps) {
-    const openCount = requests.filter((request) => request.status === CapabilityStatus.OPEN).length;
+    if (requests.length === 0) {
+        return null;
+    }
+
+    const ordered = [...requests].sort((left, right) => {
+        if (left.status === right.status) {
+            return right.created_at.localeCompare(left.created_at);
+        }
+        return left.status === CapabilityStatus.OPEN ? -1 : 1;
+    });
 
     return (
-        <Panel
-            title="Capabilities"
-            description="External blockers"
-            icon={KeyRoundIcon}
-            action={openCount > 0 ? <Badge>{openCount} needed</Badge> : null}
-        >
-            {requests.length > 0 ? (
-                <ItemGroup className="gap-3">
-                    {requests.map((request) => (
-                        <CapabilityCard key={request.id} request={request} />
-                    ))}
-                </ItemGroup>
-            ) : (
-                <PanelEmptyState
-                    compact
-                    title="All capabilities available"
-                    description="No credential, account, private data, hardware or authorization is waiting on the operator."
-                />
-            )}
-        </Panel>
+        <ul className={CAPABILITY_LIST} aria-label="Capability requests">
+            {ordered.map((request) => (
+                <li key={request.id}>
+                    <CapabilityCard request={request} />
+                </li>
+            ))}
+        </ul>
     );
 }

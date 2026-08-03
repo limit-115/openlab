@@ -150,6 +150,25 @@ describe("App", () => {
         expect(screen.getByText("No research branches yet")).toBeInTheDocument();
         expect(screen.getByText("No claims recorded")).toBeInTheDocument();
         expect(screen.getByText("No experiments yet")).toBeInTheDocument();
-        expect(screen.getByText("All capabilities available")).toBeInTheDocument();
+    });
+
+    it("spends no room on capability requests while the lab is not blocked", async () => {
+        respondWith({ ...statusFixture, capability_requests: [] });
+        renderDashboard();
+
+        expect(await screen.findByText(statusFixture.lab.goal)).toBeInTheDocument();
+        expect(screen.queryByRole("list", { name: "Capability requests" })).toBeNull();
+    });
+
+    it("counts up how long a capability request has been waiting on the operator", async () => {
+        respondWith(statusFixture);
+        renderDashboard();
+
+        const requests = await screen.findByRole("list", { name: "Capability requests" });
+
+        expect(within(requests).getByText(/Waiting for you/)).toBeInTheDocument();
+        expect(
+            within(requests).getByText(statusFixture.capability_requests[0]?.reason ?? "missing")
+        ).toBeInTheDocument();
     });
 });

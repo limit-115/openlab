@@ -16,14 +16,14 @@ export function OverviewView() {
         <>
             <MissionOverview snapshot={snapshot} />
             <OutcomePanel snapshot={snapshot} />
-            <FrontierPanel frontier={snapshot.frontier} />
             <CapabilitiesPanel requests={snapshot.capability_requests} />
+            <FrontierPanel frontier={snapshot.frontier} />
+            <ClaimsPanel claims={snapshot.claims} experiments={snapshot.experiments} />
             <BranchesPanel
                 branches={snapshot.branches}
                 agents={snapshot.agents}
                 tasks={snapshot.tasks}
             />
-            <ClaimsPanel claims={snapshot.claims} experiments={snapshot.experiments} />
             <ExperimentsPanel experiments={snapshot.experiments} />
             <EventsPanel events={snapshot.recent_events} />
         </>

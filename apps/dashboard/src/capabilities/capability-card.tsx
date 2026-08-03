@@ -1,31 +1,31 @@
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import { LockKeyholeIcon, WrenchIcon } from "lucide-react";
 import {
-    CAPABILITY_FOOTER,
-    CAPABILITY_ICON,
+    CAPABILITY_CARD,
+    CAPABILITY_CARD_OPEN,
+    CAPABILITY_HEADER,
     CAPABILITY_NEED,
+    CAPABILITY_PAIR_LABEL,
+    CAPABILITY_PAIR_VALUE,
+    CAPABILITY_PAIRS,
     CAPABILITY_RESOURCE_CLASS_LABEL,
+    CAPABILITY_SETTLED,
+    CAPABILITY_TAGS,
+    CAPABILITY_WAITING,
     COPY_PROVISIONING_COMMAND_LABEL,
-    PROVISIONING_HINT,
+    HOW_TO_PROVIDE,
+    PROVISION_VIA_CLI,
     PROVISIONING_HINT_COMMAND,
     PROVISIONING_HINT_HEADER,
-    PROVISIONING_HINT_LABEL,
-    PROVISIONING_HINT_NOTE
+    WHAT_THIS_UNBLOCKS
 } from "#src/capabilities/capability-card.const";
 import { CapabilityProvisionForm } from "#src/capabilities/capability-provision-form";
 import { CopyButton } from "#src/clipboard/copy-button";
 import { Badge } from "#src/design-system/badge";
-import {
-    Item,
-    ItemContent,
-    ItemDescription,
-    ItemFooter,
-    ItemHeader,
-    ItemMedia,
-    ItemTitle
-} from "#src/design-system/item";
+import { cn } from "#src/design-system/class-names";
+import { useElapsedTime } from "#src/lab-header/lab-uptime";
 import { StatusTag } from "#src/status-tag/status-tag";
+import { formatDuration } from "#src/value-display/duration-display";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 interface CapabilityCardProps {
@@ -34,46 +34,68 @@ interface CapabilityCardProps {
 
 export function CapabilityCard({ request }: CapabilityCardProps) {
     const command = `lab provide ${request.id} <resource-reference>`;
+    const open = request.status === CapabilityStatus.OPEN;
 
     return (
-        <Item asChild variant="outline" className="items-start">
-            <li>
-                <ItemMedia variant="icon" className={CAPABILITY_ICON} aria-hidden="true">
-                    {request.status === CapabilityStatus.OPEN ? (
-                        <LockKeyholeIcon />
-                    ) : (
-                        <WrenchIcon />
-                    )}
-                </ItemMedia>
-                <ItemContent>
-                    <ItemHeader>
-                        <ItemTitle className={CAPABILITY_NEED}>{request.need}</ItemTitle>
-                        <StatusTag status={request.status} />
-                    </ItemHeader>
+        <article className={cn(CAPABILITY_CARD, open && CAPABILITY_CARD_OPEN)}>
+            <header className={CAPABILITY_HEADER}>
+                <div className="flex min-w-0 flex-col gap-1">
+                    <WaitedFor request={request} />
+                    <p className={CAPABILITY_NEED}>{request.need}</p>
+                </div>
+                <div className={CAPABILITY_TAGS}>
                     <Badge variant="outline">
                         {CAPABILITY_RESOURCE_CLASS_LABEL[request.resource_class]}
                     </Badge>
-                    <ItemDescription>{request.reason}</ItemDescription>
-                    <p className={PROVISIONING_HINT_NOTE}>{request.provisioning_hint}</p>
-                    {request.status === CapabilityStatus.OPEN ? (
-                        <CapabilityProvisionForm requestId={request.id} />
-                    ) : null}
-                    <div className={PROVISIONING_HINT}>
-                        <div className={PROVISIONING_HINT_HEADER}>
-                            <span className={PROVISIONING_HINT_LABEL}>Provision via CLI</span>
-                            <CopyButton
-                                value={command}
-                                label={COPY_PROVISIONING_COMMAND_LABEL}
-                                className="-my-1"
-                            />
-                        </div>
-                        <code className={PROVISIONING_HINT_COMMAND}>{command}</code>
+                    <StatusTag status={request.status} />
+                </div>
+            </header>
+
+            <div className={CAPABILITY_PAIRS}>
+                <div className="flex min-w-0 flex-col gap-1">
+                    <p className={CAPABILITY_PAIR_LABEL}>{WHAT_THIS_UNBLOCKS}</p>
+                    <p className={CAPABILITY_PAIR_VALUE}>{request.reason}</p>
+                </div>
+                <div className="flex min-w-0 flex-col gap-1">
+                    <p className={CAPABILITY_PAIR_LABEL}>{HOW_TO_PROVIDE}</p>
+                    <p className={CAPABILITY_PAIR_VALUE}>{request.provisioning_hint}</p>
+                    <div className={PROVISIONING_HINT_HEADER}>
+                        <p className={CAPABILITY_PAIR_LABEL}>{PROVISION_VIA_CLI}</p>
+                        <CopyButton
+                            value={command}
+                            label={COPY_PROVISIONING_COMMAND_LABEL}
+                            className="-my-1"
+                        />
                     </div>
-                    <ItemFooter className={CAPABILITY_FOOTER}>
-                        Requested {formatDate(request.created_at)}
-                    </ItemFooter>
-                </ItemContent>
-            </li>
-        </Item>
+                    <code className={PROVISIONING_HINT_COMMAND}>{command}</code>
+                </div>
+            </div>
+
+            {open ? <CapabilityProvisionForm requestId={request.id} /> : null}
+        </article>
     );
+}
+
+/**
+ * An open request counts up, because the number an operator needs is how long a direction has been
+ * standing still. A settled one only has to say when it happened.
+ */
+function WaitedFor({ request }: CapabilityRequestProps) {
+    const waited = useElapsedTime(0, request.created_at, request.status === CapabilityStatus.OPEN);
+
+    if (request.status === CapabilityStatus.OPEN) {
+        return <p className={CAPABILITY_WAITING}>Waiting for you · {formatDuration(waited)}</p>;
+    }
+
+    return (
+        <p className={CAPABILITY_SETTLED}>
+            {request.provided_at === undefined
+                ? `Requested ${formatDate(request.created_at)}`
+                : `Provided ${formatDate(request.provided_at)}`}
+        </p>
+    );
+}
+
+interface CapabilityRequestProps {
+    request: CapabilityRequest;
 }
