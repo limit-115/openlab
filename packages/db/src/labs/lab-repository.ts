@@ -1,6 +1,6 @@
 import { transitionLabState } from "@lab/core/lab-lifecycle/lab-state-transitions";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { labs } from "#src/lab-database/lab-schema";
 import type {
@@ -38,6 +38,24 @@ export class LabRepository {
 
     async find(labId: string): Promise<LabRecord | undefined> {
         return this.#database.query.labs.findFirst({ where: eq(labs.id, labId) });
+    }
+
+    async listIds(): Promise<string[]> {
+        const rows = await this.#database.select({ id: labs.id }).from(labs);
+        return rows.map((row) => row.id);
+    }
+
+    /**
+     * Deletes lab rows and, through the schema cascade, every branch, task, attempt, claim,
+     * evidence, event, checkpoint, and capability request that hangs off them. Passing a lab id
+     * spares that one run. Returns the deleted lab ids.
+     */
+    async purge(keptLabId?: string): Promise<string[]> {
+        const rows = await this.#database
+            .delete(labs)
+            .where(keptLabId === undefined ? undefined : ne(labs.id, keptLabId))
+            .returning({ id: labs.id });
+        return rows.map((row) => row.id);
     }
 
     async persistLifecycle(input: PersistLifecycleInput): Promise<LabRecord> {
