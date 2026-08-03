@@ -37,7 +37,8 @@ export async function startDaemon(
             workspace,
             activity,
             dependencies.researchLoop ?? runResearchLoop,
-            createHarnesses(config.harnessKinds)
+            createHarnesses(config.harnessKinds),
+            subscriptions
         );
         app = createStatusServer(workspace, {
             activity,

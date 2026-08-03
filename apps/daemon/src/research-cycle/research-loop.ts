@@ -73,6 +73,9 @@ export async function runResearchLoop(
                 activity,
                 task,
                 available,
+                ...(options.subscriptions === undefined
+                    ? {}
+                    : { subscriptions: options.subscriptions }),
                 createAgentWorkspace,
                 cycle,
                 ...(signal === undefined ? {} : { signal })
@@ -147,7 +150,16 @@ async function blockOnUnavailableHarnesses(workspace: LabWorkspace): Promise<voi
 }
 
 async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycleResult> {
-    const { workspace, activity, task, available, createAgentWorkspace, cycle, signal } = input;
+    const {
+        workspace,
+        activity,
+        task,
+        available,
+        subscriptions,
+        createAgentWorkspace,
+        cycle,
+        signal
+    } = input;
     const spent = workspace
         .getSnapshot()
         .assumptions.filter(({ status }) => status === AssumptionStatus.EXHAUSTED);
@@ -163,6 +175,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
                 task,
                 assumption,
                 available,
+                ...(subscriptions === undefined ? {} : { subscriptions }),
                 preferredHarnessIndex: cycle + index + 1,
                 createAgentWorkspace,
                 ...(signal === undefined ? {} : { signal })
@@ -200,6 +213,7 @@ async function directorPlan(
             workspace: input.workspace,
             activity: input.activity,
             available: input.available,
+            ...(input.subscriptions === undefined ? {} : { subscriptions: input.subscriptions }),
             preferredIndex: input.cycle,
             role: AgentRole.DIRECTOR,
             objective: "Find where this goal might be reachable",

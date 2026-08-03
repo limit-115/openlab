@@ -23,6 +23,7 @@ import {
     runStructuredAgent,
     StructuredAgentRunError
 } from "#src/research-cycle/structured-agent-run";
+import { spentAllowanceError } from "#src/subscription-allowance/spent-allowance";
 
 export class HarnessCapabilityBlockedError extends Error {
     constructor(role: string) {
@@ -35,6 +36,9 @@ export class HarnessCapabilityBlockedError extends Error {
  * Gives one piece of work to an agent, moving down the roster when a harness cannot carry it. Each
  * attempt is journalled as its own run: a second harness taking over is a second agent doing the
  * work, and an operator reading the history should see both.
+ *
+ * A subscription with nothing left is passed over before any run is prepared, which is the same
+ * outcome the vendor's refusal produced mid-run, reached without spending a run to find out.
  */
 export async function runAgentWithFallback<Output extends AgentCapabilityOutput>(
     input: AgentDispatchInput<Output>
@@ -44,6 +48,14 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
     for (let offset = 0; offset < input.available.length; offset += 1) {
         throwIfAborted(input.signal);
         const harness = selectHarness(input.available, input.preferredIndex + offset).harness;
+        const spent = await spentAllowanceError(input.subscriptions, harness.kind, input.signal);
+        if (spent !== undefined) {
+            lastError = spent;
+            capabilityFailures += 1;
+            await requestSubscriptionCapability(input.workspace, spent.capabilityRequest);
+            continue;
+        }
+
         const agentWorkspace = await input.createAgentWorkspace(input.role);
         const runId = newAgentRunId(input.role);
         await startAgentRun(input.workspace, {

@@ -7,6 +7,7 @@ import type {
     ResearchLoopOptions,
     ResearchLoopOutcome
 } from "#src/research-cycle/research-loop.types";
+import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 export class ResearchLoopController {
     readonly #workspace: LabWorkspace;
@@ -16,6 +17,7 @@ export class ResearchLoopController {
         options: ResearchLoopOptions
     ) => Promise<ResearchLoopOutcome>;
     readonly #harnesses: readonly AgentHarness[] | undefined;
+    readonly #subscriptions: SubscriptionAllowanceReadings | undefined;
     #abortController: AbortController | undefined;
     #running: Promise<ResearchLoopOutcome> | undefined;
     #restartRequested = false;
@@ -28,12 +30,14 @@ export class ResearchLoopController {
             workspace: LabWorkspace,
             options: ResearchLoopOptions
         ) => Promise<ResearchLoopOutcome>,
-        harnesses?: readonly AgentHarness[]
+        harnesses?: readonly AgentHarness[],
+        subscriptions?: SubscriptionAllowanceReadings
     ) {
         this.#workspace = workspace;
         this.#activity = activity;
         this.#run = run;
         this.#harnesses = harnesses;
+        this.#subscriptions = subscriptions;
         this.#unsubscribe = workspace.subscribe((event, snapshot) => {
             if (
                 event.type === EventType.LAB_STATE_CHANGED &&
@@ -58,7 +62,8 @@ export class ResearchLoopController {
         const running = this.#run(this.#workspace, {
             activity: this.#activity,
             signal: abortController.signal,
-            ...(this.#harnesses === undefined ? {} : { harnesses: this.#harnesses })
+            ...(this.#harnesses === undefined ? {} : { harnesses: this.#harnesses }),
+            ...(this.#subscriptions === undefined ? {} : { subscriptions: this.#subscriptions })
         });
         this.#running = running;
         const clear = () => {

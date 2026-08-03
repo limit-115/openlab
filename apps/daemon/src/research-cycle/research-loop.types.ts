@@ -15,6 +15,7 @@ import type {
 } from "#src/research-cycle/agent-workspace.types";
 import type { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
 import type { StructuredAgentRunOutput } from "#src/research-cycle/structured-agent-run.types";
+import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 export interface ResearchLoopOutcome {
     readonly status: ResearchLoopOutcomeStatus;
@@ -24,6 +25,8 @@ export interface ResearchLoopOutcome {
 export interface ResearchLoopOptions {
     readonly activity?: AgentActivityHub;
     readonly harnesses?: readonly AgentHarness[];
+    /** Absent leaves the lab dispatching blind, learning a spent allowance from the vendor. */
+    readonly subscriptions?: SubscriptionAllowanceReadings;
     readonly workspaceFactory?: AgentWorkspaceFactory;
     readonly signal?: AbortSignal;
     readonly cycleBackoffMs?: number;
@@ -42,6 +45,7 @@ export interface ResearchCycleInput {
     readonly activity: AgentActivityHub;
     readonly task: TaskInput;
     readonly available: readonly AvailableHarness[];
+    readonly subscriptions?: SubscriptionAllowanceReadings;
     readonly createAgentWorkspace: CreateAgentWorkspace;
     readonly cycle: number;
     readonly signal?: AbortSignal;
@@ -59,6 +63,7 @@ export interface AssumptionResearchInput {
     readonly task: TaskInput;
     readonly assumption: Assumption;
     readonly available: readonly AvailableHarness[];
+    readonly subscriptions?: SubscriptionAllowanceReadings;
     readonly preferredHarnessIndex: number;
     readonly createAgentWorkspace: CreateAgentWorkspace;
     readonly signal?: AbortSignal;
@@ -73,6 +78,7 @@ export interface AgentDispatchInput<Output> {
     readonly workspace: LabWorkspace;
     readonly activity: AgentActivityHub;
     readonly available: readonly AvailableHarness[];
+    readonly subscriptions?: SubscriptionAllowanceReadings;
     readonly preferredIndex: number;
     readonly role: AgentRole;
     readonly assumptionId?: string;
