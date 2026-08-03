@@ -1,24 +1,20 @@
-import {
-    AgentActivityPhase,
-    AgentRunStatus
-} from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
 import {
     AgentActivityFrameKind,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 
-export const RUN_ID = "run-9f0c" as const;
+export const RUN_ID = "run-researcher-9f0c" as const;
 
 export function watchedActivity(overrides: Partial<AgentActivity> = {}): AgentActivity {
     return {
-        agent_id: "agent-researcher-0-1",
         run_id: RUN_ID,
-        branch_id: "branch-researcher-0-1",
-        task_id: "task-researcher-0-1",
+        assumption_id: "assumption-landmarks",
         role: AgentRole.RESEARCHER,
         execution: {
             harness: AgentHarnessKind.CLAUDE,
@@ -45,15 +41,14 @@ export function resetFrameSequence(): void {
 
 /** Omitting keys from a union has to distribute, or every frame collapses to its common fields. */
 type FrameBody<Frame = AgentActivityFrame> = Frame extends unknown
-    ? Omit<Frame, "agent_id" | "run_id" | "sequence" | "occurred_at">
+    ? Omit<Frame, "run_id" | "sequence" | "occurred_at">
     : never;
 
-export function frame(body: FrameBody, agentId = "agent-researcher-0-1"): AgentActivityFrame {
+export function frame(body: FrameBody, runId: string = RUN_ID): AgentActivityFrame {
     sequence += 1;
     return {
         ...body,
-        agent_id: agentId,
-        run_id: RUN_ID,
+        run_id: runId,
         sequence,
         occurred_at: "2026-08-03T10:00:02.000Z"
     } as AgentActivityFrame;

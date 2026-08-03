@@ -1,4 +1,4 @@
-import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import {
     GOAL_REASON,
@@ -15,8 +15,8 @@ interface MissionOverviewProps {
 }
 
 export function MissionOverview({ snapshot }: MissionOverviewProps) {
-    const activeBranches = snapshot.branches.filter(
-        (branch) => branch.status === BranchStatus.ACTIVE
+    const liveBets = snapshot.assumptions.filter(
+        ({ status }) => status === AssumptionStatus.OPEN || status === AssumptionStatus.RESEARCHING
     ).length;
 
     return (
@@ -27,16 +27,16 @@ export function MissionOverview({ snapshot }: MissionOverviewProps) {
                 </h1>
                 {snapshot.lab.reason ? <p className={GOAL_REASON}>{snapshot.lab.reason}</p> : null}
                 <p className={MISSION_META}>
-                    {snapshot.branches.length > 0 ? (
+                    {snapshot.assumptions.length > 0 ? (
                         <span>
-                            {activeBranches} of {snapshot.branches.length} directions active
+                            {liveBets} of {snapshot.assumptions.length} bets still live
                         </span>
                     ) : null}
                     <span>Updated {formatDate(snapshot.lab.updated_at)}</span>
                 </p>
             </div>
 
-            <CycleRail agents={snapshot.agents} />
+            <CycleRail runs={snapshot.runs} />
         </section>
     );
 }

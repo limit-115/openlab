@@ -23,7 +23,7 @@ export function OutcomePanel({ snapshot }: OutcomePanelProps) {
     const shouldShow =
         snapshot.result ||
         state === LabState.HIBERNATING ||
-        state === LabState.COMPLETED ||
+        state === LabState.BREAKTHROUGH ||
         state === LabState.FAILED ||
         state === LabState.STOPPED;
 

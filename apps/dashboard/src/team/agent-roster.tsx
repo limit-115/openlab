@@ -1,4 +1,4 @@
-import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
+import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
 import { cn } from "#src/design-system/class-names";
 import { agentExecutionLine } from "#src/team/agent-execution-line";
 import { agentLatestLine } from "#src/team/agent-latest-line";
@@ -19,32 +19,32 @@ import {
 
 interface AgentRosterProps {
     agents: readonly WatchedAgent[];
-    tasks: InternalTask[];
+    runs: AgentRun[];
     selectedId: string;
-    onSelect: (agentId: string) => void;
+    onSelect: (runId: string) => void;
 }
 
 /**
  * Every agent the lab is running, each saying who it is, what it was given and what it is doing
  * right now. Reading one of them in full is a click away and does not hide the others.
  */
-export function AgentRoster({ agents, tasks, selectedId, onSelect }: AgentRosterProps) {
+export function AgentRoster({ agents, runs, selectedId, onSelect }: AgentRosterProps) {
     return (
         <ul className={TEAM_ROSTER} aria-label="Agents">
             {agents.map((agent) => {
                 const { activity } = agent;
-                const task = tasks.find(({ id }) => id === activity.task_id);
+                const run = runs.find(({ id }) => id === activity.run_id);
                 const line = agentLatestLine(agent);
 
                 return (
-                    <li key={activity.agent_id}>
+                    <li key={activity.run_id}>
                         <button
                             type="button"
-                            aria-pressed={activity.agent_id === selectedId}
-                            onClick={() => onSelect(activity.agent_id)}
+                            aria-pressed={activity.run_id === selectedId}
+                            onClick={() => onSelect(activity.run_id)}
                             className={cn(
                                 ROSTER_ENTRY,
-                                activity.agent_id === selectedId && ROSTER_ENTRY_SELECTED
+                                activity.run_id === selectedId && ROSTER_ENTRY_SELECTED
                             )}
                         >
                             <span className={ROSTER_ENTRY_TOP}>
@@ -59,8 +59,8 @@ export function AgentRoster({ agents, tasks, selectedId, onSelect }: AgentRoster
                                 {agentExecutionLine(activity.execution)}
                             </span>
 
-                            {task === undefined ? null : (
-                                <span className={ROSTER_OBJECTIVE}>{task.objective}</span>
+                            {run === undefined ? null : (
+                                <span className={ROSTER_OBJECTIVE}>{run.objective}</span>
                             )}
 
                             <span className={ROSTER_LINE}>

@@ -1,5 +1,5 @@
-import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
-import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
+import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import {
     CYCLE_STAGE_LABEL,
     CYCLE_STAGES,
@@ -9,60 +9,61 @@ import {
 import type { CycleStage } from "#src/research-cycle/cycle-stage.types";
 
 /**
- * Reads the cycle off the agents themselves. Nothing in the snapshot names a stage, but the roles
- * run in a fixed order, so which roles are working and which have stopped is the same information.
+ * Reads the cycle off the runs themselves. Nothing in the snapshot names a stage, but the roles run
+ * in a fixed order, so which roles are running and which have ended is the same information.
  */
-export function cycleStages(agents: AgentSummary[]): CycleStage[] {
+export function cycleStages(runs: AgentRun[]): CycleStage[] {
     return CYCLE_STAGES.map((role) => {
-        const onStage = agents.filter((agent) => agent.role === role);
-        const counts = {
-            [AgentStatus.WORKING]: countStatus(onStage, AgentStatus.WORKING),
-            [AgentStatus.BLOCKED]: countStatus(onStage, AgentStatus.BLOCKED),
-            [AgentStatus.IDLE]: countStatus(onStage, AgentStatus.IDLE),
-            [AgentStatus.STOPPED]: countStatus(onStage, AgentStatus.STOPPED)
-        };
+        const onStage = runs.filter((run) => run.role === role);
+        const running = countStatus(onStage, AgentRunStatus.RUNNING);
+        const blocked = countStatus(onStage, AgentRunStatus.BLOCKED);
+        const succeeded = countStatus(onStage, AgentRunStatus.SUCCEEDED);
+        const ended = onStage.length - running - blocked - succeeded;
 
         return {
             role,
             label: CYCLE_STAGE_LABEL[role],
-            state: stageState(onStage.length, counts),
-            note: stageNote(onStage.length, counts)
+            state: stageState(onStage.length, running, blocked),
+            note: stageNote(onStage.length, { running, blocked, succeeded, ended })
         };
     });
 }
 
-type StatusCounts = Record<AgentStatus, number>;
-
-function countStatus(agents: AgentSummary[], status: AgentStatus): number {
-    return agents.filter((agent) => agent.status === status).length;
+interface StageCounts {
+    readonly running: number;
+    readonly blocked: number;
+    readonly succeeded: number;
+    /** Runs that failed, timed out or were cancelled, which read the same on the rail. */
+    readonly ended: number;
 }
 
-function stageState(total: number, counts: StatusCounts): CycleStageState {
+function countStatus(runs: AgentRun[], status: AgentRunStatus): number {
+    return runs.filter((run) => run.status === status).length;
+}
+
+function stageState(total: number, running: number, blocked: number): CycleStageState {
     if (total === 0) {
         return CycleStageState.PENDING;
     }
-    if (counts[AgentStatus.BLOCKED] > 0) {
+    if (blocked > 0) {
         return CycleStageState.BLOCKED;
     }
-    if (counts[AgentStatus.WORKING] > 0) {
+    if (running > 0) {
         return CycleStageState.ACTIVE;
-    }
-    if (counts[AgentStatus.IDLE] > 0) {
-        return CycleStageState.PENDING;
     }
     return CycleStageState.DONE;
 }
 
-function stageNote(total: number, counts: StatusCounts): string {
+function stageNote(total: number, counts: StageCounts): string {
     if (total === 0) {
         return STAGE_NOT_REACHED;
     }
 
     const parts = [
-        counts[AgentStatus.WORKING] > 0 ? `${counts[AgentStatus.WORKING]} working` : undefined,
-        counts[AgentStatus.BLOCKED] > 0 ? `${counts[AgentStatus.BLOCKED]} blocked` : undefined,
-        counts[AgentStatus.IDLE] > 0 ? `${counts[AgentStatus.IDLE]} waiting` : undefined,
-        counts[AgentStatus.STOPPED] > 0 ? `${counts[AgentStatus.STOPPED]} finished` : undefined
+        counts.running > 0 ? `${counts.running} working` : undefined,
+        counts.blocked > 0 ? `${counts.blocked} blocked` : undefined,
+        counts.succeeded > 0 ? `${counts.succeeded} finished` : undefined,
+        counts.ended > 0 ? `${counts.ended} stopped` : undefined
     ].filter((part) => part !== undefined);
 
     return parts.join(" · ");

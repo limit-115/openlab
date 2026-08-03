@@ -1,4 +1,4 @@
-import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
+import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
 import { cn } from "#src/design-system/class-names";
 import {
     CYCLE_RAIL,
@@ -12,17 +12,17 @@ import {
 import { cycleStages } from "#src/research-cycle/cycle-stage";
 
 interface CycleRailProps {
-    agents: AgentSummary[];
+    runs: AgentRun[];
 }
 
 /**
- * Where the current cycle stands, read left to right. It replaces counting branches and tasks,
- * which said how much there is without ever saying what the lab is doing with it.
+ * Where the current cycle stands, read left to right. Counting records says how much there is; this
+ * says what the lab is doing with it.
  */
-export function CycleRail({ agents }: CycleRailProps) {
+export function CycleRail({ runs }: CycleRailProps) {
     return (
         <ol className={CYCLE_RAIL} aria-label="Research cycle">
-            {cycleStages(agents).map((stage) => (
+            {cycleStages(runs).map((stage) => (
                 <li key={stage.role} className={cn(CYCLE_STAGE, CYCLE_STAGE_SURFACE[stage.state])}>
                     <span className={cn(CYCLE_STAGE_NAME, CYCLE_STAGE_NAME_TONE[stage.state])}>
                         {stage.label}

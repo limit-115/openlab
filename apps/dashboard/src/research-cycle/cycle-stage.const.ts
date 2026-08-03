@@ -1,16 +1,11 @@
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 
 /**
- * The order a research cycle runs its roles in. A cycle plans, then researches in parallel, then
- * attacks its own results, then reproduces them, so reading the rail left to right is reading how
+ * The order a research cycle runs its roles in. A cycle bets, then researches every bet in
+ * parallel, then verifies whatever was claimed, so reading the rail left to right is reading how
  * far the current cycle has got.
  */
-export const CYCLE_STAGES = [
-    AgentRole.DIRECTOR,
-    AgentRole.RESEARCHER,
-    AgentRole.CRITIC,
-    AgentRole.VERIFIER
-] as const;
+export const CYCLE_STAGES = [AgentRole.DIRECTOR, AgentRole.RESEARCHER, AgentRole.VERIFIER] as const;
 
 /** How a stage of the cycle is going, which is what the rail colours each stage by. */
 export const CycleStageState = {
@@ -28,8 +23,7 @@ export type CycleStageState = (typeof CycleStageState)[keyof typeof CycleStageSt
 export const CYCLE_STAGE_LABEL: Record<(typeof CYCLE_STAGES)[number], string> = {
     [AgentRole.DIRECTOR]: "Director",
     [AgentRole.RESEARCHER]: "Researchers",
-    [AgentRole.CRITIC]: "Critic",
-    [AgentRole.VERIFIER]: "Verifier"
+    [AgentRole.VERIFIER]: "Verifiers"
 };
 
 /** What a stage says about itself when no agent has reached it. */

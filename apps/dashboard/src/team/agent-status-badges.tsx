@@ -1,7 +1,5 @@
-import type {
-    AgentActivityPhase,
-    AgentRunStatus
-} from "@lab/protocol/agent-activity/agent-activity.const";
+import type { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
+import type { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { Badge } from "#src/design-system/badge";
 import {
     AGENT_STATUS_GROUP,

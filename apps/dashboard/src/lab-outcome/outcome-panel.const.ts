@@ -4,7 +4,7 @@ import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 export const OUTCOME_TITLE: Record<LabState, string> = {
     [LabState.RUNNING]: "Running lab",
     [LabState.HIBERNATING]: "Hibernating lab",
-    [LabState.COMPLETED]: "Verified result",
+    [LabState.BREAKTHROUGH]: "Breakthrough",
     [LabState.FAILED]: "Failed lab",
     [LabState.STOPPED]: "Stopped lab"
 };
@@ -16,7 +16,7 @@ export const OUTCOME_SURFACE: Record<LabState, string> = {
     [LabState.RUNNING]: "border-border",
     [LabState.HIBERNATING]: "border-border",
     [LabState.STOPPED]: "border-border",
-    [LabState.COMPLETED]: "border-success/40",
+    [LabState.BREAKTHROUGH]: "border-success/40",
     [LabState.FAILED]: "border-destructive/40"
 };
 

@@ -1,4 +1,4 @@
-import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 import { ActivityIcon } from "lucide-react";
@@ -29,8 +29,8 @@ export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
         snapshot.lab.updated_at,
         snapshot.lab.state === LabState.RUNNING
     );
-    const activeAgents = snapshot.agents.filter(
-        (agent) => agent.status === AgentStatus.WORKING
+    const activeAgents = snapshot.runs.filter(
+        (run) => run.status === AgentRunStatus.RUNNING
     ).length;
 
     return (

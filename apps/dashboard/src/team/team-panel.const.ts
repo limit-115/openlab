@@ -1,11 +1,9 @@
-import {
-    AgentActivityPhase,
-    AgentRunStatus
-} from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
 import {
     AgentDiagnosticLevel,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import type { BadgeVariant } from "#src/status-tag/status-tag.types";
 
@@ -115,7 +113,8 @@ export const RUN_STATUS_LABEL: Record<AgentRunStatus, string> = {
     [AgentRunStatus.SUCCEEDED]: "Succeeded",
     [AgentRunStatus.FAILED]: "Failed",
     [AgentRunStatus.TIMED_OUT]: "Timed out",
-    [AgentRunStatus.CANCELLED]: "Cancelled"
+    [AgentRunStatus.CANCELLED]: "Cancelled",
+    [AgentRunStatus.BLOCKED]: "Blocked"
 };
 
 /** The same four colours the rest of the dashboard reads statuses in. */
@@ -124,7 +123,8 @@ export const RUN_STATUS_TONE: Record<AgentRunStatus, BadgeVariant> = {
     [AgentRunStatus.SUCCEEDED]: "success",
     [AgentRunStatus.FAILED]: "destructive",
     [AgentRunStatus.TIMED_OUT]: "destructive",
-    [AgentRunStatus.CANCELLED]: "destructive"
+    [AgentRunStatus.CANCELLED]: "destructive",
+    [AgentRunStatus.BLOCKED]: "warning"
 };
 
 export const TOOL_PHASE_MARK: Record<AgentToolPhase, string> = {

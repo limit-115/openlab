@@ -38,11 +38,11 @@ describe("useLiveStatus", () => {
         expect(screen.getByText(StreamState.LIVE)).toBeInTheDocument();
 
         const event: LabEvent = {
-            id: "event-claim-supported",
+            id: "event-finding-confirmed",
             lab_id: statusFixture.lab.id,
-            type: EventType.CLAIM_SUPPORTED,
+            type: EventType.FINDING_CONFIRMED,
             occurred_at: "2026-08-02T10:01:00.000Z",
-            payload: { summary: "Candidate claim passed its evaluator" }
+            payload: { summary: "The verifier confirmed the landmark claim" }
         };
         act(() => source?.emit(StreamEventType.EVENT, event));
 

@@ -11,5 +11,5 @@ export function TeamView() {
     const snapshot = useOutletContext<StatusSnapshot>();
     const { agents } = useAgentActivity();
 
-    return <TeamPanel agents={agents} tasks={snapshot.tasks} />;
+    return <TeamPanel agents={agents} runs={snapshot.runs} />;
 }

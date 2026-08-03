@@ -1,11 +1,11 @@
 import {
     AgentActivityPhase,
-    AgentActivityPhaseByFrameKind,
-    AgentRunStatus
+    AgentActivityPhaseByFrameKind
 } from "@lab/protocol/agent-activity/agent-activity.const";
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { createStore } from "zustand/vanilla";
 import { StreamState } from "#src/live-status/status-stream.const";
 import type {
@@ -58,14 +58,14 @@ export function createAgentActivityStore(schedule: RedrawSchedule = animationFra
             receiveRoster(roster) {
                 watched.clear();
                 for (const activity of roster) {
-                    watched.set(activity.agent_id, { activity, transcript: [] });
+                    watched.set(activity.run_id, { activity, transcript: [] });
                 }
                 publish();
             },
 
             receiveFrame(frame) {
                 if (frame.kind === AgentActivityFrameKind.RUN_STARTED) {
-                    watched.set(frame.agent_id, {
+                    watched.set(frame.run_id, {
                         activity: startedActivity(frame),
                         transcript: []
                     });
@@ -73,11 +73,11 @@ export function createAgentActivityStore(schedule: RedrawSchedule = animationFra
                     return;
                 }
 
-                const agent = watched.get(frame.agent_id);
-                if (agent === undefined || agent.activity.run_id !== frame.run_id) {
+                const agent = watched.get(frame.run_id);
+                if (agent === undefined) {
                     return;
                 }
-                watched.set(frame.agent_id, {
+                watched.set(frame.run_id, {
                     activity: applyToActivity(agent.activity, frame),
                     transcript: applyToTranscript(agent.transcript, frame)
                 });
@@ -104,10 +104,8 @@ function startedActivity(
     frame: Extract<AgentActivityFrame, { kind: typeof AgentActivityFrameKind.RUN_STARTED }>
 ): AgentActivity {
     return {
-        agent_id: frame.agent_id,
         run_id: frame.run_id,
-        branch_id: frame.branch_id,
-        task_id: frame.task_id,
+        ...(frame.assumption_id === undefined ? {} : { assumption_id: frame.assumption_id }),
         role: frame.role,
         execution: frame.execution,
         artifact_directory: frame.artifact_directory,

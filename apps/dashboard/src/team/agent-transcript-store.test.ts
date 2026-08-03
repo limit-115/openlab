@@ -1,11 +1,9 @@
-import {
-    AgentActivityPhase,
-    AgentRunStatus
-} from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
 import {
     AgentActivityFrameKind,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { beforeEach, describe, expect, it } from "vitest";
 import { StreamState } from "#src/live-status/status-stream.const";
 import type { TranscriptTurn } from "#src/team/agent-transcript.types";
@@ -203,7 +201,7 @@ describe("AgentActivityStore", () => {
 
     /** A card is left alone when it compares equal, so an untouched agent must keep its identity. */
     it("hands back the very same agent when the frame belonged to somebody else", () => {
-        const store = watching(watchedActivity(), watchedActivity({ agent_id: ENGINEER }));
+        const store = watching(watchedActivity(), watchedActivity({ run_id: ENGINEER }));
         const [researcher] = agentsOf(store);
 
         store.getState().receiveFrame(

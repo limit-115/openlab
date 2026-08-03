@@ -1,4 +1,4 @@
-import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
+import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
 import { useState } from "react";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { AgentRoster } from "#src/team/agent-roster";
@@ -8,17 +8,17 @@ import { NO_AGENTS_DESCRIPTION, NO_AGENTS_TITLE, TEAM_SPLIT } from "#src/team/te
 
 interface TeamPanelProps {
     agents: readonly WatchedAgent[];
-    tasks: InternalTask[];
+    runs: AgentRun[];
 }
 
-export function TeamPanel({ agents, tasks }: TeamPanelProps) {
+export function TeamPanel({ agents, runs }: TeamPanelProps) {
     const [chosenId, setChosenId] = useState<string | undefined>(undefined);
 
     /**
      * Falling back to the first agent keeps the panel readable when the chosen one leaves the
      * roster, which is what happens every time a cycle moves on to its next role.
      */
-    const selected = agents.find(({ activity }) => activity.agent_id === chosenId) ?? agents[0];
+    const selected = agents.find(({ activity }) => activity.run_id === chosenId) ?? agents[0];
 
     if (selected === undefined) {
         return <PanelEmptyState title={NO_AGENTS_TITLE} description={NO_AGENTS_DESCRIPTION} />;
@@ -32,13 +32,13 @@ export function TeamPanel({ agents, tasks }: TeamPanelProps) {
         <div className={TEAM_SPLIT}>
             <AgentRoster
                 agents={agents}
-                tasks={tasks}
-                selectedId={selected.activity.agent_id}
+                runs={runs}
+                selectedId={selected.activity.run_id}
                 onSelect={setChosenId}
             />
             <AgentThread
                 agent={selected}
-                task={tasks.find(({ id }) => id === selected.activity.task_id)}
+                run={runs.find(({ id }) => id === selected.activity.run_id)}
             />
         </div>
     );

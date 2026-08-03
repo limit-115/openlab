@@ -1,7 +1,7 @@
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
-import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
-import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
+import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import type { BadgeVariant, TaggedStatus } from "#src/status-tag/status-tag.types";
 
 /**
@@ -9,20 +9,18 @@ import type { BadgeVariant, TaggedStatus } from "#src/status-tag/status-tag.type
  * they are words somebody reads, so each one is written out here the way a sentence would open.
  */
 export const STATUS_TAG_LABEL: Record<TaggedStatus, string> = {
-    [InternalTaskStatus.QUEUED]: "Queued",
-    [InternalTaskStatus.LEASED]: "Leased",
-    [InternalTaskStatus.RUNNING]: "Running",
-    [InternalTaskStatus.SUCCEEDED]: "Succeeded",
-    [InternalTaskStatus.FAILED]: "Failed",
-    [InternalTaskStatus.CANCELLED]: "Cancelled",
-    [ClaimStatus.PROPOSED]: "Proposed",
-    [ClaimStatus.TESTING]: "Testing",
-    [ClaimStatus.SUPPORTED]: "Supported",
-    [ClaimStatus.REFUTED]: "Refuted",
-    [ClaimStatus.REPRODUCED]: "Reproduced",
-    [ExperimentStatus.PLANNED]: "Planned",
-    [ExperimentStatus.TIMED_OUT]: "Timed out",
-    [CapabilityStatus.OPEN]: "Open",
+    [AgentRunStatus.RUNNING]: "Running",
+    [AgentRunStatus.SUCCEEDED]: "Succeeded",
+    [AgentRunStatus.FAILED]: "Failed",
+    [AgentRunStatus.TIMED_OUT]: "Timed out",
+    [AgentRunStatus.CANCELLED]: "Cancelled",
+    [AgentRunStatus.BLOCKED]: "Blocked",
+    [AssumptionStatus.OPEN]: "Open",
+    [AssumptionStatus.RESEARCHING]: "Being researched",
+    [AssumptionStatus.EXHAUSTED]: "Ran out",
+    [AssumptionStatus.CONFIRMED]: "Confirmed",
+    [FindingStatus.UNVERIFIED]: "Unverified",
+    [FindingStatus.REFUTED]: "Refuted",
     [CapabilityStatus.ANSWERED]: "Answered"
 };
 
@@ -36,19 +34,17 @@ const SETTLED_TONE: BadgeVariant = "success";
 const PENDING_TONE: BadgeVariant = "warning";
 
 export const STATUS_TAG_TONE: Record<TaggedStatus, BadgeVariant> = {
-    [InternalTaskStatus.QUEUED]: PENDING_TONE,
-    [InternalTaskStatus.LEASED]: PENDING_TONE,
-    [InternalTaskStatus.RUNNING]: RUNNING_TONE,
-    [InternalTaskStatus.SUCCEEDED]: SETTLED_TONE,
-    [InternalTaskStatus.FAILED]: ADVERSE_TONE,
-    [InternalTaskStatus.CANCELLED]: ADVERSE_TONE,
-    [ClaimStatus.PROPOSED]: PENDING_TONE,
-    [ClaimStatus.TESTING]: RUNNING_TONE,
-    [ClaimStatus.SUPPORTED]: SETTLED_TONE,
-    [ClaimStatus.REFUTED]: ADVERSE_TONE,
-    [ClaimStatus.REPRODUCED]: SETTLED_TONE,
-    [ExperimentStatus.PLANNED]: PENDING_TONE,
-    [ExperimentStatus.TIMED_OUT]: ADVERSE_TONE,
-    [CapabilityStatus.OPEN]: PENDING_TONE,
+    [AgentRunStatus.RUNNING]: RUNNING_TONE,
+    [AgentRunStatus.SUCCEEDED]: SETTLED_TONE,
+    [AgentRunStatus.FAILED]: ADVERSE_TONE,
+    [AgentRunStatus.TIMED_OUT]: ADVERSE_TONE,
+    [AgentRunStatus.CANCELLED]: ADVERSE_TONE,
+    [AgentRunStatus.BLOCKED]: PENDING_TONE,
+    [AssumptionStatus.OPEN]: PENDING_TONE,
+    [AssumptionStatus.RESEARCHING]: RUNNING_TONE,
+    [AssumptionStatus.EXHAUSTED]: ADVERSE_TONE,
+    [AssumptionStatus.CONFIRMED]: SETTLED_TONE,
+    [FindingStatus.UNVERIFIED]: PENDING_TONE,
+    [FindingStatus.REFUTED]: ADVERSE_TONE,
     [CapabilityStatus.ANSWERED]: SETTLED_TONE
 };

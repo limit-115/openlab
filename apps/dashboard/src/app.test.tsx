@@ -53,21 +53,22 @@ describe("App", () => {
         vi.stubGlobal("EventSource", FakeEventSource);
     });
 
-    it("renders the operational snapshot and claim filters", async () => {
+    it("renders the bets, what was claimed under them and what is blocked", async () => {
         respondWith(statusFixture);
-        const user = userEvent.setup();
         renderDashboard();
 
         expect(await screen.findByText(statusFixture.lab.goal)).toBeInTheDocument();
-        expect(screen.getByText("Landmark heuristics")).toBeInTheDocument();
         expect(
-            screen.getByText(statusFixture.claims[0]?.statement ?? "missing")
+            screen.getByText(statusFixture.assumptions[0]?.statement ?? "missing")
         ).toBeInTheDocument();
+        expect(
+            screen.getByText(statusFixture.assumptions[1]?.outcome ?? "missing")
+        ).toBeInTheDocument();
+        expect(screen.getByText(statusFixture.findings[0]?.claim ?? "missing")).toBeInTheDocument();
         expect(screen.getByText("Independent road-network benchmark dataset")).toBeInTheDocument();
-        expect(screen.getByText("Held-out benchmark started")).toBeInTheDocument();
-
-        await user.click(screen.getByRole("radio", { name: "Refuted" }));
-        expect(screen.getByText("No matching claims")).toBeInTheDocument();
+        expect(
+            screen.getByText("The researcher claims a 42% cut in node expansions")
+        ).toBeInTheDocument();
     });
 
     it("puts the whole event payload and the provisioning command on the clipboard", async () => {
@@ -91,7 +92,7 @@ describe("App", () => {
         );
     });
 
-    it("reads the stage of the cycle the lab is on off its agents", async () => {
+    it("reads the stage of the cycle the lab is on off its runs", async () => {
         respondWith(statusFixture);
         renderDashboard();
 
@@ -99,7 +100,7 @@ describe("App", () => {
         const researchers = within(cycle).getByText("Researchers").closest("li");
 
         expect(researchers?.textContent).toContain("1 working");
-        expect(within(cycle).getByText("Verifier").closest("li")?.textContent).toContain(
+        expect(within(cycle).getByText("Verifiers").closest("li")?.textContent).toContain(
             "Not reached yet"
         );
     });
@@ -135,27 +136,16 @@ describe("App", () => {
     it("shows useful empty states while the lab is still mapping the goal", async () => {
         respondWith({
             ...statusFixture,
-            frontier: {
-                ...statusFixture.frontier,
-                known: [],
-                open_questions: [],
-                blockers: [],
-                next_experiments: []
-            },
-            branches: [],
-            agents: [],
-            tasks: [],
-            claims: [],
-            experiments: [],
+            assumptions: [],
+            runs: [],
+            findings: [],
+            verdicts: [],
             capability_requests: [],
             recent_events: []
         });
         renderDashboard();
 
-        expect(await screen.findByText("Frontier is being mapped")).toBeInTheDocument();
-        expect(screen.getByText("No research branches yet")).toBeInTheDocument();
-        expect(screen.getByText("No claims recorded")).toBeInTheDocument();
-        expect(screen.getByText("No experiments yet")).toBeInTheDocument();
+        expect(await screen.findByText("No bets placed yet")).toBeInTheDocument();
     });
 
     it("spends no room on capability requests while the lab is not blocked", async () => {

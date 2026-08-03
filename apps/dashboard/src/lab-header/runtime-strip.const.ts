@@ -19,7 +19,7 @@ export const RUNTIME_STRIP_VALUE = "text-sm font-medium" as const;
 export const LAB_STATE_LABEL: Record<LabState, string> = {
     [LabState.RUNNING]: "Running",
     [LabState.HIBERNATING]: "Hibernating",
-    [LabState.COMPLETED]: "Completed",
+    [LabState.BREAKTHROUGH]: "Breakthrough",
     [LabState.FAILED]: "Failed",
     [LabState.STOPPED]: "Stopped"
 };
@@ -31,7 +31,7 @@ export const STATE_DOT = "size-2 flex-none rounded-full" as const;
 
 export const STATE_DOT_TONE: Record<LabState, string> = {
     [LabState.RUNNING]: "bg-primary ring-4 ring-primary/20",
-    [LabState.COMPLETED]: "bg-success",
+    [LabState.BREAKTHROUGH]: "bg-success",
     [LabState.HIBERNATING]: "bg-warning",
     [LabState.FAILED]: "bg-destructive ring-4 ring-destructive/20",
     [LabState.STOPPED]: "bg-muted-foreground"

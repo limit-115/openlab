@@ -1,5 +1,5 @@
 import type { AgentUsage } from "@lab/protocol/agent-activity/agent-activity.types";
-import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
+import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
 import { memo } from "react";
 import { Separator } from "#src/design-system/separator";
 import { agentExecutionLine } from "#src/team/agent-execution-line";
@@ -15,7 +15,7 @@ import {
 
 interface AgentThreadProps {
     agent: WatchedAgent;
-    task: InternalTask | undefined;
+    run: AgentRun | undefined;
 }
 
 /**
@@ -24,7 +24,7 @@ interface AgentThreadProps {
  * The store hands back the very same agent when a frame belonged to somebody else, so the thread
  * only redraws for the agent on screen rather than every time any of them says a word.
  */
-export const AgentThread = memo(function AgentThread({ agent, task }: AgentThreadProps) {
+export const AgentThread = memo(function AgentThread({ agent, run }: AgentThreadProps) {
     const { activity } = agent;
     const { execution } = activity;
 
@@ -38,7 +38,7 @@ export const AgentThread = memo(function AgentThread({ agent, task }: AgentThrea
                 <AgentStatusBadges phase={activity.phase} status={activity.status} />
             </header>
 
-            {task === undefined ? null : <p className="text-sm">{task.objective}</p>}
+            {run === undefined ? null : <p className="text-sm">{run.objective}</p>}
             {activity.error === null ? null : (
                 <p className="text-sm wrap-anywhere text-destructive">{activity.error}</p>
             )}

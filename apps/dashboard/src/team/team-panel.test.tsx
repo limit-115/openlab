@@ -1,14 +1,11 @@
-import {
-    AgentActivityPhase,
-    AgentRunStatus
-} from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
 import {
     AgentActivityFrameKind,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
-import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
@@ -21,14 +18,14 @@ const REASONING =
 
 const COMMAND = "pnpm vitest run evaluators/body_harness_validity.py --reporter verbose";
 
-const TASK: InternalTask = {
-    id: "task-researcher-0-1",
-    branch_id: "branch-researcher-0-1",
+const RUN: AgentRun = {
+    id: "run-researcher-9f0c",
+    role: AgentRole.RESEARCHER,
+    assumption_id: "assumption-landmarks",
     objective: "Measure indexed lookup against the baseline",
-    context_refs: [],
-    status: InternalTaskStatus.RUNNING,
-    attempt: 1,
-    role: AgentRole.RESEARCHER
+    status: AgentRunStatus.RUNNING,
+    cwd: "/tmp/lab/researcher-000",
+    started_at: "2026-08-03T10:00:00.000Z"
 };
 
 function agent(transcript: TranscriptEntry[], activity = watchedActivity()): WatchedAgent {
@@ -50,7 +47,7 @@ describe("TeamPanel", () => {
                         }
                     ])
                 ]}
-                tasks={[TASK]}
+                runs={[RUN]}
             />
         );
 
@@ -77,7 +74,7 @@ describe("TeamPanel", () => {
                         }
                     ])
                 ]}
-                tasks={[TASK]}
+                runs={[RUN]}
             />
         );
 
@@ -85,12 +82,12 @@ describe("TeamPanel", () => {
     });
 
     it("names the harness, model and effort behind the agent, beside its task", () => {
-        render(<TeamPanel agents={[agent([])]} tasks={[TASK]} />);
+        render(<TeamPanel agents={[agent([])]} runs={[RUN]} />);
 
         const card = screen.getByRole("heading", { name: "researcher" }).closest("article");
 
         expect(card?.textContent).toContain("Claude · claude-opus-5 · High effort");
-        expect(card?.textContent).toContain(TASK.objective);
+        expect(card?.textContent).toContain(RUN.objective);
     });
 
     it("reports a run that failed, with the reason it gave", () => {
@@ -106,7 +103,7 @@ describe("TeamPanel", () => {
                         })
                     )
                 ]}
-                tasks={[TASK]}
+                runs={[RUN]}
             />
         );
 
@@ -128,7 +125,7 @@ describe("TeamPanel", () => {
                         })
                     )
                 ]}
-                tasks={[TASK]}
+                runs={[RUN]}
             />
         );
 
@@ -139,17 +136,16 @@ describe("TeamPanel", () => {
     });
 
     it("names the model and the run of every agent in the roster, unopened", () => {
-        const critic = watchedActivity({
-            agent_id: "agent-critic-0-1",
-            task_id: "task-critic-0-1",
-            role: AgentRole.CRITIC,
+        const verifier = watchedActivity({
+            run_id: "run-verifier-0-1",
+            role: AgentRole.VERIFIER,
             phase: AgentActivityPhase.FINISHED,
             status: AgentRunStatus.FAILED
         });
-        render(<TeamPanel agents={[agent([]), agent([], critic)]} tasks={[TASK]} />);
+        render(<TeamPanel agents={[agent([]), agent([], verifier)]} runs={[RUN]} />);
 
         const roster = screen.getByRole("list", { name: "Agents" });
-        const entry = within(roster).getByRole("button", { name: /critic/i });
+        const entry = within(roster).getByRole("button", { name: /verifier/i });
 
         expect(entry.textContent).toContain("claude-opus-5");
         expect(entry.textContent).toContain("Failed");
@@ -157,10 +153,9 @@ describe("TeamPanel", () => {
     });
 
     it("reads a second agent without losing sight of the first", async () => {
-        const critic = watchedActivity({
-            agent_id: "agent-critic-0-1",
-            task_id: "task-critic-0-1",
-            role: AgentRole.CRITIC
+        const verifier = watchedActivity({
+            run_id: "run-verifier-0-1",
+            role: AgentRole.VERIFIER
         });
         render(
             <TeamPanel
@@ -185,24 +180,24 @@ describe("TeamPanel", () => {
                                 detail: COMMAND
                             }
                         ],
-                        critic
+                        verifier
                     )
                 ]}
-                tasks={[TASK]}
+                runs={[RUN]}
             />
         );
 
         const roster = screen.getByRole("list", { name: "Agents" });
         expect(within(screen.getByRole("article")).queryByText(COMMAND)).toBeNull();
 
-        await userEvent.click(within(roster).getByRole("button", { name: /critic/i }));
+        await userEvent.click(within(roster).getByRole("button", { name: /verifier/i }));
 
         expect(within(screen.getByRole("article")).getByText(COMMAND)).toBeVisible();
         expect(within(roster).getByRole("button", { name: /researcher/i })).toBeVisible();
     });
 
     it("says so plainly when the lab is running nobody", () => {
-        render(<TeamPanel agents={[]} tasks={[]} />);
+        render(<TeamPanel agents={[]} runs={[]} />);
 
         expect(screen.queryByRole("article")).toBeNull();
         expect(screen.getByText(/No agent is running/)).toBeVisible();
