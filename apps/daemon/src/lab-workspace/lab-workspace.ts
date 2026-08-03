@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { transitionLabState } from "@lab/core/lab-lifecycle/lab-state-transitions";
+import { legalLabStateTransitions } from "@lab/core/lab-lifecycle/lab-state-transitions.const";
 import type { LifecycleContext } from "@lab/core/lab-lifecycle/lab-state-transitions.types";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
 import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
@@ -206,7 +207,7 @@ export class LabWorkspace {
 
     /**
      * A checkpoint written before a protocol change describes a run this build cannot act on, so it
-     * joins a mismatched task and a terminal state as a reason to start fresh rather than resume.
+     * joins a mismatched task and a failed run as a reason to start fresh rather than resume.
      */
     private static async loadResumableRuntime(
         runtimePersistence: WorkspaceRuntimePersistence,
@@ -303,8 +304,14 @@ export class LabWorkspace {
         resolveRunDirectory(workspaceRoot, persisted.workspacePath);
     }
 
+    /**
+     * A run the daemon reattaches to rather than replacing with a fresh one. That is the lifecycle's
+     * own question — a settled run is worth reopening exactly when RUNNING is still reachable from
+     * where it settled — so it is read off the state machine instead of being restated here, where a
+     * second copy of the rule would drift from the first.
+     */
     private static isResumable(state: LabStateValue): boolean {
-        return state === LabState.RUNNING || state === LabState.HIBERNATING;
+        return state === LabState.RUNNING || legalLabStateTransitions[state].has(LabState.RUNNING);
     }
 
     getTask(): Promise<TaskInput> {

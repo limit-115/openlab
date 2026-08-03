@@ -124,6 +124,31 @@ describe("LabWorkspace", () => {
         expect(recovered.recovered).toBe(true);
     });
 
+    it("reopens a stopped run and replaces a failed one", async () => {
+        const stopped = await createWorkspace();
+        const stoppedRoot = path.dirname(path.dirname(stopped.runDirectory));
+        await stopped.transition(LabState.STOPPED, "The operator ended the run");
+        const failed = await createWorkspace();
+        const failedRoot = path.dirname(path.dirname(failed.runDirectory));
+        await failed.transition(LabState.FAILED, "The director never answered", {
+            failureReason: "The director never answered"
+        });
+
+        const reopened = await LabWorkspace.openOrCreate(
+            stoppedRoot,
+            path.join(stoppedRoot, "task.json")
+        );
+        const replaced = await LabWorkspace.openOrCreate(
+            failedRoot,
+            path.join(failedRoot, "task.json")
+        );
+
+        expect(reopened.labId).toBe(stopped.labId);
+        expect(reopened.getSnapshot().lab.state).toBe(LabState.STOPPED);
+        expect(replaced.labId).not.toBe(failed.labId);
+        expect(replaced.getSnapshot().lab.state).toBe(LabState.RUNNING);
+    });
+
     it("starts a fresh run when the pointed-at checkpoint predates the protocol", async () => {
         const workspace = await createWorkspace();
         const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));

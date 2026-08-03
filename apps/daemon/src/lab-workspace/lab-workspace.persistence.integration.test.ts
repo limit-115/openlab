@@ -77,7 +77,9 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         const persistence = new RuntimePersistence(client.db);
         const first = await LabWorkspace.initialize(workspaceRoot, firstTaskPath, persistence);
         const second = await LabWorkspace.openOrCreate(workspaceRoot, secondTaskPath, persistence);
-        await second.transition(LabState.STOPPED, "Exercise a terminal rerun");
+        await second.transition(LabState.FAILED, "Exercise a terminal rerun", {
+            failureReason: "Exercise a terminal rerun"
+        });
         const repeated = await LabWorkspace.openOrCreate(
             workspaceRoot,
             secondTaskPath,
