@@ -1,5 +1,4 @@
 import { responseJsonSchema } from "@lab/harness/response-schema";
-import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
 import { describe, expect, it } from "vitest";
 import {
     DirectorPlanSchema,
@@ -116,34 +115,21 @@ describe("research structured-output contracts", () => {
         expect(result.evidence[0]?.target_kind).toBe(RESEARCH_TARGET_KIND.ASSUMPTION);
         expect(result.capability_requests).toEqual([]);
         expect(result.capability_blocked).toBe(false);
-        expect(result.sources).toEqual([]);
     });
 
-    it("accepts source-only citations only as an inconclusive non-empirical result", () => {
-        const sourceOnly = {
-            summary: "A relevant specification was identified",
-            hypothesis: "The specification may constrain the implementation",
+    it("lets a direction that measured nothing stay honest instead of claiming an outcome", () => {
+        const empty = {
+            summary: "The direction produced nothing measurable",
+            hypothesis: "The candidate reduces allocations",
             outcome: RESEARCH_OUTCOME.INCONCLUSIVE,
             evidence: [],
-            sources: [
-                {
-                    target_kind: RESEARCH_TARGET_KIND.CLAIM,
-                    target_index: 0,
-                    url: "https://example.com/specification",
-                    title: "Example specification",
-                    claimed_classification: SourceClassification.PRIMARY
-                }
-            ],
-            limitations: ["The citation is not empirical evidence"],
-            next_experiments: []
+            limitations: ["The benchmark harness never reached a stable baseline"],
+            next_experiments: ["Pin the machine before measuring again"]
         } as const;
 
-        expect(ResearchResultSchema.parse(sourceOnly).evidence).toEqual([]);
+        expect(ResearchResultSchema.parse(empty).evidence).toEqual([]);
         expect(() =>
-            ResearchResultSchema.parse({
-                ...sourceOnly,
-                outcome: RESEARCH_OUTCOME.SUPPORTED
-            })
+            ResearchResultSchema.parse({ ...empty, outcome: RESEARCH_OUTCOME.SUPPORTED })
         ).toThrow(/must remain inconclusive/);
     });
 

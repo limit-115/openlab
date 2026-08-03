@@ -103,9 +103,9 @@ ${AUTONOMOUS_EXECUTION_MANDATE}
 ${MISSING_CAPABILITY_POLICY}
 
 Investigate the direction below. Formulate a concrete hypothesis and test it: install what the
-experiment needs, write the programs it needs, run them, and measure the outcome. You may also return
-supplemental source candidates, or a source-only inconclusive result when nothing empirical is
-warranted. The daemon fetches citation URLs itself rather than trusting a page you retrieved.
+experiment needs, write the programs it needs, run them, and measure the outcome. When the direction
+yields nothing you actually measured, return an inconclusive result carrying no evidence and say in
+limitations what stopped you, rather than dressing up reading or reasoning as a finding.
 
 The evaluators that will judge your claims were precommitted and frozen before you started. You
 cannot see, edit, replace, or run them, and their verdict decides whether your result is accepted, so
@@ -146,11 +146,6 @@ instead of treating them as background prose, and report a result that contradic
 readily as one that supports it.
 
 ${MATERIAL_ARTIFACT_POLICY}
-
-For every source candidate, identify its claim or assumption target, URL, title, and whether you claim
-it is primary or secondary. That classification is only your claim, not established provenance. The
-daemon validates and fetches http(s) URLs itself; a citation is supplemental and can never promote a
-claim or substitute for empirical evidence.
 
 Set capability_blocked to true only when this isolated direction cannot produce material evidence
 until one of its reported capability_requests is provisioned, and then report no evidence. Keep it

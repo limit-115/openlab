@@ -840,10 +840,7 @@ export class LabWorkspace {
         }
         if (
             !selected.some(
-                ({ kind, supports }) =>
-                    kind !== EvidenceKind.VERIFIER_RESULT &&
-                    kind !== EvidenceKind.SOURCE &&
-                    supports
+                ({ kind, supports }) => kind !== EvidenceKind.VERIFIER_RESULT && supports
             )
         ) {
             throw new Error("Completion requires supporting material evidence before verification");

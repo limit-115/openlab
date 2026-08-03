@@ -1,11 +1,9 @@
 import path from "node:path";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
-import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
 
 const EvidenceDisposition = {
-    CITATION: "citation",
     SUPPORTS: "supports",
     CONTRADICTS: "contradicts"
 } as const;
@@ -32,21 +30,14 @@ export function renderLabReport(
     const snapshot = subject.snapshot;
     const selectedEvidenceIds = new Set(details.supportingEvidenceIds ?? []);
     const evidence = subject.evidence.map((item) => {
-        const disposition =
-            item.kind === EvidenceKind.SOURCE
-                ? EvidenceDisposition.CITATION
-                : item.supports
-                  ? EvidenceDisposition.SUPPORTS
-                  : EvidenceDisposition.CONTRADICTS;
+        const disposition = item.supports
+            ? EvidenceDisposition.SUPPORTS
+            : EvidenceDisposition.CONTRADICTS;
         const selected = selectedEvidenceIds.has(item.id) ? " [completion evidence]" : "";
         const artifact =
             item.artifact_path === undefined
                 ? ""
                 : `; artifact: ${path.relative(subject.runDirectory, item.artifact_path)}`;
-        if (item.kind === EvidenceKind.SOURCE && item.source !== undefined) {
-            const sourceTitle = markdownLinkLabel(item.source.title);
-            return `${item.id}${selected} (${item.kind}, ${disposition}): [${sourceTitle}](<${item.source.final_url}>); classification claimed by researcher: ${item.source.claimed_classification}; daemon fetch: HTTP ${item.source.http_status} at ${item.source.fetched_at}${artifact}`;
-        }
         return `${item.id}${selected} (${item.kind}, ${disposition}): ${item.summary}${artifact}`;
     });
     const counterexamples = [
@@ -96,8 +87,4 @@ ${markdownList([...new Set(nextExperiments)], "No informative experiment remains
 
 function markdownList(items: readonly string[], empty: string): string {
     return items.length === 0 ? `- ${empty}` : items.map((item) => `- ${item}`).join("\n");
-}
-
-function markdownLinkLabel(value: string): string {
-    return value.replaceAll("\\", "\\\\").replaceAll("[", "\\[").replaceAll("]", "\\]");
 }

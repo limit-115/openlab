@@ -1,4 +1,3 @@
-import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { z } from "zod";
 import {
@@ -103,21 +102,12 @@ const ResearchEvidenceSchema = z.object({
     contradicts_hypothesis: z.boolean()
 });
 
-const ResearchSourceCandidateSchema = z.object({
-    target_kind: z.enum(RESEARCH_TARGET_KIND),
-    target_index: z.int().nonnegative(),
-    url: z.url(),
-    title: z.string().trim().min(1),
-    claimed_classification: z.enum(SourceClassification)
-});
-
 export const ResearchResultSchema = z
     .object({
         summary: z.string().min(1),
         hypothesis: z.string().min(1),
         outcome: z.enum(RESEARCH_OUTCOME),
         evidence: z.array(ResearchEvidenceSchema),
-        sources: z.array(ResearchSourceCandidateSchema).default([]),
         limitations: z.array(z.string()),
         next_experiments: z.array(z.string()),
         capability_requests: CapabilityRequestCandidatesSchema,
@@ -141,23 +131,12 @@ export const ResearchResultSchema = z
         if (
             !result.capability_blocked &&
             result.evidence.length === 0 &&
-            result.sources.length === 0
-        ) {
-            context.addIssue({
-                code: "custom",
-                path: ["evidence"],
-                message: "A result requires a material artifact or a source candidate"
-            });
-        }
-        if (
-            result.evidence.length === 0 &&
-            result.sources.length > 0 &&
             result.outcome !== RESEARCH_OUTCOME.INCONCLUSIVE
         ) {
             context.addIssue({
                 code: "custom",
                 path: ["outcome"],
-                message: "A source-only result must remain inconclusive"
+                message: "A result without material evidence must remain inconclusive"
             });
         }
     });

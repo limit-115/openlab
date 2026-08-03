@@ -42,10 +42,7 @@ import {
     runStructuredAgent,
     StructuredAgentRunError
 } from "#src/research-cycle/structured-agent-run";
-import {
-    recordResearchEvidence,
-    recordResearchSources
-} from "#src/research-evidence/research-evidence";
+import { recordResearchEvidence } from "#src/research-evidence/research-evidence";
 import { evaluatorPrecommitPrompt, researcherPrompt } from "#src/research-prompts/research-prompts";
 
 export async function runResearchBranch(input: ResearchBranchInput): Promise<ResearchBranchResult> {
@@ -132,20 +129,9 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
                 run.value.capability_requests,
                 run.value.capability_blocked
             );
-            const recordedSources = await recordResearchSources(
-                workspace,
-                ids,
-                run.value.sources,
-                planTargets,
-                signal
-            );
-            const attestedResult = {
-                ...run.value,
-                sources: recordedSources.sources
-            };
             const recorded = await recordResearchEvidence(
                 workspace,
-                attestedResult,
+                run.value,
                 ids,
                 ids.branchId,
                 researchWorkspace,
@@ -168,7 +154,7 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
             return {
                 result: recorded.result,
                 evidence: recorded.evidence,
-                issues: [...issues, ...recordedSources.issues, ...recorded.issues]
+                issues: [...issues, ...recorded.issues]
             };
         } catch (error) {
             const failedRun = error instanceof StructuredAgentRunError ? error.result : undefined;
