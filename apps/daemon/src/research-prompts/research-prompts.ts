@@ -30,9 +30,13 @@ export function directorPrompt(task: TaskInput): string {
 
 Turn the supplied goal into falsifiable claims and at least two genuinely independent research
 directions whose approaches and objectives are materially distinct, not cosmetic rewrites. Do not
-prescribe a solution method merely because it is familiar. Make every assumption explicit and give
-it a concrete falsification test before outcome-bearing work. Consensus and model confidence are
-not evidence.
+prescribe a solution method merely because it is familiar. A claim is an empirical answer to the
+goal that a precommitted evaluator can support or refute. Operational preconditions — that a
+repository sits at a given commit, that a defect is still unpatched upstream, that the environment
+is provisioned — are not claims: record any that carries real risk as an assumption with its
+falsification test, and leave the rest for a researcher to establish in passing. Make every
+assumption explicit and give it a concrete falsification test before outcome-bearing work.
+Consensus and model confidence are not evidence.
 
 State what each direction is meant to establish, not how to carry it out. The researchers who take
 these directions are autonomous and provision themselves, so a direction that dictates their tooling
