@@ -6,7 +6,6 @@ import { CapabilitiesPanel } from "#src/capabilities/capabilities-panel";
 import { EventsPanel } from "#src/events/events-panel";
 import { OutcomePanel } from "#src/lab-outcome/outcome-panel";
 import { MissionOverview } from "#src/mission-overview/mission-overview";
-import { SubscriptionAllowancePanel } from "#src/subscription-allowance/subscription-allowance-panel";
 
 export function OverviewView() {
     const snapshot = useOutletContext<StatusSnapshot>();
@@ -17,7 +16,6 @@ export function OverviewView() {
             <BreakthroughBanner snapshot={snapshot} />
             <OutcomePanel snapshot={snapshot} />
             <CapabilitiesPanel requests={snapshot.capability_requests} />
-            <SubscriptionAllowancePanel />
             <AssumptionsPanel
                 assumptions={snapshot.assumptions}
                 findings={snapshot.findings}
