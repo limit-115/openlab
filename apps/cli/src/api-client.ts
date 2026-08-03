@@ -1,6 +1,6 @@
+import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import type { FrontierSnapshot } from "@lab/protocol/research-frontier/frontier-snapshot.types";
 
 export class LabApiError extends Error {
     readonly status: number;
@@ -25,8 +25,8 @@ export class LabApiClient {
         return this.request<StatusSnapshot>("/api/status");
     }
 
-    frontier(): Promise<FrontierSnapshot> {
-        return this.request<FrontierSnapshot>("/api/frontier");
+    assumptions(): Promise<Assumption[]> {
+        return this.request<Assumption[]>("/api/assumptions");
     }
 
     inspect(id: string): Promise<unknown> {

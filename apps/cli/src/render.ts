@@ -1,8 +1,9 @@
-import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
+import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import type { FrontierSnapshot } from "@lab/protocol/research-frontier/frontier-snapshot.types";
-import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import Table from "cli-table3";
 
 function lines(items: string[]): string {
@@ -15,38 +16,52 @@ export function renderStatus(status: StatusSnapshot): string {
         wordWrap: true,
         style: { head: ["cyan"], border: ["gray"] }
     });
+    const live = status.assumptions.filter(
+        ({ status: bet }) => bet === AssumptionStatus.OPEN || bet === AssumptionStatus.RESEARCHING
+    ).length;
+    const confirmed = status.findings.filter(
+        ({ status: finding }) => finding === FindingStatus.CONFIRMED
+    ).length;
     table.push(
         ["State", status.lab.state],
         ["Lab", status.lab.id],
         ["Goal", status.lab.goal],
+        ["Bets", `${live} live of ${status.assumptions.length}`],
         [
-            "Branches",
-            String(status.branches.filter((branch) => branch.status === BranchStatus.ACTIVE).length)
+            "Agents",
+            `${status.runs.filter((run) => run.status === AgentRunStatus.RUNNING).length} running`
         ],
+        ["Findings", `${confirmed} confirmed of ${status.findings.length}`],
         [
-            "Tasks",
-            `${status.tasks.filter((task) => task.status === InternalTaskStatus.RUNNING).length} running`
-        ],
-        ["Claims", `${status.claims.length} total`],
-        ["Experiments", `${status.experiments.length} total`],
-        ["Blockers", lines(status.frontier.blockers)]
+            "Blockers",
+            lines(
+                status.capability_requests
+                    .filter(({ blocking }) => blocking)
+                    .map(({ need }) => need)
+            )
+        ]
     );
     return table.toString();
 }
 
-export function renderFrontier(frontier: FrontierSnapshot): string {
+export function renderAssumptions(assumptions: Assumption[]): string {
+    if (assumptions.length === 0) {
+        return "No bets placed yet.";
+    }
     const table = new Table({
-        colWidths: [24, 74],
+        head: ["Bet", "Status", "Why it was worth taking", "What came back"],
+        colWidths: [30, 18, 26, 26],
         wordWrap: true,
         style: { head: ["cyan"], border: ["gray"] }
     });
-    table.push(
-        ["Known", lines(frontier.known)],
-        ["Open questions", lines(frontier.open_questions)],
-        ["Blockers", lines(frontier.blockers)],
-        ["Next experiments", lines(frontier.next_experiments)],
-        ["Updated", frontier.updated_at]
-    );
+    for (const assumption of assumptions) {
+        table.push([
+            assumption.statement,
+            assumption.status,
+            assumption.rationale,
+            assumption.outcome ?? ""
+        ]);
+    }
     return table.toString();
 }
 

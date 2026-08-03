@@ -9,7 +9,7 @@ Local autonomous research runtime described in
 - `apps/daemon` — orchestration process and local status API;
 - `apps/dashboard` — Vite + React observer UI;
 - `packages/protocol` — stable runtime contracts and JSON schemas;
-- `packages/core` — research state machine and scheduling;
+- `packages/core` — lab lifecycle rules;
 - `packages/db` — PostgreSQL persistence;
 - `packages/harness` — subscription-authenticated Codex and Claude CLI harnesses;
 - `packages/executor` — local experiment execution.
@@ -42,8 +42,8 @@ are intentionally unsupported.
 
 ```bash
 pnpm lab status
-pnpm lab frontier
-pnpm lab inspect <claim-or-experiment-id>
+pnpm lab bets
+pnpm lab inspect <bet-finding-verdict-or-run-id>
 pnpm lab capabilities
 pnpm lab provide <request-id> <resource-reference>
 pnpm lab wake

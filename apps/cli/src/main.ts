@@ -12,7 +12,7 @@ import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";
 import { resolveCliConfig } from "#src/config";
 import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
-import { renderCapabilities, renderFrontier, renderStatus } from "#src/render";
+import { renderAssumptions, renderCapabilities, renderStatus } from "#src/render";
 import { resolvePurgeConfig } from "#src/run-purge/purge-config";
 
 interface GlobalOptions {
@@ -141,16 +141,16 @@ program
     });
 
 program
-    .command("frontier")
-    .description("show the current research frontier")
+    .command("bets")
+    .description("show where the director thinks the goal might be reachable")
     .action(async (_options, command: Command) => {
-        const frontier = await client(command).frontier();
-        print(frontier, globals(command).json, () => renderFrontier(frontier));
+        const assumptions = await client(command).assumptions();
+        print(assumptions, globals(command).json, () => renderAssumptions(assumptions));
     });
 
 program
     .command("inspect")
-    .description("inspect a claim, experiment, task, or branch")
+    .description("inspect a bet, finding, verdict, or run")
     .argument("<id>")
     .action(async (id: string, _options, command: Command) => {
         print(await client(command).inspect(id), true);
