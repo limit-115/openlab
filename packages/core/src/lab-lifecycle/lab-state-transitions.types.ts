@@ -1,9 +1,8 @@
-import type { CompletionEvidence } from "#src/lab-lifecycle/completion-evidence.types";
 import type { WakeTrigger } from "#src/lab-lifecycle/wake-trigger.const";
 
 export interface LifecycleContext {
-    readonly completion?: CompletionEvidence;
-    readonly plateauConfirmed?: boolean;
+    /** The finding a verifier confirmed. Required to claim a breakthrough. */
+    readonly confirmedFindingId?: string;
     readonly wakeTrigger?: WakeTrigger;
     readonly failureReason?: string;
 }

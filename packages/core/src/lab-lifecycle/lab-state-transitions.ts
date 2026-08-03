@@ -2,7 +2,6 @@ import {
     LabState,
     type LabState as LabStateValue
 } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import { validateCompletion } from "#src/lab-lifecycle/completion-evidence";
 import { legalLabStateTransitions } from "#src/lab-lifecycle/lab-state-transitions.const";
 import type {
     LifecycleContext,
@@ -20,20 +19,23 @@ export function assessLifecycleTransition(
         reasons.push(`Illegal lifecycle transition: ${current} -> ${target}`);
     }
 
-    if (target === LabState.COMPLETED) {
-        reasons.push(...validateCompletion(context.completion));
-    }
-
-    if (target === LabState.HIBERNATING && context.plateauConfirmed !== true) {
-        reasons.push("Hibernation requires a confirmed plateau");
+    /**
+     * The one judgement the lab may not make about itself. A researcher is free to believe anything
+     * about its own work; only a verifier's confirmation turns that belief into a result.
+     */
+    if (
+        target === LabState.BREAKTHROUGH &&
+        (context.confirmedFindingId === undefined || context.confirmedFindingId.trim().length === 0)
+    ) {
+        reasons.push("A breakthrough requires the finding a verifier confirmed");
     }
 
     if (
-        current === LabState.HIBERNATING &&
+        (current === LabState.HIBERNATING || current === LabState.BREAKTHROUGH) &&
         target === LabState.RUNNING &&
         context.wakeTrigger === undefined
     ) {
-        reasons.push("Waking a hibernating lab requires a trigger");
+        reasons.push("Resuming a paused lab requires a trigger");
     }
 
     if (
