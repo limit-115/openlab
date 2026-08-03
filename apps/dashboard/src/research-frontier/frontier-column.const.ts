@@ -1,5 +1,4 @@
-export const FRONTIER_COLUMN =
-    "flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-muted/30" as const;
+export const FRONTIER_COLUMN = "flex min-w-0 flex-col overflow-hidden rounded-2xl border" as const;
 
 export const FRONTIER_COLUMN_HEADER = "flex items-center gap-2 border-b p-4" as const;
 
