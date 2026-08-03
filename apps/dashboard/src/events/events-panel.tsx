@@ -1,9 +1,9 @@
 import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
-import { ActivityIcon, RadioIcon } from "lucide-react";
+import { RadioIcon } from "lucide-react";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
 import { EventEntry } from "#src/events/event-entry";
-import { EVENT_STREAM, EVENTS_BODY, LIVE_LABEL } from "#src/events/events-panel.const";
+import { EVENT_STREAM, LIVE_LABEL } from "#src/events/events-panel.const";
 import { SIGNAL_PULSE } from "#src/live-status/connection-badge.const";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
@@ -21,8 +21,6 @@ export function EventsPanel({ events }: EventsPanelProps) {
         <Panel
             title="Event stream"
             description="Significant activity"
-            icon={ActivityIcon}
-            contentClassName={cn(ordered.length > 0 && EVENTS_BODY)}
             action={
                 <span className={LIVE_LABEL}>
                     {ordered.length > 0 ? <Badge variant="outline">{ordered.length}</Badge> : null}

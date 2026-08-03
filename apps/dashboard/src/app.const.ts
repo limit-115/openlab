@@ -7,7 +7,11 @@ export const PAGE_FRAME = "mx-auto w-full max-w-320 px-4 sm:px-6 lg:px-12" as co
 
 export const APP_SHELL = "min-h-screen" as const;
 
-export const DASHBOARD = "grid gap-4 pt-6 pb-12 text-sm" as const;
+/**
+ * A section is bounded by the space around it rather than by an outline, so the gap between two
+ * sections has to stay clearly wider than the gap a section keeps between its heading and its cards.
+ */
+export const DASHBOARD = "grid gap-10 pt-6 pb-12 text-sm" as const;
 
 export const APP_FOOTER =
     "flex flex-col gap-1 pb-8 text-sm text-muted-foreground sm:flex-row sm:justify-between" as const;

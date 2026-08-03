@@ -1,7 +1,6 @@
 import type { AgentSummary } from "@lab/protocol/agents/agent-summary.types";
 import type { BranchSummary } from "@lab/protocol/branches/branch-summary.types";
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
-import { GitBranchIcon } from "lucide-react";
 import { Badge } from "#src/design-system/badge";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
@@ -19,7 +18,6 @@ export function BranchesPanel({ branches, agents, tasks }: BranchesPanelProps) {
         <Panel
             title="Branches & agents"
             description="Independent directions"
-            icon={GitBranchIcon}
             action={<Badge variant="outline">{branches.length} branches</Badge>}
         >
             {branches.length > 0 ? (

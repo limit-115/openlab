@@ -1,13 +1,16 @@
+/** A panel's own rhythm: the heading, then whatever it reports on. */
+export const PANEL = "grid gap-4" as const;
+
 /**
- * Below `sm` the header becomes a single column so a wide action, such as the claim filter, drops
- * under the title instead of overrunning it.
+ * The heading is set on the page rather than in a card, so a wide action such as the claim filter
+ * keeps to its right and drops under it only once the row runs out of room.
  */
-export const PANEL_HEADER = "border-b max-sm:grid-cols-1!" as const;
+export const PANEL_HEADER = "flex flex-wrap items-start justify-between gap-x-6 gap-y-3" as const;
 
-export const PANEL_TITLE = "flex items-center gap-3" as const;
+export const PANEL_HEADING = "flex min-w-0 flex-col gap-1" as const;
 
-export const PANEL_ICON =
-    "grid size-8 flex-none place-items-center rounded-xl bg-muted text-muted-foreground" as const;
+export const PANEL_TITLE = "font-heading text-lg font-medium" as const;
 
-export const PANEL_ACTION =
-    "min-w-0 max-sm:col-start-1 max-sm:row-start-3 max-sm:justify-self-start max-sm:pt-1" as const;
+export const PANEL_DESCRIPTION = "text-sm text-muted-foreground" as const;
+
+export const PANEL_ACTION = "flex min-w-0 flex-wrap items-center gap-2" as const;

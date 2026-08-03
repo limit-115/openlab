@@ -1,11 +1,5 @@
 import type { FrontierSnapshot } from "@lab/protocol/research-frontier/frontier-snapshot.types";
-import {
-    BanIcon,
-    CircleCheckIcon,
-    CircleHelpIcon,
-    CompassIcon,
-    FlaskConicalIcon
-} from "lucide-react";
+import { BanIcon, CircleCheckIcon, CircleHelpIcon, FlaskConicalIcon } from "lucide-react";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { FrontierColumn } from "#src/research-frontier/frontier-column";
@@ -28,7 +22,6 @@ export function FrontierPanel({ frontier }: FrontierPanelProps) {
         <Panel
             title="Research frontier"
             description="Current knowledge boundary"
-            icon={CompassIcon}
             action={
                 <span className="text-sm whitespace-nowrap text-muted-foreground">
                     Mapped {formatDate(frontier.updated_at)}

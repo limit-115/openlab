@@ -1,6 +1,6 @@
-export const CLAIM_LIST = "grid list-none" as const;
+export const CLAIM_LIST = "grid list-none gap-3" as const;
 
-export const CLAIM_CARD = "flex min-w-0 flex-col gap-3 border-b p-6 last:border-b-0" as const;
+export const CLAIM_CARD = "flex min-w-0 flex-col gap-3 rounded-2xl border p-4" as const;
 
 /** A claim whose assumption fell keeps its place but stops competing for attention. */
 export const CLAIM_CARD_STALE = "opacity-60" as const;

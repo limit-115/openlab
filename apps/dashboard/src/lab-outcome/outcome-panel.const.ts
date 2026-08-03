@@ -1,12 +1,14 @@
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 
-/** The panel outline carries the outcome: a finished lab reads calm, a failed one reads adverse. */
+export const OUTCOME_CARD = "rounded-2xl border p-6" as const;
+
+/** The card outline carries the outcome: a finished lab reads calm, a failed one reads adverse. */
 export const OUTCOME_SURFACE: Record<LabState, string> = {
-    [LabState.RUNNING]: "ring-border",
-    [LabState.HIBERNATING]: "ring-border",
-    [LabState.STOPPED]: "ring-border",
-    [LabState.COMPLETED]: "ring-primary/40",
-    [LabState.FAILED]: "ring-destructive/40"
+    [LabState.RUNNING]: "border-border",
+    [LabState.HIBERNATING]: "border-border",
+    [LabState.STOPPED]: "border-border",
+    [LabState.COMPLETED]: "border-primary/40",
+    [LabState.FAILED]: "border-destructive/40"
 };
 
 export const OUTCOME_SUMMARY = "text-sm leading-relaxed text-balance" as const;

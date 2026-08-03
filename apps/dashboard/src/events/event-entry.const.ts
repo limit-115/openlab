@@ -1,5 +1,5 @@
 export const EVENT_ENTRY =
-    "group grid grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-x-4 border-b px-6 py-4 last:border-b-0" as const;
+    "group grid grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-x-4 border-b p-4 last:border-b-0" as const;
 
 export const EVENT_TIME =
     "pt-0.5 text-sm whitespace-nowrap tabular-nums text-muted-foreground" as const;

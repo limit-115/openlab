@@ -1,14 +1,11 @@
 import type { Claim } from "@lab/protocol/claims/claim.types";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import type { Experiment } from "@lab/protocol/experiments/experiment.types";
-import { ShieldCheckIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ClaimCard } from "#src/claims/claim-card";
 import { CLAIM_LIST } from "#src/claims/claim-card.const";
 import { ClaimFilterGroup } from "#src/claims/claim-filter";
 import { ClaimFilter } from "#src/claims/claim-filter.const";
-import { CLAIMS_BODY } from "#src/claims/claims-panel.const";
-import { cn } from "#src/design-system/class-names";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
@@ -33,15 +30,11 @@ export function ClaimsPanel({ claims, experiments }: ClaimsPanelProps) {
         return claims.filter((claim) => claim.status === filter);
     }, [claims, filter]);
 
-    const hasClaims = claims.length > 0 && visibleClaims.length > 0;
-
     return (
         <Panel
             title="Claims"
             description="Evidence ledger"
-            icon={ShieldCheckIcon}
             action={<ClaimFilterGroup filter={filter} onSelect={setFilter} />}
-            contentClassName={cn(hasClaims && CLAIMS_BODY)}
         >
             {claims.length === 0 ? (
                 <PanelEmptyState

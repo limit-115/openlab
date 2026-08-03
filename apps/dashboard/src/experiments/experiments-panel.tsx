@@ -1,6 +1,5 @@
 import type { Experiment } from "@lab/protocol/experiments/experiment.types";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
-import { MicroscopeIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ItemGroup } from "#src/design-system/item";
 import { ExperimentCard } from "#src/experiments/experiment-card";
@@ -40,7 +39,6 @@ export function ExperimentsPanel({ experiments }: ExperimentsPanelProps) {
         <Panel
             title="Experiments"
             description="Live and unfinished runs"
-            icon={MicroscopeIcon}
             action={<ExperimentFilterGroup filter={filter} onSelect={setFilter} />}
         >
             {experiments.length === 0 ? (
