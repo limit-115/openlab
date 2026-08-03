@@ -7,7 +7,7 @@ export const OUTCOME_SURFACE: Record<LabState, string> = {
     [LabState.RUNNING]: "border-border",
     [LabState.HIBERNATING]: "border-border",
     [LabState.STOPPED]: "border-border",
-    [LabState.COMPLETED]: "border-primary/40",
+    [LabState.COMPLETED]: "border-success/40",
     [LabState.FAILED]: "border-destructive/40"
 };
 

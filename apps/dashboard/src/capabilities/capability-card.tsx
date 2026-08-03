@@ -47,7 +47,9 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                     <p className={CAPABILITY_NEED}>{request.need}</p>
                 </div>
                 <div className={CAPABILITY_TAGS}>
-                    {request.blocking ? <Badge variant="outline">{BLOCKING_LABEL}</Badge> : null}
+                    {request.blocking ? (
+                        <Badge variant="destructive">{BLOCKING_LABEL}</Badge>
+                    ) : null}
                     <StatusTag status={request.status} />
                 </div>
             </header>

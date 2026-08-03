@@ -15,9 +15,9 @@ import {
     BRANCH_CARD_STATUS_TONE,
     BRANCH_CARD_SUMMARY,
     BRANCH_CARD_TITLE,
-    BRANCH_PROGRESS,
-    BRANCH_PROGRESS_TONE
+    BRANCH_PROGRESS
 } from "#src/research-branches/branch-card.const";
+import { branchProgressTone } from "#src/research-branches/branch-progress-tone";
 
 interface BranchCardProps {
     branch: BranchSummary;
@@ -65,7 +65,7 @@ export function BranchCard({ branch, agents, tasks }: BranchCardProps) {
                     </span>
                     {branch.progress ? (
                         <Badge
-                            variant={BRANCH_PROGRESS_TONE[branch.status]}
+                            variant={branchProgressTone(branch.progress)}
                             className={BRANCH_PROGRESS}
                         >
                             {branch.progress}

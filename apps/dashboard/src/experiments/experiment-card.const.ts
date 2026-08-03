@@ -4,13 +4,14 @@ export const EXPERIMENT_LIST = "gap-3" as const;
 
 export const EXPERIMENT_STATUS = "size-8 rounded-xl border" as const;
 
+/** The mark carries the same colour as the status badge beside it, so the card reads as one thing. */
 export const EXPERIMENT_STATUS_TONE: Record<ExperimentStatus, string> = {
-    [ExperimentStatus.PLANNED]: "text-muted-foreground",
+    [ExperimentStatus.PLANNED]: "border-warning/40 bg-warning/10 text-warning",
     [ExperimentStatus.RUNNING]: "border-primary/40 bg-primary/10 text-primary",
-    [ExperimentStatus.SUCCEEDED]: "text-foreground",
-    [ExperimentStatus.FAILED]: "border-destructive/40 text-destructive",
-    [ExperimentStatus.TIMED_OUT]: "border-destructive/40 text-destructive",
-    [ExperimentStatus.CANCELLED]: "border-destructive/40 text-destructive"
+    [ExperimentStatus.SUCCEEDED]: "border-success/40 bg-success/10 text-success",
+    [ExperimentStatus.FAILED]: "border-destructive/40 bg-destructive/10 text-destructive",
+    [ExperimentStatus.TIMED_OUT]: "border-destructive/40 bg-destructive/10 text-destructive",
+    [ExperimentStatus.CANCELLED]: "border-destructive/40 bg-destructive/10 text-destructive"
 };
 
 export const EXPERIMENT_HYPOTHESIS = "text-base" as const;

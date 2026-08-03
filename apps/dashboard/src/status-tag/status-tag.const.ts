@@ -5,13 +5,13 @@ import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-statu
 import type { BadgeVariant, TaggedStatus } from "#src/status-tag/status-tag.types";
 
 /**
- * Emphasis follows attention, not sentiment: what is happening now reads loudest, what went wrong
- * reads as a warning, settled work recedes, and work that has not started stays quiet.
+ * Four colours, one question each: blue is happening now, green came out well, red went wrong, and
+ * amber is waiting on something. A status an operator has to read at a glance cannot be grey.
  */
 const RUNNING_TONE: BadgeVariant = "default";
 const ADVERSE_TONE: BadgeVariant = "destructive";
-const SETTLED_TONE: BadgeVariant = "secondary";
-const PENDING_TONE: BadgeVariant = "outline";
+const SETTLED_TONE: BadgeVariant = "success";
+const PENDING_TONE: BadgeVariant = "warning";
 
 export const STATUS_TAG_TONE: Record<TaggedStatus, BadgeVariant> = {
     [InternalTaskStatus.QUEUED]: PENDING_TONE,
@@ -27,6 +27,6 @@ export const STATUS_TAG_TONE: Record<TaggedStatus, BadgeVariant> = {
     [ClaimStatus.REPRODUCED]: SETTLED_TONE,
     [ExperimentStatus.PLANNED]: PENDING_TONE,
     [ExperimentStatus.TIMED_OUT]: ADVERSE_TONE,
-    [CapabilityStatus.OPEN]: RUNNING_TONE,
+    [CapabilityStatus.OPEN]: PENDING_TONE,
     [CapabilityStatus.ANSWERED]: SETTLED_TONE
 };

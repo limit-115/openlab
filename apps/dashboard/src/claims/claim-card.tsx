@@ -45,7 +45,7 @@ export function ClaimCard({ claim, experiments }: ClaimCardProps) {
                 <div className={CLAIM_HEADER}>
                     <strong className={CLAIM_STATEMENT}>{claim.statement}</strong>
                     <span className={CLAIM_TAGS}>
-                        {claim.stale ? <Badge variant="outline">Stale</Badge> : null}
+                        {claim.stale ? <Badge variant="warning">Stale</Badge> : null}
                         <StatusTag status={claim.status} />
                     </span>
                 </div>

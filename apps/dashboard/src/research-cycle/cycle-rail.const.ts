@@ -9,7 +9,7 @@ export const CYCLE_STAGE =
 export const CYCLE_STAGE_SURFACE: Record<CycleStageState, string> = {
     [CycleStageState.PENDING]: "",
     [CycleStageState.ACTIVE]: "bg-primary/5",
-    [CycleStageState.BLOCKED]: "bg-destructive/5",
+    [CycleStageState.BLOCKED]: "bg-warning/5",
     [CycleStageState.DONE]: ""
 };
 
@@ -27,6 +27,6 @@ export const CYCLE_STAGE_NOTE = "text-sm break-words" as const;
 export const CYCLE_STAGE_NOTE_TONE: Record<CycleStageState, string> = {
     [CycleStageState.PENDING]: "text-muted-foreground",
     [CycleStageState.ACTIVE]: "text-primary",
-    [CycleStageState.BLOCKED]: "text-destructive",
+    [CycleStageState.BLOCKED]: "text-warning",
     [CycleStageState.DONE]: "text-muted-foreground"
 };

@@ -117,13 +117,13 @@ export const RUN_STATUS_LABEL: Record<AgentRunStatus, string> = {
     [AgentRunStatus.CANCELLED]: "Cancelled"
 };
 
-/** The same emphasis the rest of the dashboard uses: live work loudest, failures as warnings. */
+/** The same four colours the rest of the dashboard reads statuses in. */
 export const RUN_STATUS_TONE: Record<AgentRunStatus, BadgeVariant> = {
     [AgentRunStatus.RUNNING]: "default",
-    [AgentRunStatus.SUCCEEDED]: "secondary",
+    [AgentRunStatus.SUCCEEDED]: "success",
     [AgentRunStatus.FAILED]: "destructive",
     [AgentRunStatus.TIMED_OUT]: "destructive",
-    [AgentRunStatus.CANCELLED]: "outline"
+    [AgentRunStatus.CANCELLED]: "destructive"
 };
 
 export const TOOL_PHASE_MARK: Record<AgentToolPhase, string> = {

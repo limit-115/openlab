@@ -19,8 +19,8 @@ export const STATE_DOT = "size-2 flex-none rounded-full" as const;
 
 export const STATE_DOT_TONE: Record<LabState, string> = {
     [LabState.RUNNING]: "bg-primary ring-4 ring-primary/20",
-    [LabState.COMPLETED]: "bg-primary",
-    [LabState.HIBERNATING]: "bg-muted-foreground",
+    [LabState.COMPLETED]: "bg-success",
+    [LabState.HIBERNATING]: "bg-warning",
     [LabState.FAILED]: "bg-destructive ring-4 ring-destructive/20",
     [LabState.STOPPED]: "bg-muted-foreground"
 };
