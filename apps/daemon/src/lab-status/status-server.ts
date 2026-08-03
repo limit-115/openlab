@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import FastifyStatic from "@fastify/static";
+import { assessLifecycleTransition } from "@lab/core/lab-lifecycle/lab-state-transitions";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
@@ -60,23 +61,36 @@ export function createStatusServer(
         return item;
     });
 
+    /**
+     * The lifecycle controls. Each asks the state machine whether the operator's transition is one
+     * this run can make, rather than keeping a second copy of the rule here that drifts from it.
+     * A refusal names the state that blocked it, which is the part the operator can act on.
+     */
     app.post("/api/wake", async (_request, reply) => {
-        const current = workspace.getSnapshot();
-        if (current.lab.state !== LabState.HIBERNATING) {
-            return reply.code(409).send({ error: `Cannot wake lab from ${current.lab.state}` });
+        const current = workspace.getSnapshot().lab.state;
+        const wakeTrigger = WakeTrigger.USER;
+        if (!assessLifecycleTransition(current, LabState.RUNNING, { wakeTrigger }).allowed) {
+            return reply.code(409).send({ error: `Cannot wake lab from ${current}` });
         }
-        const snapshot = await workspace.transition(LabState.RUNNING, "External wake command", {
-            wakeTrigger: WakeTrigger.USER
-        });
-        return snapshot;
+        return workspace.transition(LabState.RUNNING, "External wake command", { wakeTrigger });
+    });
+
+    /** Pausing gives up the cycle in flight, so the agents are cancelled before the lab sleeps. */
+    app.post("/api/pause", async (_request, reply) => {
+        const current = workspace.getSnapshot().lab.state;
+        if (!assessLifecycleTransition(current, LabState.HIBERNATING).allowed) {
+            return reply.code(409).send({ error: `Cannot pause lab from ${current}` });
+        }
+        await options.onPause?.();
+        return workspace.transition(LabState.HIBERNATING, "External pause command");
     });
 
     app.post("/api/stop", async (_request, reply) => {
-        await options.onStop?.();
-        const current = workspace.getSnapshot();
-        if (current.lab.state !== LabState.RUNNING && current.lab.state !== LabState.HIBERNATING) {
-            return reply.code(409).send({ error: `Cannot stop lab from ${current.lab.state}` });
+        const current = workspace.getSnapshot().lab.state;
+        if (!assessLifecycleTransition(current, LabState.STOPPED).allowed) {
+            return reply.code(409).send({ error: `Cannot stop lab from ${current}` });
         }
+        await options.onStop?.();
         return workspace.transition(LabState.STOPPED, "External stop command");
     });
 

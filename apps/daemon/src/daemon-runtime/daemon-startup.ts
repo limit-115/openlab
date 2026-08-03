@@ -45,6 +45,8 @@ export async function startDaemon(
             subscriptions,
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel,
+            onPause: () =>
+                controller?.cancel(new Error("External pause command")) ?? Promise.resolve(),
             onStop: () =>
                 controller?.cancel(new Error("External stop command")) ?? Promise.resolve()
         });

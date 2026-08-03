@@ -3,18 +3,22 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { createStatusServer } from "#src/lab-status/status-server";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
-async function createTestServer() {
+async function createTestWorkspace(goal: string): Promise<LabWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
     const taskPath = path.join(directory, "task.json");
-    await writeFile(taskPath, JSON.stringify({ goal: "Inspect the API" }));
-    const workspace = await LabWorkspace.initialize(directory, taskPath);
-    return createStatusServer(workspace);
+    await writeFile(taskPath, JSON.stringify({ goal }));
+    return LabWorkspace.initialize(directory, taskPath);
+}
+
+async function createTestServer() {
+    return createStatusServer(await createTestWorkspace("Inspect the API"));
 }
 
 describe("status server", () => {
@@ -32,6 +36,58 @@ describe("status server", () => {
         const response = await server.inject({ method: "POST", url: "/api/wake" });
 
         expect(response.statusCode).toBe(409);
+        await server.close();
+    });
+
+    it("pauses a running lab and gives up the cycle in flight before it sleeps", async () => {
+        const workspace = await createTestWorkspace("Pause the run");
+        const cancelled: string[] = [];
+        const server = createStatusServer(workspace, {
+            onPause: async () => {
+                cancelled.push(workspace.getSnapshot().lab.state);
+            }
+        });
+
+        const response = await server.inject({ method: "POST", url: "/api/pause" });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json().lab.state).toBe(LabState.HIBERNATING);
+        expect(cancelled).toEqual([LabState.RUNNING]);
+        await server.close();
+    });
+
+    it("starts a stopped run again on the operator's command", async () => {
+        const workspace = await createTestWorkspace("Start the run again");
+        const server = createStatusServer(workspace);
+        await server.inject({ method: "POST", url: "/api/stop" });
+
+        const restarted = await server.inject({ method: "POST", url: "/api/wake" });
+
+        expect(restarted.statusCode).toBe(200);
+        expect(restarted.json().lab.state).toBe(LabState.RUNNING);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        await server.close();
+    });
+
+    it("keeps a failed run settled and holds the loop it never cancelled", async () => {
+        const workspace = await createTestWorkspace("Leave the failure alone");
+        let cancelled = false;
+        const server = createStatusServer(workspace, {
+            onStop: async () => {
+                cancelled = true;
+            }
+        });
+        await workspace.transition(LabState.FAILED, "The director never answered", {
+            failureReason: "The director never answered"
+        });
+
+        const stop = await server.inject({ method: "POST", url: "/api/stop" });
+        const wake = await server.inject({ method: "POST", url: "/api/wake" });
+
+        expect(stop.statusCode).toBe(409);
+        expect(wake.statusCode).toBe(409);
+        expect(cancelled).toBe(false);
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.FAILED);
         await server.close();
     });
 

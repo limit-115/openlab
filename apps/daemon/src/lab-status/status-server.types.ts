@@ -9,5 +9,7 @@ export interface StatusServerOptions {
     subscriptions?: SubscriptionAllowanceReadings;
     dashboardRoot?: string;
     logLevel?: DaemonLogLevel;
+    /** Both controls give up the cycle in flight; only the state the lab settles in differs. */
+    onPause?: () => Promise<void>;
     onStop?: () => Promise<void>;
 }
