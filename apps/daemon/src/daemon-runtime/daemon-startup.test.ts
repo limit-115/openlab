@@ -11,7 +11,7 @@ import type {
     RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime/runtime-persistence.types";
-import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
+
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
@@ -30,15 +30,10 @@ const AutomaticWakeScenario = {
         label: "evidence",
         trigger: WakeTrigger.EVIDENCE
     },
-    TOOL: {
-        label: "tool",
-        trigger: WakeTrigger.TOOL,
-        resourceReference: "toolchain://codex/current"
-    },
-    DATASET: {
-        label: "dataset",
+    CAPABILITY: {
+        label: "capability",
         trigger: WakeTrigger.CAPABILITY,
-        resourceReference: "dataset://independent/v1"
+        answer: "Mounted at /srv/corpora/independent-v1"
     }
 } as const;
 
@@ -197,17 +192,18 @@ describe("daemon startup", () => {
                 await firstRunReady;
                 expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
 
-                if ("resourceReference" in scenario) {
+                if ("answer" in scenario) {
                     const request = await daemon.workspace.requestCapability({
                         need: `${scenario.label} resource`,
-                        resourceClass: CapabilityResourceClass.PRIVATE_DATA,
-                        reason: "The research loop requires an operator-provided resource",
-                        provisioningHint: "Provide an opaque resource handle"
+                        reason: "The research loop requires an operator-held resource",
+                        provisioningHint: "Point the run at a local copy",
+                        selfProvisioningAttempt: "Searched the public mirrors and came up short",
+                        blocking: true
                     });
                     const response = await daemon.app.inject({
                         method: "POST",
-                        url: `/api/capabilities/${request.id}/provide`,
-                        payload: { resource_reference: scenario.resourceReference }
+                        url: `/api/capabilities/${request.id}/answer`,
+                        payload: { answer: scenario.answer }
                     });
                     expect(response.statusCode).toBe(202);
                 } else {

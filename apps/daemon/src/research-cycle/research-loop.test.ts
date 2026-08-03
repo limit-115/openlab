@@ -31,10 +31,7 @@ import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
-import {
-    CapabilityResourceClass,
-    CapabilityStatus
-} from "@lab/protocol/capabilities/capability-request.const";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
@@ -73,17 +70,16 @@ const EvaluatorComparison = {
 
 const CapabilityFixture = {
     NEED: "An active local product-subscription CLI session",
-    RESOURCE_CLASS: CapabilityResourceClass.ACCOUNT,
     REASON: "The previously authenticated subscription session became unavailable",
     PROVISIONING_HINT: "Restore the interactive subscription login and retry",
-    RESOURCE_REFERENCE: "toolchain://codex/subscription-session",
-    CONTEXT_TYPE: "provided_capability"
+    ANSWER: "Signed the Codex CLI back in on this machine",
+    CONTEXT_TYPE: "answered_capability"
 } as const;
 
 const DatasetCapabilityFixture = {
     NEED: "Held-out production-shaped benchmark dataset",
-    RESOURCE_CLASS: CapabilityResourceClass.PRIVATE_DATA,
     REASON: "The indexing direction cannot validate representativeness without the dataset",
+    SELF_PROVISIONING_ATTEMPT: "Generated synthetic traffic, which does not reproduce the tail",
     PROVISIONING_HINT: "Attach a read-only dataset snapshot to the research workspace",
     DIRECTION_TITLE: "Indexing"
 } as const;
@@ -98,7 +94,8 @@ const RecoveryContextFixture = {
     CAPABILITY_NEED: "Recovered production-shaped dataset",
     CAPABILITY_REASON: "The recovered frontier references held-out traffic",
     CAPABILITY_HINT: "Attach the persisted dataset snapshot",
-    RESOURCE_REFERENCE: "dataset://recovered/production-v1"
+    CAPABILITY_ATTEMPT: "Replayed the public sample, which lacks the held-out segment",
+    CAPABILITY_ANSWER: "Snapshot restored at /srv/traffic/production-v1"
 } as const;
 
 const SourceCitationFixture = {
@@ -265,9 +262,9 @@ class ScriptedHarness implements AgentHarness {
             if (datasetBlocked) {
                 const capabilityRequest = {
                     need: DatasetCapabilityFixture.NEED,
-                    resource_class: DatasetCapabilityFixture.RESOURCE_CLASS,
                     reason: DatasetCapabilityFixture.REASON,
-                    provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT
+                    provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT,
+                    self_provisioning_attempt: DatasetCapabilityFixture.SELF_PROVISIONING_ATTEMPT
                 };
                 output = {
                     summary: "The indexing direction needs a held-out dataset",
@@ -375,9 +372,10 @@ class ScriptedHarness implements AgentHarness {
                     capability_requests: [
                         {
                             need: DatasetCapabilityFixture.NEED,
-                            resource_class: DatasetCapabilityFixture.RESOURCE_CLASS,
                             reason: DatasetCapabilityFixture.REASON,
-                            provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT
+                            provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT,
+                            self_provisioning_attempt:
+                                DatasetCapabilityFixture.SELF_PROVISIONING_ATTEMPT
                         }
                     ],
                     capability_blocked: true
@@ -819,9 +817,10 @@ describe.sequential("runResearchLoop", () => {
         expect(snapshot.capability_requests).toEqual([
             expect.objectContaining({
                 need: DatasetCapabilityFixture.NEED,
-                resource_class: DatasetCapabilityFixture.RESOURCE_CLASS,
                 reason: DatasetCapabilityFixture.REASON,
                 provisioning_hint: DatasetCapabilityFixture.PROVISIONING_HINT,
+                self_provisioning_attempt: DatasetCapabilityFixture.SELF_PROVISIONING_ATTEMPT,
+                blocking: true,
                 status: CapabilityStatus.OPEN
             })
         ]);
@@ -1141,7 +1140,7 @@ describe.sequential("runResearchLoop", () => {
         );
     });
 
-    it("includes provided capability resources after restarting at cycle zero", async () => {
+    it("includes answered capability requests after restarting at cycle zero", async () => {
         const workspace = await createWorkspace();
         const blocked = await runResearchLoop(workspace, {
             harnesses: [new UnavailableHarness(HarnessKinds.CODEX)]
@@ -1151,12 +1150,12 @@ describe.sequential("runResearchLoop", () => {
         if (request === undefined) {
             throw new Error("Expected the unavailable harness to request a capability");
         }
-        await workspace.provideCapability(request.id, CapabilityFixture.RESOURCE_REFERENCE);
-        const provided = workspace
+        await workspace.answerCapability(request.id, CapabilityFixture.ANSWER);
+        const answered = workspace
             .getSnapshot()
             .capability_requests.find(({ id }) => id === request.id);
-        if (provided?.provided_at === undefined) {
-            throw new Error("Expected the capability to have operational resource state");
+        if (answered?.answered_at === undefined) {
+            throw new Error("Expected the capability to have been answered");
         }
         const harness = new ScriptedHarness(HarnessKinds.CODEX);
 
@@ -1166,11 +1165,9 @@ describe.sequential("runResearchLoop", () => {
         expect(harness.requests).toHaveLength(7);
         for (const run of harness.requests) {
             expect(run.prompt).toContain(CapabilityFixture.CONTEXT_TYPE);
-            expect(run.prompt).toContain("resource_reference");
-            expect(run.prompt).toContain(CapabilityFixture.RESOURCE_REFERENCE);
-            expect(run.prompt).toContain("provided_at");
-            expect(run.prompt).toContain(provided.provided_at);
-            expect(run.prompt).not.toContain('"need":');
+            expect(run.prompt).toContain(CapabilityFixture.ANSWER);
+            expect(run.prompt).toContain("answered_at");
+            expect(run.prompt).toContain(answered.answered_at);
             expect(run.prompt).not.toContain('"provisioning_hint":');
         }
     });
@@ -1198,11 +1195,12 @@ describe.sequential("runResearchLoop", () => {
         });
         const request = await workspace.requestCapability({
             need: RecoveryContextFixture.CAPABILITY_NEED,
-            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: RecoveryContextFixture.CAPABILITY_REASON,
-            provisioningHint: RecoveryContextFixture.CAPABILITY_HINT
+            provisioningHint: RecoveryContextFixture.CAPABILITY_HINT,
+            selfProvisioningAttempt: RecoveryContextFixture.CAPABILITY_ATTEMPT,
+            blocking: true
         });
-        await workspace.provideCapability(request.id, RecoveryContextFixture.RESOURCE_REFERENCE);
+        await workspace.answerCapability(request.id, RecoveryContextFixture.CAPABILITY_ANSWER);
         const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
         const recovered = await LabWorkspace.openOrCreate(
             workspaceRoot,
@@ -1223,7 +1221,7 @@ describe.sequential("runResearchLoop", () => {
             expect(run.prompt).toContain(RecoveryContextFixture.NEXT_EXPERIMENT);
             expect(run.prompt).toContain(RecoveryContextFixture.CLAIM_STATEMENT);
             expect(run.prompt).toContain(CapabilityFixture.CONTEXT_TYPE);
-            expect(run.prompt).toContain(RecoveryContextFixture.RESOURCE_REFERENCE);
+            expect(run.prompt).toContain(RecoveryContextFixture.CAPABILITY_ANSWER);
         }
         const recoveredDirectorBranchIds = recovered
             .getEvents()
@@ -1237,7 +1235,7 @@ describe.sequential("runResearchLoop", () => {
         expect(recoveredDirectorBranchIds).not.toContain(initialIds.branchId);
     });
 
-    it("never treats a provided subscription reference as harness authentication", async () => {
+    it("never treats an answered subscription request as harness authentication", async () => {
         const workspace = await createWorkspace();
         const harness = new UnavailableHarness(HarnessKinds.CODEX);
         const first = await runResearchLoop(workspace, { harnesses: [harness] });
@@ -1246,7 +1244,7 @@ describe.sequential("runResearchLoop", () => {
         if (request === undefined) {
             throw new Error("Expected a subscription capability request");
         }
-        await workspace.provideCapability(request.id, CapabilityFixture.RESOURCE_REFERENCE);
+        await workspace.answerCapability(request.id, CapabilityFixture.ANSWER);
 
         const second = await runResearchLoop(workspace, { harnesses: [harness] });
 
@@ -1256,8 +1254,8 @@ describe.sequential("runResearchLoop", () => {
         expect(workspace.getSnapshot().capability_requests).toEqual([
             expect.objectContaining({
                 id: request.id,
-                status: CapabilityStatus.PROVIDED,
-                resource_reference: CapabilityFixture.RESOURCE_REFERENCE
+                status: CapabilityStatus.ANSWERED,
+                answer: CapabilityFixture.ANSWER
             }),
             expect.objectContaining({ status: CapabilityStatus.OPEN })
         ]);

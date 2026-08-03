@@ -1,5 +1,5 @@
 export const ResearchContextEntryType = {
-    PROVIDED_CAPABILITY: "provided_capability",
+    ANSWERED_CAPABILITY: "answered_capability",
     OPEN_CLAIM: "open_claim",
     OPEN_QUESTION: "open_question",
     BLOCKER: "blocker"

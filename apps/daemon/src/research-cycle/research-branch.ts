@@ -129,7 +129,8 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
             outcomeAttemptStarted = true;
             const capabilityRequests = await persistAgentCapabilityRequests(
                 workspace,
-                run.value.capability_requests
+                run.value.capability_requests,
+                run.value.capability_blocked
             );
             const recordedSources = await recordResearchSources(
                 workspace,

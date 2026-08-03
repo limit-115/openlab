@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import FastifyStatic from "@fastify/static";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
-import { ProvideCapabilitySchema } from "@lab/protocol/capabilities/provide-capability.schema";
+import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import Fastify, { type FastifyInstance } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
@@ -64,32 +64,26 @@ export function createStatusServer(
         return workspace.transition(LabState.STOPPED, "External stop command");
     });
 
-    app.post<{ Params: { id: string } }>(
-        "/api/capabilities/:id/provide",
-        async (request, reply) => {
-            const parsedInput = ProvideCapabilitySchema.safeParse(request.body);
-            if (!parsedInput.success) {
-                return reply.code(400).send({
-                    error: CapabilityResponseError.INVALID_RESOURCE_REFERENCE
-                });
-            }
-            const input = parsedInput.data;
-            const capability = workspace
-                .getSnapshot()
-                .capability_requests.find(({ id }) => id === request.params.id);
-            const provided = await workspace.provideCapability(
-                request.params.id,
-                input.resource_reference
-            );
-            if (!provided) {
-                if (capability === undefined) {
-                    return reply.code(404).send({ error: "Capability request not found" });
-                }
-                return reply.code(409).send({ error: "Capability request is not open" });
-            }
-            return reply.code(202).send({ accepted: true });
+    app.post<{ Params: { id: string } }>("/api/capabilities/:id/answer", async (request, reply) => {
+        const parsedInput = AnswerCapabilitySchema.safeParse(request.body);
+        if (!parsedInput.success) {
+            return reply.code(400).send({
+                error: CapabilityResponseError.EMPTY_ANSWER
+            });
         }
-    );
+        const input = parsedInput.data;
+        const capability = workspace
+            .getSnapshot()
+            .capability_requests.find(({ id }) => id === request.params.id);
+        const answered = await workspace.answerCapability(request.params.id, input.answer);
+        if (!answered) {
+            if (capability === undefined) {
+                return reply.code(404).send({ error: "Capability request not found" });
+            }
+            return reply.code(409).send({ error: "Capability request is already answered" });
+        }
+        return reply.code(202).send({ accepted: true });
+    });
 
     app.get("/api/export", async () => ({
         lab_id: workspace.labId,

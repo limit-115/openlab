@@ -93,6 +93,8 @@ export interface StageRunOutput<Output> extends StructuredAgentRunOutput<Output>
 
 export interface AgentCapabilityOutput {
     readonly capability_requests: readonly CapabilityRequestCandidate[];
+    /** Absent for roles that cannot stall the lab on an operator, such as the director and critic. */
+    readonly capability_blocked?: boolean;
 }
 
 export interface CriticStageRunOutput extends StageRunOutput<CriticResult> {

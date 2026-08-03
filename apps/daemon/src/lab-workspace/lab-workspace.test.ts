@@ -4,10 +4,7 @@ import path from "node:path";
 import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
 import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
 import type { RecoverableRuntime } from "@lab/db/runtime/runtime-persistence.types";
-import {
-    CapabilityResourceClass,
-    CapabilityStatus
-} from "@lab/protocol/capabilities/capability-request.const";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
@@ -19,33 +16,6 @@ import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import type { WorkspaceRuntimePersistence } from "#src/lab-workspace/lab-workspace.types";
 
 const directories: string[] = [];
-
-const SafeCapabilityReference = {
-    DATASET: "dataset://independent/v1",
-    TOOLCHAIN: "toolchain://codex/current",
-    KEYCHAIN: "keychain://ai-research-lab/licensed-corpus",
-    FILE: "file:///tmp/licensed-corpus"
-} as const;
-
-const AutomaticWakeCapability = [
-    {
-        label: "toolchain",
-        reference: SafeCapabilityReference.TOOLCHAIN,
-        trigger: WakeTrigger.TOOL
-    },
-    {
-        label: "dataset",
-        reference: SafeCapabilityReference.DATASET,
-        trigger: WakeTrigger.CAPABILITY
-    }
-] as const;
-
-const UnsafeCapabilityReference = {
-    OPENAI_KEY: "sk-proj-abcdefghijklmnopqrstuvwxyz012345",
-    BEARER_TOKEN: "Bearer abcdefghijklmnopqrstuvwxyz012345",
-    LONG_TOKEN: "a".repeat(96),
-    API_KEY_PLAINTEXT: "api-key: abcdefghijklmnopqrstuvwxyz"
-} as const;
 
 afterEach(() => {
     directories.length = 0;
@@ -225,9 +195,9 @@ describe("LabWorkspace", () => {
         const workspace = await createWorkspace();
         const input = {
             need: "Claude subscription login",
-            resourceClass: CapabilityResourceClass.ACCOUNT,
             reason: "No authenticated research harness is available",
-            provisioningHint: "Run claude and sign in with claude.ai"
+            provisioningHint: "Run claude and sign in with claude.ai",
+            blocking: true
         };
 
         const first = await workspace.requestCapability(input);
@@ -235,151 +205,126 @@ describe("LabWorkspace", () => {
 
         expect(second.id).toBe(first.id);
         expect(workspace.getSnapshot().capability_requests).toHaveLength(1);
-        expect(workspace.getSnapshot().frontier.blockers).toContain(input.need);
     });
 
-    it("persists a provided capability, clears its blocker, and handles retries safely", async () => {
+    it("blocks the frontier only on a request the agent could not work around", async () => {
+        const workspace = await createWorkspace();
+
+        const stalling = await workspace.requestCapability({
+            need: "Claude subscription login",
+            reason: "No authenticated research harness is available",
+            provisioningHint: "Run claude and sign in with claude.ai",
+            blocking: true
+        });
+        const aside = await workspace.requestCapability({
+            need: "Fresh funds on the public testnet",
+            reason: "One live-network check would sharpen an otherwise complete direction",
+            provisioningHint: "Send testnet coins to an address the run controls",
+            selfProvisioningAttempt: "Ran the whole comparison against a local validator instead",
+            blocking: false
+        });
+
+        expect(workspace.getSnapshot().frontier.blockers).toContain(stalling.need);
+        expect(workspace.getSnapshot().frontier.blockers).not.toContain(aside.need);
+    });
+
+    it("settles a request on a refusal as completely as on a handover", async () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "Independent dataset",
-            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs independent observations",
-            provisioningHint: "Mount the dataset in the run workspace"
+            provisioningHint: "Mount the dataset in the run workspace",
+            selfProvisioningAttempt:
+                "Rebuilt it from public mirrors, which overlap the training set",
+            blocking: true
         });
         await workspace.hibernateForPlateau("Waiting for the independent dataset");
 
         await expect(
-            workspace.provideCapability(request.id, " dataset://independent/v1 ")
+            workspace.answerCapability(request.id, "  Not giving you this one, build it yourself  ")
         ).resolves.toBe(true);
-        const provided = workspace
+
+        const answered = workspace
             .getSnapshot()
             .capability_requests.find(({ id }) => id === request.id);
-        expect(provided).toMatchObject({
-            status: CapabilityStatus.PROVIDED,
-            resource_reference: "dataset://independent/v1"
+        expect(answered).toMatchObject({
+            status: CapabilityStatus.ANSWERED,
+            answer: "Not giving you this one, build it yourself"
         });
-        expect(provided?.provided_at).toBeDefined();
+        expect(answered?.answered_at).toBeDefined();
         expect(workspace.getSnapshot().frontier.blockers).not.toContain(request.need);
         expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
-
-        await expect(
-            workspace.provideCapability(request.id, "dataset://independent/v1")
-        ).resolves.toBe(true);
-        await expect(workspace.provideCapability(request.id, "dataset://different")).resolves.toBe(
-            false
-        );
-        expect(
-            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_PROVIDED)
-        ).toHaveLength(1);
     });
 
-    it.each(AutomaticWakeCapability)(
-        "wakes a hibernating lab with the exact $label trigger",
-        async ({ reference, trigger }) => {
-            const workspace = await createWorkspace();
-            const request = await workspace.requestCapability({
-                need: `${reference} resource`,
-                resourceClass: CapabilityResourceClass.PRIVATE_DATA,
-                reason: "The research branch is blocked on an operator-provided resource",
-                provisioningHint: "Provide an opaque resource handle"
-            });
-            await workspace.hibernateForPlateau("Waiting for a capability");
-
-            await expect(workspace.provideCapability(request.id, reference)).resolves.toBe(true);
-
-            expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
-            expect(
-                workspace
-                    .getEvents()
-                    .findLast(
-                        (event) =>
-                            event.type === EventType.LAB_STATE_CHANGED &&
-                            event.payload.state === LabState.RUNNING
-                    )?.payload
-            ).toMatchObject({ wake_trigger: trigger });
-        }
-    );
-
-    it("accepts safe dataset, keychain, and file resource handles", async () => {
-        const workspace = await createWorkspace();
-
-        for (const [kind, reference] of Object.entries(SafeCapabilityReference)) {
-            const request = await workspace.requestCapability({
-                need: `${kind} resource`,
-                resourceClass: CapabilityResourceClass.PRIVATE_DATA,
-                reason: "The research branch needs an operator-provided resource",
-                provisioningHint: "Provide only an opaque resource handle"
-            });
-
-            await expect(workspace.provideCapability(request.id, reference)).resolves.toBe(true);
-            expect(
-                workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
-                    ?.resource_reference
-            ).toBe(reference);
-        }
-
-        expect(
-            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_PROVIDED)
-        ).toHaveLength(Object.values(SafeCapabilityReference).length);
-    });
-
-    it("rejects raw credential payloads before persisting or emitting an event", async () => {
+    it("wakes a hibernating lab on the operator answer", async () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
-            need: "Restricted dataset access",
-            resourceClass: CapabilityResourceClass.CREDENTIAL,
-            reason: "The research branch needs licensed observations",
-            provisioningHint: "Provide a keychain or dataset handle"
+            need: "A licensed corpus",
+            reason: "The research branch is blocked on an operator-held resource",
+            provisioningHint: "Point the run at a local copy",
+            selfProvisioningAttempt: "Searched the public mirrors and found only redistributions",
+            blocking: true
         });
+        await workspace.hibernateForPlateau("Waiting for a capability");
 
-        for (const reference of Object.values(UnsafeCapabilityReference)) {
-            await expect(workspace.provideCapability(request.id, reference)).rejects.toThrow();
-        }
+        await expect(
+            workspace.answerCapability(request.id, "Mounted at /srv/corpora/licensed-v3")
+        ).resolves.toBe(true);
 
-        const unchangedRequest = workspace
-            .getSnapshot()
-            .capability_requests.find(({ id }) => id === request.id);
-        expect(unchangedRequest?.status).toBe(CapabilityStatus.OPEN);
-        expect(unchangedRequest).not.toHaveProperty("resource_reference");
-        expect(unchangedRequest).not.toHaveProperty("provided_at");
-        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
-            EventType.CAPABILITY_PROVIDED
-        );
-        const persistedState = JSON.stringify({
-            snapshot: workspace.getSnapshot(),
-            events: workspace.getEvents()
-        });
-        const persistedFiles = await Promise.all([
-            readFile(path.join(workspace.runDirectory, "status.json"), "utf8"),
-            readFile(path.join(workspace.runDirectory, "events.json"), "utf8")
-        ]);
-        for (const reference of Object.values(UnsafeCapabilityReference)) {
-            expect(persistedState).not.toContain(reference);
-            expect(persistedFiles).not.toContainEqual(expect.stringContaining(reference));
-        }
+        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(
+            workspace
+                .getEvents()
+                .findLast(
+                    (event) =>
+                        event.type === EventType.LAB_STATE_CHANGED &&
+                        event.payload.state === LabState.RUNNING
+                )?.payload
+        ).toMatchObject({ wake_trigger: WakeTrigger.CAPABILITY });
     });
 
-    it("rejects capability resources for requests that are not open", async () => {
+    it("keeps the first answer when the same request is answered twice", async () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "Restricted corpus",
-            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The experiment requires licensed inputs",
-            provisioningHint: "Provide a licensed local corpus"
-        });
-        await workspace.update((draft) => {
-            const obsolete = draft.capability_requests.find(({ id }) => id === request.id);
-            if (obsolete !== undefined) {
-                obsolete.status = CapabilityStatus.OBSOLETE;
-            }
+            provisioningHint: "Provide a licensed local corpus",
+            selfProvisioningAttempt: "Checked the open mirrors and none carry the licensed split",
+            blocking: true
         });
 
         await expect(
-            workspace.provideCapability(request.id, "dataset://restricted/v1")
+            workspace.answerCapability(request.id, "No, use the open split")
+        ).resolves.toBe(true);
+        await expect(
+            workspace.answerCapability(request.id, "No, use the open split")
+        ).resolves.toBe(true);
+        await expect(
+            workspace.answerCapability(request.id, "Changed my mind, here it is")
         ).resolves.toBe(false);
-        await expect(workspace.provideCapability(request.id, "   ")).rejects.toThrow(
-            "must not be empty"
-        );
+
+        expect(
+            workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)?.answer
+        ).toBe("No, use the open split");
+        expect(
+            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_ANSWERED)
+        ).toHaveLength(1);
+    });
+
+    it("refuses an empty answer", async () => {
+        const workspace = await createWorkspace();
+        const request = await workspace.requestCapability({
+            need: "Restricted corpus",
+            reason: "The experiment requires licensed inputs",
+            provisioningHint: "Provide a licensed local corpus",
+            selfProvisioningAttempt: "Checked the open mirrors and none carry the licensed split",
+            blocking: true
+        });
+
+        await expect(workspace.answerCapability(request.id, "   ")).rejects.toThrow();
+        expect(
+            workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)?.status
+        ).toBe(CapabilityStatus.OPEN);
     });
 
     it("writes a report before hibernating on a plateau", async () => {

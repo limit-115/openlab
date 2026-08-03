@@ -2,7 +2,6 @@ import { setTimeout as delay } from "node:timers/promises";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
-import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
@@ -93,10 +92,10 @@ export async function runResearchLoop(
             if (workspace.getSnapshot().capability_requests.length === 0) {
                 await workspace.requestCapability({
                     need: "A responsive Codex, Claude or GLM CLI with an active product subscription",
-                    resourceClass: CapabilityResourceClass.ACCOUNT,
                     reason,
                     provisioningHint:
-                        "Restore a local product-subscription CLI session and retry; API billing is forbidden"
+                        "Restore a local product-subscription CLI session and retry; API billing is forbidden",
+                    blocking: true
                 });
             }
             await blockForUnavailableHarnesses(workspace, reason);

@@ -2,7 +2,6 @@ import type { HarnessExecutionProfile } from "@lab/harness/agent-harness.const";
 import type { AgentHarness } from "@lab/harness/agent-harness.types";
 import type { HarnessCapabilityRequest } from "@lab/harness/harness-error";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
-import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import type { z } from "zod";
@@ -123,7 +122,8 @@ export async function runCriticStageWithFallback(input: {
             });
             const capabilityRequests = await persistAgentCapabilityRequests(
                 input.workspace,
-                run.value.capability_requests
+                run.value.capability_requests,
+                false
             );
             const target = requiredPlanTarget(
                 input.planTargets,
@@ -200,7 +200,8 @@ export async function runStageWithFallback<Output extends AgentCapabilityOutput>
             });
             const capabilityRequests = await persistAgentCapabilityRequests(
                 input.workspace,
-                run.value.capability_requests
+                run.value.capability_requests,
+                run.value.capability_blocked === true
             );
             return { ...run, harness, agentWorkspace, capabilityRequests };
         } catch (error) {
@@ -240,16 +241,18 @@ export async function runStageWithFallback<Output extends AgentCapabilityOutput>
 
 export async function persistAgentCapabilityRequests(
     workspace: LabWorkspace,
-    candidates: readonly CapabilityRequestCandidate[]
+    candidates: readonly CapabilityRequestCandidate[],
+    blocking: boolean
 ): Promise<CapabilityRequest[]> {
     const requests: CapabilityRequest[] = [];
     for (const candidate of candidates) {
         requests.push(
             await workspace.requestCapability({
                 need: candidate.need,
-                resourceClass: candidate.resource_class,
                 reason: candidate.reason,
-                provisioningHint: candidate.provisioning_hint
+                provisioningHint: candidate.provisioning_hint,
+                selfProvisioningAttempt: candidate.self_provisioning_attempt,
+                blocking
             })
         );
     }
@@ -257,8 +260,8 @@ export async function persistAgentCapabilityRequests(
 }
 
 /**
- * A harness that cannot reach its product subscription is blocked on an operator-held account,
- * never on software the daemon or its agents could install.
+ * A harness that cannot reach its product subscription genuinely stops the lab: no agent runs at
+ * all until the operator restores the session, so this is the one request the daemon raises itself.
  */
 export function requestSubscriptionCapability(
     workspace: LabWorkspace,
@@ -266,8 +269,8 @@ export function requestSubscriptionCapability(
 ): Promise<CapabilityRequest> {
     return workspace.requestCapability({
         need: request.need,
-        resourceClass: CapabilityResourceClass.ACCOUNT,
         reason: request.reason,
-        provisioningHint: request.provisioningHint
+        provisioningHint: request.provisioningHint,
+        blocking: true
     });
 }

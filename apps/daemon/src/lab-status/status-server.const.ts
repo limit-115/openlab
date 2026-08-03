@@ -1,3 +1,3 @@
 export const CapabilityResponseError = {
-    INVALID_RESOURCE_REFERENCE: "Invalid capability resource reference"
+    EMPTY_ANSWER: "A capability answer must not be empty"
 } as const;

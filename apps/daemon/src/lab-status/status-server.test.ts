@@ -1,21 +1,11 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import {
-    CapabilityResourceClass,
-    CapabilityStatus
-} from "@lab/protocol/capabilities/capability-request.const";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { describe, expect, it } from "vitest";
 import { createStatusServer } from "#src/lab-status/status-server";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
-
-const UnsafeCapabilityReference = {
-    OPENAI_KEY: "sk-proj-abcdefghijklmnopqrstuvwxyz012345",
-    BEARER_TOKEN: "Bearer abcdefghijklmnopqrstuvwxyz012345",
-    LONG_TOKEN: "a".repeat(96),
-    API_KEY_PLAINTEXT: "api-key: abcdefghijklmnopqrstuvwxyz"
-} as const;
 
 async function createTestServer() {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
@@ -43,33 +33,36 @@ describe("status server", () => {
         await server.close();
     });
 
-    it("handles idempotently provided capabilities", async () => {
+    it("handles a repeated answer idempotently and a changed one as a conflict", async () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-route-test-"));
         const taskPath = path.join(directory, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Resume with a capability" }));
         const workspace = await LabWorkspace.initialize(directory, taskPath);
         const request = await workspace.requestCapability({
             need: "Independent dataset",
-            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs independent observations",
-            provisioningHint: "Mount the dataset in the run workspace"
+            provisioningHint: "Mount the dataset in the run workspace",
+            selfProvisioningAttempt:
+                "Rebuilt it from public mirrors, which overlap the training set",
+            blocking: true
         });
         const server = createStatusServer(workspace);
+        const answer = "No. Report the overlap and carry the limitation instead.";
 
         const first = await server.inject({
             method: "POST",
-            url: `/api/capabilities/${request.id}/provide`,
-            payload: { resource_reference: "dataset://independent/v1" }
+            url: `/api/capabilities/${request.id}/answer`,
+            payload: { answer }
         });
         const retry = await server.inject({
             method: "POST",
-            url: `/api/capabilities/${request.id}/provide`,
-            payload: { resource_reference: "dataset://independent/v1" }
+            url: `/api/capabilities/${request.id}/answer`,
+            payload: { answer }
         });
         const conflict = await server.inject({
             method: "POST",
-            url: `/api/capabilities/${request.id}/provide`,
-            payload: { resource_reference: "dataset://independent/v2" }
+            url: `/api/capabilities/${request.id}/answer`,
+            payload: { answer: "Changed my mind, mounted at /srv/corpora/independent-v1" }
         });
 
         expect(first.statusCode).toBe(202);
@@ -77,53 +70,41 @@ describe("status server", () => {
         expect(conflict.statusCode).toBe(409);
         expect(
             workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
-        ).toMatchObject({
-            status: CapabilityStatus.PROVIDED,
-            resource_reference: "dataset://independent/v1"
-        });
+        ).toMatchObject({ status: CapabilityStatus.ANSWERED, answer });
         expect(
-            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_PROVIDED)
+            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_ANSWERED)
         ).toHaveLength(1);
         await server.close();
     });
 
-    it("returns 400 for credential payloads without persisting or publishing them", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-secret-route-test-"));
+    it("returns 400 for an empty answer without settling the request", async () => {
+        const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-empty-route-test-"));
         const taskPath = path.join(directory, "task.json");
-        await writeFile(taskPath, JSON.stringify({ goal: "Use an opaque capability handle" }));
+        await writeFile(taskPath, JSON.stringify({ goal: "Answer a capability request" }));
         const workspace = await LabWorkspace.initialize(directory, taskPath);
         const request = await workspace.requestCapability({
             need: "Licensed dataset",
-            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs licensed observations",
-            provisioningHint: "Provide a dataset or keychain reference"
+            provisioningHint: "Point the run at a local copy",
+            selfProvisioningAttempt: "Checked the open mirrors and none carry the licensed split",
+            blocking: true
         });
         const server = createStatusServer(workspace);
 
-        for (const reference of Object.values(UnsafeCapabilityReference)) {
-            const response = await server.inject({
-                method: "POST",
-                url: `/api/capabilities/${request.id}/provide`,
-                payload: { resource_reference: reference }
-            });
+        const response = await server.inject({
+            method: "POST",
+            url: `/api/capabilities/${request.id}/answer`,
+            payload: { answer: "   " }
+        });
 
-            expect(response.statusCode).toBe(400);
-            expect(response.json()).toEqual({ error: "Invalid capability resource reference" });
-        }
-
+        expect(response.statusCode).toBe(400);
+        expect(response.json()).toEqual({ error: "A capability answer must not be empty" });
         expect(
             workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
         ).toMatchObject({ status: CapabilityStatus.OPEN });
         expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
-            EventType.CAPABILITY_PROVIDED
+            EventType.CAPABILITY_ANSWERED
         );
-        const persistedState = JSON.stringify({
-            snapshot: workspace.getSnapshot(),
-            events: workspace.getEvents()
-        });
-        for (const reference of Object.values(UnsafeCapabilityReference)) {
-            expect(persistedState).not.toContain(reference);
-        }
         await server.close();
     });
 

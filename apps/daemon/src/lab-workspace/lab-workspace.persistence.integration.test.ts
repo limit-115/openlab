@@ -9,10 +9,7 @@ import { branches, labs, tasks } from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "@lab/db/runtime/runtime-revision-conflict";
-import {
-    CapabilityResourceClass,
-    CapabilityStatus
-} from "@lab/protocol/capabilities/capability-request.const";
+import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
@@ -248,11 +245,16 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
 
         const request = await recoveredMissingEvidence.requestCapability({
             need: "Independent dataset",
-            resourceClass: CapabilityResourceClass.PRIVATE_DATA,
             reason: "The verifier needs independent observations",
-            provisioningHint: "Mount the dataset in the run workspace"
+            provisioningHint: "Mount the dataset in the run workspace",
+            selfProvisioningAttempt:
+                "Rebuilt it from public mirrors, which overlap the training set",
+            blocking: true
         });
-        await recoveredMissingEvidence.provideCapability(request.id, "dataset://independent/v1");
+        await recoveredMissingEvidence.answerCapability(
+            request.id,
+            "Mounted at /srv/corpora/independent-v1"
+        );
         await writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt");
 
         const recoveredCapabilityWorkspace = await LabWorkspace.openOrCreate(
@@ -264,10 +266,10 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             .getSnapshot()
             .capability_requests.find(({ id }) => id === request.id);
         expect(capability).toMatchObject({
-            status: CapabilityStatus.PROVIDED,
-            resource_reference: "dataset://independent/v1"
+            status: CapabilityStatus.ANSWERED,
+            answer: "Mounted at /srv/corpora/independent-v1"
         });
-        expect(capability?.provided_at).toBeDefined();
+        expect(capability?.answered_at).toBeDefined();
         expect(recoveredCapabilityWorkspace.getSnapshot().frontier.blockers).not.toContain(
             request.need
         );
@@ -276,9 +278,9 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
                 where: (capability, { eq }) => eq(capability.id, request.id)
             })
         ).toMatchObject({
-            status: CapabilityStatus.PROVIDED,
-            resourceReference: "dataset://independent/v1",
-            providedAt: new Date(capability?.provided_at ?? "")
+            status: CapabilityStatus.ANSWERED,
+            answer: "Mounted at /srv/corpora/independent-v1",
+            answeredAt: new Date(capability?.answered_at ?? "")
         });
     });
 

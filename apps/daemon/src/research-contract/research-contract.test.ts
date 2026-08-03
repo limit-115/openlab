@@ -1,5 +1,4 @@
 import { responseJsonSchema } from "@lab/harness/response-schema";
-import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
 import { describe, expect, it } from "vitest";
 import {
@@ -189,9 +188,10 @@ describe("research structured-output contracts", () => {
                 capability_requests: [
                     {
                         need: "Held-out benchmark dataset",
-                        resource_class: CapabilityResourceClass.PRIVATE_DATA,
                         reason: "The measurement requires the held-out corpus",
-                        provisioning_hint: "Attach a read-only dataset snapshot"
+                        provisioning_hint: "Attach a read-only dataset snapshot",
+                        self_provisioning_attempt:
+                            "Sampled the public corpus, which overlaps training"
                     }
                 ],
                 capability_blocked: true
@@ -225,9 +225,9 @@ describe("research structured-output contracts", () => {
             capability_requests: [
                 {
                     need: "Held-out benchmark dataset",
-                    resource_class: CapabilityResourceClass.PRIVATE_DATA,
                     reason: "Independent reproduction requires disjoint inputs",
-                    provisioning_hint: "Attach a read-only dataset snapshot"
+                    provisioning_hint: "Attach a read-only dataset snapshot",
+                    self_provisioning_attempt: "Sampled the public corpus, which overlaps training"
                 }
             ],
             capability_blocked: true

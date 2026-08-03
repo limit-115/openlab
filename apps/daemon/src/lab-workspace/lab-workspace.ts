@@ -13,14 +13,12 @@ import type {
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
+import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
 import {
     CapabilityRequestType,
-    type CapabilityResourceClass,
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import { CapabilityResourceScheme } from "@lab/protocol/capabilities/capability-resource-reference.const";
-import { CapabilityResourceReferenceSchema } from "@lab/protocol/capabilities/capability-resource-reference.schema";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import { EvidenceSchema } from "@lab/protocol/evidence/evidence.schema";
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
@@ -614,35 +612,36 @@ export class LabWorkspace {
         return mutation.event;
     }
 
-    async provideCapability(id: string, resourceReference: string): Promise<boolean> {
-        const normalizedResourceReference =
-            CapabilityResourceReferenceSchema.parse(resourceReference);
+    /**
+     * Settles a request with whatever the operator typed. A refusal settles it exactly as a handed
+     * over credential does: the agent is owed an answer, not a resource, and prose it can read beats
+     * a request that stays open because the honest reply had nowhere to go.
+     */
+    async answerCapability(id: string, answer: string): Promise<boolean> {
+        const normalizedAnswer = AnswerCapabilitySchema.parse({ answer }).answer;
         let accepted = false;
         let shouldWake = false;
         await this.mutateWithEvent(
-            EventType.CAPABILITY_PROVIDED,
+            EventType.CAPABILITY_ANSWERED,
             {
                 request_id: id,
-                resource_reference: normalizedResourceReference
+                answer: normalizedAnswer
             },
             (draft, event) => {
                 const request = draft.capability_requests.find((candidate) => candidate.id === id);
                 if (request === undefined) {
                     return WorkspaceMutationAction.SKIP;
                 }
-                if (request.status === CapabilityStatus.PROVIDED) {
-                    accepted = request.resource_reference === normalizedResourceReference;
-                    return WorkspaceMutationAction.SKIP;
-                }
-                if (request.status !== CapabilityStatus.OPEN) {
+                if (request.status === CapabilityStatus.ANSWERED) {
+                    accepted = request.answer === normalizedAnswer;
                     return WorkspaceMutationAction.SKIP;
                 }
 
                 accepted = true;
                 shouldWake = draft.lab.state === LabState.HIBERNATING;
-                request.status = CapabilityStatus.PROVIDED;
-                request.resource_reference = normalizedResourceReference;
-                request.provided_at = event.occurred_at;
+                request.status = CapabilityStatus.ANSWERED;
+                request.answer = normalizedAnswer;
+                request.answered_at = event.occurred_at;
                 draft.frontier.blockers = draft.frontier.blockers.filter(
                     (blocker) => blocker !== request.need
                 );
@@ -650,11 +649,7 @@ export class LabWorkspace {
             }
         );
         if (shouldWake) {
-            const wakeTrigger =
-                new URL(normalizedResourceReference).protocol === CapabilityResourceScheme.TOOLCHAIN
-                    ? WakeTrigger.TOOL
-                    : WakeTrigger.CAPABILITY;
-            await this.wakeIfHibernating(`Capability ${id} provided`, wakeTrigger);
+            await this.wakeIfHibernating(`Capability ${id} answered`, WakeTrigger.CAPABILITY);
         }
         return accepted;
     }
@@ -675,19 +670,28 @@ export class LabWorkspace {
         );
     }
 
+    /**
+     * Only a request the agent declared it cannot work around becomes a frontier blocker. An ask
+     * raised alongside work that continues is visible to the operator without standing in as a
+     * reason the lab is stuck.
+     */
     async requestCapability(input: {
         need: string;
-        resourceClass: CapabilityResourceClass;
         reason: string;
         provisioningHint: string;
+        selfProvisioningAttempt?: string;
+        blocking: boolean;
     }): Promise<CapabilityRequest> {
         const request: CapabilityRequest = {
             id: `capability-${randomUUID()}`,
             type: CapabilityRequestType.CAPABILITY_REQUEST,
             need: input.need,
-            resource_class: input.resourceClass,
             reason: input.reason,
             provisioning_hint: input.provisioningHint,
+            ...(input.selfProvisioningAttempt === undefined
+                ? {}
+                : { self_provisioning_attempt: input.selfProvisioningAttempt }),
+            blocking: input.blocking,
             status: CapabilityStatus.OPEN,
             created_at: new Date().toISOString()
         };
@@ -709,7 +713,7 @@ export class LabWorkspace {
                     return WorkspaceMutationAction.SKIP;
                 }
                 draft.capability_requests.push(request);
-                if (!draft.frontier.blockers.includes(request.need)) {
+                if (request.blocking && !draft.frontier.blockers.includes(request.need)) {
                     draft.frontier.blockers.push(request.need);
                 }
                 return WorkspaceMutationAction.COMMIT;
