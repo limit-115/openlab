@@ -176,7 +176,7 @@ program
 
 program
     .command("wake")
-    .description("wake a hibernating lab")
+    .description("put a hibernating, breakthrough or stopped lab back to work")
     .action(async (_options, command: Command) => {
         const status: StatusSnapshot = await client(command).wake();
         consola.success(`Lab is ${status.lab.state}`);
