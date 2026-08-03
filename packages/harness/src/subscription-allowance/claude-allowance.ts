@@ -71,14 +71,24 @@ export async function readClaudeAllowance(signal?: AbortSignal): Promise<Subscri
         signal: allowanceDeadline(signal)
     });
     if (!response.ok) {
-        throw new Error(
-            response.status === 401
-                ? "Claude rejected the stored OAuth login; sign in with the Claude CLI again"
-                : `Claude did not report subscription usage (HTTP ${response.status})`
-        );
+        throw new Error(claudeUsageRefusal(response.status));
     }
 
     return claudeAllowanceFromUsage(await response.json(), credentials.plan);
+}
+
+/**
+ * Anthropic throttles the usage endpoint itself, so a refusal to answer is not a refusal to serve.
+ * Saying which one happened keeps an operator from reading a throttled poll as a lost login.
+ */
+function claudeUsageRefusal(status: number): string {
+    if (status === 401) {
+        return "Claude rejected the stored OAuth login; sign in with the Claude CLI again";
+    }
+    if (status === 429) {
+        return "Claude is rate-limiting the usage endpoint, not the subscription";
+    }
+    return `Claude did not report subscription usage (HTTP ${status})`;
 }
 
 async function readClaudeCredentials(signal?: AbortSignal): Promise<ClaudeCredentials> {

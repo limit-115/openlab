@@ -56,14 +56,23 @@ export class SubscriptionAllowanceReadings {
         return Promise.all(ALL_HARNESS_KINDS.map((kind) => this.read(kind, signal)));
     }
 
+    /**
+     * A vendor that refuses one reading has not given the allowance back. Anthropic throttles the
+     * usage endpoint itself, and forgetting a spent plan on a throttled poll would send the next run
+     * straight into it, so the last answer stands and only its interval restarts.
+     */
     async #ask(kind: HarnessKind, signal?: AbortSignal): Promise<SubscriptionAllowance> {
         const at = this.#now();
-        const readAt = new Date(at).toISOString();
         let allowance: SubscriptionAllowance;
         try {
-            allowance = allowanceFromReading(await this.#read(kind, signal), readAt);
+            allowance = allowanceFromReading(
+                await this.#read(kind, signal),
+                new Date(at).toISOString()
+            );
         } catch (error) {
-            allowance = unreadableAllowance(kind, error, readAt);
+            allowance =
+                this.#cached.get(kind)?.allowance ??
+                unreadableAllowance(kind, error, new Date(at).toISOString());
         }
 
         this.#cached.set(kind, { allowance, at });

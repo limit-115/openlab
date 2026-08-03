@@ -99,6 +99,54 @@ describe("SubscriptionAllowanceReadings", () => {
         expect(first).toBe(second);
     });
 
+    it("stands by the last answer when a vendor throttles the next reading", async () => {
+        let asked = 0;
+        let clock = 0;
+        const readings = new SubscriptionAllowanceReadings({
+            read: async () => {
+                asked += 1;
+                if (asked > 1) {
+                    throw new Error("Claude is rate-limiting the usage endpoint");
+                }
+                return reading([{ durationMinutes: 10_080, usedPercent: 100, resetsAt: null }]);
+            },
+            ttlMs: TTL_MILLISECONDS,
+            now: () => clock
+        });
+
+        const first = await readings.read(HarnessKinds.CLAUDE);
+        clock = TTL_MILLISECONDS;
+        const throttled = await readings.read(HarnessKinds.CLAUDE);
+
+        expect(asked).toBe(2);
+        expect(throttled.state).toBe(SubscriptionAllowanceState.EXHAUSTED);
+        expect(throttled.read_at).toBe(first.read_at);
+    });
+
+    it("waits out the interval again after a refused reading rather than retrying at once", async () => {
+        let asked = 0;
+        let clock = 0;
+        const readings = new SubscriptionAllowanceReadings({
+            read: async () => {
+                asked += 1;
+                if (asked > 1) {
+                    throw new Error("Claude is rate-limiting the usage endpoint");
+                }
+                return reading([{ durationMinutes: 10_080, usedPercent: 100, resetsAt: null }]);
+            },
+            ttlMs: TTL_MILLISECONDS,
+            now: () => clock
+        });
+
+        await readings.read(HarnessKinds.CLAUDE);
+        clock = TTL_MILLISECONDS;
+        await readings.read(HarnessKinds.CLAUDE);
+        clock = TTL_MILLISECONDS + 1;
+        await readings.read(HarnessKinds.CLAUDE);
+
+        expect(asked).toBe(2);
+    });
+
     it("reads every subscription the lab can run on, not only the ones that answered", async () => {
         const readings = new SubscriptionAllowanceReadings({
             read: async (kind) => {
