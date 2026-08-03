@@ -20,6 +20,12 @@ export default defineConfig({
                     name: "integration",
                     include: ["**/*.integration.test.ts"],
                     globalSetup: [integrationGlobalSetup],
+                    /**
+                     * Every integration file shares one PostgreSQL instance, and purging a run
+                     * deletes lab rows wholesale. Run the files one at a time so one suite's
+                     * cleanup cannot delete the lab another suite is still working on.
+                     */
+                    fileParallelism: false,
                     hookTimeout: 120_000,
                     testTimeout: 30_000
                 }
