@@ -50,6 +50,7 @@ import {
     writeCurrentPointer
 } from "#src/lab-workspace/lab-run-pointer";
 import {
+    WorkspaceLayout,
     WorkspaceMutationAction,
     WorkspaceRecoveryLimit
 } from "#src/lab-workspace/lab-workspace.const";
@@ -153,7 +154,7 @@ export class LabWorkspace {
         const task = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
         const labId = `lab-${randomUUID()}`;
         const initialIds = initialResearchIdentifiers(labId);
-        const runDirectory = path.join(workspaceRoot, "runs", labId);
+        const runDirectory = path.join(workspaceRoot, WorkspaceLayout.RUNS_DIRECTORY, labId);
         const now = new Date().toISOString();
         const snapshot = StatusSnapshotSchema.parse({
             lab: {

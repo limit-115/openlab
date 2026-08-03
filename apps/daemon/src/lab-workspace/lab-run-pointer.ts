@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import writeFileAtomic from "write-file-atomic";
+import { WorkspaceLayout } from "#src/lab-workspace/lab-workspace.const";
 
 export const CurrentPointerStatus = {
     VALID: "valid",
@@ -20,7 +21,10 @@ export type CurrentPointerResult =
 
 export async function readCurrentPointer(workspaceRoot: string): Promise<CurrentPointerResult> {
     try {
-        const source = await readFile(path.join(workspaceRoot, "current.json"), "utf8");
+        const source = await readFile(
+            path.join(workspaceRoot, WorkspaceLayout.CURRENT_POINTER_FILE),
+            "utf8"
+        );
         const value: unknown = JSON.parse(source);
         if (
             typeof value !== "object" ||
@@ -49,7 +53,7 @@ export async function readCurrentPointer(workspaceRoot: string): Promise<Current
 
 export function writeCurrentPointer(workspaceRoot: string, pointer: CurrentPointer): Promise<void> {
     return writeFileAtomic(
-        path.join(workspaceRoot, "current.json"),
+        path.join(workspaceRoot, WorkspaceLayout.CURRENT_POINTER_FILE),
         `${JSON.stringify(pointer, null, 4)}\n`
     );
 }

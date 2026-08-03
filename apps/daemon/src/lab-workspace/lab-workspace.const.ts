@@ -1,3 +1,8 @@
+export const WorkspaceLayout = {
+    RUNS_DIRECTORY: "runs",
+    CURRENT_POINTER_FILE: "current.json"
+} as const;
+
 export const WorkspaceMutationAction = {
     COMMIT: "commit",
     SKIP: "skip"
