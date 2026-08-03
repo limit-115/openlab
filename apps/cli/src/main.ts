@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { access } from "node:fs/promises";
 import { resolve } from "node:path";
-import { cancel, intro, isCancel, outro, text } from "@clack/prompts";
+import { cancel, confirm, intro, isCancel, isTTY, note, outro, select, text } from "@clack/prompts";
+import { planPurge, purgeRuns } from "@lab/daemon/run-purge/run-purge";
+import { PurgeScope } from "@lab/daemon/run-purge/run-purge.const";
 import { startDaemon } from "@lab/daemon/server";
 import type { HarnessKind } from "@lab/harness/agent-harness.const";
 import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
@@ -11,6 +13,7 @@ import { LabApiClient, LabApiError } from "#src/api-client";
 import { resolveCliConfig } from "#src/config";
 import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
 import { renderCapabilities, renderFrontier, renderStatus } from "#src/render";
+import { resolvePurgeConfig } from "#src/run-purge/purge-config";
 
 interface GlobalOptions {
     apiUrl: string;
@@ -56,6 +59,19 @@ function print(value: unknown, json: boolean | undefined, renderer?: () => strin
 
 function client(command: Command): LabApiClient {
     return new LabApiClient(globals(command).apiUrl);
+}
+
+/**
+ * Anything that answers on the daemon URL still owns the run directories, so a purge would delete
+ * state out from under it. Only an unreachable daemon clears the way.
+ */
+async function daemonIsAnswering(command: Command): Promise<boolean> {
+    try {
+        await client(command).status();
+        return true;
+    } catch (error) {
+        return !(error instanceof LabApiError && error.status === 0);
+    }
 }
 
 const program = new Command()
@@ -180,6 +196,89 @@ program
     .action(async (_options, command: Command) => {
         const exported = await client(command).exportRun();
         print(exported, globals(command).json, () => exported.run_directory);
+    });
+
+program
+    .command("purge")
+    .description("delete run history from disk and the database")
+    .action(async (_options, command: Command) => {
+        if (!isTTY(process.stdout)) {
+            consola.error("purge asks before deleting and needs an interactive terminal");
+            process.exitCode = 1;
+            return;
+        }
+        if (await daemonIsAnswering(command)) {
+            consola.error(
+                `A lab daemon is answering at ${globals(command).apiUrl}. Run "lab stop" first.`
+            );
+            process.exitCode = 1;
+            return;
+        }
+        let config: ReturnType<typeof resolvePurgeConfig>;
+        try {
+            config = resolvePurgeConfig();
+        } catch {
+            consola.error("purge needs DATABASE_URL to reach the lab database");
+            process.exitCode = 1;
+            return;
+        }
+
+        intro("Purge run history");
+        const plan = await planPurge(config);
+        if (plan.labIds.length === 0) {
+            outro("No run history to purge");
+            return;
+        }
+
+        const scope =
+            plan.currentLabId === undefined
+                ? PurgeScope.ALL
+                : await select({
+                      message: "What should be purged?",
+                      initialValue: PurgeScope.EXCEPT_CURRENT,
+                      options: [
+                          {
+                              value: PurgeScope.EXCEPT_CURRENT,
+                              label: "All runs except the current one",
+                              hint: `keeps ${plan.currentLabId}`
+                          },
+                          {
+                              value: PurgeScope.ALL,
+                              label: "All runs",
+                              hint: "including the current one"
+                          }
+                      ]
+                  });
+        if (isCancel(scope)) {
+            cancel("Purge cancelled");
+            process.exitCode = 1;
+            return;
+        }
+
+        const doomed =
+            scope === PurgeScope.ALL
+                ? plan.labIds
+                : plan.labIds.filter((labId) => labId !== plan.currentLabId);
+        if (doomed.length === 0) {
+            outro("Nothing to purge besides the current run");
+            return;
+        }
+        note(doomed.join("\n"), `Deleting ${doomed.length} run(s) from disk and the database`);
+
+        const confirmed = await confirm({
+            message: "This cannot be undone. Continue?",
+            initialValue: false
+        });
+        if (isCancel(confirmed) || !confirmed) {
+            cancel("Purge cancelled");
+            process.exitCode = 1;
+            return;
+        }
+
+        const result = await purgeRuns({ ...config, scope });
+        outro(
+            `Purged ${result.purgedDirectoryCount} run director${result.purgedDirectoryCount === 1 ? "y" : "ies"} and ${result.purgedLabRowCount} lab row(s)`
+        );
     });
 
 try {
