@@ -18,6 +18,7 @@
         "./agents/agent-status.const": "./src/agents/agent-status.const.ts",
         "./agents/agent-summary.schema": "./src/agents/agent-summary.schema.ts",
         "./agents/agent-summary.types": "./src/agents/agent-summary.types.ts",
+        "./branches/branch-progress.const": "./src/branches/branch-progress.const.ts",
         "./branches/branch-status.const": "./src/branches/branch-status.const.ts",
         "./branches/branch-summary.schema": "./src/branches/branch-summary.schema.ts",
         "./branches/branch-summary.types": "./src/branches/branch-summary.types.ts",

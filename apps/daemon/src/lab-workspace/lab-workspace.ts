@@ -12,6 +12,7 @@ import type {
 } from "@lab/db/runtime/runtime-persistence.types";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchProgress } from "@lab/protocol/branches/branch-progress.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
 import {
@@ -181,7 +182,7 @@ export class LabWorkspace {
                     title: "Goal operationalization",
                     approach: "Clarify claims, evaluators, and independent research directions",
                     status: BranchStatus.ACTIVE,
-                    progress: "Queued"
+                    progress: BranchProgress.QUEUED
                 }
             ],
             agents: [

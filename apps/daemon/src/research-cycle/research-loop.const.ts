@@ -7,14 +7,6 @@ export const ResearchLoopOutcomeStatus = {
 export type ResearchLoopOutcomeStatus =
     (typeof ResearchLoopOutcomeStatus)[keyof typeof ResearchLoopOutcomeStatus];
 
-export const BranchProgress = {
-    RUNNING: "Running",
-    FINISHED: "Finished",
-    FAILED: "Failed",
-    CANCELLED: "Cancelled",
-    CAPABILITY_BLOCKED: "Blocked on a required capability"
-} as const;
-
 export const PromiseSettlement = {
     FULFILLED: "fulfilled",
     REJECTED: "rejected"

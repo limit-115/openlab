@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchProgress } from "@lab/protocol/branches/branch-progress.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
@@ -8,7 +9,6 @@ import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-statu
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { requiredById } from "#src/lab-workspace/snapshot-entities";
 import { initialResearchIdentifiers } from "#src/research-cycle/research-identifiers";
-import { BranchProgress } from "#src/research-cycle/research-loop.const";
 import type { RoleIdentifiers } from "#src/research-cycle/research-loop.types";
 import { ResearchStage } from "#src/research-cycle/research-stage-workspace.const";
 import { uniqueStrings } from "#src/research-cycle/unique-strings";

@@ -4,6 +4,7 @@ import type { AgentHarness, HarnessRunResult } from "@lab/harness/agent-harness.
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
+import { BranchProgress } from "@lab/protocol/branches/branch-progress.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
@@ -19,7 +20,6 @@ import {
 } from "#src/research-contract/research-contract";
 import { RESEARCH_TARGET_KIND } from "#src/research-contract/research-contract.const";
 import { freezeResearchEvaluators } from "#src/research-cycle/evaluator-precommit";
-import { BranchProgress } from "#src/research-cycle/research-loop.const";
 import type {
     ResearchBranchInput,
     ResearchBranchResult,
