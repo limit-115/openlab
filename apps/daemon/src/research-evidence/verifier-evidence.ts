@@ -8,14 +8,14 @@ import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
 import type { Evidence } from "@lab/protocol/evidence/evidence.types";
 import { EvidenceKind } from "@lab/protocol/evidence/evidence-kind.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { assertArtifactsUnchanged } from "#src/artifact-integrity/agent-artifact-snapshot";
+import type { AgentArtifactSnapshot } from "#src/artifact-integrity/agent-artifact-snapshot.types";
 import type { ValidatedArtifact } from "#src/artifact-integrity/file-artifact";
 import {
     assertEvaluatorRejectsNegativeControl,
     executeAttestedEvaluator
 } from "#src/daemon-execution/evaluator-attestation";
 import { ExperimentEvaluator } from "#src/daemon-execution/experiment-record.const";
-import { assertArtifactsUnchanged } from "#src/daemon-execution/outcome-execution";
-import type { OutcomeExecution } from "#src/daemon-execution/outcome-execution.types";
 import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { replaceById } from "#src/lab-workspace/snapshot-entities";
@@ -35,22 +35,25 @@ import type { RoleIdentifiers } from "#src/research-cycle/research-loop.types";
 import type { ResearchWorkspace } from "#src/research-cycle/research-stage-workspace.types";
 import { uniqueStrings } from "#src/research-cycle/unique-strings";
 import { markDependentClaimsStale } from "#src/research-evidence/claim-progression";
-import type { PlanTarget } from "#src/research-evidence/research-evidence.types";
+import type {
+    AgentRunAttestation,
+    PlanTarget
+} from "#src/research-evidence/research-evidence.types";
 
 export async function recordVerifierEvidence(
     workspace: LabWorkspace,
     verdict: VerifierResult,
-    outcomeExecution: OutcomeExecution,
+    snapshot: AgentArtifactSnapshot,
+    attestation: AgentRunAttestation,
     verifierWorkspace: ResearchWorkspace,
     verifierIds: RoleIdentifiers,
     planTargets: readonly PlanTarget[],
     criticism: CriticResult,
     verificationEvaluator: FrozenEvaluator,
-    evaluatorWorkspace: ResearchWorkspace,
     researcherArtifactSha256s: readonly string[],
     signal?: AbortSignal
 ): Promise<{ accepted: boolean; completed: boolean; issues: string[] }> {
-    const issues: string[] = [];
+    const issues: string[] = [...snapshot.issues];
     const planClaim = planTargets.find(
         ({ kind, planIndex }) =>
             kind === RESEARCH_TARGET_KIND.CLAIM && planIndex === verdict.claim_index
@@ -74,12 +77,10 @@ export async function recordVerifierEvidence(
         };
     }
     const material: AssessedEvidence[] = [];
-    await assertArtifactsUnchanged(verifierWorkspace, outcomeExecution.artifacts);
+    await assertArtifactsUnchanged(snapshot.artifacts);
     const validatedArtifacts: ValidatedArtifact[] = [];
-    for (const artifact of outcomeExecution.artifacts) {
-        if (artifact.bytes === 0) {
-            issues.push(`Rejected empty verifier artifact ${artifact.path}`);
-        } else if (researcherArtifactSha256s.includes(artifact.sha256)) {
+    for (const artifact of snapshot.artifacts) {
+        if (researcherArtifactSha256s.includes(artifact.sha256)) {
             issues.push(
                 `Rejected verifier artifact copied from a research branch: ${artifact.path}`
             );
@@ -94,7 +95,6 @@ export async function recordVerifierEvidence(
             const evaluation = await executeAttestedEvaluator(
                 workspace,
                 verifierIds,
-                evaluatorWorkspace,
                 verifierWorkspace,
                 planClaim.claim,
                 ExperimentEvaluator.INDEPENDENT_VERIFIER,
@@ -118,7 +118,6 @@ export async function recordVerifierEvidence(
                 await assertEvaluatorRejectsNegativeControl(
                     workspace,
                     verifierIds,
-                    evaluatorWorkspace,
                     verifierWorkspace,
                     planClaim.claim,
                     verificationEvaluator,
@@ -131,9 +130,9 @@ export async function recordVerifierEvidence(
                 id: `evidence-${randomUUID()}`,
                 kind: EvidenceKind.VERIFIER_RESULT,
                 claim_id: planClaim.claim.id,
-                run_id: outcomeExecution.experimentId,
-                artifact_path: outcomeExecution.result.manifest.path,
-                artifact_hash: outcomeExecution.result.manifest.sha256,
+                run_id: attestation.runId,
+                artifact_path: attestation.manifestPath,
+                artifact_hash: attestation.manifestSha256,
                 summary: evaluation.verdict.summary,
                 supports,
                 independent: true,
@@ -154,7 +153,7 @@ export async function recordVerifierEvidence(
                 origin: EvidenceOrigin.VERIFIER,
                 sourceBranchId: verifierIds.branchId,
                 valid: true,
-                complete: outcomeExecution.result.manifest.bytes > 0,
+                complete: attestation.manifestBytes > 0,
                 reproducible: true
             });
             for (const artifact of validatedArtifacts) {
@@ -162,7 +161,7 @@ export async function recordVerifierEvidence(
                     id: `evidence-${randomUUID()}`,
                     kind: EvidenceKind.ARTIFACT,
                     claim_id: planClaim.claim.id,
-                    run_id: outcomeExecution.experimentId,
+                    run_id: attestation.runId,
                     artifact_path: artifact.path,
                     artifact_hash: artifact.sha256,
                     summary: evaluation.verdict.summary,

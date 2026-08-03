@@ -32,6 +32,7 @@ export async function freezeResearchEvaluators(
         seenTargets.add(targetKey);
         const evaluator = await freezeEvaluator(
             agentWorkspace.cwd,
+            workspace.runDirectory,
             candidate,
             evaluatorTarget(target)
         );

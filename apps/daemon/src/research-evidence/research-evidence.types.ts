@@ -15,3 +15,14 @@ export interface MaterialEvidence {
     readonly claimId: string;
     readonly outcome: ResearchResult["outcome"];
 }
+
+/**
+ * What the daemon can say about the autonomous run that produced an artifact: which run it belongs
+ * to, and the harness manifest recording every command the agent issued while producing it.
+ */
+export interface AgentRunAttestation {
+    readonly runId: string;
+    readonly manifestPath: string;
+    readonly manifestSha256: string;
+    readonly manifestBytes: number;
+}

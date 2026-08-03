@@ -1,5 +1,4 @@
 import { setTimeout as delay } from "node:timers/promises";
-import { HarnessExecutionProfiles } from "@lab/harness/agent-harness.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AgentStatus } from "@lab/protocol/agents/agent-status.const";
 import { BranchStatus } from "@lab/protocol/branches/branch-status.const";
@@ -7,7 +6,7 @@ import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-r
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
-import { executeResearchOutcome } from "#src/daemon-execution/outcome-execution";
+import { snapshotAgentArtifacts } from "#src/artifact-integrity/agent-artifact-snapshot";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { directorPlanSchema, VerifierResultSchema } from "#src/research-contract/research-contract";
 import { createHarnesses } from "#src/research-cycle/harness-roster";
@@ -327,7 +326,6 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         createAgentWorkspace,
         prompt: verifierPrompt(task, plan, successfulResults, criticism),
         schema: VerifierResultSchema,
-        executionProfile: HarnessExecutionProfiles.READ_ONLY,
         ...(signal === undefined ? {} : { signal })
     });
     if (verifierRun.value.capability_blocked) {
@@ -343,29 +341,28 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         );
         return { completed: false, nextExperiments: [], progress };
     }
-    const verifierExecutionPlan = verifierRun.value.execution_plan;
-    if (verifierExecutionPlan === undefined) {
-        throw new Error("Unblocked verifier unexpectedly has no daemon execution plan");
-    }
     let verification: Awaited<ReturnType<typeof recordVerifierEvidence>>;
     try {
-        const verifierOutcome = await executeResearchOutcome(
-            workspace,
-            verifierIds,
-            verifierRun.agentWorkspace,
-            verifierExecutionPlan,
-            signal
+        const verifierSnapshot = await snapshotAgentArtifacts(
+            workspace.runDirectory,
+            verifierRun.agentWorkspace.cwd,
+            verifierRun.value.evidence_artifact_paths
         );
         verification = await recordVerifierEvidence(
             workspace,
             verifierRun.value,
-            verifierOutcome,
+            verifierSnapshot,
+            {
+                runId: verifierIds.taskId,
+                manifestPath: verifierRun.result.artifacts.manifest.path,
+                manifestSha256: verifierRun.result.artifacts.manifest.sha256,
+                manifestBytes: verifierRun.result.artifacts.manifest.bytes
+            },
             verifierRun.agentWorkspace,
             verifierIds,
             planTargets,
             criticism,
             verificationEvaluator,
-            criticRun.agentWorkspace,
             researcherArtifactSha256s,
             signal
         );

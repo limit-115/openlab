@@ -1,6 +1,5 @@
 import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
-import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
 import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
 import { z } from "zod";
 import { evaluateDormantCapabilityDirection } from "#src/research-contract/director-direction-policy";
@@ -151,7 +150,7 @@ const ResearchEvidenceSchema = z.object({
     target_kind: z.enum(RESEARCH_TARGET_KIND),
     target_index: z.int().nonnegative(),
     summary: z.string().min(1),
-    artifact_paths: z.array(z.string()).max(0),
+    artifact_paths: z.array(z.string().trim().min(1)).min(1),
     contradicts_hypothesis: z.boolean()
 });
 
@@ -163,28 +162,6 @@ const ResearchSourceCandidateSchema = z.object({
     claimed_classification: z.enum(SourceClassification)
 });
 
-const ResearchExecutionPlanSchema = z
-    .object({
-        file: z.string().trim().min(1),
-        args: z.array(z.string()).default([]),
-        declared_output_paths: z.array(z.string().trim().min(1)).min(1),
-        timeout_ms: z.int().positive().max(3_600_000).default(300_000),
-        external_effect: z.enum(ExternalEffect).default(ExternalEffect.NONE),
-        reconciliation_key: z.string().trim().min(1).optional()
-    })
-    .superRefine((plan, context) => {
-        if (
-            plan.external_effect === ExternalEffect.IRREVERSIBLE &&
-            plan.reconciliation_key === undefined
-        ) {
-            context.addIssue({
-                code: "custom",
-                path: ["reconciliation_key"],
-                message: "An irreversible execution requires a stable reconciliation key"
-            });
-        }
-    });
-
 export const ResearchResultSchema = z
     .object({
         summary: z.string().min(1),
@@ -192,7 +169,6 @@ export const ResearchResultSchema = z
         outcome: z.enum(RESEARCH_OUTCOME),
         evidence: z.array(ResearchEvidenceSchema),
         sources: z.array(ResearchSourceCandidateSchema).default([]),
-        execution_plan: ResearchExecutionPlanSchema.optional(),
         limitations: z.array(z.string()),
         next_experiments: z.array(z.string()),
         capability_requests: CapabilityRequestCandidatesSchema,
@@ -206,41 +182,26 @@ export const ResearchResultSchema = z
                 message: "A resource-blocked result must include a concrete capability request"
             });
         }
+        if (result.capability_blocked && result.evidence.length > 0) {
+            context.addIssue({
+                code: "custom",
+                path: ["evidence"],
+                message: "A resource-blocked result cannot also report material evidence"
+            });
+        }
         if (
             !result.capability_blocked &&
-            result.execution_plan === undefined &&
+            result.evidence.length === 0 &&
             result.sources.length === 0
         ) {
             context.addIssue({
                 code: "custom",
-                path: ["execution_plan"],
-                message: "A result requires a daemon execution plan or a source candidate"
-            });
-        }
-        if (result.execution_plan !== undefined && result.evidence.length === 0) {
-            context.addIssue({
-                code: "custom",
                 path: ["evidence"],
-                message: "A daemon execution plan requires at least one evidence target"
-            });
-        }
-        if (result.execution_plan === undefined && result.evidence.length > 0) {
-            context.addIssue({
-                code: "custom",
-                path: ["execution_plan"],
-                message: "An empirical evidence target requires a daemon execution plan"
-            });
-        }
-        if (result.capability_blocked && result.execution_plan !== undefined) {
-            context.addIssue({
-                code: "custom",
-                path: ["execution_plan"],
-                message: "A blocked result cannot request outcome execution"
+                message: "A result requires a material artifact or a source candidate"
             });
         }
         if (
-            !result.capability_blocked &&
-            result.execution_plan === undefined &&
+            result.evidence.length === 0 &&
             result.sources.length > 0 &&
             result.outcome !== RESEARCH_OUTCOME.INCONCLUSIVE
         ) {
@@ -268,8 +229,7 @@ export const VerifierResultSchema = z
         verdict: z.enum(VERIFIER_VERDICT),
         claim_index: z.int().nonnegative(),
         result_statement: z.string().min(1),
-        evidence_artifact_paths: z.array(z.string()).max(0),
-        execution_plan: ResearchExecutionPlanSchema.optional(),
+        evidence_artifact_paths: z.array(z.string().trim().min(1)),
         limitations: z.array(z.string()),
         known_counterexamples: z.array(z.string()),
         capability_requests: CapabilityRequestCandidatesSchema,
@@ -283,18 +243,18 @@ export const VerifierResultSchema = z
                 message: "A blocked verifier requires a concrete capability request"
             });
         }
-        if (result.capability_blocked && result.execution_plan !== undefined) {
+        if (result.capability_blocked && result.evidence_artifact_paths.length > 0) {
             context.addIssue({
                 code: "custom",
-                path: ["execution_plan"],
-                message: "A blocked verifier cannot request outcome execution"
+                path: ["evidence_artifact_paths"],
+                message: "A blocked verifier cannot also report reproduction artifacts"
             });
         }
-        if (!result.capability_blocked && result.execution_plan === undefined) {
+        if (!result.capability_blocked && result.evidence_artifact_paths.length === 0) {
             context.addIssue({
                 code: "custom",
-                path: ["execution_plan"],
-                message: "An unblocked verifier requires a daemon execution plan"
+                path: ["evidence_artifact_paths"],
+                message: "An unblocked verifier requires at least one reproduction artifact"
             });
         }
     });

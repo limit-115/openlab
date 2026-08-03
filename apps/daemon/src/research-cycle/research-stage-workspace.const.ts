@@ -5,3 +5,8 @@ export const ResearchStage = {
     VERIFIER: "verifier"
 } as const;
 export type ResearchStage = (typeof ResearchStage)[keyof typeof ResearchStage];
+
+/** What a freshly created workspace is allowed to contain before its agent starts working. */
+export const CleanWorkspaceEntry = {
+    GIT: ".git"
+} as const;

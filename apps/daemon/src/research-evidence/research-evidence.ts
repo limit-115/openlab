@@ -8,18 +8,13 @@ import { SourceRetrievalMethod } from "@lab/protocol/evidence/source-evidence.co
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import {
-    type ValidatedArtifact,
-    validateFileArtifact
-} from "#src/artifact-integrity/file-artifact";
+import { snapshotAgentArtifacts } from "#src/artifact-integrity/agent-artifact-snapshot";
 import {
     assertEvaluatorRejectsNegativeControl,
     executeAttestedEvaluator
 } from "#src/daemon-execution/evaluator-attestation";
 import { attemptEventType, experimentEventType } from "#src/daemon-execution/experiment-record";
 import { ExperimentEvaluator } from "#src/daemon-execution/experiment-record.const";
-import { assertArtifactsUnchanged } from "#src/daemon-execution/outcome-execution";
-import type { OutcomeExecution } from "#src/daemon-execution/outcome-execution.types";
 import type { FrozenEvaluator } from "#src/evaluator-integrity/frozen-evaluator.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { requiredById } from "#src/lab-workspace/snapshot-entities";
@@ -31,7 +26,11 @@ import {
 import type { RoleIdentifiers } from "#src/research-cycle/research-loop.types";
 import type { ResearchWorkspace } from "#src/research-cycle/research-stage-workspace.types";
 import { uniqueStrings } from "#src/research-cycle/unique-strings";
-import type { MaterialEvidence, PlanTarget } from "#src/research-evidence/research-evidence.types";
+import type {
+    AgentRunAttestation,
+    MaterialEvidence,
+    PlanTarget
+} from "#src/research-evidence/research-evidence.types";
 import { fetchDaemonSource } from "#src/source-integrity/source-fetch";
 import { SourceFetchOutcome } from "#src/source-integrity/source-fetch.contract";
 
@@ -170,11 +169,10 @@ export async function recordResearchEvidence(
     result: ResearchResult,
     ids: RoleIdentifiers,
     branchId: string,
-    outcomeWorkspace: ResearchWorkspace,
-    evaluatorWorkspace: ResearchWorkspace,
+    agentWorkspace: ResearchWorkspace,
     planTargets: readonly PlanTarget[],
     frozenEvaluators: readonly FrozenEvaluator[],
-    outcomeExecution: OutcomeExecution | undefined,
+    attestation: AgentRunAttestation,
     signal?: AbortSignal
 ): Promise<{
     result: ResearchResult;
@@ -196,24 +194,16 @@ export async function recordResearchEvidence(
             );
             continue;
         }
-        const validatedArtifacts: ValidatedArtifact[] = [];
-        for (const artifactPath of item.artifact_paths) {
-            try {
-                const artifact = await validateFileArtifact(outcomeWorkspace.cwd, artifactPath);
-                if (artifact.bytes > 0) {
-                    validatedArtifacts.push(artifact);
-                } else {
-                    issues.push(`Rejected empty artifact ${artifactPath}`);
-                }
-            } catch (error) {
-                issues.push(
-                    `Rejected artifact ${artifactPath}: ${error instanceof Error ? error.message : String(error)}`
-                );
-            }
-        }
+        const snapshot = await snapshotAgentArtifacts(
+            workspace.runDirectory,
+            agentWorkspace.cwd,
+            item.artifact_paths
+        );
+        issues.push(...snapshot.issues);
+        const validatedArtifacts = snapshot.artifacts;
         if (validatedArtifacts.length === 0) {
             issues.push(
-                `${item.target_kind} ${item.target_index} has no non-empty contained artifact`
+                `${item.target_kind} ${item.target_index} has no non-empty artifact the daemon could snapshot`
             );
             continue;
         }
@@ -228,17 +218,10 @@ export async function recordResearchEvidence(
             continue;
         }
 
-        if (outcomeExecution === undefined) {
-            issues.push(`${item.target_kind} ${item.target_index} has no daemon-owned outcome run`);
-            continue;
-        }
-        await assertArtifactsUnchanged(outcomeWorkspace, validatedArtifacts);
-
         const evaluation = await executeAttestedEvaluator(
             workspace,
             ids,
-            evaluatorWorkspace,
-            outcomeWorkspace,
+            agentWorkspace,
             planTarget.claim,
             planTarget.evaluator,
             frozenEvaluator,
@@ -264,8 +247,7 @@ export async function recordResearchEvidence(
             await assertEvaluatorRejectsNegativeControl(
                 workspace,
                 ids,
-                evaluatorWorkspace,
-                outcomeWorkspace,
+                agentWorkspace,
                 planTarget.claim,
                 frozenEvaluator,
                 validatedArtifacts,
@@ -283,9 +265,9 @@ export async function recordResearchEvidence(
             id: `evidence-${randomUUID()}`,
             kind: EvidenceKind.EXPERIMENT,
             claim_id: planTarget.claim.id,
-            run_id: outcomeExecution.experimentId,
-            artifact_path: outcomeExecution.result.manifest.path,
-            artifact_hash: outcomeExecution.result.manifest.sha256,
+            run_id: attestation.runId,
+            artifact_path: attestation.manifestPath,
+            artifact_hash: attestation.manifestSha256,
             summary: evaluation.verdict.summary,
             supports: evaluation.verdict.verdict === EVALUATOR_VERDICT.SUPPORTS,
             independent: true,
@@ -306,7 +288,7 @@ export async function recordResearchEvidence(
                 id: `evidence-${randomUUID()}`,
                 kind: EvidenceKind.ARTIFACT,
                 claim_id: planTarget.claim.id,
-                run_id: outcomeExecution.experimentId,
+                run_id: attestation.runId,
                 artifact_path: artifact.path,
                 artifact_hash: artifact.sha256,
                 summary: evaluation.verdict.summary,
@@ -340,7 +322,7 @@ export async function recordResearchEvidence(
             ...item,
             artifact_paths: [
                 ...validatedArtifacts.map(({ path: artifactPath }) => artifactPath),
-                outcomeExecution.result.manifest.path,
+                attestation.manifestPath,
                 evaluation.result.manifest.path
             ]
         });

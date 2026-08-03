@@ -1,7 +1,6 @@
 import { responseJsonSchema } from "@lab/harness/response-schema";
 import { CapabilityResourceClass } from "@lab/protocol/capabilities/capability-request.const";
 import { SourceClassification } from "@lab/protocol/evidence/source-evidence.const";
-import { ExternalEffect } from "@lab/protocol/experiments/external-effect.const";
 import { describe, expect, it } from "vitest";
 import {
     DirectorPlanSchema,
@@ -136,16 +135,10 @@ describe("research structured-output contracts", () => {
                     target_kind: RESEARCH_TARGET_KIND.ASSUMPTION,
                     target_index: 0,
                     summary: "A falsification attempt",
-                    artifact_paths: [],
+                    artifact_paths: ["allocations.json"],
                     contradicts_hypothesis: true
                 }
             ],
-            execution_plan: {
-                file: process.execPath,
-                args: ["-e", "process.exit(0)"],
-                declared_output_paths: ["result.json"],
-                external_effect: ExternalEffect.NONE
-            },
             limitations: [],
             next_experiments: []
         });
@@ -176,7 +169,7 @@ describe("research structured-output contracts", () => {
             next_experiments: []
         } as const;
 
-        expect(ResearchResultSchema.parse(sourceOnly).execution_plan).toBeUndefined();
+        expect(ResearchResultSchema.parse(sourceOnly).evidence).toEqual([]);
         expect(() =>
             ResearchResultSchema.parse({
                 ...sourceOnly,
@@ -185,57 +178,55 @@ describe("research structured-output contracts", () => {
         ).toThrow(/must remain inconclusive/);
     });
 
-    it("rejects model-created artifact paths as empirical evidence", () => {
+    it("rejects an evidence target that names no artifact the daemon can measure", () => {
         expect(() =>
             ResearchResultSchema.parse({
-                summary: "A model fabricated a result file",
-                hypothesis: "The fabricated value supports the claim",
+                summary: "The experiment ran but produced nothing to read",
+                hypothesis: "The candidate reduces allocations",
                 outcome: RESEARCH_OUTCOME.SUPPORTED,
                 evidence: [
                     {
                         target_kind: RESEARCH_TARGET_KIND.CLAIM,
                         target_index: 0,
-                        summary: "Unattested JSON",
-                        artifact_paths: ["fabricated.json"],
+                        summary: "A measurement the agent only describes",
+                        artifact_paths: [],
                         contradicts_hypothesis: false
                     }
                 ],
-                execution_plan: {
-                    file: process.execPath,
-                    args: [],
-                    declared_output_paths: ["result.json"]
-                },
                 limitations: [],
                 next_experiments: []
             })
         ).toThrow();
     });
 
-    it("requires reconciliation identity for irreversible outcome plans", () => {
+    it("keeps a resource-blocked researcher from also reporting evidence", () => {
         expect(() =>
             ResearchResultSchema.parse({
-                summary: "An irreversible action is planned",
-                hypothesis: "The action may produce evidence",
-                outcome: RESEARCH_OUTCOME.INCONCLUSIVE,
+                summary: "The dataset is unavailable yet a measurement is claimed",
+                hypothesis: "The dataset may contain the needed measurement",
+                outcome: RESEARCH_OUTCOME.SUPPORTED,
                 evidence: [
                     {
                         target_kind: RESEARCH_TARGET_KIND.CLAIM,
                         target_index: 0,
-                        summary: "Irreversible attempt",
-                        artifact_paths: [],
+                        summary: "A measurement produced without the blocking resource",
+                        artifact_paths: ["measurement.json"],
                         contradicts_hypothesis: false
                     }
                 ],
-                execution_plan: {
-                    file: process.execPath,
-                    args: [],
-                    declared_output_paths: ["result.json"],
-                    external_effect: ExternalEffect.IRREVERSIBLE
-                },
                 limitations: [],
-                next_experiments: []
+                next_experiments: [],
+                capability_requests: [
+                    {
+                        need: "Held-out benchmark dataset",
+                        resource_class: CapabilityResourceClass.PRIVATE_DATA,
+                        reason: "The measurement requires the held-out corpus",
+                        provisioning_hint: "Attach a read-only dataset snapshot"
+                    }
+                ],
+                capability_blocked: true
             })
-        ).toThrow(/stable reconciliation key/);
+        ).toThrow(/cannot also report material evidence/);
     });
 
     it("requires a concrete request when a researcher reports a resource block", () => {
@@ -253,7 +244,7 @@ describe("research structured-output contracts", () => {
         ).toThrow(/concrete capability request/);
     });
 
-    it("lets a resource-blocked verifier request a capability without fabricating a plan", () => {
+    it("lets a resource-blocked verifier request a capability without fabricating a reproduction", () => {
         const blockedVerifier = {
             verdict: VERIFIER_VERDICT.INCONCLUSIVE,
             claim_index: 0,
@@ -272,7 +263,7 @@ describe("research structured-output contracts", () => {
             capability_blocked: true
         } as const;
 
-        expect(VerifierResultSchema.parse(blockedVerifier).execution_plan).toBeUndefined();
+        expect(VerifierResultSchema.parse(blockedVerifier).evidence_artifact_paths).toEqual([]);
         expect(() =>
             VerifierResultSchema.parse({
                 ...blockedVerifier,
@@ -282,12 +273,23 @@ describe("research structured-output contracts", () => {
         expect(() =>
             VerifierResultSchema.parse({
                 ...blockedVerifier,
-                execution_plan: {
-                    file: process.execPath,
-                    args: [],
-                    declared_output_paths: ["result.json"]
-                }
+                evidence_artifact_paths: ["reproduction.json"]
             })
-        ).toThrow(/cannot request outcome execution/);
+        ).toThrow(/cannot also report reproduction artifacts/);
+    });
+
+    it("requires an unblocked verifier to hand over a reproduction artifact", () => {
+        expect(() =>
+            VerifierResultSchema.parse({
+                verdict: VERIFIER_VERDICT.REPRODUCED,
+                claim_index: 0,
+                result_statement: "The speedup reproduced",
+                evidence_artifact_paths: [],
+                limitations: [],
+                known_counterexamples: [],
+                capability_requests: [],
+                capability_blocked: false
+            })
+        ).toThrow(/at least one reproduction artifact/);
     });
 });

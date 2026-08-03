@@ -1,5 +1,6 @@
-import { createHash } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import path from "node:path";
 import type { ExecutionResult } from "@lab/executor/types";
 import {
     type ValidatedArtifact,
@@ -8,6 +9,7 @@ import {
 import { normalizeEvaluatorSource } from "#src/evaluator-integrity/evaluator-source-normalization";
 import {
     EvaluatorFileRequirement,
+    FrozenEvaluatorStore,
     TrivialEvaluatorSource
 } from "#src/evaluator-integrity/frozen-evaluator.const";
 import type {
@@ -24,14 +26,15 @@ import {
 import { EVALUATOR_VERDICT } from "#src/research-contract/research-contract.const";
 
 export async function freezeEvaluator(
-    baseDirectory: string,
+    sourceDirectory: string,
+    runDirectory: string,
     candidate: EvaluatorPrecommit,
     target: EvaluatorTarget
 ): Promise<FrozenEvaluator> {
     if (candidate.target_kind !== target.kind || candidate.target_index !== target.index) {
         throw new Error("Evaluator precommit does not match its target");
     }
-    const artifact = await validateFileArtifact(baseDirectory, candidate.evaluator_path);
+    const artifact = await validateFileArtifact(sourceDirectory, candidate.evaluator_path);
     if (artifact.bytes < EvaluatorFileRequirement.MINIMUM_BYTES) {
         throw new Error("Evaluator executable is too small to implement a meaningful contract");
     }
@@ -43,14 +46,15 @@ export async function freezeEvaluator(
     if (Object.values(TrivialEvaluatorSource).some((pattern) => pattern.test(source.trim()))) {
         throw new Error("Trivial always-success evaluator is forbidden");
     }
+    const frozen = await storeFrozenEvaluator(runDirectory, artifact);
 
     return {
         targetKind: target.kind,
         targetIndex: target.index,
         targetClaimId: target.claim.id,
         targetStatementSha256: sha256(target.claim.statement),
-        file: artifact.path,
-        fileSha256: artifact.sha256,
+        file: frozen.path,
+        fileSha256: frozen.sha256,
         semanticIdentitySha256: evaluatorSemanticIdentity(
             source,
             candidate.args,
@@ -59,6 +63,32 @@ export async function freezeEvaluator(
         args: [...candidate.args],
         successContract: candidate.success_contract
     };
+}
+
+/**
+ * Moves the accepted executable into a daemon-owned directory and re-reads it there, so the file the
+ * lab later runs is the file it measured rather than whatever the authoring agent left behind.
+ */
+async function storeFrozenEvaluator(
+    runDirectory: string,
+    artifact: ValidatedArtifact
+): Promise<ValidatedArtifact> {
+    const frozenDirectory = path.join(
+        runDirectory,
+        FrozenEvaluatorStore.DIRECTORY,
+        `evaluator-${randomUUID()}`
+    );
+    await mkdir(frozenDirectory, { recursive: true });
+    const frozenPath = path.join(frozenDirectory, FrozenEvaluatorStore.FILE_NAME);
+    await writeFile(frozenPath, await readFile(artifact.path), {
+        flag: "wx",
+        mode: FrozenEvaluatorStore.FILE_MODE
+    });
+    const frozen = await validateFileArtifact(frozenDirectory, frozenPath);
+    if (frozen.sha256 !== artifact.sha256 || frozen.bytes !== artifact.bytes) {
+        throw new Error("Evaluator changed while it was being frozen");
+    }
+    return frozen;
 }
 
 export function evaluatorSemanticIdentity(
@@ -75,11 +105,8 @@ export function evaluatorSemanticIdentity(
     );
 }
 
-export async function assertEvaluatorUnchanged(
-    baseDirectory: string,
-    evaluator: FrozenEvaluator
-): Promise<void> {
-    const artifact = await validateFileArtifact(baseDirectory, evaluator.file);
+export async function assertEvaluatorUnchanged(evaluator: FrozenEvaluator): Promise<void> {
+    const artifact = await validateFileArtifact(path.dirname(evaluator.file), evaluator.file);
     if (artifact.sha256 !== evaluator.fileSha256) {
         throw new Error("Evaluator executable changed after precommit");
     }

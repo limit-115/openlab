@@ -1,12 +1,29 @@
 import { randomUUID } from "node:crypto";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 import { simpleGit } from "simple-git";
-import type { ResearchStage } from "#src/research-cycle/research-stage-workspace.const";
+import {
+    CleanWorkspaceEntry,
+    type ResearchStage
+} from "#src/research-cycle/research-stage-workspace.const";
 import type {
     ResearchWorkspace,
     ResearchWorkspaceFactory
 } from "#src/research-cycle/research-stage-workspace.types";
+
+/**
+ * An autonomous agent owns everything its workspace ends up holding, which only means anything if the
+ * workspace was empty when it started. A leftover file would otherwise be indistinguishable from an
+ * artifact the agent produced.
+ */
+export async function assertCleanAgentWorkspace(workspace: ResearchWorkspace): Promise<void> {
+    const unexpectedEntries = (await readdir(workspace.cwd)).filter(
+        (entry) => entry !== CleanWorkspaceEntry.GIT
+    );
+    if (unexpectedEntries.length > 0) {
+        throw new Error(`Agent workspace is not clean: ${unexpectedEntries.sort().join(", ")}`);
+    }
+}
 
 export class GitResearchWorkspaceFactory implements ResearchWorkspaceFactory {
     readonly #cycleDirectory: string;

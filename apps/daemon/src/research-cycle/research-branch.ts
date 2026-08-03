@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { HarnessExecutionProfiles, HarnessRunStatuses } from "@lab/harness/agent-harness.const";
+import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
 import type { AgentHarness, HarnessRunResult } from "@lab/harness/agent-harness.types";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
@@ -10,11 +10,6 @@ import { EventType } from "@lab/protocol/lab-events/event-type.const";
 import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-status.const";
 import { renderHarnessCommand } from "#src/daemon-execution/experiment-record";
 import { ExperimentEvaluator } from "#src/daemon-execution/experiment-record.const";
-import {
-    assertCleanOutcomeWorkspace,
-    executeResearchOutcome
-} from "#src/daemon-execution/outcome-execution";
-import type { OutcomeExecution } from "#src/daemon-execution/outcome-execution.types";
 import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
 import { requiredById } from "#src/lab-workspace/snapshot-entities";
 import {
@@ -41,6 +36,7 @@ import {
     requestSubscriptionCapability,
     selectHarness
 } from "#src/research-cycle/research-stage-run";
+import { assertCleanAgentWorkspace } from "#src/research-cycle/research-stage-workspace";
 import { ResearchStage } from "#src/research-cycle/research-stage-workspace.const";
 import type { ResearchWorkspace } from "#src/research-cycle/research-stage-workspace.types";
 import {
@@ -102,18 +98,24 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
                 precommit.value.evaluators,
                 planTargets
             );
-            const outcomeWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
-            await assertCleanOutcomeWorkspace(outcomeWorkspace);
+            const researchWorkspace = await createAgentWorkspace(ResearchStage.RESEARCHER);
+            await assertCleanAgentWorkspace(researchWorkspace);
             await prepareResearchAttempt(
                 workspace,
                 ids,
                 experimentId,
                 direction,
                 harness,
-                outcomeWorkspace,
+                researchWorkspace,
                 offset + 1
             );
             attemptPrepared = true;
+            /**
+             * The researcher installs tooling and runs its own experiments from here on, so a failure
+             * after this point may already have changed the machine or the outside world. Another
+             * harness would repeat those effects rather than retry a pure planning call.
+             */
+            outcomeAttemptStarted = true;
             const run = await runStructuredAgent({
                 workspace,
                 activity,
@@ -122,10 +124,9 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
                 branchId: ids.branchId,
                 agentId: ids.agentId,
                 taskId: ids.taskId,
-                agentWorkspace: outcomeWorkspace,
+                agentWorkspace: researchWorkspace,
                 prompt: researcherPrompt(task, plan, direction, frozenEvaluators),
                 schema: ResearchResultSchema,
-                executionProfile: HarnessExecutionProfiles.READ_ONLY,
                 ...(signal === undefined ? {} : { signal })
             });
             const capabilityRequests = await persistAgentCapabilityRequests(
@@ -139,44 +140,24 @@ export async function runResearchBranch(input: ResearchBranchInput): Promise<Res
                 planTargets,
                 signal
             );
-            const sourceAttestedResult = {
+            const attestedResult = {
                 ...run.value,
                 sources: recordedSources.sources
             };
-            const executionPlan = run.value.execution_plan;
-            let outcomeExecution: OutcomeExecution | undefined;
-            if (executionPlan !== undefined) {
-                outcomeAttemptStarted = true;
-                outcomeExecution = await executeResearchOutcome(
-                    workspace,
-                    ids,
-                    outcomeWorkspace,
-                    executionPlan,
-                    signal
-                );
-            }
-            const attestedResult =
-                outcomeExecution === undefined
-                    ? sourceAttestedResult
-                    : {
-                          ...sourceAttestedResult,
-                          evidence: run.value.evidence.map((item) => ({
-                              ...item,
-                              artifact_paths: outcomeExecution.artifacts.map(
-                                  ({ path: artifactPath }) => artifactPath
-                              )
-                          }))
-                      };
             const recorded = await recordResearchEvidence(
                 workspace,
                 attestedResult,
                 ids,
                 ids.branchId,
-                outcomeWorkspace,
-                evaluatorWorkspace,
+                researchWorkspace,
                 planTargets,
                 frozenEvaluators,
-                outcomeExecution,
+                {
+                    runId: experimentId,
+                    manifestPath: run.result.artifacts.manifest.path,
+                    manifestSha256: run.result.artifacts.manifest.sha256,
+                    manifestBytes: run.result.artifacts.manifest.bytes
+                },
                 signal
             );
             await finishResearchAttempt(workspace, experimentId, run.result, true);

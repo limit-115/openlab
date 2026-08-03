@@ -6,8 +6,9 @@ import type {
     ResearchResult
 } from "#src/research-contract/research-contract";
 import {
+    AUTONOMOUS_EXECUTION_MANDATE,
+    MATERIAL_ARTIFACT_POLICY,
     MISSING_CAPABILITY_POLICY,
-    READ_ONLY_PROVISIONING_POLICY,
     RedactedPromptValue,
     SELF_PROVISIONING_MANDATE
 } from "#src/research-prompts/research-prompts.const";
@@ -33,9 +34,9 @@ prescribe a solution method merely because it is familiar. Make every assumption
 it a concrete falsification test before outcome-bearing work. Consensus and model confidence are
 not evidence.
 
-Install the toolchain your directions depend on before delegating them. Researchers plan read-only
-and cannot install anything, so any benchmark, runner, profiler, or library a direction needs must
-already be on this machine when they start.
+State what each direction is meant to establish, not how to carry it out. The researchers who take
+these directions are autonomous and provision themselves, so a direction that dictates their tooling
+or their method narrows the search for no reason.
 
 ${SELF_PROVISIONING_MANDATE}
 
@@ -91,16 +92,21 @@ export function researcherPrompt(
     return `You are an independent researcher. You have not received conclusions from other
 research branches.
 
-${READ_ONLY_PROVISIONING_POLICY}
+${SELF_PROVISIONING_MANDATE}
+
+${AUTONOMOUS_EXECUTION_MANDATE}
 
 ${MISSING_CAPABILITY_POLICY}
 
-Investigate the direction below as a read-only planner. Formulate a concrete hypothesis and normally
-return one explicit execution_plan. You may also return supplemental source candidates, or a
-source-only inconclusive result when no empirical plan is warranted. Do not run commands, write files,
-edit the repository, create outcome artifacts, or fetch source URLs yourself. The daemon alone
-executes plans and fetches citations while recording every attempt. The daemon has already frozen the
-evaluators; do not edit, replace, or run them. Do not claim support based only on your judgement.
+Investigate the direction below. Formulate a concrete hypothesis and test it: install what the
+experiment needs, write the programs it needs, run them, and measure the outcome. You may also return
+supplemental source candidates, or a source-only inconclusive result when nothing empirical is
+warranted. The daemon fetches citation URLs itself rather than trusting a page you retrieved.
+
+The evaluators that will judge your claims were precommitted and frozen before you started. You
+cannot see, edit, replace, or run them, and their verdict decides whether your result is accepted, so
+measure the thing the claim is actually about instead of the thing that is convenient to produce. Do
+not claim support based only on your judgement.
 
 Task:
 ${taskContext(task)}
@@ -130,13 +136,12 @@ ${JSON.stringify(
     4
 )}
 
-Every evidence item must identify target_kind as claim or assumption and the corresponding zero-based
-target_index. Actively test risky assumptions instead of treating them as background prose. Keep
-artifact_paths empty: model-created paths and JSON are never empirical evidence. Instead declare every
-expected relative artifact path in execution_plan.declared_output_paths. Use no shell indirection; file
-and args are passed directly to the process. Classify external_effect accurately and include a stable
-reconciliation_key when one exists. Do not return an evaluator command. The daemon will run the plan,
-snapshot and re-hash declared outputs, then run only its frozen evaluator against those outputs.
+Every evidence item must identify target_kind as claim or assumption, the corresponding zero-based
+target_index, and the files your execution produced in artifact_paths. Actively test risky assumptions
+instead of treating them as background prose, and report a result that contradicts your hypothesis as
+readily as one that supports it.
+
+${MATERIAL_ARTIFACT_POLICY}
 
 For every source candidate, identify its claim or assumption target, URL, title, and whether you claim
 it is primary or secondary. That classification is only your claim, not established provenance. The
@@ -144,8 +149,8 @@ daemon validates and fetches http(s) URLs itself; a citation is supplemental and
 claim or substitute for empirical evidence.
 
 Set capability_blocked to true only when this isolated direction cannot produce material evidence
-until one of its reported capability_requests is provisioned. Keep it false when useful evidence is
-available, even if an additional resource request remains open.
+until one of its reported capability_requests is provisioned, and then report no evidence. Keep it
+false when useful evidence is available, even if an additional resource request remains open.
 
 Return only the requested structured result.`;
 }
@@ -210,12 +215,13 @@ export function verifierPrompt(
     const safeBranchReports = redactArtifactPaths(branchReports, researchArtifactPaths);
     const safeCriticism = redactArtifactPaths(redactedCriticism, researchArtifactPaths);
     return `You are an independent verifier in a clean session and workspace. Treat every supplied
-claim as untrusted. Plan an independent reproduction of the strongest result from original inputs or
-reconstructed artifacts and actively test the critic's concerns. Do not run commands or write files;
-the daemon alone executes your structured execution_plan. An ordinary rerun of the researcher's
-command is not independent reproduction.
+claim as untrusted. Independently reproduce the strongest result from original inputs or reconstructed
+artifacts, and actively test the critic's concerns. Rerunning the researcher's command is not
+independent reproduction, and neither is agreeing with a report you were handed.
 
-${READ_ONLY_PROVISIONING_POLICY}
+${SELF_PROVISIONING_MANDATE}
+
+${AUTONOMOUS_EXECUTION_MANDATE}
 
 ${MISSING_CAPABILITY_POLICY}
 
@@ -231,16 +237,19 @@ ${JSON.stringify(safeBranchReports, null, 4)}
 Adversarial review:
 ${JSON.stringify(safeCriticism, null, 4)}
 
-Select the zero-based claim_index you will independently test. Keep evidence_artifact_paths empty:
-model-created paths and JSON are never verifier evidence. Declare each relative output in
-execution_plan.declared_output_paths and accurately classify external_effect. Do not create, select,
-edit, or return an evaluator command. The daemon executes the plan, snapshots and re-hashes its
-outputs, then runs the frozen critic-authored evaluator. A self-written claim that the evaluator
-passed is not evidence.
+Select the zero-based claim_index you independently tested and list the files your reproduction
+produced in evidence_artifact_paths.
+
+${MATERIAL_ARTIFACT_POLICY}
+
+The evaluator here was written and frozen by the adversarial critic, not by you: do not create,
+select, edit, or return one, and do not try to run it. An artifact whose bytes match a research
+branch artifact is rejected as a copy rather than a reproduction, and a self-written claim that the
+evaluator passed is not evidence.
 
 Set capability_blocked to true only when independent reproduction cannot run until a reported
-capability_request is provisioned. In that case return no execution_plan; the daemon will persist the
-request and pause this verifier role without fabricating a command.
+capability_request is provisioned. In that case report no artifacts; the daemon will persist the
+request and pause this verifier role without fabricating a result.
 
 Return only the requested structured verdict.`;
 }

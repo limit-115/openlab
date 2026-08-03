@@ -7,6 +7,7 @@ import { sanitizeHarnessEnvironment } from "@lab/harness/subscription-environmen
 import type { Claim } from "@lab/protocol/claims/claim.types";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { assertArtifactsUnchanged } from "#src/artifact-integrity/agent-artifact-snapshot";
 import {
     type ValidatedArtifact,
     validateFileArtifact
@@ -19,7 +20,6 @@ import {
     renderCommand
 } from "#src/daemon-execution/experiment-record";
 import { ExperimentEvaluator } from "#src/daemon-execution/experiment-record.const";
-import { assertArtifactsUnchanged } from "#src/daemon-execution/outcome-execution";
 import {
     assertEvaluatorUnchanged,
     bindEvaluatorInput,
@@ -36,7 +36,6 @@ import type { ResearchWorkspace } from "#src/research-cycle/research-stage-works
 export async function executeAttestedEvaluator(
     workspace: LabWorkspace,
     ids: RoleIdentifiers,
-    evaluatorWorkspace: ResearchWorkspace,
     executionWorkspace: ResearchWorkspace,
     claim: Claim,
     evaluator: string,
@@ -48,7 +47,7 @@ export async function executeAttestedEvaluator(
     experimentId: string;
     verdict: EvaluatorStructuredVerdict;
 }> {
-    await assertEvaluatorUnchanged(evaluatorWorkspace.cwd, frozenEvaluator);
+    await assertEvaluatorUnchanged(frozenEvaluator);
     const evaluatorInput = bindEvaluatorInput(frozenEvaluator, inputArtifacts);
     const experimentId = `experiment-${randomUUID()}`;
     const artifactDirectory = path.join(
@@ -93,7 +92,7 @@ export async function executeAttestedEvaluator(
     let validationError: unknown;
     if (status === ExperimentStatus.SUCCEEDED) {
         try {
-            await assertArtifactsUnchanged(executionWorkspace, inputArtifacts);
+            await assertArtifactsUnchanged(inputArtifacts);
             verdict = await validateEvaluatorVerdict(result, frozenEvaluator, evaluatorInput);
         } catch (error) {
             status = ExperimentStatus.FAILED;
@@ -137,7 +136,6 @@ export async function executeAttestedEvaluator(
 export async function assertEvaluatorRejectsNegativeControl(
     workspace: LabWorkspace,
     ids: RoleIdentifiers,
-    evaluatorWorkspace: ResearchWorkspace,
     executionWorkspace: ResearchWorkspace,
     claim: Claim,
     frozenEvaluator: FrozenEvaluator,
@@ -148,7 +146,6 @@ export async function assertEvaluatorRejectsNegativeControl(
     const evaluation = await executeAttestedEvaluator(
         workspace,
         ids,
-        evaluatorWorkspace,
         executionWorkspace,
         claim,
         ExperimentEvaluator.NEGATIVE_CONTROL,

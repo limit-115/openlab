@@ -136,6 +136,7 @@ export async function runCriticStageWithFallback(input: {
             }
             const evaluator = await freezeEvaluator(
                 agentWorkspace.cwd,
+                input.workspace.runDirectory,
                 run.value.verification_evaluator,
                 evaluatorTarget(target)
             );

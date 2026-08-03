@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { ClaimStatus } from "@lab/protocol/claims/claim-status.const";
@@ -8,7 +8,10 @@ import {
     evaluatorSemanticIdentity,
     freezeEvaluator
 } from "#src/evaluator-integrity/frozen-evaluator";
-import type { EvaluatorTarget } from "#src/evaluator-integrity/frozen-evaluator.types";
+import type {
+    EvaluatorTarget,
+    FrozenEvaluator
+} from "#src/evaluator-integrity/frozen-evaluator.types";
 import { RESEARCH_TARGET_KIND } from "#src/research-contract/research-contract.const";
 
 const target = {
@@ -28,9 +31,38 @@ const target = {
     }
 } satisfies EvaluatorTarget;
 
+const SAMPLE_EVALUATOR_SOURCE =
+    "#!/usr/bin/env node\nprocess.stdin.resume();\nprocess.stdout.write('{}');\n";
+
+async function freezeSampleEvaluator(): Promise<{
+    frozen: FrozenEvaluator;
+    evaluatorPath: string;
+    source: string;
+}> {
+    const directory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-author-"));
+    const runDirectory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-run-"));
+    const evaluatorPath = path.join(directory, "evaluate");
+    await writeFile(evaluatorPath, SAMPLE_EVALUATOR_SOURCE);
+    await chmod(evaluatorPath, 0o755);
+    const frozen = await freezeEvaluator(
+        directory,
+        runDirectory,
+        {
+            target_kind: RESEARCH_TARGET_KIND.CLAIM,
+            target_index: 0,
+            evaluator_path: evaluatorPath,
+            args: ["--strict"],
+            success_contract: "Validate the measured speedup"
+        },
+        target
+    );
+    return { frozen, evaluatorPath, source: SAMPLE_EVALUATOR_SOURCE };
+}
+
 describe("evaluator precommit", () => {
     it("rejects an empty always-success evaluator", async () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-trivial-"));
+        const runDirectory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-run-"));
         const evaluatorPath = path.join(directory, "evaluate");
         await writeFile(evaluatorPath, "#!/usr/bin/env node\nprocess.exit(0);\n");
         await chmod(evaluatorPath, 0o755);
@@ -38,6 +70,7 @@ describe("evaluator precommit", () => {
         await expect(
             freezeEvaluator(
                 directory,
+                runDirectory,
                 {
                     target_kind: RESEARCH_TARGET_KIND.CLAIM,
                     target_index: 0,
@@ -50,31 +83,23 @@ describe("evaluator precommit", () => {
         ).rejects.toThrow("Trivial always-success evaluator is forbidden");
     });
 
-    it("detects evaluator mutation after a valid precommit", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-evaluator-frozen-"));
-        const evaluatorPath = path.join(directory, "evaluate");
-        await writeFile(
-            evaluatorPath,
-            "#!/usr/bin/env node\nprocess.stdin.resume();\nprocess.stdout.write('{}');\n"
-        );
-        await chmod(evaluatorPath, 0o755);
-        const frozen = await freezeEvaluator(
-            directory,
-            {
-                target_kind: RESEARCH_TARGET_KIND.CLAIM,
-                target_index: 0,
-                evaluator_path: evaluatorPath,
-                args: ["--strict"],
-                success_contract: "Validate the measured speedup"
-            },
-            target
-        );
+    it("keeps the precommitted evaluator when its author rewrites the file it wrote", async () => {
+        const { frozen, evaluatorPath, source } = await freezeSampleEvaluator();
 
-        await writeFile(evaluatorPath, "#!/usr/bin/env node\nthrow new Error('changed');\n");
+        await writeFile(evaluatorPath, "#!/usr/bin/env node\nprocess.exit(0);\n");
 
-        await expect(assertEvaluatorUnchanged(directory, frozen)).rejects.toThrow(
-            "changed after precommit"
-        );
+        await expect(assertEvaluatorUnchanged(frozen)).resolves.toBeUndefined();
+        expect(frozen.file.startsWith(path.dirname(evaluatorPath))).toBe(false);
+        await expect(readFile(frozen.file, "utf8")).resolves.toBe(source);
+    });
+
+    it("detects mutation of the frozen evaluator itself", async () => {
+        const { frozen } = await freezeSampleEvaluator();
+
+        await chmod(frozen.file, 0o700);
+        await writeFile(frozen.file, "#!/usr/bin/env node\nthrow new Error('changed');\n");
+
+        await expect(assertEvaluatorUnchanged(frozen)).rejects.toThrow("changed after precommit");
     });
 
     it("assigns one semantic identity to comment and whitespace-only variants", () => {
