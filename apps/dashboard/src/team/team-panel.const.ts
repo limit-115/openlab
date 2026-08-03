@@ -16,8 +16,14 @@ import type { BadgeVariant } from "#src/status-tag/status-tag.types";
 export const TEAM_SPLIT =
     "grid items-start gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]" as const;
 
-/** The roster follows the page down, so switching agents never means scrolling back up. */
-export const TEAM_ROSTER = "grid list-none gap-2 lg:sticky lg:top-24" as const;
+/**
+ * The roster follows the page down, so switching agents never means scrolling back up.
+ *
+ * A column rather than a grid: a grid row is at least as wide as its widest entry measures, and an
+ * entry holding an unwrapped command measures the whole command, which widened the roster past its
+ * own track and over the thread beside it.
+ */
+export const TEAM_ROSTER = "flex list-none flex-col gap-2 lg:sticky lg:top-24" as const;
 
 export const ROSTER_ENTRY =
     "flex w-full min-w-0 flex-col gap-1 rounded-2xl border p-3 text-left transition-colors hover:bg-muted/50 motion-reduce:transition-none" as const;
