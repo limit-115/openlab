@@ -6,7 +6,7 @@ import {
     AgentDiagnosticLevel,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import type { BadgeVariant } from "#src/status-tag/status-tag.types";
 
 /**
@@ -142,6 +142,15 @@ export const HARNESS_LABEL: Record<AgentHarnessKind, string> = {
     [AgentHarnessKind.CODEX]: "Codex",
     [AgentHarnessKind.CLAUDE]: "Claude",
     [AgentHarnessKind.GLM]: "GLM"
+};
+
+/** The execution line reads as three items rather than a sentence, so the effort opens like one. */
+export const EFFORT_LABEL: Record<AgentEffortLevel, string> = {
+    [AgentEffortLevel.LOW]: "Low",
+    [AgentEffortLevel.MEDIUM]: "Medium",
+    [AgentEffortLevel.HIGH]: "High",
+    [AgentEffortLevel.XHIGH]: "Extra high",
+    [AgentEffortLevel.MAX]: "Maximum"
 };
 
 export const NO_AGENTS_TITLE = "No agent is running" as const;

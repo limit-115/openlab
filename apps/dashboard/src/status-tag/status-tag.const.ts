@@ -5,6 +5,28 @@ import { InternalTaskStatus } from "@lab/protocol/task-queue/internal-task-statu
 import type { BadgeVariant, TaggedStatus } from "#src/status-tag/status-tag.types";
 
 /**
+ * The protocol spells its statuses in lower case because they are values on a wire. On the page
+ * they are words somebody reads, so each one is written out here the way a sentence would open.
+ */
+export const STATUS_TAG_LABEL: Record<TaggedStatus, string> = {
+    [InternalTaskStatus.QUEUED]: "Queued",
+    [InternalTaskStatus.LEASED]: "Leased",
+    [InternalTaskStatus.RUNNING]: "Running",
+    [InternalTaskStatus.SUCCEEDED]: "Succeeded",
+    [InternalTaskStatus.FAILED]: "Failed",
+    [InternalTaskStatus.CANCELLED]: "Cancelled",
+    [ClaimStatus.PROPOSED]: "Proposed",
+    [ClaimStatus.TESTING]: "Testing",
+    [ClaimStatus.SUPPORTED]: "Supported",
+    [ClaimStatus.REFUTED]: "Refuted",
+    [ClaimStatus.REPRODUCED]: "Reproduced",
+    [ExperimentStatus.PLANNED]: "Planned",
+    [ExperimentStatus.TIMED_OUT]: "Timed out",
+    [CapabilityStatus.OPEN]: "Open",
+    [CapabilityStatus.ANSWERED]: "Answered"
+};
+
+/**
  * Four colours, one question each: blue is happening now, green came out well, red went wrong, and
  * amber is waiting on something. A status an operator has to read at a glance cannot be grey.
  */

@@ -5,6 +5,7 @@ import { ActivityIcon } from "lucide-react";
 import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/lab-header/lab-uptime";
 import {
+    LAB_STATE_LABEL,
     RUNTIME_AGENT_COUNT,
     RUNTIME_ICON,
     RUNTIME_READING,
@@ -39,7 +40,9 @@ export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
                     className={cn(STATE_DOT, STATE_DOT_TONE[snapshot.lab.state])}
                     aria-hidden="true"
                 />
-                <strong className={RUNTIME_STRIP_VALUE}>{snapshot.lab.state}</strong>
+                <strong className={RUNTIME_STRIP_VALUE}>
+                    {LAB_STATE_LABEL[snapshot.lab.state]}
+                </strong>
             </span>
             <span className={RUNTIME_READING}>
                 <ActivityIcon className={RUNTIME_ICON} aria-hidden="true" />

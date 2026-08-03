@@ -12,7 +12,7 @@ export const EVENT_MARKER_LINE = "mt-1 w-px flex-1 bg-border group-last:hidden" 
 
 export const EVENT_BODY = "flex min-w-0 flex-col gap-2" as const;
 
-export const EVENT_TYPE = "text-sm font-medium break-words capitalize" as const;
+export const EVENT_TYPE = "text-sm font-medium break-words" as const;
 
 export const EVENT_HEADLINE = "text-sm leading-relaxed text-muted-foreground" as const;
 

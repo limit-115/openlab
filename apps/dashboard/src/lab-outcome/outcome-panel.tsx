@@ -9,7 +9,8 @@ import {
     OUTCOME_LIMITATIONS_HEADING,
     OUTCOME_LIMITATIONS_LIST,
     OUTCOME_SUMMARY,
-    OUTCOME_SURFACE
+    OUTCOME_SURFACE,
+    OUTCOME_TITLE
 } from "#src/lab-outcome/outcome-panel.const";
 import { Panel } from "#src/panel/panel";
 
@@ -31,10 +32,7 @@ export function OutcomePanel({ snapshot }: OutcomePanelProps) {
     }
 
     return (
-        <Panel
-            title={state === LabState.COMPLETED ? "Verified result" : `${state.toLowerCase()} lab`}
-            description="Lifecycle outcome"
-        >
+        <Panel title={OUTCOME_TITLE[state]} description="Lifecycle outcome">
             <div className={cn(OUTCOME_CARD, OUTCOME_SURFACE[state])}>
                 <p className={OUTCOME_SUMMARY}>
                     {snapshot.result?.summary ??

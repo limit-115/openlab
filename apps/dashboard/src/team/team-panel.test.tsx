@@ -89,7 +89,7 @@ describe("TeamPanel", () => {
 
         const card = screen.getByRole("heading", { name: "researcher" }).closest("article");
 
-        expect(card?.textContent).toContain("Claude · claude-opus-5 · high effort");
+        expect(card?.textContent).toContain("Claude · claude-opus-5 · High effort");
         expect(card?.textContent).toContain(TASK.objective);
     });
 

@@ -1,5 +1,14 @@
 import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
 
+/** What the section calls itself, which is the lifecycle state that made it worth showing at all. */
+export const OUTCOME_TITLE: Record<LabState, string> = {
+    [LabState.RUNNING]: "Running lab",
+    [LabState.HIBERNATING]: "Hibernating lab",
+    [LabState.COMPLETED]: "Verified result",
+    [LabState.FAILED]: "Failed lab",
+    [LabState.STOPPED]: "Stopped lab"
+};
+
 export const OUTCOME_CARD = "rounded-2xl border p-6" as const;
 
 /** The card outline carries the outcome: a finished lab reads calm, a failed one reads adverse. */

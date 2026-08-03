@@ -66,10 +66,7 @@ export function ExperimentCard({ experiment }: ExperimentCardProps) {
                         <ItemTitle className={EXPERIMENT_HYPOTHESIS}>
                             {experiment.hypothesis}
                         </ItemTitle>
-                        <StatusTag
-                            status={experiment.status}
-                            label={experiment.status.replace("_", " ")}
-                        />
+                        <StatusTag status={experiment.status} />
                     </ItemHeader>
                     <p className={EXPERIMENT_COMMAND}>
                         <TerminalSquareIcon

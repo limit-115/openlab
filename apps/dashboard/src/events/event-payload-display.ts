@@ -15,6 +15,12 @@ export function formatEventPayload(payload: Record<string, unknown>): EventPaylo
     };
 }
 
+/**
+ * An event type is a dotted key, and reads on the page as the sentence it describes. Only its first
+ * letter is raised: a text transform would title-case every word and make "Harness Run Timed Out".
+ */
 export function humanizeEventType(type: string): string {
-    return type.replaceAll(/[._-]+/g, " ");
+    const words = type.replaceAll(/[._-]+/g, " ");
+
+    return words.charAt(0).toUpperCase() + words.slice(1);
 }

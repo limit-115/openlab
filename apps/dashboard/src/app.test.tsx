@@ -7,6 +7,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
+import { LAB_STATE_LABEL } from "#src/lab-header/runtime-strip.const";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
 import { ThemeProvider } from "#src/theme/theme-provider";
@@ -125,7 +126,9 @@ describe("App", () => {
         await user.click(await screen.findByRole("button", { name: "Wake" }));
 
         const runtime = screen.getByRole("status", { name: "Lab runtime status" });
-        expect(await within(runtime).findByText(LabState.RUNNING)).toBeInTheDocument();
+        expect(
+            await within(runtime).findByText(LAB_STATE_LABEL[LabState.RUNNING])
+        ).toBeInTheDocument();
         expect(screen.queryByRole("button", { name: "Wake" })).not.toBeInTheDocument();
     });
 
