@@ -6,7 +6,9 @@ import { ClaimCard } from "#src/claims/claim-card";
 import { CLAIM_LIST } from "#src/claims/claim-card.const";
 import { ClaimFilterGroup } from "#src/claims/claim-filter";
 import { ClaimFilter } from "#src/claims/claim-filter.const";
+import { cn } from "#src/design-system/class-names";
 import { Panel } from "#src/panel/panel";
+import { PANEL_SCROLLER } from "#src/panel/panel.const";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface ClaimsPanelProps {
@@ -48,7 +50,7 @@ export function ClaimsPanel({ claims, experiments }: ClaimsPanelProps) {
                     description="Select another evidence status."
                 />
             ) : (
-                <ul className={CLAIM_LIST}>
+                <ul className={cn(CLAIM_LIST, PANEL_SCROLLER)}>
                     {visibleClaims.map((claim) => (
                         <ClaimCard key={claim.id} claim={claim} experiments={experiments} />
                     ))}

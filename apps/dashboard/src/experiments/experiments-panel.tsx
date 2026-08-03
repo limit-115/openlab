@@ -1,12 +1,14 @@
 import type { Experiment } from "@lab/protocol/experiments/experiment.types";
 import { ExperimentStatus } from "@lab/protocol/experiments/experiment-status.const";
 import { useMemo, useState } from "react";
+import { cn } from "#src/design-system/class-names";
 import { ItemGroup } from "#src/design-system/item";
 import { ExperimentCard } from "#src/experiments/experiment-card";
 import { EXPERIMENT_LIST } from "#src/experiments/experiment-card.const";
 import { ExperimentFilterGroup } from "#src/experiments/experiment-filter";
 import { ATTENTION_STATUSES, ExperimentFilter } from "#src/experiments/experiment-filter.const";
 import { Panel } from "#src/panel/panel";
+import { PANEL_SCROLLER } from "#src/panel/panel.const";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface ExperimentsPanelProps {
@@ -53,7 +55,7 @@ export function ExperimentsPanel({ experiments }: ExperimentsPanelProps) {
                     description="Nothing is running, failed or cancelled. A successful run is shown inside the claim it produced."
                 />
             ) : (
-                <ItemGroup className={EXPERIMENT_LIST}>
+                <ItemGroup className={cn(EXPERIMENT_LIST, PANEL_SCROLLER)}>
                     {visible.map((experiment) => (
                         <ExperimentCard key={experiment.id} experiment={experiment} />
                     ))}

@@ -14,3 +14,9 @@ export const PANEL_TITLE = "font-heading text-lg font-medium" as const;
 export const PANEL_DESCRIPTION = "text-sm text-muted-foreground" as const;
 
 export const PANEL_ACTION = "flex min-w-0 flex-wrap items-center gap-2" as const;
+
+/**
+ * A ledger grows without limit, so the list keeps its own height and scrolls inside it. Without a
+ * bound, one busy section pushes every section under it out of reach.
+ */
+export const PANEL_SCROLLER = "max-h-192 overflow-y-auto" as const;
