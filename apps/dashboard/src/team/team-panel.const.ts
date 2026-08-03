@@ -25,9 +25,7 @@ export const ROSTER_ENTRY =
 /** The one being read is marked on the entry itself, not only by what fills the other column. */
 export const ROSTER_ENTRY_SELECTED = "border-primary/50 bg-muted/60" as const;
 
-export const ROSTER_ENTRY_TOP = "flex flex-wrap items-baseline gap-x-2 gap-y-1" as const;
-
-export const ROSTER_PRESENCE = "size-2 flex-none self-center rounded-full" as const;
+export const ROSTER_ENTRY_TOP = "flex flex-wrap items-center gap-x-2 gap-y-1" as const;
 
 export const ROSTER_ROLE = "text-sm font-semibold capitalize" as const;
 
@@ -83,9 +81,9 @@ export const PHASE_LABEL: Record<AgentActivityPhase, string> = {
 };
 
 /**
- * What the agent is doing and how its run is going are two different questions, so the card answers
- * both. The phase is the quieter of the two: it changes every few seconds, while the status is what
- * an operator scanning the roster is looking for.
+ * What the agent is doing and how its run is going are two different questions, so every place an
+ * agent appears answers both. The phase is the quieter of the two: it changes every few seconds,
+ * while the status is what an operator scanning the roster is looking for.
  */
 export const PHASE_TONE: BadgeVariant = "outline";
 
@@ -104,15 +102,6 @@ export const RUN_STATUS_TONE: Record<AgentRunStatus, BadgeVariant> = {
     [AgentRunStatus.FAILED]: "destructive",
     [AgentRunStatus.TIMED_OUT]: "destructive",
     [AgentRunStatus.CANCELLED]: "outline"
-};
-
-/** The roster carries the run status as a mark, since a row has no room for a second badge. */
-export const ROSTER_PRESENCE_TONE: Record<AgentRunStatus, string> = {
-    [AgentRunStatus.RUNNING]: "bg-primary ring-4 ring-primary/20",
-    [AgentRunStatus.SUCCEEDED]: "bg-muted-foreground",
-    [AgentRunStatus.FAILED]: "bg-destructive",
-    [AgentRunStatus.TIMED_OUT]: "bg-destructive",
-    [AgentRunStatus.CANCELLED]: "bg-border"
 };
 
 export const TOOL_PHASE_MARK: Record<AgentToolPhase, string> = {

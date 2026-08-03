@@ -138,6 +138,24 @@ describe("TeamPanel", () => {
         expect(card?.textContent).toContain("Running");
     });
 
+    it("names the model and the run of every agent in the roster, unopened", () => {
+        const critic = watchedActivity({
+            agent_id: "agent-critic-0-1",
+            task_id: "task-critic-0-1",
+            role: AgentRole.CRITIC,
+            phase: AgentActivityPhase.FINISHED,
+            status: AgentRunStatus.FAILED
+        });
+        render(<TeamPanel agents={[agent([]), agent([], critic)]} tasks={[TASK]} />);
+
+        const roster = screen.getByRole("list", { name: "Agents" });
+        const entry = within(roster).getByRole("button", { name: /critic/i });
+
+        expect(entry.textContent).toContain("claude-opus-5");
+        expect(entry.textContent).toContain("Failed");
+        expect(entry.textContent).toContain("Finished");
+    });
+
     it("reads a second agent without losing sight of the first", async () => {
         const critic = watchedActivity({
             agent_id: "agent-critic-0-1",

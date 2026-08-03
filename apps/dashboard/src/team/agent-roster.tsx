@@ -1,9 +1,10 @@
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { cn } from "#src/design-system/class-names";
+import { agentExecutionLine } from "#src/team/agent-execution-line";
 import { agentLatestLine } from "#src/team/agent-latest-line";
+import { AgentStatusBadges } from "#src/team/agent-status-badges";
 import type { WatchedAgent } from "#src/team/agent-transcript.types";
 import {
-    HARNESS_LABEL,
     ROSTER_DETAIL,
     ROSTER_ENTRY,
     ROSTER_ENTRY_SELECTED,
@@ -11,8 +12,6 @@ import {
     ROSTER_EXECUTION,
     ROSTER_LINE,
     ROSTER_OBJECTIVE,
-    ROSTER_PRESENCE,
-    ROSTER_PRESENCE_TONE,
     ROSTER_ROLE,
     ROSTER_VERB,
     TEAM_ROSTER
@@ -49,18 +48,15 @@ export function AgentRoster({ agents, tasks, selectedId, onSelect }: AgentRoster
                             )}
                         >
                             <span className={ROSTER_ENTRY_TOP}>
-                                <span
-                                    className={cn(
-                                        ROSTER_PRESENCE,
-                                        ROSTER_PRESENCE_TONE[activity.status]
-                                    )}
-                                    aria-hidden="true"
-                                />
                                 <span className={ROSTER_ROLE}>{activity.role}</span>
-                                <span className={ROSTER_EXECUTION}>
-                                    {HARNESS_LABEL[activity.execution.harness]} ·{" "}
-                                    {activity.execution.effort} effort
-                                </span>
+                                <AgentStatusBadges
+                                    phase={activity.phase}
+                                    status={activity.status}
+                                />
+                            </span>
+
+                            <span className={ROSTER_EXECUTION}>
+                                {agentExecutionLine(activity.execution)}
                             </span>
 
                             {task === undefined ? null : (

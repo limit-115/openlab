@@ -1,21 +1,16 @@
 import type { AgentUsage } from "@lab/protocol/agent-activity/agent-activity.types";
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
 import { memo } from "react";
-import { Badge } from "#src/design-system/badge";
 import { Separator } from "#src/design-system/separator";
+import { agentExecutionLine } from "#src/team/agent-execution-line";
+import { AgentStatusBadges } from "#src/team/agent-status-badges";
 import { AgentTranscript } from "#src/team/agent-transcript";
 import type { WatchedAgent } from "#src/team/agent-transcript.types";
 import {
     AGENT_ARTIFACTS,
     AGENT_CARD_HEADER,
     AGENT_EXECUTION,
-    AGENT_STATUS_GROUP,
-    AGENT_THREAD,
-    HARNESS_LABEL,
-    PHASE_LABEL,
-    PHASE_TONE,
-    RUN_STATUS_LABEL,
-    RUN_STATUS_TONE
+    AGENT_THREAD
 } from "#src/team/team-panel.const";
 
 interface AgentThreadProps {
@@ -38,17 +33,9 @@ export const AgentThread = memo(function AgentThread({ agent, task }: AgentThrea
             <header className={AGENT_CARD_HEADER}>
                 <div className="min-w-0">
                     <h3 className="text-sm font-semibold capitalize">{activity.role}</h3>
-                    <p className={AGENT_EXECUTION}>
-                        {HARNESS_LABEL[execution.harness]} · {execution.model} · {execution.effort}{" "}
-                        effort
-                    </p>
+                    <p className={AGENT_EXECUTION}>{agentExecutionLine(execution)}</p>
                 </div>
-                <div className={AGENT_STATUS_GROUP}>
-                    <Badge variant={PHASE_TONE}>{PHASE_LABEL[activity.phase]}</Badge>
-                    <Badge variant={RUN_STATUS_TONE[activity.status]}>
-                        {RUN_STATUS_LABEL[activity.status]}
-                    </Badge>
-                </div>
+                <AgentStatusBadges phase={activity.phase} status={activity.status} />
             </header>
 
             {task === undefined ? null : <p className="text-sm">{task.objective}</p>}
