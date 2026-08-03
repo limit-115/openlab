@@ -49,7 +49,11 @@ pnpm lab provide <request-id> <resource-reference>
 pnpm lab wake
 pnpm lab stop
 pnpm lab export
+pnpm lab purge
 ```
+
+`purge` deletes run history from disk and the database. It refuses while a daemon is running, then
+asks whether to remove every run or every run except the current one, and confirms before deleting.
 
 The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build it with
 `pnpm --filter @lab/dashboard build` before starting the run.
