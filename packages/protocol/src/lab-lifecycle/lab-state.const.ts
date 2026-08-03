@@ -1,7 +1,8 @@
 export const LabState = {
     RUNNING: "RUNNING",
+    /** A finding survived independent verification. The lab pauses and waits for the team. */
+    BREAKTHROUGH: "BREAKTHROUGH",
     HIBERNATING: "HIBERNATING",
-    COMPLETED: "COMPLETED",
     STOPPED: "STOPPED",
     FAILED: "FAILED"
 } as const;
