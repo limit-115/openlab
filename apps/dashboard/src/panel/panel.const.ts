@@ -9,7 +9,12 @@ export const PANEL_HEADER = "flex flex-wrap items-start justify-between gap-x-6 
 
 export const PANEL_HEADING = "flex min-w-0 flex-col gap-1" as const;
 
-export const PANEL_TITLE = "font-heading text-lg font-medium" as const;
+/**
+ * A panel title is the page's own voice announcing a section, so it steps up on a wide screen the
+ * way the goal statement does. The two stay one rung apart at both widths: the goal is the single
+ * loudest line on the page, and a section heading must not read as another one.
+ */
+export const PANEL_TITLE = "font-heading text-xl font-medium md:text-2xl" as const;
 
 export const PANEL_DESCRIPTION = "text-sm text-muted-foreground" as const;
 
