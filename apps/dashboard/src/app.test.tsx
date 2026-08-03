@@ -9,6 +9,7 @@ import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
+import { ThemeProvider } from "#src/theme/theme-provider";
 
 function wrapper() {
     const client = new QueryClient({
@@ -19,9 +20,11 @@ function wrapper() {
 
     return function QueryWrapper({ children }: { children: ReactNode }) {
         return (
-            <QueryClientProvider client={client}>
-                <TooltipProvider>{children}</TooltipProvider>
-            </QueryClientProvider>
+            <ThemeProvider>
+                <QueryClientProvider client={client}>
+                    <TooltipProvider>{children}</TooltipProvider>
+                </QueryClientProvider>
+            </ThemeProvider>
         );
     };
 }

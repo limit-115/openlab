@@ -7,12 +7,14 @@ import { cn } from "#src/design-system/class-names";
 import {
     LAB_HEADER_BAR,
     LAB_HEADER_ROW,
+    LAB_HEADER_RUNTIME,
     LAB_HEADER_VIEW,
     LAB_HEADER_VIEW_CURRENT,
     LAB_HEADER_VIEWS
 } from "#src/lab-header/lab-header.const";
 import { RuntimeStrip } from "#src/lab-header/runtime-strip";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
+import { ModeToggle } from "#src/theme/mode-toggle";
 
 interface LabHeaderProps {
     snapshot: StatusSnapshot;
@@ -53,7 +55,10 @@ export function LabHeader({ snapshot, stream }: LabHeaderProps) {
                     ))}
                 </nav>
 
-                <RuntimeStrip snapshot={snapshot} stream={stream} />
+                <div className={LAB_HEADER_RUNTIME}>
+                    <RuntimeStrip snapshot={snapshot} stream={stream} />
+                    <ModeToggle />
+                </div>
             </div>
         </header>
     );

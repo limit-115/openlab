@@ -4,6 +4,9 @@ export const LAB_HEADER_BAR =
 export const LAB_HEADER_ROW =
     "flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-3" as const;
 
+/** The readings and the palette control share the end of the row and wrap together. */
+export const LAB_HEADER_RUNTIME = "flex flex-wrap items-center gap-x-5 gap-y-2" as const;
+
 /** The views sit in the header because it is the only navigation the dashboard has. */
 export const LAB_HEADER_VIEWS = "flex w-fit flex-wrap items-center gap-x-6 gap-y-2" as const;
 

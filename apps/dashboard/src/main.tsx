@@ -5,6 +5,7 @@ import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
+import { ThemeProvider } from "#src/theme/theme-provider";
 import "#src/tailwind.css";
 
 const rootElement = document.getElementById("root");
@@ -26,10 +27,12 @@ const router = createBrowserRouter(dashboardRoutes);
 
 createRoot(rootElement).render(
     <StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-                <RouterProvider router={router} />
-            </TooltipProvider>
-        </QueryClientProvider>
+        <ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+                <TooltipProvider>
+                    <RouterProvider router={router} />
+                </TooltipProvider>
+            </QueryClientProvider>
+        </ThemeProvider>
     </StrictMode>
 );
