@@ -6,6 +6,7 @@ import { EventEntry } from "#src/events/event-entry";
 import { EVENT_STREAM, LIVE_LABEL } from "#src/events/events-panel.const";
 import { SIGNAL_PULSE } from "#src/live-status/connection-badge.const";
 import { Panel } from "#src/panel/panel";
+import { PANEL_SCROLLER } from "#src/panel/panel.const";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface EventsPanelProps {
@@ -29,7 +30,7 @@ export function EventsPanel({ events }: EventsPanelProps) {
             }
         >
             {ordered.length > 0 ? (
-                <ol className={EVENT_STREAM}>
+                <ol className={cn(EVENT_STREAM, PANEL_SCROLLER)}>
                     {ordered.map((event) => (
                         <EventEntry key={event.id} event={event} />
                     ))}
