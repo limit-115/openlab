@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Outlet, useLocation } from "react-router";
+import { Outlet } from "react-router";
 import { APP_FOOTER, APP_SHELL, DASHBOARD, PAGE_FRAME } from "#src/app.const";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
@@ -12,7 +12,6 @@ import { StreamState } from "#src/live-status/status-stream.const";
 /** The shell every view is shown in: it resolves the snapshot once and hands it to the route. */
 export function App() {
     const stream = useLiveStatus();
-    const { pathname } = useLocation();
     const statusQuery = useQuery({
         queryKey: statusQueryKey,
         queryFn: ({ signal }) => fetchStatus(signal),
@@ -45,7 +44,7 @@ export function App() {
 
     return (
         <div className={APP_SHELL}>
-            <LabHeader snapshot={snapshot} stream={stream} view={pathname} />
+            <LabHeader snapshot={snapshot} stream={stream} />
             <main className={cn(PAGE_FRAME, DASHBOARD)}>
                 <Outlet context={snapshot} />
             </main>

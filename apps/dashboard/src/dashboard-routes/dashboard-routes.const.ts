@@ -5,7 +5,8 @@ export const DashboardRoute = {
 } as const;
 export type DashboardRoute = (typeof DashboardRoute)[keyof typeof DashboardRoute];
 
-export const VIEW_TABS = [
+/** The addresses the header links to, in the order an operator reads them. */
+export const DASHBOARD_VIEWS = [
     { route: DashboardRoute.OVERVIEW, label: "Overview" },
     { route: DashboardRoute.TEAM, label: "Team" }
 ] as const;
