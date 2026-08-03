@@ -1,7 +1,5 @@
 import type { InternalTask } from "@lab/protocol/task-queue/internal-task.types";
-import { UsersIcon } from "lucide-react";
 import { useState } from "react";
-import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { AgentRoster } from "#src/team/agent-roster";
 import { AgentThread } from "#src/team/agent-thread";
@@ -22,28 +20,26 @@ export function TeamPanel({ agents, tasks }: TeamPanelProps) {
      */
     const selected = agents.find(({ activity }) => activity.agent_id === chosenId) ?? agents[0];
 
+    if (selected === undefined) {
+        return <PanelEmptyState title={NO_AGENTS_TITLE} description={NO_AGENTS_DESCRIPTION} />;
+    }
+
+    /**
+     * The whole address is the team, so the roster and the thread are the page rather than the
+     * contents of a card that would only repeat what the header already said.
+     */
     return (
-        <Panel
-            title="Team"
-            description="Every agent the lab is running, and what each is doing"
-            icon={UsersIcon}
-        >
-            {selected === undefined ? (
-                <PanelEmptyState title={NO_AGENTS_TITLE} description={NO_AGENTS_DESCRIPTION} />
-            ) : (
-                <div className={TEAM_SPLIT}>
-                    <AgentRoster
-                        agents={agents}
-                        tasks={tasks}
-                        selectedId={selected.activity.agent_id}
-                        onSelect={setChosenId}
-                    />
-                    <AgentThread
-                        agent={selected}
-                        task={tasks.find(({ id }) => id === selected.activity.task_id)}
-                    />
-                </div>
-            )}
-        </Panel>
+        <div className={TEAM_SPLIT}>
+            <AgentRoster
+                agents={agents}
+                tasks={tasks}
+                selectedId={selected.activity.agent_id}
+                onSelect={setChosenId}
+            />
+            <AgentThread
+                agent={selected}
+                task={tasks.find(({ id }) => id === selected.activity.task_id)}
+            />
+        </div>
     );
 }
