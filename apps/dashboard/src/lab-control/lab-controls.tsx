@@ -17,7 +17,8 @@ interface LabControlsProps {
 
 /**
  * The lifecycle controls, on an island floating over the corner of the page. Only the transitions
- * the current state allows are offered, so a settled run leaves the corner empty.
+ * the current state allows are offered, so a failed run leaves the corner empty and every other
+ * state carries its way out of itself.
  */
 export function LabControls({ state }: LabControlsProps) {
     const queryClient = useQueryClient();

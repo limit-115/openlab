@@ -56,7 +56,7 @@ describe("LabControls", () => {
         await user.click(screen.getByRole("button", { name: "Stop" }));
 
         expect(
-            screen.getByText(/A stopped lab cannot be started again/, { exact: false })
+            screen.getByText(/whatever they had in hand is lost/, { exact: false })
         ).toBeInTheDocument();
         expect(fetchMock).not.toHaveBeenCalled();
 
@@ -64,6 +64,68 @@ describe("LabControls", () => {
 
         expect(fetchMock).toHaveBeenCalledWith(
             "/api/stop",
+            expect.objectContaining({ method: "POST" })
+        );
+    });
+
+    it("puts a running lab to sleep without asking, since waking it is one click back", async () => {
+        const paused = {
+            ...statusFixture,
+            lab: { ...statusFixture.lab, state: LabState.HIBERNATING }
+        };
+        const fetchMock = answerWith(paused);
+        const user = userEvent.setup();
+        const { client } = renderControls(LabState.RUNNING);
+
+        await user.click(screen.getByRole("button", { name: "Pause" }));
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            "/api/pause",
+            expect.objectContaining({ method: "POST" })
+        );
+        await vi.waitFor(() =>
+            expect(client.getQueryData(statusQueryKey)).toMatchObject({
+                lab: { state: LabState.HIBERNATING }
+            })
+        );
+    });
+
+    it("starts a stopped run again rather than leaving it settled", async () => {
+        const restarted = {
+            ...statusFixture,
+            lab: { ...statusFixture.lab, state: LabState.RUNNING }
+        };
+        const fetchMock = answerWith(restarted);
+        const user = userEvent.setup();
+        const { client } = renderControls(LabState.STOPPED);
+
+        await user.click(screen.getByRole("button", { name: "Start" }));
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            "/api/wake",
+            expect.objectContaining({ method: "POST" })
+        );
+        await vi.waitFor(() =>
+            expect(client.getQueryData(statusQueryKey)).toMatchObject({
+                lab: { state: LabState.RUNNING }
+            })
+        );
+    });
+
+    it("carries a breakthrough further instead of stranding the run on it", async () => {
+        const carried = {
+            ...statusFixture,
+            lab: { ...statusFixture.lab, state: LabState.RUNNING }
+        };
+        const fetchMock = answerWith(carried);
+        const user = userEvent.setup();
+        renderControls(LabState.BREAKTHROUGH);
+
+        expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
+        await user.click(screen.getByRole("button", { name: "Resume" }));
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            "/api/wake",
             expect.objectContaining({ method: "POST" })
         );
     });
@@ -86,8 +148,8 @@ describe("LabControls", () => {
         expect(screen.queryByRole("button", { name: "Wake" })).not.toBeInTheDocument();
     });
 
-    it("offers nothing once the run has settled for good", () => {
-        renderControls(LabState.STOPPED);
+    it("offers nothing to a failed run, which is the one the lab will not reopen", () => {
+        renderControls(LabState.FAILED);
 
         expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
