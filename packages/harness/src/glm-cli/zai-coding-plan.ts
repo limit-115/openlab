@@ -34,7 +34,7 @@ export async function resolveZaiCodingPlan(): Promise<ZaiCodingPlan> {
     return { apiKey, level: await readCodingPlanLevel(apiKey) };
 }
 
-async function readCodingPlanKey(): Promise<string> {
+export async function readCodingPlanKey(): Promise<string> {
     const path = join(homedir(), ...ZCodeLoginStore.CONFIG_SEGMENTS);
     let store: unknown;
     try {
