@@ -7,17 +7,15 @@ import type { SubscriptionAllowance as HarnessAllowance } from "@lab/harness/sub
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { DirectorPlanSchema } from "#src/research-contract/research-contract";
 import {
     HarnessCapabilityBlockedError,
     runAgentWithFallback
 } from "#src/research-cycle/agent-dispatch";
 import type { AvailableHarness } from "#src/research-cycle/research-loop.types";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
-
-const DispatchSchema = z.object({ capability_requests: z.array(z.unknown()) });
 
 /** A harness the gate must never reach: every way of using it fails the test out loud. */
 function unusedHarness(kind: HarnessKind): AvailableHarness {
@@ -77,7 +75,7 @@ describe("runAgentWithFallback", () => {
                 throw new Error("a run was prepared for a spent subscription");
             },
             prompt: "Plan the cycle",
-            schema: DispatchSchema
+            schema: DirectorPlanSchema
         });
 
         await expect(dispatch).rejects.toBeInstanceOf(HarnessCapabilityBlockedError);
@@ -107,7 +105,7 @@ describe("runAgentWithFallback", () => {
                 throw reached;
             },
             prompt: "Plan the cycle",
-            schema: DispatchSchema
+            schema: DirectorPlanSchema
         });
 
         await expect(dispatch).rejects.toBe(reached);
@@ -129,7 +127,7 @@ describe("runAgentWithFallback", () => {
                 throw reached;
             },
             prompt: "Plan the cycle",
-            schema: DispatchSchema
+            schema: DirectorPlanSchema
         });
 
         await expect(dispatch).rejects.toBe(reached);
