@@ -15,10 +15,14 @@ describe("lab lifecycle", () => {
         ).toBe(true);
     });
 
-    it("resumes a paused lab only on a trigger", () => {
+    it("resumes a settled lab only on a trigger", () => {
         expect(assessLifecycleTransition(LabState.HIBERNATING, LabState.RUNNING).allowed).toBe(
             false
         );
+        expect(assessLifecycleTransition(LabState.BREAKTHROUGH, LabState.RUNNING).allowed).toBe(
+            false
+        );
+        expect(assessLifecycleTransition(LabState.STOPPED, LabState.RUNNING).allowed).toBe(false);
         expect(
             assessLifecycleTransition(LabState.HIBERNATING, LabState.RUNNING, {
                 wakeTrigger: WakeTrigger.CAPABILITY
@@ -31,10 +35,22 @@ describe("lab lifecycle", () => {
         ).toBe(true);
     });
 
-    it("hibernates without ceremony and keeps terminal states terminal", () => {
+    it("starts a stopped run again and leaves only a failure final", () => {
+        expect(
+            assessLifecycleTransition(LabState.STOPPED, LabState.RUNNING, {
+                wakeTrigger: WakeTrigger.USER
+            }).allowed
+        ).toBe(true);
+        expect(
+            assessLifecycleTransition(LabState.FAILED, LabState.RUNNING, {
+                wakeTrigger: WakeTrigger.USER
+            }).allowed
+        ).toBe(false);
+    });
+
+    it("hibernates without ceremony", () => {
         expect(assessLifecycleTransition(LabState.RUNNING, LabState.HIBERNATING).allowed).toBe(
             true
         );
-        expect(assessLifecycleTransition(LabState.STOPPED, LabState.RUNNING).allowed).toBe(false);
     });
 });

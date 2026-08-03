@@ -30,12 +30,13 @@ export function assessLifecycleTransition(
         reasons.push("A breakthrough requires the finding a verifier confirmed");
     }
 
-    if (
-        (current === LabState.HIBERNATING || current === LabState.BREAKTHROUGH) &&
-        target === LabState.RUNNING &&
-        context.wakeTrigger === undefined
-    ) {
-        reasons.push("Resuming a paused lab requires a trigger");
+    /**
+     * A lab only ever reaches RUNNING by being resumed, because the state it starts in is the one
+     * it is born with. Every such return names what revived it, so the run's history says whether
+     * a person or an answered capability put it back to work.
+     */
+    if (target === LabState.RUNNING && context.wakeTrigger === undefined) {
+        reasons.push("Resuming a lab requires a trigger");
     }
 
     if (
