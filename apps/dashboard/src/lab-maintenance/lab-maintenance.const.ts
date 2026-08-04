@@ -77,9 +77,13 @@ export const STORAGE_ROOT_ROW =
 export const STORAGE_ROOT_ICON = "size-4 shrink-0 text-muted-foreground" as const;
 export const STORAGE_ROOT_PATH = "min-w-0 flex-1 text-sm break-all" as const;
 
-/** The first and last columns keep the card's own padding, so the rows line up with the summary. */
+/**
+ * The first and last columns keep the card's own padding, so the rows line up with the summary,
+ * and every column is ruled off from the next: a reading belongs to the column it is under, and
+ * the rule is what says which one that is. The outer edge is the card's own border.
+ */
 export const RUN_TABLE =
-    "[&_td:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th:first-child]:pl-6 [&_th:last-child]:pr-6" as const;
+    "[&_td:first-child]:pl-6 [&_td:last-child]:pr-6 [&_td:last-child]:border-r-0 [&_td]:border-r [&_th:first-child]:pl-6 [&_th:last-child]:pr-6 [&_th:last-child]:border-r-0 [&_th]:border-r" as const;
 
 export const DIRECTORY_COLUMN = "w-full" as const;
 export const SHARE_COLUMN = "w-48" as const;
