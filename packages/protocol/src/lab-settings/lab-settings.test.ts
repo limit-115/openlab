@@ -19,6 +19,33 @@ describe("LabSettingsSchema", () => {
         );
     });
 
+    it("reads an unconfigured lab as one that spends every subscription as far as its vendor serves it", () => {
+        expect(LabSettingsSchema.parse({}).spend_caps).toEqual([]);
+    });
+
+    it("keeps the cap the operator set on one subscription window", () => {
+        const settings = LabSettingsSchema.parse({
+            spend_caps: [
+                { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 80 }
+            ]
+        });
+
+        expect(settings.spend_caps).toEqual([
+            { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 80 }
+        ]);
+    });
+
+    it("refuses one window capped twice, which names no ceiling", () => {
+        expect(() =>
+            LabSettingsSchema.parse({
+                spend_caps: [
+                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 80 },
+                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+                ]
+            })
+        ).toThrow();
+    });
+
     it("keeps a role on the model and effort the operator set for it", () => {
         const settings = LabSettingsSchema.parse({
             role_execution: [

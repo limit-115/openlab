@@ -7,6 +7,7 @@ import {
     DEFAULT_ROLE_EXECUTION,
     LabSettingsRefusal
 } from "#src/lab-settings/lab-settings.const";
+import { SpendCapsSchema } from "#src/spend-caps/spend-cap.schema";
 
 function distinct(values: readonly string[]): boolean {
     return new Set(values).size === values.length;
@@ -55,5 +56,11 @@ export const LabSettingsSchema = z.object({
         .refine(
             (roles) => distinct(roles.map(({ role }) => role)),
             LabSettingsRefusal.DUPLICATE_ROLE
-        )
+        ),
+    /**
+     * How far into each subscription window the lab may spend before it stops dispatching there. A
+     * window nobody capped is left out, so a lab that has never been given a cap spends every
+     * subscription as far as its vendor will serve it.
+     */
+    spend_caps: SpendCapsSchema.default([])
 });
