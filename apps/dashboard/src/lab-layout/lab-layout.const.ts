@@ -25,10 +25,10 @@ export const LAYOUT_BAR = "shrink-0 border-b" as const;
 export const LAYOUT_BAR_ROW = "flex items-center gap-2 py-3" as const;
 
 /**
- * A vertical separator stretches by default, and stretching to a height it was also given lines it
- * up with the top of the row instead of its middle. It is centred here, against the row it divides.
+ * The divider runs the whole bar rather than the row inside it: it stretches to the row's content
+ * and then pulls back the row's own padding, so it meets the top edge and the bar's bottom rule.
  */
-export const LAYOUT_BAR_DIVIDER = "mr-1 h-4 data-vertical:self-center" as const;
+export const LAYOUT_BAR_DIVIDER = "-my-3 mr-1" as const;
 
 /** The trail stays on one line: a long step is clipped rather than wrapped into a taller bar. */
 export const TRAIL_LIST = "min-w-0 flex-nowrap" as const;
