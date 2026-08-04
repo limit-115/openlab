@@ -14,8 +14,11 @@ Local autonomous research runtime described in
 - `packages/harness` — subscription-authenticated Codex and Claude CLI harnesses;
 - `packages/executor` — local experiment execution.
 
-Operational state belongs in PostgreSQL. Files in a lab workspace are durable
-artifacts and protocol snapshots that can be inspected or exported independently.
+One lab holds many investigations. Each investigation is one goal with its own agents, its own run
+directory and its own research loop, running alongside the others.
+
+Operational state belongs in PostgreSQL. Files in a run directory are durable artifacts and
+protocol snapshots that can be inspected or exported independently.
 
 ## Local setup
 
@@ -31,32 +34,45 @@ Requirements:
 fnm use
 pnpm install --frozen-lockfile
 export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/ai_research_lab
-pnpm lab start examples/task.example.json
+pnpm lab start
 ```
 
-The daemon applies database migrations before opening a run. It invokes agents only through the
-locally installed `codex` and `claude` CLI harnesses. API keys and usage-based model API fallbacks
-are intentionally unsupported.
+The lab starts empty. Open the dashboard to add an investigation, or use the CLI:
+
+```bash
+pnpm lab new --goal "Find and verify a faster implementation of a reference algorithm"
+pnpm lab new --file examples/investigation.example.json
+```
+
+The daemon applies database migrations before it opens, and reopens every investigation it already
+holds. It invokes agents only through the locally installed `codex`, `claude` and `glm` CLI
+harnesses. API keys and usage-based model API fallbacks are intentionally unsupported.
 
 ## Commands
 
 ```bash
+pnpm lab list
 pnpm lab status
 pnpm lab bets
 pnpm lab inspect <bet-finding-verdict-or-run-id>
 pnpm lab capabilities
-pnpm lab provide <request-id> <resource-reference>
+pnpm lab answer <request-id> <answer>
 pnpm lab wake
 pnpm lab stop
 pnpm lab export
+pnpm lab rm <investigation-id>
 pnpm lab purge
 ```
 
-`purge` deletes run history from disk and the database. It refuses while a daemon is running, then
-asks whether to remove every run or every run except the current one, and confirms before deleting.
+Every command above is about one investigation. With a single investigation the lab picks it; with
+several, name it with `-i/--investigation <id>`.
+
+`rm` discards one investigation, its history and its run directory, and works while the lab is
+running. `purge` empties the lab instead: it refuses while a daemon is answering, and confirms
+before deleting.
 
 The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build it with
-`pnpm --filter @lab/dashboard build` before starting the run.
+`pnpm --filter @lab/dashboard build` before starting the lab.
 
 ## Configuration
 
