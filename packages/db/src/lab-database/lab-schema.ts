@@ -10,6 +10,7 @@ import type { InvestigationInput } from "@lab/protocol/investigation-input/inves
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
+import type { NotificationSettings } from "@lab/protocol/operator-notifications/notification-settings.types";
 import {
     bigint,
     boolean,
@@ -193,6 +194,18 @@ export const runtimeCheckpoints = pgTable(
 export const labSettings = pgTable("lab_settings", {
     id: text("id").primaryKey(),
     settings: jsonb("settings").$type<LabSettings>().notNull(),
+    ...timestamps
+});
+
+/**
+ * Who the lab tells about the moments worth reading, and where. Kept apart from the settings the
+ * lab dispatches by, because these carry the credential a channel authenticates with: the two
+ * documents are read by different callers under different rules, and only one of them is served
+ * back whole.
+ */
+export const notificationSettings = pgTable("notification_settings", {
+    id: text("id").primaryKey(),
+    settings: jsonb("settings").$type<NotificationSettings>().notNull(),
     ...timestamps
 });
 

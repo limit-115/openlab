@@ -15,6 +15,13 @@
             "when": 1785867570922,
             "tag": "0001_old_moon_knight",
             "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "7",
+            "when": 1785882272477,
+            "tag": "0002_brief_blur",
+            "breakpoints": true
         }
     ]
 }
