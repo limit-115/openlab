@@ -1,16 +1,16 @@
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
 export function terminalTimestamps(snapshot: StatusSnapshot, updatedAt: Date) {
-    switch (snapshot.lab.state) {
-        case LabState.HIBERNATING:
+    switch (snapshot.investigation.state) {
+        case InvestigationState.HIBERNATING:
             return { hibernatedAt: updatedAt };
-        case LabState.BREAKTHROUGH:
+        case InvestigationState.BREAKTHROUGH:
             return { breakthroughAt: updatedAt };
-        case LabState.STOPPED:
+        case InvestigationState.STOPPED:
             return { stoppedAt: updatedAt };
-        case LabState.RUNNING:
-        case LabState.FAILED:
+        case InvestigationState.RUNNING:
+        case InvestigationState.FAILED:
             return {};
     }
 }

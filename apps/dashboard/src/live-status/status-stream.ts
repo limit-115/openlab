@@ -1,7 +1,7 @@
-import { LabEventSchema } from "@lab/protocol/lab-events/lab-event.schema";
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
-import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { InvestigationEventSchema } from "@lab/protocol/investigation-events/investigation-event.schema";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { statusQueryKey } from "#src/live-status/status-client";
@@ -12,7 +12,7 @@ function readPayload(event: MessageEvent<string>): unknown {
     return JSON.parse(event.data);
 }
 
-function prependEvent(snapshot: StatusSnapshot, event: LabEvent): StatusSnapshot {
+function prependEvent(snapshot: StatusSnapshot, event: InvestigationEvent): StatusSnapshot {
     const withoutDuplicate = snapshot.recent_events.filter(
         (candidate) => candidate.id !== event.id
     );
@@ -52,9 +52,11 @@ export function useLiveStatus(enabled = true): LiveStatus {
             }
         };
 
-        const receiveLabEvent = (event: Event) => {
+        const receiveInvestigationEvent = (event: Event) => {
             try {
-                const labEvent = LabEventSchema.parse(readPayload(event as MessageEvent<string>));
+                const labEvent = InvestigationEventSchema.parse(
+                    readPayload(event as MessageEvent<string>)
+                );
                 queryClient.setQueryData<StatusSnapshot>(statusQueryKey, (snapshot) =>
                     snapshot ? prependEvent(snapshot, labEvent) : snapshot
                 );
@@ -77,8 +79,8 @@ export function useLiveStatus(enabled = true): LiveStatus {
                         : StreamState.RECONNECTING
             }));
         };
-        source.onmessage = receiveLabEvent;
-        source.addEventListener(StreamEventType.EVENT, receiveLabEvent);
+        source.onmessage = receiveInvestigationEvent;
+        source.addEventListener(StreamEventType.EVENT, receiveInvestigationEvent);
         source.addEventListener(StreamEventType.SNAPSHOT, receiveSnapshot);
         source.addEventListener(StreamEventType.STATUS, receiveSnapshot);
 

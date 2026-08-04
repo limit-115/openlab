@@ -3,7 +3,7 @@ import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import Table from "cli-table3";
 
 function lines(items: string[]): string {
@@ -23,9 +23,9 @@ export function renderStatus(status: StatusSnapshot): string {
         ({ status: finding }) => finding === FindingStatus.CONFIRMED
     ).length;
     table.push(
-        ["State", status.lab.state],
-        ["Lab", status.lab.id],
-        ["Goal", status.lab.goal],
+        ["State", status.investigation.state],
+        ["Investigation", status.investigation.id],
+        ["Goal", status.investigation.goal],
         ["Bets", `${live} live of ${status.assumptions.length}`],
         [
             "Agents",

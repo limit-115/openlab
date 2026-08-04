@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { TaskInputSchema } from "#src/research-task/task-input.schema";
+import { InvestigationInputSchema } from "#src/investigation-input/investigation-input.schema";
 
-describe("TaskInputSchema", () => {
+describe("InvestigationInputSchema", () => {
     it("accepts a goal and supplies optional collection defaults", () => {
-        expect(TaskInputSchema.parse({ goal: "Find a faster algorithm" })).toEqual({
+        expect(InvestigationInputSchema.parse({ goal: "Find a faster algorithm" })).toEqual({
             goal: "Find a faster algorithm",
             context: [],
             success_criteria: []
@@ -11,6 +11,6 @@ describe("TaskInputSchema", () => {
     });
 
     it("rejects an empty goal", () => {
-        expect(() => TaskInputSchema.parse({ goal: "  " })).toThrow();
+        expect(() => InvestigationInputSchema.parse({ goal: "  " })).toThrow();
     });
 });

@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { and, eq, notInArray } from "drizzle-orm";
 import { capabilityRequests } from "#src/lab-database/lab-schema";
 import { assertUpserted } from "#src/runtime/snapshot-projection/projected-entity-record";
@@ -18,7 +18,7 @@ export async function upsertCapabilities(
             .insert(capabilityRequests)
             .values({
                 id: capability.id,
-                labId: snapshot.lab.id,
+                investigationId: snapshot.investigation.id,
                 need: capability.need,
                 reason: capability.reason,
                 provisioningHint: capability.provisioning_hint,
@@ -43,7 +43,7 @@ export async function upsertCapabilities(
                     answeredAt,
                     updatedAt: projectionAt
                 },
-                setWhere: eq(capabilityRequests.labId, snapshot.lab.id)
+                setWhere: eq(capabilityRequests.investigationId, snapshot.investigation.id)
             })
             .returning({ id: capabilityRequests.id });
         assertUpserted(records, "capability request", capability.id);
@@ -52,14 +52,17 @@ export async function upsertCapabilities(
 
 export async function deleteMissingCapabilities(
     database: RuntimeProjectionDatabase,
-    labId: string,
+    investigationId: string,
     ids: string[]
 ): Promise<void> {
     await database
         .delete(capabilityRequests)
         .where(
             ids.length === 0
-                ? eq(capabilityRequests.labId, labId)
-                : and(eq(capabilityRequests.labId, labId), notInArray(capabilityRequests.id, ids))
+                ? eq(capabilityRequests.investigationId, investigationId)
+                : and(
+                      eq(capabilityRequests.investigationId, investigationId),
+                      notInArray(capabilityRequests.id, ids)
+                  )
         );
 }

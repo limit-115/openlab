@@ -3,7 +3,7 @@ import { mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createDatabase, type DatabaseClient } from "@lab/db/lab-database/lab-database-client";
-import { agentRuns, assumptions, labs } from "@lab/db/lab-database/lab-schema";
+import { agentRuns, assumptions, investigations } from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "@lab/db/runtime/runtime-revision-conflict";
@@ -12,16 +12,16 @@ import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 
 /** Seeds one bet and the run that took it, which is the smallest projectable research state. */
-async function seedBet(workspace: LabWorkspace, statement: string): Promise<string> {
+async function seedBet(workspace: InvestigationWorkspace, statement: string): Promise<string> {
     const id = `assumption-${randomUUID()}`;
     await workspace.update((draft) => {
-        const timestamp = draft.lab.updated_at;
+        const timestamp = draft.investigation.updated_at;
         draft.assumptions.push({
             id,
             cycle: 0,
@@ -47,7 +47,7 @@ async function seedBet(workspace: LabWorkspace, statement: string): Promise<stri
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
 
-describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
+describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
     let client: DatabaseClient;
 
     beforeAll(async () => {
@@ -63,39 +63,55 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
     });
 
     afterEach(async () => {
-        await client?.db.delete(labs);
+        await client?.db.delete(investigations);
     });
 
-    it("namespaces initial entities across independent and repeated labs", async () => {
+    it("namespaces initial entities across independent and repeated investigations", async () => {
         const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-multiple-runs-"));
         const firstTaskPath = path.join(workspaceRoot, "first-task.json");
         const secondTaskPath = path.join(workspaceRoot, "second-task.json");
         await Promise.all([
-            writeFile(firstTaskPath, JSON.stringify({ goal: "Run the first independent lab" })),
-            writeFile(secondTaskPath, JSON.stringify({ goal: "Run the second independent lab" }))
+            writeFile(
+                firstTaskPath,
+                JSON.stringify({ goal: "Run the first independent investigation" })
+            ),
+            writeFile(
+                secondTaskPath,
+                JSON.stringify({ goal: "Run the second independent investigation" })
+            )
         ]);
         const persistence = new RuntimePersistence(client.db);
-        const first = await LabWorkspace.initialize(workspaceRoot, firstTaskPath, persistence);
-        const second = await LabWorkspace.openOrCreate(workspaceRoot, secondTaskPath, persistence);
-        await second.transition(LabState.FAILED, "Exercise a terminal rerun", {
+        const first = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            firstTaskPath,
+            persistence
+        );
+        const second = await InvestigationWorkspace.openOrCreate(
+            workspaceRoot,
+            secondTaskPath,
+            persistence
+        );
+        await second.transition(InvestigationState.FAILED, "Exercise a terminal rerun", {
             failureReason: "Exercise a terminal rerun"
         });
-        const repeated = await LabWorkspace.openOrCreate(
+        const repeated = await InvestigationWorkspace.openOrCreate(
             workspaceRoot,
             secondTaskPath,
             persistence
         );
 
-        expect(new Set([first.labId, second.labId, repeated.labId]).size).toBe(3);
-        await seedBet(first, "The first lab bets here");
+        expect(
+            new Set([first.investigationId, second.investigationId, repeated.investigationId]).size
+        ).toBe(3);
+        await seedBet(first, "The first investigation bets here");
         await seedBet(repeated, "The rerun bets somewhere else");
         const projectedAssumptions = await client.db.select().from(assumptions);
         const projectedRuns = await client.db.select().from(agentRuns);
-        expect(projectedAssumptions.map(({ labId }) => labId).sort()).toEqual(
-            [first.labId, repeated.labId].sort()
+        expect(projectedAssumptions.map(({ investigationId }) => investigationId).sort()).toEqual(
+            [first.investigationId, repeated.investigationId].sort()
         );
-        expect(projectedRuns.map(({ labId }) => labId).sort()).toEqual(
-            [first.labId, repeated.labId].sort()
+        expect(projectedRuns.map(({ investigationId }) => investigationId).sort()).toEqual(
+            [first.investigationId, repeated.investigationId].sort()
         );
     });
 
@@ -104,28 +120,32 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         const taskPath = path.join(workspaceRoot, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Commit one atomic transition" }));
         const persistence = new RuntimePersistence(client.db);
-        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
-        const before = await persistence.load(workspace.labId);
+        const workspace = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
+        const before = await persistence.load(workspace.investigationId);
         if (before === undefined) {
             throw new Error("Expected an initialized persisted runtime");
         }
 
-        const transitioned = await workspace.transition(LabState.STOPPED, "Atomic stop");
+        const transitioned = await workspace.transition(InvestigationState.STOPPED, "Atomic stop");
 
-        const after = await persistence.load(workspace.labId);
+        const after = await persistence.load(workspace.investigationId);
         expect(after?.checkpoint.revision).toBe(before.checkpoint.revision + 1);
         expect(after?.checkpoint.snapshot).toEqual(transitioned);
         expect(workspace.getSnapshot()).toEqual(transitioned);
         expect(workspace.getEvents()).toEqual([
             expect.objectContaining({
-                type: EventType.LAB_STATE_CHANGED,
-                payload: { state: LabState.STOPPED, reason: "Atomic stop" }
+                type: EventType.INVESTIGATION_STATE_CHANGED,
+                payload: { state: InvestigationState.STOPPED, reason: "Atomic stop" }
             })
         ]);
-        expect(await persistence.eventsAfter(workspace.labId)).toEqual([
+        expect(await persistence.eventsAfter(workspace.investigationId)).toEqual([
             expect.objectContaining({
-                type: EventType.LAB_STATE_CHANGED,
-                payload: { state: LabState.STOPPED, reason: "Atomic stop" }
+                type: EventType.INVESTIGATION_STATE_CHANGED,
+                payload: { state: InvestigationState.STOPPED, reason: "Atomic stop" }
             })
         ]);
     });
@@ -135,8 +155,12 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         const taskPath = path.join(workspaceRoot, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Reject a stale transition" }));
         const persistence = new RuntimePersistence(client.db);
-        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
-        const persistedBefore = await persistence.load(workspace.labId);
+        const workspace = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
+        const persistedBefore = await persistence.load(workspace.investigationId);
         if (persistedBefore === undefined) {
             throw new Error("Expected an initialized persisted runtime");
         }
@@ -148,9 +172,9 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         ]);
         const externalSnapshot = structuredClone(beforeSnapshot);
         const externalTimestamp = new Date(
-            Date.parse(externalSnapshot.lab.updated_at) + 1_000
+            Date.parse(externalSnapshot.investigation.updated_at) + 1_000
         ).toISOString();
-        externalSnapshot.lab.updated_at = externalTimestamp;
+        externalSnapshot.investigation.updated_at = externalTimestamp;
         externalSnapshot.assumptions.push({
             id: "assumption-concurrent-writer",
             cycle: 0,
@@ -165,9 +189,9 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             expectedRevision: persistedBefore.checkpoint.revision
         });
 
-        await expect(workspace.transition(LabState.STOPPED, "Stale stop")).rejects.toBeInstanceOf(
-            RuntimeRevisionConflictError
-        );
+        await expect(
+            workspace.transition(InvestigationState.STOPPED, "Stale stop")
+        ).rejects.toBeInstanceOf(RuntimeRevisionConflictError);
 
         expect(workspace.getSnapshot()).toEqual(beforeSnapshot);
         expect(workspace.getEvents()).toEqual(beforeEvents);
@@ -177,13 +201,13 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
                 readFile(path.join(workspace.runDirectory, "events.json"), "utf8")
             ])
         ).resolves.toEqual([beforeStatusFile, beforeEventsFile]);
-        const persisted = await persistence.load(workspace.labId);
+        const persisted = await persistence.load(workspace.investigationId);
         expect(persisted?.checkpoint.revision).toBe(externalCommit.revision);
         expect(
             persisted?.checkpoint.snapshot.assumptions.map(({ statement }) => statement)
         ).toContain("A concurrent writer committed first");
-        expect(persisted?.checkpoint.snapshot.lab.state).toBe(LabState.RUNNING);
-        expect(await persistence.eventsAfter(workspace.labId)).toEqual([]);
+        expect(persisted?.checkpoint.snapshot.investigation.state).toBe(InvestigationState.RUNNING);
+        expect(await persistence.eventsAfter(workspace.investigationId)).toEqual([]);
     });
 
     it("repairs corrupt filesystem snapshots from the atomic database checkpoint", async () => {
@@ -191,12 +215,18 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         const taskPath = path.join(workspaceRoot, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Recover the authoritative state" }));
         const persistence = new RuntimePersistence(client.db);
-        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        const workspace = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
 
-        await workspace.appendEvent(EventType.LAB_STARTED, { source: "integration-test" });
+        await workspace.appendEvent(EventType.INVESTIGATION_STARTED, {
+            source: "integration-test"
+        });
         const assumptionId = await seedBet(workspace, "PostgreSQL checkpoint survived");
         await workspace.update((draft) => {
-            const timestamp = draft.lab.updated_at;
+            const timestamp = draft.investigation.updated_at;
             draft.findings.push({
                 id: "finding-durable",
                 assumption_id: assumptionId,
@@ -214,18 +244,24 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             writeFile(path.join(workspace.runDirectory, "assumptions.json"), "corrupt")
         ]);
 
-        const recovered = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, persistence);
+        const recovered = await InvestigationWorkspace.openOrCreate(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
 
         expect(recovered.recovered).toBe(true);
-        expect(recovered.labId).toBe(workspace.labId);
+        expect(recovered.investigationId).toBe(workspace.investigationId);
         expect(recovered.getSnapshot().assumptions.map(({ statement }) => statement)).toContain(
             "PostgreSQL checkpoint survived"
         );
         expect(recovered.getSnapshot().findings.map(({ id }) => id)).toEqual(["finding-durable"]);
-        expect(recovered.getEvents().map(({ type }) => type)).toContain(EventType.LAB_STARTED);
+        expect(recovered.getEvents().map(({ type }) => type)).toContain(
+            EventType.INVESTIGATION_STARTED
+        );
         await expect(
             readFile(path.join(workspace.runDirectory, "status.json"), "utf8").then(JSON.parse)
-        ).resolves.toMatchObject({ lab: { id: workspace.labId } });
+        ).resolves.toMatchObject({ investigation: { id: workspace.investigationId } });
         await expect(
             readFile(path.join(workspace.runDirectory, "assumptions.json"), "utf8").then(JSON.parse)
         ).resolves.toMatchObject([{ id: assumptionId, findings: [{ id: "finding-durable" }] }]);
@@ -234,7 +270,7 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
                 where: (finding, { eq }) => eq(finding.id, "finding-durable")
             })
         ).toMatchObject({
-            labId: workspace.labId,
+            investigationId: workspace.investigationId,
             assumptionId,
             status: FindingStatus.UNVERIFIED
         });
@@ -250,7 +286,7 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         await recovered.answerCapability(request.id, "Mounted at /srv/corpora/independent-v1");
         await writeFile(path.join(workspace.runDirectory, "status.json"), "corrupt");
 
-        const recoveredCapabilityWorkspace = await LabWorkspace.openOrCreate(
+        const recoveredCapabilityWorkspace = await InvestigationWorkspace.openOrCreate(
             workspaceRoot,
             taskPath,
             persistence
@@ -274,19 +310,19 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         });
     });
 
-    it("repairs a swapped pointer in the canonical lab directory without touching the other lab", async () => {
+    it("repairs a swapped pointer in the canonical investigation directory without touching the other investigation", async () => {
         const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-swapped-pointer-"));
         const firstTaskPath = path.join(workspaceRoot, "task-a.json");
         const secondTaskPath = path.join(workspaceRoot, "task-b.json");
         const firstTask = {
             id: `task-swapped-a-${randomUUID()}`,
-            goal: "Recover lab A in its canonical directory",
-            context: ["Lab B must remain untouched"],
+            goal: "Recover investigation A in its canonical directory",
+            context: ["Investigation B must remain untouched"],
             success_criteria: ["The pointer identifies exactly one persisted runtime"]
         };
         const secondTask = {
             id: `task-swapped-b-${randomUUID()}`,
-            goal: "Keep lab B isolated",
+            goal: "Keep investigation B isolated",
             context: [],
             success_criteria: []
         };
@@ -295,8 +331,16 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             writeFile(secondTaskPath, JSON.stringify(secondTask))
         ]);
         const persistence = new RuntimePersistence(client.db);
-        const first = await LabWorkspace.initialize(workspaceRoot, firstTaskPath, persistence);
-        const second = await LabWorkspace.initialize(workspaceRoot, secondTaskPath, persistence);
+        const first = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            firstTaskPath,
+            persistence
+        );
+        const second = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            secondTaskPath,
+            persistence
+        );
         const corruptedSecondFiles = {
             task: "corrupt-b-task",
             status: "corrupt-b-status",
@@ -314,23 +358,23 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             writeFile(
                 path.join(workspaceRoot, "current.json"),
                 JSON.stringify({
-                    lab_id: first.labId,
+                    investigation_id: first.investigationId,
                     run_directory: second.runDirectory
                 })
             )
         ]);
 
-        const recovered = await LabWorkspace.openOrCreate(
+        const recovered = await InvestigationWorkspace.openOrCreate(
             workspaceRoot,
             firstTaskPath,
             persistence
         );
 
-        expect(recovered.labId).toBe(first.labId);
+        expect(recovered.investigationId).toBe(first.investigationId);
         expect(recovered.runDirectory).toBe(first.runDirectory);
         await expect(recovered.getTask()).resolves.toEqual(firstTask);
         await expect(readCurrentPointer(workspaceRoot)).resolves.toEqual({
-            lab_id: first.labId,
+            investigation_id: first.investigationId,
             run_directory: first.runDirectory
         });
         await expect(
@@ -355,16 +399,24 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             id: `task-corrupt-canonical-${randomUUID()}`,
             goal: "Recover the canonical task input",
             context: ["PostgreSQL stores the accepted input"],
-            success_criteria: ["task.json is repaired without creating another lab"]
+            success_criteria: ["task.json is repaired without creating another investigation"]
         };
         await writeFile(taskPath, JSON.stringify(task));
         const persistence = new RuntimePersistence(client.db);
-        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        const workspace = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
         await writeFile(path.join(workspace.runDirectory, "task.json"), "corrupt-canonical-task");
 
-        const recovered = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, persistence);
+        const recovered = await InvestigationWorkspace.openOrCreate(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
 
-        expect(recovered.labId).toBe(workspace.labId);
+        expect(recovered.investigationId).toBe(workspace.investigationId);
         expect(recovered.runDirectory).toBe(workspace.runDirectory);
         await expect(recovered.getTask()).resolves.toEqual(task);
         await expect(
@@ -379,11 +431,15 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             id: `task-missing-pointer-${randomUUID()}`,
             goal: "Recover without a filesystem pointer",
             context: ["The database remains available"],
-            success_criteria: ["The same lab resumes"]
+            success_criteria: ["The same investigation resumes"]
         };
         await writeFile(taskPath, JSON.stringify(task));
         const persistence = new RuntimePersistence(client.db);
-        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        const workspace = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
         await seedBet(workspace, "Latest database state");
         await Promise.all([
             unlink(path.join(workspaceRoot, "current.json")),
@@ -393,16 +449,20 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             writeFile(path.join(workspace.runDirectory, "task.json"), "corrupt")
         ]);
 
-        const recovered = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, persistence);
+        const recovered = await InvestigationWorkspace.openOrCreate(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
 
         expect(recovered.recovered).toBe(true);
-        expect(recovered.labId).toBe(workspace.labId);
+        expect(recovered.investigationId).toBe(workspace.investigationId);
         expect(recovered.getSnapshot().assumptions.map(({ statement }) => statement)).toContain(
             "Latest database state"
         );
         await expect(recovered.getTask()).resolves.toEqual(task);
         await expect(readCurrentPointer(workspaceRoot)).resolves.toEqual({
-            lab_id: workspace.labId,
+            investigation_id: workspace.investigationId,
             run_directory: workspace.runDirectory
         });
     });
@@ -418,7 +478,11 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
         };
         await writeFile(taskPath, JSON.stringify(task));
         const persistence = new RuntimePersistence(client.db);
-        const workspace = await LabWorkspace.initialize(workspaceRoot, taskPath, persistence);
+        const workspace = await InvestigationWorkspace.initialize(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
         await workspace.appendEvent(EventType.ASSUMPTIONS_PROPOSED, {
             source: "corrupt-pointer-test"
         });
@@ -428,15 +492,19 @@ describeDatabase("LabWorkspace PostgreSQL 18 recovery", () => {
             writeFile(path.join(workspace.runDirectory, "events.json"), "corrupt")
         ]);
 
-        const recovered = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, persistence);
+        const recovered = await InvestigationWorkspace.openOrCreate(
+            workspaceRoot,
+            taskPath,
+            persistence
+        );
 
         expect(recovered.recovered).toBe(true);
-        expect(recovered.labId).toBe(workspace.labId);
+        expect(recovered.investigationId).toBe(workspace.investigationId);
         expect(recovered.getEvents().map(({ type }) => type)).toContain(
             EventType.ASSUMPTIONS_PROPOSED
         );
         await expect(readCurrentPointer(workspaceRoot)).resolves.toEqual({
-            lab_id: workspace.labId,
+            investigation_id: workspace.investigationId,
             run_directory: workspace.runDirectory
         });
     });

@@ -1,11 +1,13 @@
 export class RuntimeRevisionConflictError extends Error {
-    readonly labId: string;
+    readonly investigationId: string;
     readonly expectedRevision: number;
 
-    constructor(labId: string, expectedRevision: number) {
-        super(`Lab ${labId} is no longer at runtime revision ${expectedRevision}`);
+    constructor(investigationId: string, expectedRevision: number) {
+        super(
+            `Investigation ${investigationId} is no longer at runtime revision ${expectedRevision}`
+        );
         this.name = "RuntimeRevisionConflictError";
-        this.labId = labId;
+        this.investigationId = investigationId;
         this.expectedRevision = expectedRevision;
     }
 }

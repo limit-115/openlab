@@ -2,13 +2,19 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createDatabase, type DatabaseClient } from "@lab/db/lab-database/lab-database-client";
-import { agentRuns, assumptions, events, findings, labs } from "@lab/db/lab-database/lab-schema";
+import {
+    agentRuns,
+    assumptions,
+    events,
+    findings,
+    investigations
+} from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { writeCurrentPointer } from "#src/lab-workspace/lab-run-pointer";
-import { WorkspaceLayout } from "#src/lab-workspace/lab-workspace.const";
+import { writeCurrentPointer } from "#src/investigation-workspace/investigation-run-pointer";
+import { WorkspaceLayout } from "#src/investigation-workspace/investigation-workspace.const";
 import { planPurge, purgeRuns } from "#src/run-purge/run-purge";
 import { PurgeScope } from "#src/run-purge/run-purge.const";
 
@@ -31,59 +37,63 @@ describeDatabase("purgeRuns", () => {
     });
 
     afterEach(async () => {
-        await client?.db.delete(labs);
+        await client?.db.delete(investigations);
     });
 
-    async function seedLab(labId: string): Promise<void> {
-        await client.db.insert(labs).values({
-            id: labId,
-            goal: `Goal for ${labId}`,
-            input: { goal: `Goal for ${labId}`, context: [], success_criteria: [] },
-            workspacePath: `/tmp/${labId}`
+    async function seedInvestigation(investigationId: string): Promise<void> {
+        await client.db.insert(investigations).values({
+            id: investigationId,
+            goal: `Goal for ${investigationId}`,
+            input: { goal: `Goal for ${investigationId}`, context: [], success_criteria: [] },
+            workspacePath: `/tmp/${investigationId}`
         });
         await client.db.insert(assumptions).values({
-            id: `assumption-${labId}`,
-            labId,
-            statement: `Bet for ${labId}`,
+            id: `assumption-${investigationId}`,
+            investigationId,
+            statement: `Bet for ${investigationId}`,
             rationale: "Seeded by an integration test"
         });
         await client.db.insert(agentRuns).values({
-            id: `run-${labId}`,
-            labId,
-            assumptionId: `assumption-${labId}`,
+            id: `run-${investigationId}`,
+            investigationId,
+            assumptionId: `assumption-${investigationId}`,
             role: AgentRole.RESEARCHER,
-            objective: `Spend the bet for ${labId}`,
-            cwd: `/tmp/${labId}`
+            objective: `Spend the bet for ${investigationId}`,
+            cwd: `/tmp/${investigationId}`
         });
         await client.db.insert(findings).values({
-            id: `finding-${labId}`,
-            labId,
-            assumptionId: `assumption-${labId}`,
-            runId: `run-${labId}`,
-            claim: `Claim for ${labId}`,
+            id: `finding-${investigationId}`,
+            investigationId,
+            assumptionId: `assumption-${investigationId}`,
+            runId: `run-${investigationId}`,
+            claim: `Claim for ${investigationId}`,
             work: "Seeded by an integration test"
         });
         await client.db.insert(events).values({
-            id: `event-${labId}`,
-            labId,
-            type: EventType.LAB_STARTED,
+            id: `event-${investigationId}`,
+            investigationId,
+            type: EventType.INVESTIGATION_STARTED,
             payload: {}
         });
     }
 
-    async function seedWorkspace(labIds: readonly string[]): Promise<string> {
+    async function seedWorkspace(investigationIds: readonly string[]): Promise<string> {
         const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-purge-integration-"));
-        for (const labId of labIds) {
-            const runDirectory = path.join(workspaceRoot, WorkspaceLayout.RUNS_DIRECTORY, labId);
+        for (const investigationId of investigationIds) {
+            const runDirectory = path.join(
+                workspaceRoot,
+                WorkspaceLayout.RUNS_DIRECTORY,
+                investigationId
+            );
             await mkdir(runDirectory, { recursive: true });
-            await writeFile(path.join(runDirectory, "report.md"), `Report for ${labId}`);
+            await writeFile(path.join(runDirectory, "report.md"), `Report for ${investigationId}`);
         }
         return workspaceRoot;
     }
 
     it("cascades the delete to assumptions, findings, and events", async () => {
-        await seedLab("lab-alpha");
-        const workspaceRoot = await seedWorkspace(["lab-alpha"]);
+        await seedInvestigation("investigation-alpha");
+        const workspaceRoot = await seedWorkspace(["investigation-alpha"]);
 
         const result = await purgeRuns({
             workspaceRoot,
@@ -91,7 +101,7 @@ describeDatabase("purgeRuns", () => {
             scope: PurgeScope.ALL
         });
 
-        expect(result.purgedLabRowCount).toBe(1);
+        expect(result.purgedInvestigationRowCount).toBe(1);
         expect(result.purgedDirectoryCount).toBe(1);
         expect(await client.db.select().from(assumptions)).toEqual([]);
         expect(await client.db.select().from(findings)).toEqual([]);
@@ -99,12 +109,16 @@ describeDatabase("purgeRuns", () => {
     });
 
     it("retains the current run and its rows", async () => {
-        await seedLab("lab-alpha");
-        await seedLab("lab-beta");
-        const workspaceRoot = await seedWorkspace(["lab-alpha", "lab-beta"]);
+        await seedInvestigation("investigation-alpha");
+        await seedInvestigation("investigation-beta");
+        const workspaceRoot = await seedWorkspace(["investigation-alpha", "investigation-beta"]);
         await writeCurrentPointer(workspaceRoot, {
-            lab_id: "lab-beta",
-            run_directory: path.join(workspaceRoot, WorkspaceLayout.RUNS_DIRECTORY, "lab-beta")
+            investigation_id: "investigation-beta",
+            run_directory: path.join(
+                workspaceRoot,
+                WorkspaceLayout.RUNS_DIRECTORY,
+                "investigation-beta"
+            )
         });
 
         const result = await purgeRuns({
@@ -113,20 +127,22 @@ describeDatabase("purgeRuns", () => {
             scope: PurgeScope.EXCEPT_CURRENT
         });
 
-        expect(result.purgedLabIds).toEqual(["lab-alpha"]);
-        expect(result.keptLabId).toBe("lab-beta");
-        expect((await client.db.select().from(labs)).map((row) => row.id)).toEqual(["lab-beta"]);
+        expect(result.purgedInvestigationIds).toEqual(["investigation-alpha"]);
+        expect(result.keptInvestigationId).toBe("investigation-beta");
+        expect((await client.db.select().from(investigations)).map((row) => row.id)).toEqual([
+            "investigation-beta"
+        ]);
         expect((await client.db.select().from(findings)).map((row) => row.id)).toEqual([
-            "finding-lab-beta"
+            "finding-investigation-beta"
         ]);
     });
 
     it("plans rows that outlived their run directory", async () => {
-        await seedLab("lab-orphan");
+        await seedInvestigation("investigation-orphan");
         const workspaceRoot = await seedWorkspace([]);
 
         const plan = await planPurge({ workspaceRoot, databaseUrl: databaseUrl as string });
 
-        expect(plan.labIds).toEqual(["lab-orphan"]);
+        expect(plan.investigationIds).toEqual(["investigation-orphan"]);
     });
 });

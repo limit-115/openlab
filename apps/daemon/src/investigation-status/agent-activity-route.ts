@@ -9,7 +9,7 @@ import {
     ACTIVITY_HEARTBEAT_MS,
     ACTIVITY_STREAM_HEADERS,
     AGENT_ACTIVITY_ROUTE
-} from "#src/lab-status/agent-activity-route.const";
+} from "#src/investigation-status/agent-activity-route.const";
 
 /**
  * Streams what every agent is doing, to whoever is watching.
@@ -19,7 +19,7 @@ import {
  * each event to disk before yielding it, so a frame is either already in the history that was read or
  * still waiting in the buffer, and never both nor neither.
  *
- * It is a route of its own rather than another name on the lab event stream, because this one is only
+ * It is a route of its own rather than another name on the investigation event stream, because this one is only
  * worth paying for while somebody is looking at it, and it must never put weight on the stream the
  * rest of the dashboard depends on.
  */

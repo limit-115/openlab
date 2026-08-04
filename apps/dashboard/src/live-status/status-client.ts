@@ -1,5 +1,5 @@
-import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
 export const statusQueryKey = ["lab", "status"] as const;
 
@@ -24,7 +24,7 @@ export async function fetchStatus(signal?: AbortSignal): Promise<StatusSnapshot>
     if (!response.ok) {
         throw new StatusRequestError(
             response.status === 404
-                ? "No lab is running yet. Start one from the CLI."
+                ? "No investigation is running yet. Start one from the CLI."
                 : `Status endpoint returned ${response.status}.`,
             response.status
         );

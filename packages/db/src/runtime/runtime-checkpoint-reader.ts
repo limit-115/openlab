@@ -1,25 +1,25 @@
-import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { desc, eq } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events } from "#src/lab-database/lab-schema";
 import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
-import { toLabEvent } from "#src/runtime/runtime-event-log";
+import { toInvestigationEvent } from "#src/runtime/runtime-event-log";
 import { assertRuntimeMetadata } from "#src/runtime/runtime-metadata-validation";
 import { RuntimePersistenceLimit } from "#src/runtime/runtime-persistence.const";
 import type {
     CommitRuntimeResult,
-    PersistedLabEvent,
+    PersistedInvestigationEvent,
     PersistedRuntime
 } from "#src/runtime/runtime-persistence.types";
 
 type RuntimeDatabase = Pick<Database, "select">;
 
 export interface PersistedRuntimeRecord {
-    readonly labId: string;
-    readonly task: TaskInput;
+    readonly investigationId: string;
+    readonly task: InvestigationInput;
     readonly workspacePath: string;
     readonly snapshot: StatusSnapshot;
     readonly revision: number;
@@ -32,7 +32,7 @@ export async function toPersistedRuntime(
     record: PersistedRuntimeRecord
 ): Promise<PersistedRuntime> {
     const { task, snapshot } = readCheckpointContract(record);
-    assertRuntimeMetadata(record.labId, task, record.workspacePath, snapshot);
+    assertRuntimeMetadata(record.investigationId, task, record.workspacePath, snapshot);
     return {
         task,
         workspacePath: record.workspacePath,
@@ -50,16 +50,16 @@ export async function toPersistedRuntime(
  * corruption keeps failing through the metadata assertions.
  */
 function readCheckpointContract(record: PersistedRuntimeRecord): {
-    task: TaskInput;
+    task: InvestigationInput;
     snapshot: StatusSnapshot;
 } {
     try {
         return {
-            task: TaskInputSchema.parse(record.task),
+            task: InvestigationInputSchema.parse(record.task),
             snapshot: StatusSnapshotSchema.parse(record.snapshot)
         };
     } catch (error) {
-        throw new IncompatibleCheckpointError(record.labId, { cause: error });
+        throw new IncompatibleCheckpointError(record.investigationId, { cause: error });
     }
 }
 
@@ -71,19 +71,19 @@ export async function withRecentEvents(
     const rows = await database
         .select()
         .from(events)
-        .where(eq(events.labId, snapshot.lab.id))
+        .where(eq(events.investigationId, snapshot.investigation.id))
         .orderBy(desc(events.sequence))
         .limit(limit);
     return StatusSnapshotSchema.parse({
         ...snapshot,
-        recent_events: rows.reverse().map(toLabEvent)
+        recent_events: rows.reverse().map(toInvestigationEvent)
     });
 }
 
 export function checkpointResult(
     snapshot: StatusSnapshot,
     checkpoint: { readonly revision: number; readonly lastEventSequence: number | null },
-    appendedEvent?: PersistedLabEvent
+    appendedEvent?: PersistedInvestigationEvent
 ): CommitRuntimeResult {
     return {
         snapshot,

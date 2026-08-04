@@ -7,7 +7,7 @@ import type {
 import { HarnessAbortedError, HarnessCapabilityError } from "@lab/harness/harness-error";
 import { HarnessEventTypes } from "@lab/harness/harness-event.const";
 import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
-import { requiredById } from "#src/lab-workspace/snapshot-entities";
+import { requiredById } from "#src/investigation-workspace/snapshot-entities";
 import {
     SnapshotEffortLevel,
     SnapshotHarnessKind

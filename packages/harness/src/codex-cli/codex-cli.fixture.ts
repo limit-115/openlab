@@ -6,7 +6,7 @@ export const CodexTestNativeEventTypes = {
     ERROR: "error"
 } as const;
 
-/** Verbatim, as Codex emitted it on the run that hibernated the lab for the wrong reason. */
+/** Verbatim, as Codex emitted it on the run that hibernated the investigation for the wrong reason. */
 export const CodexTestUsageLimitMessage =
     "You've hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Aug 9th, 2026 6:50 PM.";
 

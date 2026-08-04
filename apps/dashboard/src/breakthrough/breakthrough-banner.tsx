@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { FileTextIcon, TrophyIcon } from "lucide-react";
 import {
     BREAKTHROUGH_BANNER,

@@ -6,7 +6,7 @@ import { planPurge, purgeRuns } from "@lab/daemon/run-purge/run-purge";
 import { PurgeScope } from "@lab/daemon/run-purge/run-purge.const";
 import { startDaemon } from "@lab/daemon/server";
 import type { HarnessKind } from "@lab/harness/agent-harness.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { Command, InvalidArgumentError } from "commander";
 import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";
@@ -129,12 +129,12 @@ program
                 await daemon.close();
             });
         }
-        outro(`Running ${daemon.workspace.labId} at ${daemon.url}`);
+        outro(`Running ${daemon.workspace.investigationId} at ${daemon.url}`);
     });
 
 program
     .command("status")
-    .description("show current lab state")
+    .description("show current investigation state")
     .action(async (_options, command: Command) => {
         const status = await client(command).status();
         print(status, globals(command).json, () => renderStatus(status));
@@ -176,18 +176,18 @@ program
 
 program
     .command("wake")
-    .description("put a hibernating, breakthrough or stopped lab back to work")
+    .description("put a hibernating, breakthrough or stopped investigation back to work")
     .action(async (_options, command: Command) => {
         const status: StatusSnapshot = await client(command).wake();
-        consola.success(`Lab is ${status.lab.state}`);
+        consola.success(`Investigation is ${status.investigation.state}`);
     });
 
 program
     .command("stop")
-    .description("stop the running lab")
+    .description("stop the running investigation")
     .action(async (_options, command: Command) => {
         const status: StatusSnapshot = await client(command).stop();
-        consola.success(`Lab is ${status.lab.state}`);
+        consola.success(`Investigation is ${status.investigation.state}`);
     });
 
 program
@@ -225,13 +225,13 @@ program
 
         intro("Purge run history");
         const plan = await planPurge(config);
-        if (plan.labIds.length === 0) {
+        if (plan.investigationIds.length === 0) {
             outro("No run history to purge");
             return;
         }
 
         const scope =
-            plan.currentLabId === undefined
+            plan.currentInvestigationId === undefined
                 ? PurgeScope.ALL
                 : await select({
                       message: "What should be purged?",
@@ -240,7 +240,7 @@ program
                           {
                               value: PurgeScope.EXCEPT_CURRENT,
                               label: "All runs except the current one",
-                              hint: `keeps ${plan.currentLabId}`
+                              hint: `keeps ${plan.currentInvestigationId}`
                           },
                           {
                               value: PurgeScope.ALL,
@@ -257,8 +257,10 @@ program
 
         const doomed =
             scope === PurgeScope.ALL
-                ? plan.labIds
-                : plan.labIds.filter((labId) => labId !== plan.currentLabId);
+                ? plan.investigationIds
+                : plan.investigationIds.filter(
+                      (investigationId) => investigationId !== plan.currentInvestigationId
+                  );
         if (doomed.length === 0) {
             outro("Nothing to purge besides the current run");
             return;
@@ -277,7 +279,7 @@ program
 
         const result = await purgeRuns({ ...config, scope });
         outro(
-            `Purged ${result.purgedDirectoryCount} run director${result.purgedDirectoryCount === 1 ? "y" : "ies"} and ${result.purgedLabRowCount} lab row(s)`
+            `Purged ${result.purgedDirectoryCount} run director${result.purgedDirectoryCount === 1 ? "y" : "ies"} and ${result.purgedInvestigationRowCount} investigation row(s)`
         );
     });
 

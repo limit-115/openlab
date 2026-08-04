@@ -1,5 +1,5 @@
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { FileTextIcon } from "lucide-react";
 import { cn } from "#src/design-system/class-names";
 import {
@@ -11,7 +11,7 @@ import {
     OUTCOME_SUMMARY,
     OUTCOME_SURFACE,
     OUTCOME_TITLE
-} from "#src/lab-outcome/outcome-panel.const";
+} from "#src/investigation-outcome/outcome-panel.const";
 import { Panel } from "#src/panel/panel";
 
 interface OutcomePanelProps {
@@ -19,13 +19,13 @@ interface OutcomePanelProps {
 }
 
 export function OutcomePanel({ snapshot }: OutcomePanelProps) {
-    const { state, reason } = snapshot.lab;
+    const { state, reason } = snapshot.investigation;
     const shouldShow =
         snapshot.result ||
-        state === LabState.HIBERNATING ||
-        state === LabState.BREAKTHROUGH ||
-        state === LabState.FAILED ||
-        state === LabState.STOPPED;
+        state === InvestigationState.HIBERNATING ||
+        state === InvestigationState.BREAKTHROUGH ||
+        state === InvestigationState.FAILED ||
+        state === InvestigationState.STOPPED;
 
     if (!shouldShow) {
         return null;
@@ -37,7 +37,7 @@ export function OutcomePanel({ snapshot }: OutcomePanelProps) {
                 <p className={OUTCOME_SUMMARY}>
                     {snapshot.result?.summary ??
                         reason ??
-                        "The lab changed lifecycle state without a reason."}
+                        "The investigation changed lifecycle state without a reason."}
                 </p>
                 {snapshot.result?.limitations.length ? (
                     <div className="mt-6">

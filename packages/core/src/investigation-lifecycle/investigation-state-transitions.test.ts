@@ -1,35 +1,41 @@
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { describe, expect, it } from "vitest";
-import { assessLifecycleTransition } from "#src/lab-lifecycle/lab-state-transitions";
-import { WakeTrigger } from "#src/lab-lifecycle/wake-trigger.const";
+import { assessLifecycleTransition } from "#src/investigation-lifecycle/investigation-state-transitions";
+import { WakeTrigger } from "#src/investigation-lifecycle/wake-trigger.const";
 
-describe("lab lifecycle", () => {
+describe("investigation lifecycle", () => {
     it("declares a breakthrough only for a finding a verifier confirmed", () => {
-        expect(assessLifecycleTransition(LabState.RUNNING, LabState.BREAKTHROUGH).allowed).toBe(
-            false
-        );
         expect(
-            assessLifecycleTransition(LabState.RUNNING, LabState.BREAKTHROUGH, {
+            assessLifecycleTransition(InvestigationState.RUNNING, InvestigationState.BREAKTHROUGH)
+                .allowed
+        ).toBe(false);
+        expect(
+            assessLifecycleTransition(InvestigationState.RUNNING, InvestigationState.BREAKTHROUGH, {
                 confirmedFindingId: "finding-1"
             }).allowed
         ).toBe(true);
     });
 
-    it("resumes a settled lab only on a trigger", () => {
-        expect(assessLifecycleTransition(LabState.HIBERNATING, LabState.RUNNING).allowed).toBe(
-            false
-        );
-        expect(assessLifecycleTransition(LabState.BREAKTHROUGH, LabState.RUNNING).allowed).toBe(
-            false
-        );
-        expect(assessLifecycleTransition(LabState.STOPPED, LabState.RUNNING).allowed).toBe(false);
+    it("resumes a settled investigation only on a trigger", () => {
         expect(
-            assessLifecycleTransition(LabState.HIBERNATING, LabState.RUNNING, {
+            assessLifecycleTransition(InvestigationState.HIBERNATING, InvestigationState.RUNNING)
+                .allowed
+        ).toBe(false);
+        expect(
+            assessLifecycleTransition(InvestigationState.BREAKTHROUGH, InvestigationState.RUNNING)
+                .allowed
+        ).toBe(false);
+        expect(
+            assessLifecycleTransition(InvestigationState.STOPPED, InvestigationState.RUNNING)
+                .allowed
+        ).toBe(false);
+        expect(
+            assessLifecycleTransition(InvestigationState.HIBERNATING, InvestigationState.RUNNING, {
                 wakeTrigger: WakeTrigger.CAPABILITY
             }).allowed
         ).toBe(true);
         expect(
-            assessLifecycleTransition(LabState.BREAKTHROUGH, LabState.RUNNING, {
+            assessLifecycleTransition(InvestigationState.BREAKTHROUGH, InvestigationState.RUNNING, {
                 wakeTrigger: WakeTrigger.USER
             }).allowed
         ).toBe(true);
@@ -37,20 +43,21 @@ describe("lab lifecycle", () => {
 
     it("starts a stopped run again and leaves only a failure final", () => {
         expect(
-            assessLifecycleTransition(LabState.STOPPED, LabState.RUNNING, {
+            assessLifecycleTransition(InvestigationState.STOPPED, InvestigationState.RUNNING, {
                 wakeTrigger: WakeTrigger.USER
             }).allowed
         ).toBe(true);
         expect(
-            assessLifecycleTransition(LabState.FAILED, LabState.RUNNING, {
+            assessLifecycleTransition(InvestigationState.FAILED, InvestigationState.RUNNING, {
                 wakeTrigger: WakeTrigger.USER
             }).allowed
         ).toBe(false);
     });
 
     it("hibernates without ceremony", () => {
-        expect(assessLifecycleTransition(LabState.RUNNING, LabState.HIBERNATING).allowed).toBe(
-            true
-        );
+        expect(
+            assessLifecycleTransition(InvestigationState.RUNNING, InvestigationState.HIBERNATING)
+                .allowed
+        ).toBe(true);
     });
 });

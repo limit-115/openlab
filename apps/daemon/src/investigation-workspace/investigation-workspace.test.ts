@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
+import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
 import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
 import type { RecoverableRuntime } from "@lab/db/runtime/runtime-persistence.types";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
@@ -10,13 +10,13 @@ import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.co
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import type { Finding } from "@lab/protocol/findings/finding.types";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { afterEach, describe, expect, it } from "vitest";
-import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
-import type { WorkspaceRuntimePersistence } from "#src/lab-workspace/lab-workspace.types";
+import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type { WorkspaceRuntimePersistence } from "#src/investigation-workspace/investigation-workspace.types";
 
 const directories: string[] = [];
 
@@ -24,16 +24,19 @@ afterEach(() => {
     directories.length = 0;
 });
 
-async function createWorkspace(): Promise<LabWorkspace> {
+async function createWorkspace(): Promise<InvestigationWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-workspace-test-"));
     directories.push(directory);
     const taskPath = path.join(directory, "task.json");
     await writeFile(taskPath, JSON.stringify({ goal: "Test a research claim" }));
-    return LabWorkspace.initialize(directory, taskPath);
+    return InvestigationWorkspace.initialize(directory, taskPath);
 }
 
 /** Fills a workspace with the bet, run and claim a verdict needs something to point at. */
-async function claimFinding(workspace: LabWorkspace, confirmed: boolean): Promise<Finding> {
+async function claimFinding(
+    workspace: InvestigationWorkspace,
+    confirmed: boolean
+): Promise<Finding> {
     const timestamp = new Date().toISOString();
     const finding: Finding = {
         id: "finding-1",
@@ -90,11 +93,11 @@ async function claimFinding(workspace: LabWorkspace, confirmed: boolean): Promis
     return finding;
 }
 
-describe("LabWorkspace", () => {
+describe("InvestigationWorkspace", () => {
     it("creates canonical protocol snapshots", async () => {
         const workspace = await createWorkspace();
 
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         const journal = JSON.parse(
             await readFile(path.join(workspace.runDirectory, "assumptions.json"), "utf8")
         );
@@ -106,47 +109,47 @@ describe("LabWorkspace", () => {
         const observed: string[] = [];
         workspace.subscribe((event) => observed.push(event.type));
 
-        await workspace.transition(LabState.STOPPED, "test");
+        await workspace.transition(InvestigationState.STOPPED, "test");
 
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.STOPPED);
-        expect(observed).toContain(EventType.LAB_STATE_CHANGED);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.STOPPED);
+        expect(observed).toContain(EventType.INVESTIGATION_STATE_CHANGED);
     });
 
     it("recovers an unfinished run for the same task", async () => {
         const workspace = await createWorkspace();
         const taskPath = path.join(path.dirname(path.dirname(workspace.runDirectory)), "task.json");
-        const recovered = await LabWorkspace.openOrCreate(
+        const recovered = await InvestigationWorkspace.openOrCreate(
             path.dirname(path.dirname(workspace.runDirectory)),
             taskPath
         );
 
-        expect(recovered.labId).toBe(workspace.labId);
+        expect(recovered.investigationId).toBe(workspace.investigationId);
         expect(recovered.recovered).toBe(true);
     });
 
     it("reopens a stopped run and replaces a failed one", async () => {
         const stopped = await createWorkspace();
         const stoppedRoot = path.dirname(path.dirname(stopped.runDirectory));
-        await stopped.transition(LabState.STOPPED, "The operator ended the run");
+        await stopped.transition(InvestigationState.STOPPED, "The operator ended the run");
         const failed = await createWorkspace();
         const failedRoot = path.dirname(path.dirname(failed.runDirectory));
-        await failed.transition(LabState.FAILED, "The director never answered", {
+        await failed.transition(InvestigationState.FAILED, "The director never answered", {
             failureReason: "The director never answered"
         });
 
-        const reopened = await LabWorkspace.openOrCreate(
+        const reopened = await InvestigationWorkspace.openOrCreate(
             stoppedRoot,
             path.join(stoppedRoot, "task.json")
         );
-        const replaced = await LabWorkspace.openOrCreate(
+        const replaced = await InvestigationWorkspace.openOrCreate(
             failedRoot,
             path.join(failedRoot, "task.json")
         );
 
-        expect(reopened.labId).toBe(stopped.labId);
-        expect(reopened.getSnapshot().lab.state).toBe(LabState.STOPPED);
-        expect(replaced.labId).not.toBe(failed.labId);
-        expect(replaced.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(reopened.investigationId).toBe(stopped.investigationId);
+        expect(reopened.getSnapshot().investigation.state).toBe(InvestigationState.STOPPED);
+        expect(replaced.investigationId).not.toBe(failed.investigationId);
+        expect(replaced.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
     });
 
     it("starts a fresh run when the pointed-at checkpoint predates the protocol", async () => {
@@ -154,18 +157,18 @@ describe("LabWorkspace", () => {
         const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
         const taskPath = path.join(workspaceRoot, "task.json");
 
-        const started = await LabWorkspace.openOrCreate(workspaceRoot, taskPath, {
+        const started = await InvestigationWorkspace.openOrCreate(workspaceRoot, taskPath, {
             ...recoveryOnlyPersistence([]),
             initialize: async ({ snapshot }) => ({ snapshot, revision: 1 }),
-            load: async (labId) => {
-                if (labId !== workspace.labId) {
+            load: async (investigationId) => {
+                if (investigationId !== workspace.investigationId) {
                     return undefined;
                 }
-                throw new IncompatibleCheckpointError(labId);
+                throw new IncompatibleCheckpointError(investigationId);
             }
         });
 
-        expect(started.labId).not.toBe(workspace.labId);
+        expect(started.investigationId).not.toBe(workspace.investigationId);
         expect(started.recovered).toBe(false);
     });
 
@@ -183,19 +186,19 @@ describe("LabWorkspace", () => {
         const latest = makeRecoverableRuntime(
             task,
             workspace.getSnapshot(),
-            path.join(workspaceRoot, "runs", "lab-latest"),
+            path.join(workspaceRoot, "runs", "investigation-latest"),
             "2026-08-02T00:01:00.000Z",
-            "lab-latest"
+            "investigation-latest"
         );
         await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
 
-        const recovered = await LabWorkspace.openOrCreate(
+        const recovered = await InvestigationWorkspace.openOrCreate(
             workspaceRoot,
             taskPath,
             recoveryOnlyPersistence([older, latest])
         );
 
-        expect(recovered.labId).toBe("lab-latest");
+        expect(recovered.investigationId).toBe("investigation-latest");
         expect(recovered.runDirectory).toBe(latest.workspacePath);
     });
 
@@ -213,7 +216,11 @@ describe("LabWorkspace", () => {
         await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
 
         await expect(
-            LabWorkspace.openOrCreate(workspaceRoot, taskPath, recoveryOnlyPersistence([escaped]))
+            InvestigationWorkspace.openOrCreate(
+                workspaceRoot,
+                taskPath,
+                recoveryOnlyPersistence([escaped])
+            )
         ).rejects.toThrow("escapes LAB_HOME");
     });
 
@@ -227,10 +234,10 @@ describe("LabWorkspace", () => {
             success_criteria: []
         };
         await writeFile(taskPath, JSON.stringify(requestedTask));
-        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         const storedTask = { ...requestedTask, goal: "Different stored goal" };
         const snapshot = workspace.getSnapshot();
-        snapshot.lab.goal = storedTask.goal;
+        snapshot.investigation.goal = storedTask.goal;
         const mismatched = makeRecoverableRuntime(
             storedTask,
             snapshot,
@@ -240,7 +247,11 @@ describe("LabWorkspace", () => {
         await writeFile(path.join(directory, "current.json"), "{corrupt");
 
         await expect(
-            LabWorkspace.openOrCreate(directory, taskPath, recoveryOnlyPersistence([mismatched]))
+            InvestigationWorkspace.openOrCreate(
+                directory,
+                taskPath,
+                recoveryOnlyPersistence([mismatched])
+            )
         ).rejects.toThrow("does not match the requested task input");
     });
 
@@ -258,14 +269,14 @@ describe("LabWorkspace", () => {
         const second = makeRecoverableRuntime(
             task,
             workspace.getSnapshot(),
-            path.join(workspaceRoot, "runs", "lab-tied"),
+            path.join(workspaceRoot, "runs", "investigation-tied"),
             first.persistedAt,
-            "lab-tied"
+            "investigation-tied"
         );
         await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
 
         await expect(
-            LabWorkspace.openOrCreate(
+            InvestigationWorkspace.openOrCreate(
                 workspaceRoot,
                 taskPath,
                 recoveryOnlyPersistence([first, second])
@@ -313,10 +324,10 @@ describe("LabWorkspace", () => {
             answer: "Not giving you this one, build it yourself"
         });
         expect(answered?.answered_at).toBeDefined();
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
     });
 
-    it("wakes a hibernating lab on the operator answer", async () => {
+    it("wakes a hibernating investigation on the operator answer", async () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "A licensed corpus",
@@ -331,14 +342,14 @@ describe("LabWorkspace", () => {
             workspace.answerCapability(request.id, "Mounted at /srv/corpora/licensed-v3")
         ).resolves.toBe(true);
 
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         expect(
             workspace
                 .getEvents()
                 .findLast(
                     (event) =>
-                        event.type === EventType.LAB_STATE_CHANGED &&
-                        event.payload.state === LabState.RUNNING
+                        event.type === EventType.INVESTIGATION_STATE_CHANGED &&
+                        event.payload.state === InvestigationState.RUNNING
                 )?.payload
         ).toMatchObject({ wake_trigger: WakeTrigger.CAPABILITY });
     });
@@ -401,7 +412,7 @@ describe("LabWorkspace", () => {
 
         await workspace.hibernate("The director has nowhere else to look");
 
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.HIBERNATING);
         const report = await readFile(path.join(workspace.runDirectory, "report.md"), "utf8");
         expect(report).toContain("Hibernation report");
         expect(report).toContain("Eviction order made no difference under any load");
@@ -414,16 +425,16 @@ describe("LabWorkspace", () => {
         await expect(workspace.recordBreakthrough(finding)).rejects.toThrow(
             "carries no confirming verdict"
         );
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
     });
 
-    it("pauses the lab on a confirmed finding and writes the result out", async () => {
+    it("pauses the investigation on a confirmed finding and writes the result out", async () => {
         const workspace = await createWorkspace();
         const finding = await claimFinding(workspace, true);
 
         const snapshot = await workspace.recordBreakthrough(finding);
 
-        expect(snapshot.lab.state).toBe(LabState.BREAKTHROUGH);
+        expect(snapshot.investigation.state).toBe(InvestigationState.BREAKTHROUGH);
         expect(snapshot.breakthrough_finding_id).toBe(finding.id);
         const result = JSON.parse(
             await readFile(path.join(workspace.runDirectory, "result.json"), "utf8")
@@ -436,14 +447,14 @@ describe("LabWorkspace", () => {
 });
 
 function makeRecoverableRuntime(
-    task: TaskInput,
+    task: InvestigationInput,
     sourceSnapshot: StatusSnapshot,
     workspacePath: string,
     persistedAt: string,
-    labId: string = sourceSnapshot.lab.id
+    investigationId: string = sourceSnapshot.investigation.id
 ): RecoverableRuntime {
     const snapshot = structuredClone(sourceSnapshot);
-    snapshot.lab.id = labId;
+    snapshot.investigation.id = investigationId;
     return {
         task: structuredClone(task),
         workspacePath,

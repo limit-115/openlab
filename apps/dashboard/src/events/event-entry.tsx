@@ -1,4 +1,4 @@
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
 import { CopyButton } from "#src/clipboard/copy-button";
 import {
     COPY_EVENT_PAYLOAD_LABEL,
@@ -17,7 +17,7 @@ import { formatEventPayload, humanizeEventType } from "#src/events/event-payload
 import { formatTime } from "#src/value-display/timestamp-display";
 
 interface EventEntryProps {
-    event: LabEvent;
+    event: InvestigationEvent;
 }
 
 export function EventEntry({ event }: EventEntryProps) {

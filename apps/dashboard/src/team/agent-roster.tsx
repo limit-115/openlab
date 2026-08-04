@@ -25,7 +25,7 @@ interface AgentRosterProps {
 }
 
 /**
- * Every agent the lab is running, each saying who it is, what it was given and what it is doing
+ * Every agent the investigation is running, each saying who it is, what it was given and what it is doing
  * right now. Reading one of them in full is a click away and does not hide the others.
  */
 export function AgentRoster({ agents, runs, selectedId, onSelect }: AgentRosterProps) {

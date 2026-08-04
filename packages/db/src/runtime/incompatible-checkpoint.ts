@@ -1,17 +1,17 @@
 /**
  * A persisted checkpoint that no longer satisfies the current protocol schema. The run it describes
  * cannot be resumed, but the record itself is left untouched: rewriting it would invent state the
- * lab never produced.
+ * investigation never produced.
  */
 export class IncompatibleCheckpointError extends Error {
-    readonly labId: string;
+    readonly investigationId: string;
 
-    constructor(labId: string, options?: ErrorOptions) {
+    constructor(investigationId: string, options?: ErrorOptions) {
         super(
-            `Runtime checkpoint for ${labId} predates the current protocol schema and cannot be resumed`,
+            `Runtime checkpoint for ${investigationId} predates the current protocol schema and cannot be resumed`,
             options
         );
         this.name = "IncompatibleCheckpointError";
-        this.labId = labId;
+        this.investigationId = investigationId;
     }
 }

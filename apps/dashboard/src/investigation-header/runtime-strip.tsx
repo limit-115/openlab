@@ -1,11 +1,11 @@
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { ActivityIcon } from "lucide-react";
 import { cn } from "#src/design-system/class-names";
-import { useElapsedTime } from "#src/lab-header/lab-uptime";
+import { useElapsedTime } from "#src/investigation-header/elapsed-time";
 import {
-    LAB_STATE_LABEL,
+    INVESTIGATION_STATE_LABEL,
     RUNTIME_AGENT_COUNT,
     RUNTIME_ICON,
     RUNTIME_READING,
@@ -13,7 +13,7 @@ import {
     RUNTIME_STRIP_VALUE,
     STATE_DOT,
     STATE_DOT_TONE
-} from "#src/lab-header/runtime-strip.const";
+} from "#src/investigation-header/runtime-strip.const";
 import { ConnectionBadge } from "#src/live-status/connection-badge";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
 import { formatDuration } from "#src/value-display/duration-display";
@@ -25,9 +25,9 @@ interface RuntimeStripProps {
 
 export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
     const uptime = useElapsedTime(
-        snapshot.lab.uptime_ms,
-        snapshot.lab.updated_at,
-        snapshot.lab.state === LabState.RUNNING
+        snapshot.investigation.uptime_ms,
+        snapshot.investigation.updated_at,
+        snapshot.investigation.state === InvestigationState.RUNNING
     );
     const activeAgents = snapshot.runs.filter(
         (run) => run.status === AgentRunStatus.RUNNING
@@ -37,11 +37,11 @@ export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
         <div className={RUNTIME_STRIP} role="status" aria-label="Lab runtime status">
             <span className={RUNTIME_READING}>
                 <span
-                    className={cn(STATE_DOT, STATE_DOT_TONE[snapshot.lab.state])}
+                    className={cn(STATE_DOT, STATE_DOT_TONE[snapshot.investigation.state])}
                     aria-hidden="true"
                 />
                 <strong className={RUNTIME_STRIP_VALUE}>
-                    {LAB_STATE_LABEL[snapshot.lab.state]}
+                    {INVESTIGATION_STATE_LABEL[snapshot.investigation.state]}
                 </strong>
             </span>
             <span className={RUNTIME_READING}>

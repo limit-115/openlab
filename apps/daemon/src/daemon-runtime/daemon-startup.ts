@@ -9,8 +9,8 @@ import { PromiseSettlementStatus } from "#src/daemon-runtime/daemon-startup.cons
 import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
 import { bootstrapResearch } from "#src/daemon-runtime/research-bootstrap";
 import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
-import { createStatusServer } from "#src/lab-status/status-server";
-import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { createStatusServer } from "#src/investigation-status/status-server";
+import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { createHarnesses } from "#src/research-cycle/harness-roster";
 import { runResearchLoop } from "#src/research-cycle/research-loop";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
@@ -25,7 +25,7 @@ export async function startDaemon(
     let controller: ResearchLoopController | undefined;
 
     try {
-        const workspace = await LabWorkspace.openOrCreate(
+        const workspace = await InvestigationWorkspace.openOrCreate(
             config.workspaceRoot,
             config.taskPath,
             database.persistence

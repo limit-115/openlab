@@ -8,8 +8,8 @@ interface CapabilitiesPanelProps {
 }
 
 /**
- * Nothing is drawn while the lab has everything it needs. A panel saying so would take the place a
- * real request has to be noticed in, and there is no news in a lab that is not blocked.
+ * Nothing is drawn while the investigation has everything it needs. A panel saying so would take the place a
+ * real request has to be noticed in, and there is no news in an investigation that is not blocked.
  */
 export function CapabilitiesPanel({ requests }: CapabilitiesPanelProps) {
     if (requests.length === 0) {

@@ -1,19 +1,19 @@
 import type { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import type { WorkspaceMutationAction } from "#src/lab-workspace/lab-workspace.const";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import type { WorkspaceMutationAction } from "#src/investigation-workspace/investigation-workspace.const";
 
-export type StatusListener = (event: LabEvent, snapshot: StatusSnapshot) => void;
+export type StatusListener = (event: InvestigationEvent, snapshot: StatusSnapshot) => void;
 export type SnapshotUpdater = (draft: StatusSnapshot) => void;
 
 export type WorkspaceMutationUpdater = (
     draft: StatusSnapshot,
-    event: LabEvent
+    event: InvestigationEvent
 ) => WorkspaceMutationAction | undefined;
 
 export interface WorkspaceMutationResult {
     readonly snapshot: StatusSnapshot;
-    readonly event: LabEvent;
+    readonly event: InvestigationEvent;
 }
 
 export type WorkspaceRuntimePersistence = Pick<

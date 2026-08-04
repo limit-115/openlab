@@ -1,13 +1,17 @@
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
-export interface LabReportSubject {
+export interface InvestigationReportSubject {
     readonly snapshot: StatusSnapshot;
     readonly runDirectory: string;
 }
 
-export function renderLabReport(subject: LabReportSubject, title: string, summary: string): string {
+export function renderInvestigationReport(
+    subject: InvestigationReportSubject,
+    title: string,
+    summary: string
+): string {
     const snapshot = subject.snapshot;
     const confirmed = snapshot.findings
         .filter(({ status }) => status === FindingStatus.CONFIRMED)
@@ -32,7 +36,7 @@ export function renderLabReport(subject: LabReportSubject, title: string, summar
 
 ## Goal
 
-${snapshot.lab.goal}
+${snapshot.investigation.goal}
 
 ## Summary
 
@@ -54,7 +58,7 @@ ${markdownList(spent, "None recorded.")}
 
 ${markdownList(open, "None recorded.")}
 
-## Resources the lab is waiting on
+## Resources the investigation is waiting on
 
 ${markdownList(blockers, "None recorded.")}
 `;

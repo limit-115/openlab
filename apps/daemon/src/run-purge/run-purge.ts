@@ -1,6 +1,9 @@
+import { InvestigationRepository } from "@lab/db/investigations/investigation-repository";
 import { createDatabase } from "@lab/db/lab-database/lab-database-client";
-import { LabRepository } from "@lab/db/labs/lab-repository";
-import { CurrentPointerStatus, readCurrentPointer } from "#src/lab-workspace/lab-run-pointer";
+import {
+    CurrentPointerStatus,
+    readCurrentPointer
+} from "#src/investigation-workspace/investigation-run-pointer";
 import { PurgeScope } from "#src/run-purge/run-purge.const";
 import type {
     PurgePlan,
@@ -8,11 +11,15 @@ import type {
     PurgeResult,
     PurgeRunsInput
 } from "#src/run-purge/run-purge.types";
-import { listRunLabIds, purgeRunDirectories } from "#src/run-purge/run-purge-directories";
+import { listRunInvestigationIds, purgeRunDirectories } from "#src/run-purge/run-purge-directories";
 
-export async function readCurrentLabId(workspaceRoot: string): Promise<string | undefined> {
+export async function readCurrentInvestigationId(
+    workspaceRoot: string
+): Promise<string | undefined> {
     const pointer = await readCurrentPointer(workspaceRoot);
-    return pointer.status === CurrentPointerStatus.VALID ? pointer.pointer.lab_id : undefined;
+    return pointer.status === CurrentPointerStatus.VALID
+        ? pointer.pointer.investigation_id
+        : undefined;
 }
 
 /**
@@ -21,16 +28,18 @@ export async function readCurrentLabId(workspaceRoot: string): Promise<string | 
  */
 export async function planPurge(input: PurgePlanInput): Promise<PurgePlan> {
     const client = createDatabase(input.databaseUrl, { max: 1 });
-    let persistedLabIds: string[];
+    let persistedInvestigationIds: string[];
     try {
-        persistedLabIds = await new LabRepository(client.db).listIds();
+        persistedInvestigationIds = await new InvestigationRepository(client.db).listIds();
     } finally {
         await client.close();
     }
-    const directoryLabIds = await listRunLabIds(input.workspaceRoot);
+    const directoryInvestigationIds = await listRunInvestigationIds(input.workspaceRoot);
     return {
-        labIds: [...new Set([...persistedLabIds, ...directoryLabIds])].sort(),
-        currentLabId: await readCurrentLabId(input.workspaceRoot)
+        investigationIds: [
+            ...new Set([...persistedInvestigationIds, ...directoryInvestigationIds])
+        ].sort(),
+        currentInvestigationId: await readCurrentInvestigationId(input.workspaceRoot)
     };
 }
 
@@ -39,28 +48,32 @@ export async function planPurge(input: PurgePlanInput): Promise<PurgePlan> {
  * leaves recoverable directories rather than rows pointing at directories that no longer exist.
  */
 export async function purgeRuns(input: PurgeRunsInput): Promise<PurgeResult> {
-    const keptLabId =
+    const keptInvestigationId =
         input.scope === PurgeScope.EXCEPT_CURRENT
-            ? await readCurrentLabId(input.workspaceRoot)
+            ? await readCurrentInvestigationId(input.workspaceRoot)
             : undefined;
 
     const client = createDatabase(input.databaseUrl, { max: 1 });
-    let purgedLabIds: string[];
+    let purgedInvestigationIds: string[];
     try {
-        purgedLabIds = await new LabRepository(client.db).purge(keptLabId);
+        purgedInvestigationIds = await new InvestigationRepository(client.db).purge(
+            keptInvestigationId
+        );
     } finally {
         await client.close();
     }
 
     const purgedDirectories = await purgeRunDirectories({
         workspaceRoot: input.workspaceRoot,
-        keptLabId
+        keptInvestigationId
     });
 
     return {
-        purgedLabIds: [...new Set([...purgedLabIds, ...purgedDirectories])].sort(),
-        keptLabId,
+        purgedInvestigationIds: [
+            ...new Set([...purgedInvestigationIds, ...purgedDirectories])
+        ].sort(),
+        keptInvestigationId,
         purgedDirectoryCount: purgedDirectories.length,
-        purgedLabRowCount: purgedLabIds.length
+        purgedInvestigationRowCount: purgedInvestigationIds.length
     };
 }

@@ -1,5 +1,5 @@
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";
 import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
@@ -11,7 +11,7 @@ import {
     makeSnapshot,
     makeTask,
     testEventId,
-    testLabId
+    testInvestigationId
 } from "#src/runtime/runtime-snapshot.fixture";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
@@ -35,9 +35,13 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
     });
 
     it("initializes and recovers the complete runtime checkpoint with its event", async () => {
-        const task = makeTask(testLabId("load"));
+        const task = makeTask(testInvestigationId("load"));
         const snapshot = makeSnapshot(task);
-        const event = makeEvent(EventType.LAB_STARTED, snapshot.lab.id, "event-started");
+        const event = makeEvent(
+            EventType.INVESTIGATION_STARTED,
+            snapshot.investigation.id,
+            "event-started"
+        );
 
         const initialized = await persistence.initialize({
             task,
@@ -50,7 +54,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         expect(initialized.appendedEvent?.sequence).toBeGreaterThan(0);
         expect(initialized.snapshot.recent_events).toEqual([event]);
 
-        const recovered = await persistence.load(snapshot.lab.id);
+        const recovered = await persistence.load(snapshot.investigation.id);
         expect(recovered).toEqual({
             task,
             workspacePath: "/tmp/lab-runtime-1",
@@ -59,7 +63,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                 revision: 1,
                 lastEventSequence: initialized.appendedEvent?.sequence
             },
-            persistedAt: snapshot.lab.updated_at
+            persistedAt: snapshot.investigation.updated_at
         });
         expect(recovered?.checkpoint.snapshot.assumptions).toEqual(snapshot.assumptions);
         expect(recovered?.checkpoint.snapshot.runs).toEqual(snapshot.runs);
@@ -68,23 +72,27 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
     });
 
     it("atomically commits snapshot and event and rejects a stale writer without a ghost event", async () => {
-        const task = makeTask(testLabId("conflict"));
+        const task = makeTask(testInvestigationId("conflict"));
         const snapshot = makeSnapshot(task);
         await persistence.initialize({
             task,
             workspacePath: "/tmp/lab-runtime-2",
             snapshot,
-            event: makeEvent(EventType.LAB_STARTED, snapshot.lab.id, "event-started")
+            event: makeEvent(
+                EventType.INVESTIGATION_STARTED,
+                snapshot.investigation.id,
+                "event-started"
+            )
         });
         const updated = structuredClone(snapshot);
-        updated.lab.state = LabState.HIBERNATING;
-        updated.lab.reason = "The director has no further bets to place";
-        updated.lab.updated_at = "2026-08-02T00:05:00.000Z";
+        updated.investigation.state = InvestigationState.HIBERNATING;
+        updated.investigation.reason = "The director has no further bets to place";
+        updated.investigation.updated_at = "2026-08-02T00:05:00.000Z";
         const hibernated = makeEvent(
-            EventType.LAB_HIBERNATED,
-            snapshot.lab.id,
+            EventType.INVESTIGATION_HIBERNATED,
+            snapshot.investigation.id,
             "event-hibernated",
-            updated.lab.updated_at
+            updated.investigation.updated_at
         );
 
         const committed = await persistence.commit({
@@ -94,15 +102,15 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         });
 
         expect(committed.revision).toBe(2);
-        expect(committed.snapshot.lab.state).toBe(LabState.HIBERNATING);
+        expect(committed.snapshot.investigation.state).toBe(InvestigationState.HIBERNATING);
         expect(committed.snapshot.recent_events.map(({ id }) => id)).toEqual([
-            testEventId(snapshot.lab.id, "event-started"),
-            testEventId(snapshot.lab.id, "event-hibernated")
+            testEventId(snapshot.investigation.id, "event-started"),
+            testEventId(snapshot.investigation.id, "event-hibernated")
         ]);
 
         const ghost = makeEvent(
             EventType.ASSUMPTION_EXHAUSTED,
-            snapshot.lab.id,
+            snapshot.investigation.id,
             "event-ghost",
             "2026-08-02T00:06:00.000Z"
         );
@@ -110,27 +118,34 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             persistence.commit({ snapshot: updated, expectedRevision: 1, event: ghost })
         ).rejects.toBeInstanceOf(RuntimeRevisionConflictError);
 
-        const events = await persistence.eventsAfter(snapshot.lab.id);
+        const events = await persistence.eventsAfter(snapshot.investigation.id);
         expect(events.map(({ id }) => id)).toEqual([
-            testEventId(snapshot.lab.id, "event-started"),
-            testEventId(snapshot.lab.id, "event-hibernated")
+            testEventId(snapshot.investigation.id, "event-started"),
+            testEventId(snapshot.investigation.id, "event-hibernated")
         ]);
         expect(events.map(({ sequence }) => sequence)).toEqual(
             [...events.map(({ sequence }) => sequence)].sort((left, right) => left - right)
         );
     });
 
-    it("finds only recoverable labs and exposes a resumable event cursor", async () => {
-        const runningTask = makeTask(testLabId("running"));
+    it("finds only recoverable investigations and exposes a resumable event cursor", async () => {
+        const runningTask = makeTask(testInvestigationId("running"));
         const runningSnapshot = makeSnapshot(runningTask);
         const running = await persistence.initialize({
             task: runningTask,
             workspacePath: "/tmp/lab-running",
             snapshot: runningSnapshot,
-            event: makeEvent(EventType.LAB_STARTED, runningSnapshot.lab.id, "event-running")
+            event: makeEvent(
+                EventType.INVESTIGATION_STARTED,
+                runningSnapshot.investigation.id,
+                "event-running"
+            )
         });
-        const breakthroughTask = makeTask(testLabId("breakthrough"));
-        const breakthroughSnapshot = makeSnapshot(breakthroughTask, LabState.BREAKTHROUGH);
+        const breakthroughTask = makeTask(testInvestigationId("breakthrough"));
+        const breakthroughSnapshot = makeSnapshot(
+            breakthroughTask,
+            InvestigationState.BREAKTHROUGH
+        );
         breakthroughSnapshot.breakthrough_finding_id = breakthroughSnapshot.findings[0]?.id;
         await persistence.initialize({
             task: breakthroughTask,
@@ -138,22 +153,26 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             snapshot: breakthroughSnapshot,
             event: makeEvent(
                 EventType.BREAKTHROUGH_RECORDED,
-                breakthroughSnapshot.lab.id,
+                breakthroughSnapshot.investigation.id,
                 "event-breakthrough"
             )
         });
 
         const recoverable = await persistence.listRecoverable();
-        const recoverableIds = recoverable.map(({ checkpoint }) => checkpoint.snapshot.lab.id);
-        expect(recoverableIds).toContain(runningSnapshot.lab.id);
-        expect(recoverableIds).not.toContain(breakthroughSnapshot.lab.id);
+        const recoverableIds = recoverable.map(
+            ({ checkpoint }) => checkpoint.snapshot.investigation.id
+        );
+        expect(recoverableIds).toContain(runningSnapshot.investigation.id);
+        expect(recoverableIds).not.toContain(breakthroughSnapshot.investigation.id);
         expect(recoverable).toContainEqual(
             expect.objectContaining({
                 task: runningTask,
                 workspacePath: "/tmp/lab-running",
                 checkpoint: expect.objectContaining({
                     snapshot: expect.objectContaining({
-                        lab: expect.objectContaining({ id: runningSnapshot.lab.id })
+                        investigation: expect.objectContaining({
+                            id: runningSnapshot.investigation.id
+                        })
                     })
                 }),
                 persistedAt: expect.any(String)
@@ -161,20 +180,24 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         );
 
         const noReplay = await persistence.eventsAfter(
-            runningSnapshot.lab.id,
+            runningSnapshot.investigation.id,
             running.lastEventSequence
         );
         expect(noReplay).toEqual([]);
     });
 
-    it("refuses a checkpoint written before a protocol change without hiding recoverable labs", async () => {
-        const staleTask = makeTask(testLabId("stale-contract"));
+    it("refuses a checkpoint written before a protocol change without hiding recoverable investigations", async () => {
+        const staleTask = makeTask(testInvestigationId("stale-contract"));
         const staleSnapshot = makeSnapshot(staleTask);
         await persistence.initialize({
             task: staleTask,
             workspacePath: "/tmp/lab-stale-contract",
             snapshot: staleSnapshot,
-            event: makeEvent(EventType.LAB_STARTED, staleSnapshot.lab.id, "event-stale-contract")
+            event: makeEvent(
+                EventType.INVESTIGATION_STARTED,
+                staleSnapshot.investigation.id,
+                "event-stale-contract"
+            )
         });
         const [staleCapability] = staleSnapshot.capability_requests;
         if (staleCapability === undefined) {
@@ -188,27 +211,31 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                 '{capability_requests}',
                 ${JSON.stringify([withoutProvisioningHint])}::jsonb
             )
-            WHERE lab_id = ${staleSnapshot.lab.id}
+            WHERE investigation_id = ${staleSnapshot.investigation.id}
         `;
 
-        await expect(persistence.load(staleSnapshot.lab.id)).rejects.toBeInstanceOf(
+        await expect(persistence.load(staleSnapshot.investigation.id)).rejects.toBeInstanceOf(
             IncompatibleCheckpointError
         );
         const recoverable = await persistence.listRecoverable();
-        expect(recoverable.map(({ checkpoint }) => checkpoint.snapshot.lab.id)).not.toContain(
-            staleSnapshot.lab.id
-        );
+        expect(
+            recoverable.map(({ checkpoint }) => checkpoint.snapshot.investigation.id)
+        ).not.toContain(staleSnapshot.investigation.id);
         expect(recoverable.length).toBeGreaterThan(0);
     });
 
     it("loads a checkpoint through a new database client after process restart", async () => {
-        const task = makeTask(testLabId("restarted"));
+        const task = makeTask(testInvestigationId("restarted"));
         const snapshot = makeSnapshot(task);
         await persistence.initialize({
             task,
             workspacePath: "/tmp/lab-restarted",
             snapshot,
-            event: makeEvent(EventType.LAB_STARTED, snapshot.lab.id, "event-restarted")
+            event: makeEvent(
+                EventType.INVESTIGATION_STARTED,
+                snapshot.investigation.id,
+                "event-restarted"
+            )
         });
 
         if (databaseUrl === undefined) {
@@ -217,12 +244,16 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
         const restartedClient = createDatabase(databaseUrl, { max: 1 });
         try {
             const recovered = await new RuntimePersistence(restartedClient.db).load(
-                snapshot.lab.id
+                snapshot.investigation.id
             );
             expect(recovered?.checkpoint.snapshot).toEqual({
                 ...snapshot,
                 recent_events: [
-                    makeEvent(EventType.LAB_STARTED, snapshot.lab.id, "event-restarted")
+                    makeEvent(
+                        EventType.INVESTIGATION_STARTED,
+                        snapshot.investigation.id,
+                        "event-restarted"
+                    )
                 ]
             });
         } finally {

@@ -1,18 +1,18 @@
-import type { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import type { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-    LAB_CONTROL_DOCK,
-    LAB_CONTROL_FAILURE,
-    LAB_CONTROL_GROUP,
-    LAB_CONTROL_ORIGIN_STATES,
-    LabControlAction
-} from "#src/lab-control/lab-control.const";
-import { LabControlButton } from "#src/lab-control/lab-control-button";
-import { sendLabControl } from "#src/lab-control/lab-control-request";
+    INVESTIGATION_CONTROL_DOCK,
+    INVESTIGATION_CONTROL_FAILURE,
+    INVESTIGATION_CONTROL_GROUP,
+    INVESTIGATION_CONTROL_ORIGIN_STATES,
+    InvestigationControlAction
+} from "#src/investigation-control/investigation-control.const";
+import { InvestigationControlButton } from "#src/investigation-control/investigation-control-button";
+import { sendInvestigationControl } from "#src/investigation-control/investigation-control-request";
 import { statusQueryKey } from "#src/live-status/status-client";
 
-interface LabControlsProps {
-    state: LabState;
+interface InvestigationControlsProps {
+    state: InvestigationState;
 }
 
 /**
@@ -20,15 +20,15 @@ interface LabControlsProps {
  * the current state allows are offered, so a failed run leaves the corner empty and every other
  * state carries its way out of itself.
  */
-export function LabControls({ state }: LabControlsProps) {
+export function InvestigationControls({ state }: InvestigationControlsProps) {
     const queryClient = useQueryClient();
     const control = useMutation({
-        mutationFn: sendLabControl,
+        mutationFn: sendInvestigationControl,
         onSuccess: (snapshot) => queryClient.setQueryData(statusQueryKey, snapshot)
     });
 
-    const offered = Object.values(LabControlAction).filter((action) =>
-        LAB_CONTROL_ORIGIN_STATES[action].has(state)
+    const offered = Object.values(InvestigationControlAction).filter((action) =>
+        INVESTIGATION_CONTROL_ORIGIN_STATES[action].has(state)
     );
 
     if (offered.length === 0) {
@@ -36,10 +36,10 @@ export function LabControls({ state }: LabControlsProps) {
     }
 
     return (
-        <div className={LAB_CONTROL_DOCK}>
-            <div className={LAB_CONTROL_GROUP}>
+        <div className={INVESTIGATION_CONTROL_DOCK}>
+            <div className={INVESTIGATION_CONTROL_GROUP}>
                 {offered.map((action) => (
-                    <LabControlButton
+                    <InvestigationControlButton
                         key={action}
                         action={action}
                         disabled={control.isPending}
@@ -49,7 +49,7 @@ export function LabControls({ state }: LabControlsProps) {
                 ))}
             </div>
             {control.error ? (
-                <p role="alert" className={LAB_CONTROL_FAILURE}>
+                <p role="alert" className={INVESTIGATION_CONTROL_FAILURE}>
                     {control.error.message}
                 </p>
             ) : null}

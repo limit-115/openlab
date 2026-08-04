@@ -35,7 +35,7 @@ export const ActivityDiagnosticLevel: Record<HarnessDiagnosticLevel, AgentDiagno
 };
 
 /**
- * How many runs the roster keeps. A lab starts fresh runs every cycle, so finished ones are evicted
+ * How many runs the roster keeps. An investigation starts fresh runs every cycle, so finished ones are evicted
  * oldest first once the roster is this long. Running ones are never evicted: their number is
  * bounded by how many agents the loop starts at once.
  */

@@ -22,8 +22,8 @@ export default defineConfig({
                     globalSetup: [integrationGlobalSetup],
                     /**
                      * Every integration file shares one PostgreSQL instance, and purging a run
-                     * deletes lab rows wholesale. Run the files one at a time so one suite's
-                     * cleanup cannot delete the lab another suite is still working on.
+                     * deletes investigation rows wholesale. Run the files one at a time so one suite's
+                     * cleanup cannot delete the investigation another suite is still working on.
                      */
                     fileParallelism: false,
                     hookTimeout: 120_000,

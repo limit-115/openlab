@@ -22,7 +22,7 @@ describe("fetchStatus", () => {
         vi.stubGlobal(
             "fetch",
             vi.fn().mockResolvedValue(
-                new Response(JSON.stringify({ lab: { state: "INVENTED" } }), {
+                new Response(JSON.stringify({ investigation: { state: "INVENTED" } }), {
                     headers: { "Content-Type": "application/json" }
                 })
             )
@@ -31,7 +31,7 @@ describe("fetchStatus", () => {
         await expect(fetchStatus()).rejects.toThrow();
     });
 
-    it("returns an actionable message when no lab exists", async () => {
+    it("returns an actionable message when no investigation exists", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 404 })));
 
         const request = fetchStatus();

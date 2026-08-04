@@ -4,10 +4,10 @@
     "private": true,
     "type": "module",
     "exports": {
-        "./lab-lifecycle/lab-state-transitions": "./src/lab-lifecycle/lab-state-transitions.ts",
-        "./lab-lifecycle/lab-state-transitions.const": "./src/lab-lifecycle/lab-state-transitions.const.ts",
-        "./lab-lifecycle/lab-state-transitions.types": "./src/lab-lifecycle/lab-state-transitions.types.ts",
-        "./lab-lifecycle/wake-trigger.const": "./src/lab-lifecycle/wake-trigger.const.ts"
+        "./investigation-lifecycle/investigation-state-transitions": "./src/investigation-lifecycle/investigation-state-transitions.ts",
+        "./investigation-lifecycle/investigation-state-transitions.const": "./src/investigation-lifecycle/investigation-state-transitions.const.ts",
+        "./investigation-lifecycle/investigation-state-transitions.types": "./src/investigation-lifecycle/investigation-state-transitions.types.ts",
+        "./investigation-lifecycle/wake-trigger.const": "./src/investigation-lifecycle/wake-trigger.const.ts"
     },
     "imports": {
         "#src/*": "./src/*.ts"

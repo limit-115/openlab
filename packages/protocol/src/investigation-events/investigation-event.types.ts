@@ -1,4 +1,4 @@
 import type { z } from "zod";
-import type { LabEventSchema } from "#src/lab-events/lab-event.schema";
+import type { InvestigationEventSchema } from "#src/investigation-events/investigation-event.schema";
 
-export type LabEvent = z.infer<typeof LabEventSchema>;
+export type InvestigationEvent = z.infer<typeof InvestigationEventSchema>;

@@ -1,21 +1,21 @@
-import { LabEventSchema } from "@lab/protocol/lab-events/lab-event.schema";
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import { InvestigationEventSchema } from "@lab/protocol/investigation-events/investigation-event.schema";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events } from "#src/lab-database/lab-schema";
 import { parseTimestamp } from "#src/runtime/runtime-metadata-validation";
-import type { PersistedLabEvent } from "#src/runtime/runtime-persistence.types";
+import type { PersistedInvestigationEvent } from "#src/runtime/runtime-persistence.types";
 
 type EventInsertDatabase = Pick<Database, "insert">;
 
 export async function insertEvent(
     database: EventInsertDatabase,
-    event: LabEvent
-): Promise<PersistedLabEvent> {
+    event: InvestigationEvent
+): Promise<PersistedInvestigationEvent> {
     const [record] = await database
         .insert(events)
         .values({
             id: event.id,
-            labId: event.lab_id,
+            investigationId: event.investigation_id,
             type: event.type,
             payload: event.payload,
             occurredAt: parseTimestamp(event.occurred_at, "event.occurred_at")
@@ -27,28 +27,31 @@ export async function insertEvent(
     return toPersistedEvent(record);
 }
 
-export function parseEvent(event: LabEvent | undefined, labId: string): LabEvent | undefined {
+export function parseEvent(
+    event: InvestigationEvent | undefined,
+    investigationId: string
+): InvestigationEvent | undefined {
     if (event === undefined) {
         return undefined;
     }
-    const parsed = LabEventSchema.parse(event);
-    if (parsed.lab_id !== labId) {
-        throw new Error(`Event ${parsed.id} belongs to another lab`);
+    const parsed = InvestigationEventSchema.parse(event);
+    if (parsed.investigation_id !== investigationId) {
+        throw new Error(`Event ${parsed.id} belongs to another investigation`);
     }
     return parsed;
 }
 
-export function toPersistedEvent(record: typeof events.$inferSelect): PersistedLabEvent {
+export function toPersistedEvent(record: typeof events.$inferSelect): PersistedInvestigationEvent {
     return {
         sequence: record.sequence,
-        ...toLabEvent(record)
+        ...toInvestigationEvent(record)
     };
 }
 
-export function toLabEvent(record: typeof events.$inferSelect): LabEvent {
-    return LabEventSchema.parse({
+export function toInvestigationEvent(record: typeof events.$inferSelect): InvestigationEvent {
+    return InvestigationEventSchema.parse({
         id: record.id,
-        lab_id: record.labId,
+        investigation_id: record.investigationId,
         type: record.type,
         occurred_at: record.occurredAt.toISOString(),
         payload: record.payload

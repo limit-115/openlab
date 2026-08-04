@@ -3,7 +3,7 @@ import type { HarnessCapabilityRequest } from "@lab/harness/harness-error";
 import { HarnessAbortedError, HarnessCapabilityError } from "@lab/harness/harness-error";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type { CapabilityRequestCandidate } from "#src/research-contract/research-contract";
 import {
     blockAgentRun,
@@ -137,7 +137,7 @@ function failureStatus(
 }
 
 export async function persistAgentCapabilityRequests(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     candidates: readonly CapabilityRequestCandidate[],
     blocking: boolean
 ): Promise<CapabilityRequest[]> {
@@ -157,11 +157,11 @@ export async function persistAgentCapabilityRequests(
 }
 
 /**
- * A harness that cannot reach its product subscription genuinely stops the lab: no agent runs at
+ * A harness that cannot reach its product subscription genuinely stops the investigation: no agent runs at
  * all until the operator restores the session, so this is the one request the daemon raises itself.
  */
 export function requestSubscriptionCapability(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     request: HarnessCapabilityRequest
 ): Promise<CapabilityRequest> {
     return workspace.requestCapability({

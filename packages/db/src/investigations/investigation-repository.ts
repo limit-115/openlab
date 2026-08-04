@@ -1,25 +1,25 @@
-import { transitionLabState } from "@lab/core/lab-lifecycle/lab-state-transitions";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { transitionInvestigationState } from "@lab/core/investigation-lifecycle/investigation-state-transitions";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { and, eq, ne } from "drizzle-orm";
-import type { Database } from "#src/lab-database/lab-database-client";
-import { labs } from "#src/lab-database/lab-schema";
 import type {
-    CreateLabInput,
-    LabRecord,
+    CreateInvestigationInput,
+    InvestigationRecord,
     PersistLifecycleInput
-} from "#src/labs/lab-repository.types";
+} from "#src/investigations/investigation-repository.types";
+import type { Database } from "#src/lab-database/lab-database-client";
+import { investigations } from "#src/lab-database/lab-schema";
 
-export class LabRepository {
+export class InvestigationRepository {
     readonly #database: Database;
 
     constructor(database: Database) {
         this.#database = database;
     }
 
-    async create(input: CreateLabInput): Promise<LabRecord> {
+    async create(input: CreateInvestigationInput): Promise<InvestigationRecord> {
         const now = input.now ?? new Date();
         const [record] = await this.#database
-            .insert(labs)
+            .insert(investigations)
             .values({
                 id: input.id,
                 goal: input.input.goal,
@@ -31,50 +31,63 @@ export class LabRepository {
             })
             .returning();
         if (record === undefined) {
-            throw new Error(`Failed to create lab ${input.id}`);
+            throw new Error(`Failed to create investigation ${input.id}`);
         }
         return record;
     }
 
-    async find(labId: string): Promise<LabRecord | undefined> {
-        return this.#database.query.labs.findFirst({ where: eq(labs.id, labId) });
+    async find(investigationId: string): Promise<InvestigationRecord | undefined> {
+        return this.#database.query.investigations.findFirst({
+            where: eq(investigations.id, investigationId)
+        });
     }
 
     async listIds(): Promise<string[]> {
-        const rows = await this.#database.select({ id: labs.id }).from(labs);
+        const rows = await this.#database.select({ id: investigations.id }).from(investigations);
         return rows.map((row) => row.id);
     }
 
     /**
-     * Deletes lab rows and, through the schema cascade, every assumption, agent run, finding,
-     * verdict, event, checkpoint, and capability request that hangs off them. Passing a lab id
-     * spares that one run. Returns the deleted lab ids.
+     * Deletes investigation rows and, through the schema cascade, every assumption, agent run, finding,
+     * verdict, event, checkpoint, and capability request that hangs off them. Passing an investigation id
+     * spares that one run. Returns the deleted investigation ids.
      */
-    async purge(keptLabId?: string): Promise<string[]> {
+    async purge(keptInvestigationId?: string): Promise<string[]> {
         const rows = await this.#database
-            .delete(labs)
-            .where(keptLabId === undefined ? undefined : ne(labs.id, keptLabId))
-            .returning({ id: labs.id });
+            .delete(investigations)
+            .where(
+                keptInvestigationId === undefined
+                    ? undefined
+                    : ne(investigations.id, keptInvestigationId)
+            )
+            .returning({ id: investigations.id });
         return rows.map((row) => row.id);
     }
 
-    async persistLifecycle(input: PersistLifecycleInput): Promise<LabRecord> {
+    async persistLifecycle(input: PersistLifecycleInput): Promise<InvestigationRecord> {
         const now = input.now ?? new Date();
-        transitionLabState(input.expectedState, input.state, input.context);
+        transitionInvestigationState(input.expectedState, input.state, input.context);
         const [record] = await this.#database
-            .update(labs)
+            .update(investigations)
             .set({
                 state: input.state,
                 stateReason: input.reason ?? null,
                 updatedAt: now,
-                ...(input.state === LabState.HIBERNATING ? { hibernatedAt: now } : {}),
-                ...(input.state === LabState.BREAKTHROUGH ? { breakthroughAt: now } : {}),
-                ...(input.state === LabState.STOPPED ? { stoppedAt: now } : {})
+                ...(input.state === InvestigationState.HIBERNATING ? { hibernatedAt: now } : {}),
+                ...(input.state === InvestigationState.BREAKTHROUGH ? { breakthroughAt: now } : {}),
+                ...(input.state === InvestigationState.STOPPED ? { stoppedAt: now } : {})
             })
-            .where(and(eq(labs.id, input.labId), eq(labs.state, input.expectedState)))
+            .where(
+                and(
+                    eq(investigations.id, input.investigationId),
+                    eq(investigations.state, input.expectedState)
+                )
+            )
             .returning();
         if (record === undefined) {
-            throw new Error(`Lab ${input.labId} was not in expected state ${input.expectedState}`);
+            throw new Error(
+                `Investigation ${input.investigationId} was not in expected state ${input.expectedState}`
+            );
         }
         return record;
     }

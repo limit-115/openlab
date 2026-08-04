@@ -17,7 +17,7 @@ interface CycleRailProps {
 
 /**
  * Where the current cycle stands, read left to right. Counting records says how much there is; this
- * says what the lab is doing with it.
+ * says what the investigation is doing with it.
  */
 export function CycleRail({ runs }: CycleRailProps) {
     return (

@@ -1,6 +1,6 @@
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import type { Finding } from "@lab/protocol/findings/finding.types";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import {
     ARTIFACT_NOTE,
     AUTONOMOUS_EXECUTION_MANDATE,
@@ -8,7 +8,7 @@ import {
     SELF_PROVISIONING_MANDATE
 } from "#src/research-prompts/research-prompts.const";
 
-function taskContext(task: TaskInput): string {
+function taskContext(task: InvestigationInput): string {
     return JSON.stringify(
         {
             goal: task.goal,
@@ -20,7 +20,7 @@ function taskContext(task: TaskInput): string {
     );
 }
 
-export function directorPrompt(task: TaskInput, exhausted: readonly Assumption[]): string {
+export function directorPrompt(task: InvestigationInput, exhausted: readonly Assumption[]): string {
     return `You are the Director of an autonomous research lab. Your job is to decide where to look.
 
 Start with reconnaissance of your own: read the relevant code, papers, issue trackers and prior art,
@@ -61,7 +61,7 @@ ${JSON.stringify(closed, null, 4)}
 `;
 }
 
-export function researcherPrompt(task: TaskInput, assumption: Assumption): string {
+export function researcherPrompt(task: InvestigationInput, assumption: Assumption): string {
     return `You are a researcher, working alone on one bet. Nobody is reviewing your method, and no
 evaluator is waiting to grade your output. What you do with this bet is entirely your call.
 
@@ -95,7 +95,11 @@ ${JSON.stringify({ statement: assumption.statement, rationale: assumption.ration
 Return only the requested structured result.`;
 }
 
-export function verifierPrompt(task: TaskInput, assumption: Assumption, finding: Finding): string {
+export function verifierPrompt(
+    task: InvestigationInput,
+    assumption: Assumption,
+    finding: Finding
+): string {
     return `You are an independent verifier in a clean session. A researcher says it found something.
 Your job is to decide whether that is true.
 
@@ -115,7 +119,7 @@ ${AUTONOMOUS_EXECUTION_MANDATE}
 
 ${MISSING_CAPABILITY_POLICY}
 
-Goal the lab is pursuing:
+Goal the investigation is pursuing:
 ${taskContext(task)}
 
 The bet this came from:

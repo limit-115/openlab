@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { and, eq, notInArray } from "drizzle-orm";
 import { verdicts } from "#src/lab-database/lab-schema";
 import { assertUpserted } from "#src/runtime/snapshot-projection/projected-entity-record";
@@ -14,7 +14,7 @@ export async function upsertVerdicts(
             .insert(verdicts)
             .values({
                 id: verdict.id,
-                labId: snapshot.lab.id,
+                investigationId: snapshot.investigation.id,
                 findingId: verdict.finding_id,
                 runId: verdict.run_id,
                 ...mutable,
@@ -23,7 +23,7 @@ export async function upsertVerdicts(
             .onConflictDoUpdate({
                 target: verdicts.id,
                 set: mutable,
-                setWhere: eq(verdicts.labId, snapshot.lab.id)
+                setWhere: eq(verdicts.investigationId, snapshot.investigation.id)
             })
             .returning({ id: verdicts.id });
         assertUpserted(records, "verdict", verdict.id);
@@ -32,14 +32,14 @@ export async function upsertVerdicts(
 
 export async function deleteMissingVerdicts(
     database: RuntimeProjectionDatabase,
-    labId: string,
+    investigationId: string,
     ids: string[]
 ): Promise<void> {
     await database
         .delete(verdicts)
         .where(
             ids.length === 0
-                ? eq(verdicts.labId, labId)
-                : and(eq(verdicts.labId, labId), notInArray(verdicts.id, ids))
+                ? eq(verdicts.investigationId, investigationId)
+                : and(eq(verdicts.investigationId, investigationId), notInArray(verdicts.id, ids))
         );
 }

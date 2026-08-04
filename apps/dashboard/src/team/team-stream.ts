@@ -17,7 +17,7 @@ function selectLiveAgents({ state, agents }: AgentActivityState): LiveAgents {
 /**
  * Watches every agent for as long as the Team tab is open.
  *
- * The stream is opened on mount and closed on unmount, so a lab nobody is watching pays nothing for
+ * The stream is opened on mount and closed on unmount, so an investigation nobody is watching pays nothing for
  * the frames it would otherwise have to send.
  */
 export function useAgentActivity(enabled = true): LiveAgents {

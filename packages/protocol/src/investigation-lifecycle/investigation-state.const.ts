@@ -1,9 +1,9 @@
-export const LabState = {
+export const InvestigationState = {
     RUNNING: "RUNNING",
-    /** A finding survived independent verification. The lab pauses and waits for the team. */
+    /** A finding survived independent verification. The investigation pauses and waits for the team. */
     BREAKTHROUGH: "BREAKTHROUGH",
     HIBERNATING: "HIBERNATING",
     STOPPED: "STOPPED",
     FAILED: "FAILED"
 } as const;
-export type LabState = (typeof LabState)[keyof typeof LabState];
+export type InvestigationState = (typeof InvestigationState)[keyof typeof InvestigationState];

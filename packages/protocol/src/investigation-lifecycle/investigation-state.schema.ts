@@ -1,4 +1,4 @@
 import { z } from "zod";
-import { LabState } from "#src/lab-lifecycle/lab-state.const";
+import { InvestigationState } from "#src/investigation-lifecycle/investigation-state.const";
 
-export const LabStateSchema = z.enum(LabState);
+export const InvestigationStateSchema = z.enum(InvestigationState);

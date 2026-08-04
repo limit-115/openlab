@@ -4,8 +4,8 @@ import { ClaudeHarness } from "@lab/harness/claude-harness";
 import { CodexHarness } from "@lab/harness/codex-harness";
 import { GlmHarness } from "@lab/harness/glm-harness";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { requestSubscriptionCapability } from "#src/research-cycle/agent-dispatch";
 import type { AvailableHarness } from "#src/research-cycle/research-loop.types";
 
@@ -21,7 +21,7 @@ export function createHarnesses(kinds: readonly HarnessKind[]): AgentHarness[] {
 }
 
 export async function preflightHarnesses(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     harnesses: readonly AgentHarness[],
     signal?: AbortSignal
 ): Promise<AvailableHarness[]> {

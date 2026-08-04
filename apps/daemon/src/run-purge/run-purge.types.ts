@@ -8,7 +8,7 @@ export interface PurgeRunsInput {
 
 export interface PurgeDirectoriesInput {
     readonly workspaceRoot: string;
-    readonly keptLabId: string | undefined;
+    readonly keptInvestigationId: string | undefined;
 }
 
 export interface PurgePlanInput {
@@ -17,13 +17,13 @@ export interface PurgePlanInput {
 }
 
 export interface PurgePlan {
-    readonly labIds: readonly string[];
-    readonly currentLabId: string | undefined;
+    readonly investigationIds: readonly string[];
+    readonly currentInvestigationId: string | undefined;
 }
 
 export interface PurgeResult {
-    readonly purgedLabIds: readonly string[];
-    readonly keptLabId: string | undefined;
+    readonly purgedInvestigationIds: readonly string[];
+    readonly keptInvestigationId: string | undefined;
     readonly purgedDirectoryCount: number;
-    readonly purgedLabRowCount: number;
+    readonly purgedInvestigationRowCount: number;
 }

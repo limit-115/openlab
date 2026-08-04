@@ -1,4 +1,4 @@
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -7,7 +7,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
-import { LAB_STATE_LABEL } from "#src/lab-header/runtime-strip.const";
+import { INVESTIGATION_STATE_LABEL } from "#src/investigation-header/runtime-strip.const";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
 import { ThemeProvider } from "#src/theme/theme-provider";
@@ -57,7 +57,7 @@ describe("App", () => {
         respondWith(statusFixture);
         renderDashboard();
 
-        expect(await screen.findByText(statusFixture.lab.goal)).toBeInTheDocument();
+        expect(await screen.findByText(statusFixture.investigation.goal)).toBeInTheDocument();
         expect(
             screen.getByText(statusFixture.assumptions[0]?.statement ?? "missing")
         ).toBeInTheDocument();
@@ -92,7 +92,7 @@ describe("App", () => {
         );
     });
 
-    it("reads the stage of the cycle the lab is on off its runs", async () => {
+    it("reads the stage of the cycle the investigation is on off its runs", async () => {
         respondWith(statusFixture);
         renderDashboard();
 
@@ -105,10 +105,10 @@ describe("App", () => {
         );
     });
 
-    it("wakes a hibernating lab from the control island and settles on the state it reports", async () => {
+    it("wakes a hibernating investigation from the control island and settles on the state it reports", async () => {
         const hibernating = {
             ...statusFixture,
-            lab: { ...statusFixture.lab, state: LabState.HIBERNATING }
+            investigation: { ...statusFixture.investigation, state: InvestigationState.HIBERNATING }
         };
         vi.stubGlobal(
             "fetch",
@@ -128,12 +128,12 @@ describe("App", () => {
 
         const runtime = screen.getByRole("status", { name: "Lab runtime status" });
         expect(
-            await within(runtime).findByText(LAB_STATE_LABEL[LabState.RUNNING])
+            await within(runtime).findByText(INVESTIGATION_STATE_LABEL[InvestigationState.RUNNING])
         ).toBeInTheDocument();
         expect(screen.queryByRole("button", { name: "Wake" })).not.toBeInTheDocument();
     });
 
-    it("shows useful empty states while the lab is still mapping the goal", async () => {
+    it("shows useful empty states while the investigation is still mapping the goal", async () => {
         respondWith({
             ...statusFixture,
             assumptions: [],
@@ -148,11 +148,11 @@ describe("App", () => {
         expect(await screen.findByText("No bets placed yet")).toBeInTheDocument();
     });
 
-    it("spends no room on capability requests while the lab is not blocked", async () => {
+    it("spends no room on capability requests while the investigation is not blocked", async () => {
         respondWith({ ...statusFixture, capability_requests: [] });
         renderDashboard();
 
-        expect(await screen.findByText(statusFixture.lab.goal)).toBeInTheDocument();
+        expect(await screen.findByText(statusFixture.investigation.goal)).toBeInTheDocument();
         expect(screen.queryByRole("list", { name: "Capability requests" })).toBeNull();
     });
 

@@ -15,9 +15,9 @@ import {
 } from "#src/agent-activity/agent-activity.fixture";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { AgentActivityRun } from "#src/agent-activity/agent-activity-hub.types";
-import { AGENT_ACTIVITY_ROUTE } from "#src/lab-status/agent-activity-route.const";
-import { createStatusServer } from "#src/lab-status/status-server";
-import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { AGENT_ACTIVITY_ROUTE } from "#src/investigation-status/agent-activity-route.const";
+import { createStatusServer } from "#src/investigation-status/status-server";
+import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 
 const HISTORY = harnessEvents([
     { type: HarnessEventTypes.SESSION_STARTED, resumed: false },
@@ -94,7 +94,7 @@ async function serve(hub?: AgentActivityHub): Promise<FastifyInstance> {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-activity-server-"));
     const taskPath = path.join(directory, "task.json");
     await writeFile(taskPath, JSON.stringify({ goal: "Watch the team" }));
-    const workspace = await LabWorkspace.initialize(directory, taskPath);
+    const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
     const server = createStatusServer(workspace, hub === undefined ? {} : { activity: hub });
     await server.listen({ host: "127.0.0.1", port: 0 });
     return server;
@@ -159,7 +159,7 @@ describe("agent activity route", () => {
         await server.close();
     });
 
-    it("does not serve the stream to a lab that is not publishing activity", async () => {
+    it("does not serve the stream to an investigation that is not publishing activity", async () => {
         const server = await serve();
 
         const response = await server.inject({ method: "GET", url: AGENT_ACTIVITY_ROUTE });

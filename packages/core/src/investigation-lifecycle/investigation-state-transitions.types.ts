@@ -1,4 +1,4 @@
-import type { WakeTrigger } from "#src/lab-lifecycle/wake-trigger.const";
+import type { WakeTrigger } from "#src/investigation-lifecycle/wake-trigger.const";
 
 export interface LifecycleContext {
     /** The finding a verifier confirmed. Required to claim a breakthrough. */

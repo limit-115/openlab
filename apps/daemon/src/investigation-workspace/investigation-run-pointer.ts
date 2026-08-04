@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import writeFileAtomic from "write-file-atomic";
-import { WorkspaceLayout } from "#src/lab-workspace/lab-workspace.const";
+import { WorkspaceLayout } from "#src/investigation-workspace/investigation-workspace.const";
 
 export const CurrentPointerStatus = {
     VALID: "valid",
@@ -10,7 +10,7 @@ export const CurrentPointerStatus = {
 } as const;
 
 export interface CurrentPointer {
-    readonly lab_id: string;
+    readonly investigation_id: string;
     readonly run_directory: string;
 }
 
@@ -29,16 +29,19 @@ export async function readCurrentPointer(workspaceRoot: string): Promise<Current
         if (
             typeof value !== "object" ||
             value === null ||
-            !("lab_id" in value) ||
+            !("investigation_id" in value) ||
             !("run_directory" in value) ||
-            typeof value.lab_id !== "string" ||
+            typeof value.investigation_id !== "string" ||
             typeof value.run_directory !== "string"
         ) {
             throw new Error("Invalid current.json pointer");
         }
         return {
             status: CurrentPointerStatus.VALID,
-            pointer: { lab_id: value.lab_id, run_directory: value.run_directory }
+            pointer: {
+                investigation_id: value.investigation_id,
+                run_directory: value.run_directory
+            }
         };
     } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "ENOENT") {

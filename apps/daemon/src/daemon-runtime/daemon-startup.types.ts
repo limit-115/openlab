@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { DaemonDatabase } from "#src/daemon-runtime/daemon-database";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type {
     ResearchLoopOptions,
     ResearchLoopOutcome
@@ -8,14 +8,14 @@ import type {
 
 export interface RunningDaemon {
     app: FastifyInstance;
-    workspace: LabWorkspace;
+    workspace: InvestigationWorkspace;
     url: string;
     close(): Promise<void>;
 }
 
 export interface DaemonDependencies {
     researchLoop?: (
-        workspace: LabWorkspace,
+        workspace: InvestigationWorkspace,
         options: ResearchLoopOptions
     ) => Promise<ResearchLoopOutcome>;
     openDatabase?: (databaseUrl: string) => Promise<DaemonDatabase>;

@@ -22,4 +22,4 @@ export const BREAKTHROUGH_FILE = "inline-flex items-center gap-2 rounded-xl bord
 export const BREAKTHROUGH_TITLE = "Breakthrough" as const;
 
 export const BREAKTHROUGH_NOTE =
-    "An independent verifier confirmed this claim, so the lab paused here." as const;
+    "An independent verifier confirmed this claim, so the investigation paused here." as const;

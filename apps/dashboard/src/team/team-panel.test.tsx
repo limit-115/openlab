@@ -196,7 +196,7 @@ describe("TeamPanel", () => {
         expect(within(roster).getByRole("button", { name: /researcher/i })).toBeVisible();
     });
 
-    it("says so plainly when the lab is running nobody", () => {
+    it("says so plainly when the investigation is running nobody", () => {
         render(<TeamPanel agents={[]} runs={[]} />);
 
         expect(screen.queryByRole("article")).toBeNull();

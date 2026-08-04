@@ -1,11 +1,11 @@
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
-import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
-import { events, labs, runtimeCheckpoints } from "#src/lab-database/lab-schema";
+import { events, investigations, runtimeCheckpoints } from "#src/lab-database/lab-schema";
 import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
-import { terminalTimestamps } from "#src/runtime/lab-terminal-timestamps";
+import { terminalTimestamps } from "#src/runtime/investigation-terminal-timestamps";
 import {
     checkpointResult,
     toPersistedRuntime,
@@ -24,7 +24,7 @@ import type {
     CommitRuntimeInput,
     CommitRuntimeResult,
     InitializeRuntimeInput,
-    PersistedLabEvent,
+    PersistedInvestigationEvent,
     PersistedRuntime,
     RecoverableRuntime
 } from "#src/runtime/runtime-persistence.types";
@@ -39,23 +39,29 @@ export class RuntimePersistence {
     }
 
     async initialize(input: InitializeRuntimeInput): Promise<CommitRuntimeResult> {
-        const task = TaskInputSchema.parse(input.task);
+        const task = InvestigationInputSchema.parse(input.task);
         const snapshot = StatusSnapshotSchema.parse(input.snapshot);
-        const event = parseEvent(input.event, snapshot.lab.id);
+        const event = parseEvent(input.event, snapshot.investigation.id);
         assertNonEmptyWorkspacePath(input.workspacePath);
-        if (snapshot.lab.goal !== task.goal) {
+        if (snapshot.investigation.goal !== task.goal) {
             throw new Error("The runtime snapshot goal must match the task goal");
         }
 
         return this.#database.transaction(async (transaction) => {
-            const startedAt = parseTimestamp(snapshot.lab.started_at, "lab.started_at");
-            const updatedAt = parseTimestamp(snapshot.lab.updated_at, "lab.updated_at");
-            await transaction.insert(labs).values({
-                id: snapshot.lab.id,
+            const startedAt = parseTimestamp(
+                snapshot.investigation.started_at,
+                "investigation.started_at"
+            );
+            const updatedAt = parseTimestamp(
+                snapshot.investigation.updated_at,
+                "investigation.updated_at"
+            );
+            await transaction.insert(investigations).values({
+                id: snapshot.investigation.id,
                 goal: task.goal,
                 input: task,
-                state: snapshot.lab.state,
-                stateReason: snapshot.lab.reason,
+                state: snapshot.investigation.state,
+                stateReason: snapshot.investigation.reason,
                 workspacePath: input.workspacePath,
                 startedAt,
                 ...terminalTimestamps(snapshot, updatedAt),
@@ -73,7 +79,7 @@ export class RuntimePersistence {
             const [checkpoint] = await transaction
                 .insert(runtimeCheckpoints)
                 .values({
-                    labId: snapshot.lab.id,
+                    investigationId: snapshot.investigation.id,
                     snapshot: canonicalSnapshot,
                     lastEventSequence: appendedEvent?.sequence,
                     persistedAt: updatedAt
@@ -83,7 +89,9 @@ export class RuntimePersistence {
                     lastEventSequence: runtimeCheckpoints.lastEventSequence
                 });
             if (checkpoint === undefined) {
-                throw new Error(`Failed to initialize runtime checkpoint ${snapshot.lab.id}`);
+                throw new Error(
+                    `Failed to initialize runtime checkpoint ${snapshot.investigation.id}`
+                );
             }
             await projectRuntimeSnapshot(transaction, canonicalSnapshot);
             return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
@@ -93,7 +101,7 @@ export class RuntimePersistence {
     async commit(input: CommitRuntimeInput): Promise<CommitRuntimeResult> {
         assertRevision(input.expectedRevision);
         const snapshot = StatusSnapshotSchema.parse(input.snapshot);
-        const event = parseEvent(input.event, snapshot.lab.id);
+        const event = parseEvent(input.event, snapshot.investigation.id);
 
         return this.#database.transaction(async (transaction) => {
             const appendedEvent =
@@ -103,7 +111,10 @@ export class RuntimePersistence {
                 snapshot,
                 RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
             );
-            const updatedAt = parseTimestamp(snapshot.lab.updated_at, "lab.updated_at");
+            const updatedAt = parseTimestamp(
+                snapshot.investigation.updated_at,
+                "investigation.updated_at"
+            );
             const [checkpoint] = await transaction
                 .update(runtimeCheckpoints)
                 .set({
@@ -116,7 +127,7 @@ export class RuntimePersistence {
                 })
                 .where(
                     and(
-                        eq(runtimeCheckpoints.labId, snapshot.lab.id),
+                        eq(runtimeCheckpoints.investigationId, snapshot.investigation.id),
                         eq(runtimeCheckpoints.revision, input.expectedRevision)
                     )
                 )
@@ -125,42 +136,45 @@ export class RuntimePersistence {
                     lastEventSequence: runtimeCheckpoints.lastEventSequence
                 });
             if (checkpoint === undefined) {
-                throw new RuntimeRevisionConflictError(snapshot.lab.id, input.expectedRevision);
+                throw new RuntimeRevisionConflictError(
+                    snapshot.investigation.id,
+                    input.expectedRevision
+                );
             }
 
-            const [lab] = await transaction
-                .update(labs)
+            const [investigation] = await transaction
+                .update(investigations)
                 .set({
-                    state: snapshot.lab.state,
-                    stateReason: snapshot.lab.reason ?? null,
+                    state: snapshot.investigation.state,
+                    stateReason: snapshot.investigation.reason ?? null,
                     ...terminalTimestamps(snapshot, updatedAt),
                     updatedAt
                 })
-                .where(eq(labs.id, snapshot.lab.id))
-                .returning({ id: labs.id });
-            if (lab === undefined) {
-                throw new Error(`Lab ${snapshot.lab.id} does not exist`);
+                .where(eq(investigations.id, snapshot.investigation.id))
+                .returning({ id: investigations.id });
+            if (investigation === undefined) {
+                throw new Error(`Investigation ${snapshot.investigation.id} does not exist`);
             }
             await projectRuntimeSnapshot(transaction, canonicalSnapshot);
             return checkpointResult(canonicalSnapshot, checkpoint, appendedEvent);
         });
     }
 
-    async load(labId: string): Promise<PersistedRuntime | undefined> {
-        assertNonEmptyIdentifier(labId, "labId");
+    async load(investigationId: string): Promise<PersistedRuntime | undefined> {
+        assertNonEmptyIdentifier(investigationId, "investigationId");
         const [record] = await this.#database
             .select({
-                labId: labs.id,
-                task: labs.input,
-                workspacePath: labs.workspacePath,
+                investigationId: investigations.id,
+                task: investigations.input,
+                workspacePath: investigations.workspacePath,
                 snapshot: runtimeCheckpoints.snapshot,
                 revision: runtimeCheckpoints.revision,
                 lastEventSequence: runtimeCheckpoints.lastEventSequence,
                 persistedAt: runtimeCheckpoints.persistedAt
             })
             .from(runtimeCheckpoints)
-            .innerJoin(labs, eq(labs.id, runtimeCheckpoints.labId))
-            .where(eq(runtimeCheckpoints.labId, labId))
+            .innerJoin(investigations, eq(investigations.id, runtimeCheckpoints.investigationId))
+            .where(eq(runtimeCheckpoints.investigationId, investigationId))
             .limit(1);
         if (record === undefined) {
             return undefined;
@@ -172,17 +186,22 @@ export class RuntimePersistence {
         assertPageSize(limit, RuntimePersistenceLimit.MAX_RECOVERABLE_LABS);
         const records = await this.#database
             .select({
-                labId: labs.id,
-                task: labs.input,
-                workspacePath: labs.workspacePath,
+                investigationId: investigations.id,
+                task: investigations.input,
+                workspacePath: investigations.workspacePath,
                 snapshot: runtimeCheckpoints.snapshot,
                 revision: runtimeCheckpoints.revision,
                 lastEventSequence: runtimeCheckpoints.lastEventSequence,
                 persistedAt: runtimeCheckpoints.persistedAt
             })
             .from(runtimeCheckpoints)
-            .innerJoin(labs, eq(labs.id, runtimeCheckpoints.labId))
-            .where(inArray(labs.state, [LabState.RUNNING, LabState.HIBERNATING]))
+            .innerJoin(investigations, eq(investigations.id, runtimeCheckpoints.investigationId))
+            .where(
+                inArray(investigations.state, [
+                    InvestigationState.RUNNING,
+                    InvestigationState.HIBERNATING
+                ])
+            )
             .orderBy(desc(runtimeCheckpoints.persistedAt))
             .limit(limit);
 
@@ -202,11 +221,11 @@ export class RuntimePersistence {
     }
 
     async eventsAfter(
-        labId: string,
+        investigationId: string,
         afterSequence: number = 0,
         limit: number = RuntimePersistenceLimit.DEFAULT_EVENT_PAGE
-    ): Promise<PersistedLabEvent[]> {
-        assertNonEmptyIdentifier(labId, "labId");
+    ): Promise<PersistedInvestigationEvent[]> {
+        assertNonEmptyIdentifier(investigationId, "investigationId");
         if (!Number.isSafeInteger(afterSequence) || afterSequence < 0) {
             throw new RangeError("Event cursor must be a non-negative safe integer");
         }
@@ -214,7 +233,9 @@ export class RuntimePersistence {
         const rows = await this.#database
             .select()
             .from(events)
-            .where(and(eq(events.labId, labId), gt(events.sequence, afterSequence)))
+            .where(
+                and(eq(events.investigationId, investigationId), gt(events.sequence, afterSequence))
+            )
             .orderBy(asc(events.sequence))
             .limit(limit);
         return rows.map(toPersistedEvent);

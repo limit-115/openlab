@@ -1,6 +1,6 @@
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
 export class LabApiError extends Error {
     readonly status: number;
@@ -53,7 +53,7 @@ export class LabApiClient {
         });
     }
 
-    exportRun(): Promise<{ lab_id: string; run_directory: string; files: string[] }> {
+    exportRun(): Promise<{ investigation_id: string; run_directory: string; files: string[] }> {
         return this.request("/api/export");
     }
 

@@ -1,5 +1,5 @@
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
 export function parseTimestamp(value: string, field: string): Date {
     const timestamp = new Date(value);
@@ -34,16 +34,18 @@ export function assertNonEmptyIdentifier(value: string, field: string): void {
 }
 
 export function assertRuntimeMetadata(
-    labId: string,
-    task: TaskInput,
+    investigationId: string,
+    task: InvestigationInput,
     workspacePath: string,
     snapshot: StatusSnapshot
 ): void {
     assertNonEmptyWorkspacePath(workspacePath);
-    if (snapshot.lab.id !== labId) {
-        throw new Error(`Runtime checkpoint lab id does not match lab record ${labId}`);
+    if (snapshot.investigation.id !== investigationId) {
+        throw new Error(
+            `Runtime checkpoint investigation id does not match investigation record ${investigationId}`
+        );
     }
-    if (snapshot.lab.goal !== task.goal) {
-        throw new Error(`Runtime checkpoint goal does not match task input for ${labId}`);
+    if (snapshot.investigation.goal !== task.goal) {
+        throw new Error(`Runtime checkpoint goal does not match task input for ${investigationId}`);
     }
 }

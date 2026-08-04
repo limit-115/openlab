@@ -1,5 +1,5 @@
 {
-    "id": "ab55c407-2ff2-4025-900a-a5f88565b62f",
+    "id": "3e16ab22-ae37-41f1-b9a2-d0c5454af808",
     "prevId": "00000000-0000-0000-0000-000000000000",
     "version": "7",
     "dialect": "postgresql",
@@ -14,8 +14,8 @@
                     "primaryKey": true,
                     "notNull": true
                 },
-                "lab_id": {
-                    "name": "lab_id",
+                "investigation_id": {
+                    "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
@@ -120,11 +120,11 @@
                 }
             },
             "indexes": {
-                "agent_runs_lab_status_idx": {
-                    "name": "agent_runs_lab_status_idx",
+                "agent_runs_investigation_status_idx": {
+                    "name": "agent_runs_investigation_status_idx",
                     "columns": [
                         {
-                            "expression": "lab_id",
+                            "expression": "investigation_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -158,11 +158,11 @@
                 }
             },
             "foreignKeys": {
-                "agent_runs_lab_id_labs_id_fk": {
-                    "name": "agent_runs_lab_id_labs_id_fk",
+                "agent_runs_investigation_id_investigations_id_fk": {
+                    "name": "agent_runs_investigation_id_investigations_id_fk",
                     "tableFrom": "agent_runs",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -193,8 +193,8 @@
                     "primaryKey": true,
                     "notNull": true
                 },
-                "lab_id": {
-                    "name": "lab_id",
+                "investigation_id": {
+                    "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
@@ -248,11 +248,11 @@
                 }
             },
             "indexes": {
-                "assumptions_lab_status_idx": {
-                    "name": "assumptions_lab_status_idx",
+                "assumptions_investigation_status_idx": {
+                    "name": "assumptions_investigation_status_idx",
                     "columns": [
                         {
-                            "expression": "lab_id",
+                            "expression": "investigation_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -271,11 +271,11 @@
                 }
             },
             "foreignKeys": {
-                "assumptions_lab_id_labs_id_fk": {
-                    "name": "assumptions_lab_id_labs_id_fk",
+                "assumptions_investigation_id_investigations_id_fk": {
+                    "name": "assumptions_investigation_id_investigations_id_fk",
                     "tableFrom": "assumptions",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -297,8 +297,8 @@
                     "primaryKey": true,
                     "notNull": true
                 },
-                "lab_id": {
-                    "name": "lab_id",
+                "investigation_id": {
+                    "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
@@ -376,11 +376,11 @@
                 }
             },
             "indexes": {
-                "capability_requests_lab_status_idx": {
-                    "name": "capability_requests_lab_status_idx",
+                "capability_requests_investigation_status_idx": {
+                    "name": "capability_requests_investigation_status_idx",
                     "columns": [
                         {
-                            "expression": "lab_id",
+                            "expression": "investigation_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -399,11 +399,11 @@
                 }
             },
             "foreignKeys": {
-                "capability_requests_lab_id_labs_id_fk": {
-                    "name": "capability_requests_lab_id_labs_id_fk",
+                "capability_requests_investigation_id_investigations_id_fk": {
+                    "name": "capability_requests_investigation_id_investigations_id_fk",
                     "tableFrom": "capability_requests",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -451,8 +451,8 @@
                     "primaryKey": false,
                     "notNull": true
                 },
-                "lab_id": {
-                    "name": "lab_id",
+                "investigation_id": {
+                    "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
@@ -494,11 +494,11 @@
                     "method": "btree",
                     "with": {}
                 },
-                "events_lab_sequence_idx": {
-                    "name": "events_lab_sequence_idx",
+                "events_investigation_sequence_idx": {
+                    "name": "events_investigation_sequence_idx",
                     "columns": [
                         {
-                            "expression": "lab_id",
+                            "expression": "investigation_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -517,11 +517,11 @@
                 }
             },
             "foreignKeys": {
-                "events_lab_id_labs_id_fk": {
-                    "name": "events_lab_id_labs_id_fk",
+                "events_investigation_id_investigations_id_fk": {
+                    "name": "events_investigation_id_investigations_id_fk",
                     "tableFrom": "events",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -543,8 +543,8 @@
                     "primaryKey": true,
                     "notNull": true
                 },
-                "lab_id": {
-                    "name": "lab_id",
+                "investigation_id": {
+                    "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
@@ -597,11 +597,11 @@
                 }
             },
             "indexes": {
-                "findings_lab_status_idx": {
-                    "name": "findings_lab_status_idx",
+                "findings_investigation_status_idx": {
+                    "name": "findings_investigation_status_idx",
                     "columns": [
                         {
-                            "expression": "lab_id",
+                            "expression": "investigation_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -620,11 +620,11 @@
                 }
             },
             "foreignKeys": {
-                "findings_lab_id_labs_id_fk": {
-                    "name": "findings_lab_id_labs_id_fk",
+                "findings_investigation_id_investigations_id_fk": {
+                    "name": "findings_investigation_id_investigations_id_fk",
                     "tableFrom": "findings",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -654,8 +654,8 @@
             "checkConstraints": {},
             "isRLSEnabled": false
         },
-        "public.labs": {
-            "name": "labs",
+        "public.investigations": {
+            "name": "investigations",
             "schema": "",
             "columns": {
                 "id": {
@@ -678,7 +678,7 @@
                 },
                 "state": {
                     "name": "state",
-                    "type": "lab_state",
+                    "type": "investigation_state",
                     "typeSchema": "public",
                     "primaryKey": false,
                     "notNull": true,
@@ -764,8 +764,8 @@
             "name": "runtime_checkpoints",
             "schema": "",
             "columns": {
-                "lab_id": {
-                    "name": "lab_id",
+                "investigation_id": {
+                    "name": "investigation_id",
                     "type": "text",
                     "primaryKey": true,
                     "notNull": true
@@ -815,11 +815,11 @@
                 }
             },
             "foreignKeys": {
-                "runtime_checkpoints_lab_id_labs_id_fk": {
-                    "name": "runtime_checkpoints_lab_id_labs_id_fk",
+                "runtime_checkpoints_investigation_id_investigations_id_fk": {
+                    "name": "runtime_checkpoints_investigation_id_investigations_id_fk",
                     "tableFrom": "runtime_checkpoints",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -841,8 +841,8 @@
                     "primaryKey": true,
                     "notNull": true
                 },
-                "lab_id": {
-                    "name": "lab_id",
+                "investigation_id": {
+                    "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true
@@ -897,11 +897,11 @@
                 }
             },
             "foreignKeys": {
-                "verdicts_lab_id_labs_id_fk": {
-                    "name": "verdicts_lab_id_labs_id_fk",
+                "verdicts_investigation_id_investigations_id_fk": {
+                    "name": "verdicts_investigation_id_investigations_id_fk",
                     "tableFrom": "verdicts",
-                    "tableTo": "labs",
-                    "columnsFrom": ["lab_id"],
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -967,13 +967,13 @@
             "name": "event_type",
             "schema": "public",
             "values": [
-                "lab.started",
-                "lab.recovered",
-                "lab.state_changed",
-                "lab.woken",
-                "lab.hibernated",
-                "lab.stopped",
-                "lab.failed",
+                "investigation.started",
+                "investigation.recovered",
+                "investigation.state_changed",
+                "investigation.woken",
+                "investigation.hibernated",
+                "investigation.stopped",
+                "investigation.failed",
                 "harness.preflight_succeeded",
                 "harness.preflight_failed",
                 "assumptions.proposed",
@@ -1001,8 +1001,8 @@
             "schema": "public",
             "values": ["unverified", "confirmed", "refuted"]
         },
-        "public.lab_state": {
-            "name": "lab_state",
+        "public.investigation_state": {
+            "name": "investigation_state",
             "schema": "public",
             "values": ["RUNNING", "BREAKTHROUGH", "HIBERNATING", "STOPPED", "FAILED"]
         }

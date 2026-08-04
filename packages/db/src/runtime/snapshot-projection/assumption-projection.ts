@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { and, eq, notInArray } from "drizzle-orm";
 import { assumptions } from "#src/lab-database/lab-schema";
 import { assertUpserted } from "#src/runtime/snapshot-projection/projected-entity-record";
@@ -15,7 +15,7 @@ export async function upsertAssumptions(
             .insert(assumptions)
             .values({
                 id: assumption.id,
-                labId: snapshot.lab.id,
+                investigationId: snapshot.investigation.id,
                 cycle: assumption.cycle,
                 statement: assumption.statement,
                 rationale: assumption.rationale,
@@ -34,7 +34,7 @@ export async function upsertAssumptions(
                     outcome,
                     updatedAt
                 },
-                setWhere: eq(assumptions.labId, snapshot.lab.id)
+                setWhere: eq(assumptions.investigationId, snapshot.investigation.id)
             })
             .returning({ id: assumptions.id });
         assertUpserted(records, "assumption", assumption.id);
@@ -43,14 +43,17 @@ export async function upsertAssumptions(
 
 export async function deleteMissingAssumptions(
     database: RuntimeProjectionDatabase,
-    labId: string,
+    investigationId: string,
     ids: string[]
 ): Promise<void> {
     await database
         .delete(assumptions)
         .where(
             ids.length === 0
-                ? eq(assumptions.labId, labId)
-                : and(eq(assumptions.labId, labId), notInArray(assumptions.id, ids))
+                ? eq(assumptions.investigationId, investigationId)
+                : and(
+                      eq(assumptions.investigationId, investigationId),
+                      notInArray(assumptions.id, ids)
+                  )
         );
 }

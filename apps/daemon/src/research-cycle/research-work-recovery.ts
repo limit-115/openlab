@@ -1,22 +1,22 @@
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 
 /**
  * A run recorded as running belongs to a process that no longer exists, whether the daemon crashed
  * or the operator stopped it. Its agent is gone either way, so the record is closed as cancelled
  * rather than left claiming work that nothing is doing.
  */
-export async function cancelActiveWork(workspace: LabWorkspace): Promise<void> {
+export async function cancelActiveWork(workspace: InvestigationWorkspace): Promise<void> {
     await closeRunningWork(workspace, {});
 }
 
-export async function reconcileInterruptedWork(workspace: LabWorkspace): Promise<void> {
+export async function reconcileInterruptedWork(workspace: InvestigationWorkspace): Promise<void> {
     await closeRunningWork(workspace, { recovered_interruption: true });
 }
 
 async function closeRunningWork(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     payload: Readonly<Record<string, unknown>>
 ): Promise<void> {
     const cancelledRunIds: string[] = [];

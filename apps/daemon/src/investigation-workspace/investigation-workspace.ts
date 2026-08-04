@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { transitionLabState } from "@lab/core/lab-lifecycle/lab-state-transitions";
-import { legalLabStateTransitions } from "@lab/core/lab-lifecycle/lab-state-transitions.const";
-import type { LifecycleContext } from "@lab/core/lab-lifecycle/lab-state-transitions.types";
-import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
+import { transitionInvestigationState } from "@lab/core/investigation-lifecycle/investigation-state-transitions";
+import { legalInvestigationStateTransitions } from "@lab/core/investigation-lifecycle/investigation-state-transitions.const";
+import type { LifecycleContext } from "@lab/core/investigation-lifecycle/investigation-state-transitions.types";
+import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
 import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
 import type {
-    PersistedLabEvent,
+    PersistedInvestigationEvent,
     PersistedRuntime,
     RecoverableRuntime
 } from "@lab/db/runtime/runtime-persistence.types";
@@ -20,49 +20,52 @@ import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-re
 import type { Finding } from "@lab/protocol/findings/finding.types";
 import {
     EventType,
-    type EventType as LabEventType
-} from "@lab/protocol/lab-events/event-type.const";
-import { LabEventSchema } from "@lab/protocol/lab-events/lab-event.schema";
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+    type EventType as InvestigationEventType
+} from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationEventSchema } from "@lab/protocol/investigation-events/investigation-event.schema";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import {
-    LabState,
-    type LabState as LabStateValue
-} from "@lab/protocol/lab-lifecycle/lab-state.const";
-import { StatusSnapshotSchema } from "@lab/protocol/lab-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import { TaskInputSchema } from "@lab/protocol/research-task/task-input.schema";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+    InvestigationState,
+    type InvestigationState as InvestigationStateValue
+} from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { Mutex } from "async-mutex";
 import writeFileAtomic from "write-file-atomic";
-import { type LabReportSubject, renderLabReport } from "#src/lab-workspace/lab-report";
+import {
+    type InvestigationReportSubject,
+    renderInvestigationReport
+} from "#src/investigation-workspace/investigation-report";
 import {
     type CurrentPointer,
     CurrentPointerStatus,
     readCurrentPointer,
     resolveRunDirectory,
     writeCurrentPointer
-} from "#src/lab-workspace/lab-run-pointer";
+} from "#src/investigation-workspace/investigation-run-pointer";
 import {
     WorkspaceLayout,
     WorkspaceMutationAction,
     WorkspaceRecoveryLimit
-} from "#src/lab-workspace/lab-workspace.const";
+} from "#src/investigation-workspace/investigation-workspace.const";
 import type {
     SnapshotUpdater,
     StatusListener,
     WorkspaceMutationResult,
     WorkspaceMutationUpdater,
     WorkspaceRuntimePersistence
-} from "#src/lab-workspace/lab-workspace.types";
+} from "#src/investigation-workspace/investigation-workspace.types";
 
-export class LabWorkspace {
+export class InvestigationWorkspace {
     readonly runDirectory: string;
-    readonly labId: string;
+    readonly investigationId: string;
     readonly recovered: boolean;
 
     private readonly mutex = new Mutex();
     private readonly listeners = new Set<StatusListener>();
-    private readonly events: LabEvent[];
+    private readonly events: InvestigationEvent[];
     private runtimePersistence: WorkspaceRuntimePersistence | undefined;
     private runtimeRevision: number | undefined;
     private snapshot: StatusSnapshot;
@@ -70,13 +73,13 @@ export class LabWorkspace {
     private constructor(
         runDirectory: string,
         snapshot: StatusSnapshot,
-        events: LabEvent[],
+        events: InvestigationEvent[],
         recovered: boolean,
         runtimePersistence?: WorkspaceRuntimePersistence,
         runtimeRevision?: number
     ) {
         this.runDirectory = runDirectory;
-        this.labId = snapshot.lab.id;
+        this.investigationId = snapshot.investigation.id;
         this.snapshot = snapshot;
         this.events = events;
         this.recovered = recovered;
@@ -88,24 +91,28 @@ export class LabWorkspace {
         workspaceRoot: string,
         taskPath: string,
         runtimePersistence?: WorkspaceRuntimePersistence
-    ): Promise<LabWorkspace> {
-        const requestedTask = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
+    ): Promise<InvestigationWorkspace> {
+        const requestedTask = InvestigationInputSchema.parse(
+            JSON.parse(await readFile(taskPath, "utf8"))
+        );
         const current = await readCurrentPointer(workspaceRoot);
         if (current.status === CurrentPointerStatus.VALID) {
             if (runtimePersistence === undefined) {
-                const workspace = await LabWorkspace.load(
+                const workspace = await InvestigationWorkspace.load(
                     workspaceRoot,
                     current.pointer.run_directory
                 );
                 const existingTask = await workspace.getTask();
                 if (
-                    LabWorkspace.isResumable(workspace.getSnapshot().lab.state) &&
-                    LabWorkspace.tasksMatch(existingTask, requestedTask)
+                    InvestigationWorkspace.isResumable(
+                        workspace.getSnapshot().investigation.state
+                    ) &&
+                    InvestigationWorkspace.tasksMatch(existingTask, requestedTask)
                 ) {
                     return workspace;
                 }
             } else {
-                const workspace = await LabWorkspace.loadFromRuntime(
+                const workspace = await InvestigationWorkspace.loadFromRuntime(
                     workspaceRoot,
                     current.pointer,
                     requestedTask,
@@ -117,13 +124,13 @@ export class LabWorkspace {
             }
         }
         if (runtimePersistence !== undefined) {
-            const recoverable = await LabWorkspace.selectRecoverableRuntime(
+            const recoverable = await InvestigationWorkspace.selectRecoverableRuntime(
                 workspaceRoot,
                 requestedTask,
                 runtimePersistence
             );
             if (recoverable !== undefined) {
-                return LabWorkspace.loadPersistedRuntime(
+                return InvestigationWorkspace.loadPersistedRuntime(
                     workspaceRoot,
                     recoverable,
                     runtimePersistence
@@ -132,22 +139,26 @@ export class LabWorkspace {
         } else if (current.status === CurrentPointerStatus.INVALID) {
             throw current.error;
         }
-        return LabWorkspace.initialize(workspaceRoot, taskPath, runtimePersistence);
+        return InvestigationWorkspace.initialize(workspaceRoot, taskPath, runtimePersistence);
     }
 
     static async initialize(
         workspaceRoot: string,
         taskPath: string,
         runtimePersistence?: WorkspaceRuntimePersistence
-    ): Promise<LabWorkspace> {
-        const task = TaskInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
-        const labId = `lab-${randomUUID()}`;
-        const runDirectory = path.join(workspaceRoot, WorkspaceLayout.RUNS_DIRECTORY, labId);
+    ): Promise<InvestigationWorkspace> {
+        const task = InvestigationInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
+        const investigationId = `investigation-${randomUUID()}`;
+        const runDirectory = path.join(
+            workspaceRoot,
+            WorkspaceLayout.RUNS_DIRECTORY,
+            investigationId
+        );
         const now = new Date().toISOString();
         const snapshot = StatusSnapshotSchema.parse({
-            lab: {
-                id: labId,
-                state: LabState.RUNNING,
+            investigation: {
+                id: investigationId,
+                state: InvestigationState.RUNNING,
                 goal: task.goal,
                 started_at: now,
                 updated_at: now,
@@ -156,53 +167,66 @@ export class LabWorkspace {
         });
 
         await mkdir(runDirectory, { recursive: true });
-        const workspace = new LabWorkspace(runDirectory, snapshot, [], false);
+        const workspace = new InvestigationWorkspace(runDirectory, snapshot, [], false);
         await workspace.writeJson("task.json", task);
         await workspace.persistFilesystemSnapshot();
         if (runtimePersistence !== undefined) {
             await workspace.attachRuntimePersistence(runtimePersistence, task);
         }
         await writeCurrentPointer(workspaceRoot, {
-            lab_id: labId,
+            investigation_id: investigationId,
             run_directory: runDirectory
         });
 
         return workspace;
     }
 
-    static async load(workspaceRoot: string, runDirectory: string): Promise<LabWorkspace> {
+    static async load(
+        workspaceRoot: string,
+        runDirectory: string
+    ): Promise<InvestigationWorkspace> {
         const resolvedRunDirectory = resolveRunDirectory(workspaceRoot, runDirectory);
         const [snapshotSource, eventsSource] = await Promise.all([
             readFile(path.join(resolvedRunDirectory, "status.json"), "utf8"),
             readFile(path.join(resolvedRunDirectory, "events.json"), "utf8")
         ]);
         const snapshot = StatusSnapshotSchema.parse(JSON.parse(snapshotSource));
-        const events = LabEventSchema.array().parse(JSON.parse(eventsSource));
-        return new LabWorkspace(resolvedRunDirectory, snapshot, events, true);
+        const events = InvestigationEventSchema.array().parse(JSON.parse(eventsSource));
+        return new InvestigationWorkspace(resolvedRunDirectory, snapshot, events, true);
     }
 
     private static async loadFromRuntime(
         workspaceRoot: string,
         current: CurrentPointer,
-        requestedTask: TaskInput,
+        requestedTask: InvestigationInput,
         runtimePersistence: WorkspaceRuntimePersistence
-    ): Promise<LabWorkspace | undefined> {
+    ): Promise<InvestigationWorkspace | undefined> {
         resolveRunDirectory(workspaceRoot, current.run_directory);
-        const persisted = await LabWorkspace.loadResumableRuntime(
+        const persisted = await InvestigationWorkspace.loadResumableRuntime(
             runtimePersistence,
-            current.lab_id
+            current.investigation_id
         );
         if (persisted === undefined) {
             return undefined;
         }
-        LabWorkspace.validatePersistedRuntime(workspaceRoot, persisted, current.lab_id);
-        if (!LabWorkspace.tasksMatch(persisted.task, requestedTask)) {
+        InvestigationWorkspace.validatePersistedRuntime(
+            workspaceRoot,
+            persisted,
+            current.investigation_id
+        );
+        if (!InvestigationWorkspace.tasksMatch(persisted.task, requestedTask)) {
             return undefined;
         }
-        if (!LabWorkspace.isResumable(persisted.checkpoint.snapshot.lab.state)) {
+        if (
+            !InvestigationWorkspace.isResumable(persisted.checkpoint.snapshot.investigation.state)
+        ) {
             return undefined;
         }
-        return LabWorkspace.loadPersistedRuntime(workspaceRoot, persisted, runtimePersistence);
+        return InvestigationWorkspace.loadPersistedRuntime(
+            workspaceRoot,
+            persisted,
+            runtimePersistence
+        );
     }
 
     /**
@@ -211,10 +235,10 @@ export class LabWorkspace {
      */
     private static async loadResumableRuntime(
         runtimePersistence: WorkspaceRuntimePersistence,
-        labId: string
+        investigationId: string
     ): Promise<PersistedRuntime | undefined> {
         try {
-            return await runtimePersistence.load(labId);
+            return await runtimePersistence.load(investigationId);
         } catch (error) {
             if (error instanceof IncompatibleCheckpointError) {
                 return undefined;
@@ -227,13 +251,16 @@ export class LabWorkspace {
         workspaceRoot: string,
         persisted: PersistedRuntime,
         runtimePersistence: WorkspaceRuntimePersistence
-    ): Promise<LabWorkspace> {
-        LabWorkspace.validatePersistedRuntime(workspaceRoot, persisted);
+    ): Promise<InvestigationWorkspace> {
+        InvestigationWorkspace.validatePersistedRuntime(workspaceRoot, persisted);
         const runDirectory = resolveRunDirectory(workspaceRoot, persisted.workspacePath);
-        const labId = persisted.checkpoint.snapshot.lab.id;
-        const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, labId);
+        const investigationId = persisted.checkpoint.snapshot.investigation.id;
+        const events = await InvestigationWorkspace.readAllRuntimeEvents(
+            runtimePersistence,
+            investigationId
+        );
         await mkdir(runDirectory, { recursive: true });
-        const workspace = new LabWorkspace(
+        const workspace = new InvestigationWorkspace(
             runDirectory,
             persisted.checkpoint.snapshot,
             events,
@@ -244,7 +271,7 @@ export class LabWorkspace {
         await workspace.writeJson("task.json", persisted.task);
         await workspace.persistFilesystemSnapshot();
         await writeCurrentPointer(workspaceRoot, {
-            lab_id: labId,
+            investigation_id: investigationId,
             run_directory: runDirectory
         });
         return workspace;
@@ -252,7 +279,7 @@ export class LabWorkspace {
 
     private static async selectRecoverableRuntime(
         workspaceRoot: string,
-        requestedTask: TaskInput,
+        requestedTask: InvestigationInput,
         runtimePersistence: WorkspaceRuntimePersistence
     ): Promise<RecoverableRuntime | undefined> {
         const recoverable = await runtimePersistence.listRecoverable(
@@ -262,7 +289,7 @@ export class LabWorkspace {
             ({ task }) =>
                 requestedTask.id !== undefined &&
                 task.id === requestedTask.id &&
-                !LabWorkspace.tasksMatch(task, requestedTask)
+                !InvestigationWorkspace.tasksMatch(task, requestedTask)
         );
         if (identifierMismatch !== undefined) {
             throw new Error(
@@ -271,9 +298,9 @@ export class LabWorkspace {
         }
 
         const matching = recoverable
-            .filter(({ task }) => LabWorkspace.tasksMatch(task, requestedTask))
+            .filter(({ task }) => InvestigationWorkspace.tasksMatch(task, requestedTask))
             .map((candidate) => {
-                LabWorkspace.validatePersistedRuntime(workspaceRoot, candidate);
+                InvestigationWorkspace.validatePersistedRuntime(workspaceRoot, candidate);
                 return candidate;
             })
             .sort((left, right) => Date.parse(right.persistedAt) - Date.parse(left.persistedAt));
@@ -288,14 +315,16 @@ export class LabWorkspace {
     private static validatePersistedRuntime(
         workspaceRoot: string,
         persisted: PersistedRuntime,
-        expectedLabId: string = persisted.checkpoint.snapshot.lab.id
+        expectedInvestigationId: string = persisted.checkpoint.snapshot.investigation.id
     ): void {
         const snapshot = StatusSnapshotSchema.parse(persisted.checkpoint.snapshot);
-        const task = TaskInputSchema.parse(persisted.task);
-        if (snapshot.lab.id !== expectedLabId) {
-            throw new Error(`Runtime checkpoint does not match lab ${expectedLabId}`);
+        const task = InvestigationInputSchema.parse(persisted.task);
+        if (snapshot.investigation.id !== expectedInvestigationId) {
+            throw new Error(
+                `Runtime checkpoint does not match investigation ${expectedInvestigationId}`
+            );
         }
-        if (snapshot.lab.goal !== task.goal) {
+        if (snapshot.investigation.goal !== task.goal) {
             throw new Error("Persisted runtime checkpoint does not match its task input");
         }
         if (Number.isNaN(Date.parse(persisted.persistedAt))) {
@@ -310,13 +339,16 @@ export class LabWorkspace {
      * where it settled — so it is read off the state machine instead of being restated here, where a
      * second copy of the rule would drift from the first.
      */
-    private static isResumable(state: LabStateValue): boolean {
-        return state === LabState.RUNNING || legalLabStateTransitions[state].has(LabState.RUNNING);
+    private static isResumable(state: InvestigationStateValue): boolean {
+        return (
+            state === InvestigationState.RUNNING ||
+            legalInvestigationStateTransitions[state].has(InvestigationState.RUNNING)
+        );
     }
 
-    getTask(): Promise<TaskInput> {
+    getTask(): Promise<InvestigationInput> {
         return readFile(path.join(this.runDirectory, "task.json"), "utf8").then((value) =>
-            TaskInputSchema.parse(JSON.parse(value))
+            InvestigationInputSchema.parse(JSON.parse(value))
         );
     }
 
@@ -324,7 +356,7 @@ export class LabWorkspace {
         return structuredClone(this.snapshot);
     }
 
-    getEvents(): LabEvent[] {
+    getEvents(): InvestigationEvent[] {
         return structuredClone(this.events);
     }
 
@@ -356,14 +388,14 @@ export class LabWorkspace {
     }
 
     async mutateWithEvent(
-        type: LabEventType,
+        type: InvestigationEventType,
         payload: Readonly<Record<string, unknown>>,
         updater: WorkspaceMutationUpdater = () => WorkspaceMutationAction.COMMIT
     ): Promise<WorkspaceMutationResult | undefined> {
         const mutation = await this.mutex.runExclusive(async () => {
-            const event = LabEventSchema.parse({
+            const event = InvestigationEventSchema.parse({
                 id: `event-${randomUUID()}`,
-                lab_id: this.labId,
+                investigation_id: this.investigationId,
                 type,
                 occurred_at: new Date().toISOString(),
                 payload
@@ -396,60 +428,63 @@ export class LabWorkspace {
     }
 
     async transition(
-        state: LabStateValue,
+        state: InvestigationStateValue,
         reason?: string,
         context: LifecycleContext = {}
     ): Promise<StatusSnapshot> {
         const mutation = await this.mutateWithEvent(
-            EventType.LAB_STATE_CHANGED,
+            EventType.INVESTIGATION_STATE_CHANGED,
             {
                 state,
                 ...(reason === undefined ? {} : { reason }),
                 ...(context.wakeTrigger === undefined ? {} : { wake_trigger: context.wakeTrigger })
             },
             (draft) => {
-                transitionLabState(draft.lab.state, state, context);
-                draft.lab.state = state;
+                transitionInvestigationState(draft.investigation.state, state, context);
+                draft.investigation.state = state;
                 if (reason === undefined) {
-                    delete draft.lab.reason;
+                    delete draft.investigation.reason;
                 } else {
-                    draft.lab.reason = reason;
+                    draft.investigation.reason = reason;
                 }
             }
         );
         if (mutation === undefined) {
-            throw new Error("Lab state transition was unexpectedly skipped");
+            throw new Error("Investigation state transition was unexpectedly skipped");
         }
         return mutation.snapshot;
     }
 
-    /** Puts the lab to sleep once its bets are spent, or once nothing can run it. */
+    /** Puts the investigation to sleep once its bets are spent, or once nothing can run it. */
     async hibernate(reason: string): Promise<StatusSnapshot> {
         const reportPath = path.join(this.runDirectory, "report.md");
         await writeFileAtomic(
             reportPath,
-            renderLabReport(this.reportSubject(), "Hibernation report", reason)
+            renderInvestigationReport(this.reportSubject(), "Hibernation report", reason)
         );
         const mutation = await this.mutateWithEvent(
-            EventType.LAB_STATE_CHANGED,
-            { state: LabState.HIBERNATING, reason },
+            EventType.INVESTIGATION_STATE_CHANGED,
+            { state: InvestigationState.HIBERNATING, reason },
             (draft) => {
-                transitionLabState(draft.lab.state, LabState.HIBERNATING);
-                draft.lab.state = LabState.HIBERNATING;
-                draft.lab.reason = reason;
+                transitionInvestigationState(
+                    draft.investigation.state,
+                    InvestigationState.HIBERNATING
+                );
+                draft.investigation.state = InvestigationState.HIBERNATING;
+                draft.investigation.reason = reason;
                 draft.result = { summary: reason, report_path: reportPath, limitations: [] };
             }
         );
         if (mutation === undefined) {
-            throw new Error("Lab hibernation was unexpectedly skipped");
+            throw new Error("Investigation hibernation was unexpectedly skipped");
         }
         await this.appendEvent(EventType.REPORT_GENERATED, { report_path: reportPath });
-        await this.appendEvent(EventType.LAB_HIBERNATED, { reason });
+        await this.appendEvent(EventType.INVESTIGATION_HIBERNATED, { reason });
         return mutation.snapshot;
     }
 
     /**
-     * The lab's one terminal success. It is reachable only from a finding a verifier confirmed, so
+     * The investigation's one terminal success. It is reachable only from a finding a verifier confirmed, so
      * the confirmed finding is the argument rather than a summary the caller composed.
      */
     async recordBreakthrough(finding: Finding): Promise<StatusSnapshot> {
@@ -462,11 +497,11 @@ export class LabWorkspace {
         await Promise.all([
             writeFileAtomic(
                 reportPath,
-                renderLabReport(this.reportSubject(), "Breakthrough", finding.claim)
+                renderInvestigationReport(this.reportSubject(), "Breakthrough", finding.claim)
             ),
             this.writeJson("result.json", {
-                lab_id: this.labId,
-                status: LabState.BREAKTHROUGH,
+                investigation_id: this.investigationId,
+                status: InvestigationState.BREAKTHROUGH,
                 claim: finding.claim,
                 work: finding.work,
                 artifact_paths: finding.artifact_paths,
@@ -478,12 +513,20 @@ export class LabWorkspace {
         ]);
         const context: LifecycleContext = { confirmedFindingId: finding.id };
         const mutation = await this.mutateWithEvent(
-            EventType.LAB_STATE_CHANGED,
-            { state: LabState.BREAKTHROUGH, finding_id: finding.id, verdict_id: verdict.id },
+            EventType.INVESTIGATION_STATE_CHANGED,
+            {
+                state: InvestigationState.BREAKTHROUGH,
+                finding_id: finding.id,
+                verdict_id: verdict.id
+            },
             (draft) => {
-                transitionLabState(draft.lab.state, LabState.BREAKTHROUGH, context);
-                draft.lab.state = LabState.BREAKTHROUGH;
-                draft.lab.reason = finding.claim;
+                transitionInvestigationState(
+                    draft.investigation.state,
+                    InvestigationState.BREAKTHROUGH,
+                    context
+                );
+                draft.investigation.state = InvestigationState.BREAKTHROUGH;
+                draft.investigation.reason = finding.claim;
                 draft.breakthrough_finding_id = finding.id;
                 draft.result = {
                     summary: finding.claim,
@@ -505,7 +548,10 @@ export class LabWorkspace {
         return mutation.snapshot;
     }
 
-    async appendEvent(type: LabEventType, payload: Record<string, unknown>): Promise<LabEvent> {
+    async appendEvent(
+        type: InvestigationEventType,
+        payload: Record<string, unknown>
+    ): Promise<InvestigationEvent> {
         const mutation = await this.mutateWithEvent(type, payload);
         if (mutation === undefined) {
             throw new Error("Event append was unexpectedly skipped");
@@ -539,7 +585,7 @@ export class LabWorkspace {
                 }
 
                 accepted = true;
-                shouldWake = draft.lab.state === LabState.HIBERNATING;
+                shouldWake = draft.investigation.state === InvestigationState.HIBERNATING;
                 request.status = CapabilityStatus.ANSWERED;
                 request.answer = normalizedAnswer;
                 request.answered_at = event.occurred_at;
@@ -554,15 +600,19 @@ export class LabWorkspace {
 
     private async wakeIfHibernating(reason: string, wakeTrigger: WakeTrigger): Promise<void> {
         await this.mutateWithEvent(
-            EventType.LAB_STATE_CHANGED,
-            { state: LabState.RUNNING, reason, wake_trigger: wakeTrigger },
+            EventType.INVESTIGATION_STATE_CHANGED,
+            { state: InvestigationState.RUNNING, reason, wake_trigger: wakeTrigger },
             (draft) => {
-                if (draft.lab.state !== LabState.HIBERNATING) {
+                if (draft.investigation.state !== InvestigationState.HIBERNATING) {
                     return WorkspaceMutationAction.SKIP;
                 }
-                transitionLabState(draft.lab.state, LabState.RUNNING, { wakeTrigger });
-                draft.lab.state = LabState.RUNNING;
-                draft.lab.reason = reason;
+                transitionInvestigationState(
+                    draft.investigation.state,
+                    InvestigationState.RUNNING,
+                    { wakeTrigger }
+                );
+                draft.investigation.state = InvestigationState.RUNNING;
+                draft.investigation.reason = reason;
                 return WorkspaceMutationAction.COMMIT;
             }
         );
@@ -617,11 +667,11 @@ export class LabWorkspace {
 
     private async attachRuntimePersistence(
         runtimePersistence: WorkspaceRuntimePersistence,
-        task: TaskInput
+        task: InvestigationInput
     ): Promise<void> {
-        const persisted = await runtimePersistence.load(this.labId);
+        const persisted = await runtimePersistence.load(this.investigationId);
         if (persisted !== undefined) {
-            if (!LabWorkspace.tasksMatch(persisted.task, task)) {
+            if (!InvestigationWorkspace.tasksMatch(persisted.task, task)) {
                 throw new Error("Persisted runtime task does not match task.json");
             }
             if (path.resolve(persisted.workspacePath) !== path.resolve(this.runDirectory)) {
@@ -631,7 +681,10 @@ export class LabWorkspace {
             this.runtimePersistence = runtimePersistence;
             this.runtimeRevision = checkpoint.revision;
             this.snapshot = checkpoint.snapshot;
-            const events = await LabWorkspace.readAllRuntimeEvents(runtimePersistence, this.labId);
+            const events = await InvestigationWorkspace.readAllRuntimeEvents(
+                runtimePersistence,
+                this.investigationId
+            );
             this.events.splice(0, this.events.length, ...events);
             await this.persistFilesystemSnapshot();
             return;
@@ -659,7 +712,7 @@ export class LabWorkspace {
 
     private async commitRuntime(
         snapshot: StatusSnapshot,
-        event?: LabEvent
+        event?: InvestigationEvent
     ): Promise<StatusSnapshot> {
         if (this.runtimePersistence === undefined) {
             return snapshot;
@@ -678,10 +731,10 @@ export class LabWorkspace {
 
     private touch(snapshot: StatusSnapshot): void {
         const now = new Date();
-        snapshot.lab.updated_at = now.toISOString();
-        snapshot.lab.uptime_ms = Math.max(
+        snapshot.investigation.updated_at = now.toISOString();
+        snapshot.investigation.uptime_ms = Math.max(
             0,
-            now.getTime() - new Date(snapshot.lab.started_at).getTime()
+            now.getTime() - new Date(snapshot.investigation.started_at).getTime()
         );
     }
 
@@ -710,16 +763,16 @@ export class LabWorkspace {
 
     private static async readAllRuntimeEvents(
         runtimePersistence: WorkspaceRuntimePersistence,
-        labId: string
-    ): Promise<LabEvent[]> {
-        const events: LabEvent[] = [];
+        investigationId: string
+    ): Promise<InvestigationEvent[]> {
+        const events: InvestigationEvent[] = [];
         let cursor = 0;
         for (;;) {
-            const page = await runtimePersistence.eventsAfter(labId, cursor, 1_000);
+            const page = await runtimePersistence.eventsAfter(investigationId, cursor, 1_000);
             if (page.length === 0) {
                 return events;
             }
-            events.push(...page.map(LabWorkspace.toLabEvent));
+            events.push(...page.map(InvestigationWorkspace.toInvestigationEvent));
             const last = page.at(-1);
             if (last === undefined) {
                 return events;
@@ -731,10 +784,10 @@ export class LabWorkspace {
         }
     }
 
-    private static toLabEvent(event: PersistedLabEvent): LabEvent {
+    private static toInvestigationEvent(event: PersistedInvestigationEvent): InvestigationEvent {
         return {
             id: event.id,
-            lab_id: event.lab_id,
+            investigation_id: event.investigation_id,
             type: event.type,
             occurred_at: event.occurred_at,
             payload: event.payload
@@ -748,14 +801,14 @@ export class LabWorkspace {
         );
     }
 
-    private reportSubject(): LabReportSubject {
+    private reportSubject(): InvestigationReportSubject {
         return {
             snapshot: this.snapshot,
             runDirectory: this.runDirectory
         };
     }
 
-    private static tasksMatch(left: TaskInput, right: TaskInput): boolean {
+    private static tasksMatch(left: InvestigationInput, right: InvestigationInput): boolean {
         return JSON.stringify(left) === JSON.stringify(right);
     }
 }

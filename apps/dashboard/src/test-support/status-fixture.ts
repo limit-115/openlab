@@ -7,16 +7,16 @@ import {
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
 const now = "2026-08-02T10:00:00.000Z";
 
 export const statusFixture: StatusSnapshot = {
-    lab: {
-        id: "lab-alpha-2026",
-        state: LabState.RUNNING,
+    investigation: {
+        id: "investigation-alpha-2026",
+        state: InvestigationState.RUNNING,
         goal: "Find a provably faster route planner without sacrificing optimality",
         started_at: "2026-08-02T09:00:00.000Z",
         updated_at: now,
@@ -50,7 +50,7 @@ export const statusFixture: StatusSnapshot = {
             assumption_id: "assumption-landmarks",
             objective: "Reach the goal through sparse landmarks",
             status: AgentRunStatus.RUNNING,
-            cwd: "/tmp/lab-alpha/researcher-000",
+            cwd: "/tmp/investigation-alpha/researcher-000",
             execution: {
                 harness: AgentHarnessKind.CODEX,
                 model: "gpt-5.6-sol",
@@ -89,7 +89,7 @@ export const statusFixture: StatusSnapshot = {
     recent_events: [
         {
             id: "event-finding-claimed",
-            lab_id: "lab-alpha-2026",
+            investigation_id: "investigation-alpha-2026",
             type: EventType.FINDING_CLAIMED,
             occurred_at: now,
             payload: {

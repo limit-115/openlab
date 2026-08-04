@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { LAB_CONTROL_UNREACHABLE, LabControlAction } from "#src/lab-control/lab-control.const";
-import { sendLabControl } from "#src/lab-control/lab-control-request";
+import {
+    INVESTIGATION_CONTROL_UNREACHABLE,
+    InvestigationControlAction
+} from "#src/investigation-control/investigation-control.const";
+import { sendInvestigationControl } from "#src/investigation-control/investigation-control-request";
 import { statusFixture } from "#src/test-support/status-fixture";
 
 function answerWith(payload: unknown, status = 200) {
@@ -14,11 +17,11 @@ function answerWith(payload: unknown, status = 200) {
     return fetchMock;
 }
 
-describe("sendLabControl", () => {
+describe("sendInvestigationControl", () => {
     it("posts to the endpoint that owns the transition", async () => {
         const fetchMock = answerWith(statusFixture);
 
-        await sendLabControl(LabControlAction.WAKE);
+        await sendInvestigationControl(InvestigationControlAction.WAKE);
 
         expect(fetchMock).toHaveBeenCalledWith(
             "/api/wake",
@@ -27,18 +30,18 @@ describe("sendLabControl", () => {
     });
 
     it("keeps the daemon's own wording when it refuses the transition", async () => {
-        answerWith({ error: "Cannot wake lab from RUNNING" }, 409);
+        answerWith({ error: "Cannot wake investigation from RUNNING" }, 409);
 
-        await expect(sendLabControl(LabControlAction.WAKE)).rejects.toThrow(
-            "Cannot wake lab from RUNNING"
+        await expect(sendInvestigationControl(InvestigationControlAction.WAKE)).rejects.toThrow(
+            "Cannot wake investigation from RUNNING"
         );
     });
 
     it("reports an unreachable daemon rather than a transport failure", async () => {
         vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
 
-        await expect(sendLabControl(LabControlAction.STOP)).rejects.toThrow(
-            LAB_CONTROL_UNREACHABLE
+        await expect(sendInvestigationControl(InvestigationControlAction.STOP)).rejects.toThrow(
+            INVESTIGATION_CONTROL_UNREACHABLE
         );
     });
 });

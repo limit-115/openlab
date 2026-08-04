@@ -1,4 +1,4 @@
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
 import { RadioIcon } from "lucide-react";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
@@ -10,7 +10,7 @@ import { PANEL_SCROLLER } from "#src/panel/panel.const";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 interface EventsPanelProps {
-    events: LabEvent[];
+    events: InvestigationEvent[];
 }
 
 export function EventsPanel({ events }: EventsPanelProps) {

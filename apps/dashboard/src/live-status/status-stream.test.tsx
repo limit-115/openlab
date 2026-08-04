@@ -1,5 +1,5 @@
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -27,7 +27,7 @@ describe("useLiveStatus", () => {
         vi.stubGlobal("EventSource", FakeEventSource);
     });
 
-    it("tracks reconnect state and appends typed lab events", async () => {
+    it("tracks reconnect state and appends typed investigation events", async () => {
         const client = new QueryClient();
         client.setQueryData(statusQueryKey, statusFixture);
         render(<StreamObserver />, { wrapper: wrapper(client) });
@@ -37,9 +37,9 @@ describe("useLiveStatus", () => {
         act(() => source?.open());
         expect(screen.getByText(StreamState.LIVE)).toBeInTheDocument();
 
-        const event: LabEvent = {
+        const event: InvestigationEvent = {
             id: "event-finding-confirmed",
-            lab_id: statusFixture.lab.id,
+            investigation_id: statusFixture.investigation.id,
             type: EventType.FINDING_CONFIRMED,
             occurred_at: "2026-08-02T10:01:00.000Z",
             payload: { summary: "The verifier confirmed the landmark claim" }

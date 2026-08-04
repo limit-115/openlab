@@ -8,7 +8,7 @@ export const CAPABILITY_CARD_OPEN = "border-primary/50" as const;
 
 export const CAPABILITY_HEADER = "flex flex-wrap items-start justify-between gap-3" as const;
 
-/** How long the lab has been waiting, which is the cost of not having noticed the request. */
+/** How long the investigation has been waiting, which is the cost of not having noticed the request. */
 export const CAPABILITY_WAITING = "text-sm font-medium text-primary" as const;
 
 export const CAPABILITY_SETTLED = "text-sm text-muted-foreground" as const;

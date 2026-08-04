@@ -2,19 +2,19 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
-import { createStatusServer } from "#src/lab-status/status-server";
-import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { createStatusServer } from "#src/investigation-status/status-server";
+import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
-async function createTestWorkspace(goal: string): Promise<LabWorkspace> {
+async function createTestWorkspace(goal: string): Promise<InvestigationWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
     const taskPath = path.join(directory, "task.json");
     await writeFile(taskPath, JSON.stringify({ goal }));
-    return LabWorkspace.initialize(directory, taskPath);
+    return InvestigationWorkspace.initialize(directory, taskPath);
 }
 
 async function createTestServer() {
@@ -27,11 +27,11 @@ describe("status server", () => {
         const response = await server.inject({ method: "GET", url: "/api/status" });
 
         expect(response.statusCode).toBe(200);
-        expect(response.json().lab.goal).toBe("Inspect the API");
+        expect(response.json().investigation.goal).toBe("Inspect the API");
         await server.close();
     });
 
-    it("rejects waking a running lab", async () => {
+    it("rejects waking a running investigation", async () => {
         const server = await createTestServer();
         const response = await server.inject({ method: "POST", url: "/api/wake" });
 
@@ -39,20 +39,20 @@ describe("status server", () => {
         await server.close();
     });
 
-    it("pauses a running lab and gives up the cycle in flight before it sleeps", async () => {
+    it("pauses a running investigation and gives up the cycle in flight before it sleeps", async () => {
         const workspace = await createTestWorkspace("Pause the run");
         const cancelled: string[] = [];
         const server = createStatusServer(workspace, {
             onPause: async () => {
-                cancelled.push(workspace.getSnapshot().lab.state);
+                cancelled.push(workspace.getSnapshot().investigation.state);
             }
         });
 
         const response = await server.inject({ method: "POST", url: "/api/pause" });
 
         expect(response.statusCode).toBe(200);
-        expect(response.json().lab.state).toBe(LabState.HIBERNATING);
-        expect(cancelled).toEqual([LabState.RUNNING]);
+        expect(response.json().investigation.state).toBe(InvestigationState.HIBERNATING);
+        expect(cancelled).toEqual([InvestigationState.RUNNING]);
         await server.close();
     });
 
@@ -64,8 +64,8 @@ describe("status server", () => {
         const restarted = await server.inject({ method: "POST", url: "/api/wake" });
 
         expect(restarted.statusCode).toBe(200);
-        expect(restarted.json().lab.state).toBe(LabState.RUNNING);
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(restarted.json().investigation.state).toBe(InvestigationState.RUNNING);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         await server.close();
     });
 
@@ -77,7 +77,7 @@ describe("status server", () => {
                 cancelled = true;
             }
         });
-        await workspace.transition(LabState.FAILED, "The director never answered", {
+        await workspace.transition(InvestigationState.FAILED, "The director never answered", {
             failureReason: "The director never answered"
         });
 
@@ -87,7 +87,7 @@ describe("status server", () => {
         expect(stop.statusCode).toBe(409);
         expect(wake.statusCode).toBe(409);
         expect(cancelled).toBe(false);
-        expect(workspace.getSnapshot().lab.state).toBe(LabState.FAILED);
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.FAILED);
         await server.close();
     });
 
@@ -95,7 +95,7 @@ describe("status server", () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-route-test-"));
         const taskPath = path.join(directory, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Resume with a capability" }));
-        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         const request = await workspace.requestCapability({
             need: "Independent dataset",
             reason: "The verifier needs independent observations",
@@ -139,7 +139,7 @@ describe("status server", () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-empty-route-test-"));
         const taskPath = path.join(directory, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Answer a capability request" }));
-        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         const request = await workspace.requestCapability({
             need: "Licensed dataset",
             reason: "The verifier needs licensed observations",
@@ -172,10 +172,10 @@ describe("status server", () => {
         const dashboardRoot = path.join(directory, "dashboard");
         await mkdir(dashboardRoot);
         await Promise.all([
-            writeFile(taskPath, JSON.stringify({ goal: "Observe the lab" })),
+            writeFile(taskPath, JSON.stringify({ goal: "Observe the investigation" })),
             writeFile(path.join(dashboardRoot, "index.html"), "<main>dashboard</main>")
         ]);
-        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         const server = createStatusServer(workspace, { dashboardRoot });
 
         const response = await server.inject({ method: "GET", url: "/claims/claim-1" });
@@ -189,7 +189,7 @@ describe("status server", () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-subscriptions-test-"));
         const taskPath = path.join(directory, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Watch the subscriptions" }));
-        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         const server = createStatusServer(workspace, {
             subscriptions: new SubscriptionAllowanceReadings({
                 read: async (kind) => ({
@@ -211,7 +211,7 @@ describe("status server", () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-subscriptions-refresh-test-"));
         const taskPath = path.join(directory, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Watch the subscriptions" }));
-        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         let asked = 0;
         const server = createStatusServer(workspace, {
             subscriptions: new SubscriptionAllowanceReadings({
@@ -249,7 +249,7 @@ describe("status server", () => {
         const directory = await mkdtemp(path.join(tmpdir(), "lab-export-test-"));
         const taskPath = path.join(directory, "task.json");
         await writeFile(taskPath, JSON.stringify({ goal: "Export every artifact" }));
-        const workspace = await LabWorkspace.initialize(directory, taskPath);
+        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         const artifactDirectory = path.join(workspace.runDirectory, "artifacts", "experiment-1");
         await mkdir(artifactDirectory, { recursive: true });
         await writeFile(path.join(artifactDirectory, "metrics.json"), JSON.stringify({ score: 1 }));
@@ -259,7 +259,7 @@ describe("status server", () => {
 
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
-            lab_id: workspace.labId,
+            investigation_id: workspace.investigationId,
             run_directory: workspace.runDirectory
         });
         expect(response.json().files).toEqual(

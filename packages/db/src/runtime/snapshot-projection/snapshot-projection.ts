@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import {
     deleteMissingAgentRuns,
     upsertAgentRuns
@@ -15,7 +15,7 @@ import {
     deleteMissingFindings,
     upsertFindings
 } from "#src/runtime/snapshot-projection/finding-projection";
-import { assertEntityOwnership } from "#src/runtime/snapshot-projection/lab-ownership-integrity";
+import { assertEntityOwnership } from "#src/runtime/snapshot-projection/investigation-ownership-integrity";
 import { idsOf } from "#src/runtime/snapshot-projection/projected-entity-record";
 import type { RuntimeProjectionDatabase } from "#src/runtime/snapshot-projection/snapshot-projection.types";
 import { assertProjectionRelationships } from "#src/runtime/snapshot-projection/snapshot-relationship-integrity";
@@ -33,8 +33,8 @@ export async function projectRuntimeSnapshot(
     snapshot: StatusSnapshot
 ): Promise<void> {
     assertProjectionRelationships(snapshot);
-    const labId = snapshot.lab.id;
-    const projectionAt = new Date(snapshot.lab.updated_at);
+    const investigationId = snapshot.investigation.id;
+    const projectionAt = new Date(snapshot.investigation.updated_at);
 
     await assertEntityOwnership(database, snapshot);
     await upsertAssumptions(database, snapshot);
@@ -43,9 +43,9 @@ export async function projectRuntimeSnapshot(
     await upsertVerdicts(database, snapshot);
     await upsertCapabilities(database, snapshot, projectionAt);
 
-    await deleteMissingCapabilities(database, labId, idsOf(snapshot.capability_requests));
-    await deleteMissingVerdicts(database, labId, idsOf(snapshot.verdicts));
-    await deleteMissingFindings(database, labId, idsOf(snapshot.findings));
-    await deleteMissingAgentRuns(database, labId, idsOf(snapshot.runs));
-    await deleteMissingAssumptions(database, labId, idsOf(snapshot.assumptions));
+    await deleteMissingCapabilities(database, investigationId, idsOf(snapshot.capability_requests));
+    await deleteMissingVerdicts(database, investigationId, idsOf(snapshot.verdicts));
+    await deleteMissingFindings(database, investigationId, idsOf(snapshot.findings));
+    await deleteMissingAgentRuns(database, investigationId, idsOf(snapshot.runs));
+    await deleteMissingAssumptions(database, investigationId, idsOf(snapshot.assumptions));
 }

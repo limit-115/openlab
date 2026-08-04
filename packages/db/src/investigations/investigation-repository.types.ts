@@ -1,21 +1,21 @@
-import type { LifecycleContext } from "@lab/core/lab-lifecycle/lab-state-transitions.types";
-import type { LabState as LabStateValue } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
-import type { labs } from "#src/lab-database/lab-schema";
+import type { LifecycleContext } from "@lab/core/investigation-lifecycle/investigation-state-transitions.types";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import type { InvestigationState as InvestigationStateValue } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { investigations } from "#src/lab-database/lab-schema";
 
-export type LabRecord = typeof labs.$inferSelect;
+export type InvestigationRecord = typeof investigations.$inferSelect;
 
-export interface CreateLabInput {
+export interface CreateInvestigationInput {
     readonly id: string;
-    readonly input: TaskInput;
+    readonly input: InvestigationInput;
     readonly workspacePath: string;
     readonly now?: Date;
 }
 
 export interface PersistLifecycleInput {
-    readonly labId: string;
-    readonly expectedState: LabStateValue;
-    readonly state: LabStateValue;
+    readonly investigationId: string;
+    readonly expectedState: InvestigationStateValue;
+    readonly state: InvestigationStateValue;
     readonly context?: LifecycleContext;
     readonly reason?: string;
     readonly now?: Date;

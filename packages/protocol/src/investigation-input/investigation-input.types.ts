@@ -1,4 +1,4 @@
 import type { z } from "zod";
-import type { TaskInputSchema } from "#src/research-task/task-input.schema";
+import type { InvestigationInputSchema } from "#src/investigation-input/investigation-input.schema";
 
-export type TaskInput = z.infer<typeof TaskInputSchema>;
+export type InvestigationInput = z.infer<typeof InvestigationInputSchema>;

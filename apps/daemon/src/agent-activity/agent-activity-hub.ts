@@ -20,7 +20,7 @@ import { HarnessEventTranslator } from "#src/agent-activity/harness-event-transl
 /**
  * The live plane of agent work: who is running, and what each of them is doing right now.
  *
- * It is deliberately not the lab event log. That log is the durable research record, and committing
+ * It is deliberately not the investigation event log. That log is the durable research record, and committing
  * a snapshot revision per token of harness output would starve the research loop. Nothing is lost by
  * keeping this in memory: every frame here was written to the run's events.jsonl before it was
  * broadcast, so history is replayed from disk rather than buffered. The one exception is the frame

@@ -11,10 +11,10 @@ import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/
 /**
  * The refusal the vendor would have answered with, raised before a run is dispatched rather than
  * after one died on it. It is the same capability error a spent allowance produces mid-run, so the
- * lab falls through to the next subscription, asks the operator about this one, and hibernates on
+ * investigation falls through to the next subscription, asks the operator about this one, and hibernates on
  * the real reason exactly as it already did.
  *
- * Without readings wired in there is no gate: a lab that cannot see the allowance dispatches and
+ * Without readings wired in there is no gate: an investigation that cannot see the allowance dispatches and
  * learns from the vendor, which is how it worked before this existed.
  */
 export async function spentAllowanceError(

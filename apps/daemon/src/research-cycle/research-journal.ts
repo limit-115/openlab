@@ -3,15 +3,15 @@ import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import type { Finding } from "@lab/protocol/findings/finding.types";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import type { Verdict } from "@lab/protocol/verdicts/verdict.types";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
-import { requiredById } from "#src/lab-workspace/snapshot-entities";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import { requiredById } from "#src/investigation-workspace/snapshot-entities";
 import type { AssumptionCandidate } from "#src/research-contract/research-contract";
 import type { RecordFindingInput } from "#src/research-cycle/research-journal.types";
 
 export async function recordAssumptions(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     cycle: number,
     candidates: readonly AssumptionCandidate[]
 ): Promise<Assumption[]> {
@@ -38,7 +38,7 @@ export async function recordAssumptions(
 }
 
 export async function startAssumptionResearch(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     assumptionId: string
 ): Promise<void> {
     await workspace.update((draft) => {
@@ -53,10 +53,10 @@ export async function startAssumptionResearch(
 
 /**
  * Closes a bet nothing came of. The outcome is the researcher's own account, kept because the next
- * director round reads it: a bet that ran out is the only thing the lab knows for certain.
+ * director round reads it: a bet that ran out is the only thing the investigation knows for certain.
  */
 export async function exhaustAssumption(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     assumptionId: string,
     outcome: string
 ): Promise<void> {
@@ -73,7 +73,7 @@ export async function exhaustAssumption(
 }
 
 export async function confirmAssumption(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     assumptionId: string,
     outcome: string
 ): Promise<void> {
@@ -87,7 +87,7 @@ export async function confirmAssumption(
 }
 
 export async function recordFinding(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     input: RecordFindingInput
 ): Promise<Finding> {
     const finding: Finding = {
@@ -112,7 +112,7 @@ export async function recordFinding(
 }
 
 export async function recordVerdict(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     finding: Finding,
     runId: string,
     outcome: { readonly confirmed: boolean; readonly reasoning: string }

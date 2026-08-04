@@ -4,8 +4,8 @@ import { APP_FOOTER, APP_SHELL, DASHBOARD, PAGE_FRAME } from "#src/app.const";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
 import { cn } from "#src/design-system/class-names";
-import { LabControls } from "#src/lab-control/lab-controls";
-import { LabHeader } from "#src/lab-header/lab-header";
+import { InvestigationControls } from "#src/investigation-control/investigation-controls";
+import { InvestigationHeader } from "#src/investigation-header/investigation-header";
 import { fetchStatus, statusQueryKey } from "#src/live-status/status-client";
 import { useLiveStatus } from "#src/live-status/status-stream";
 import { StreamState } from "#src/live-status/status-stream.const";
@@ -45,14 +45,14 @@ export function App() {
 
     return (
         <div className={APP_SHELL}>
-            <LabHeader snapshot={snapshot} stream={stream} />
+            <InvestigationHeader snapshot={snapshot} stream={stream} />
             <main className={cn(PAGE_FRAME, DASHBOARD)}>
                 <Outlet context={snapshot} />
             </main>
             <footer className={cn(PAGE_FRAME, APP_FOOTER)}>
                 <span>AI Research Lab · Local runtime</span>
             </footer>
-            <LabControls state={snapshot.lab.state} />
+            <InvestigationControls state={snapshot.investigation.state} />
         </div>
     );
 }

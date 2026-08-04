@@ -1,5 +1,5 @@
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import {
     GOAL_REASON,
     GOAL_STATEMENT,
@@ -23,16 +23,18 @@ export function MissionOverview({ snapshot }: MissionOverviewProps) {
         <section className={OVERVIEW} aria-labelledby="goal-heading">
             <div className={MISSION}>
                 <h1 id="goal-heading" className={GOAL_STATEMENT}>
-                    {snapshot.lab.goal}
+                    {snapshot.investigation.goal}
                 </h1>
-                {snapshot.lab.reason ? <p className={GOAL_REASON}>{snapshot.lab.reason}</p> : null}
+                {snapshot.investigation.reason ? (
+                    <p className={GOAL_REASON}>{snapshot.investigation.reason}</p>
+                ) : null}
                 <p className={MISSION_META}>
                     {snapshot.assumptions.length > 0 ? (
                         <span>
                             {liveBets} of {snapshot.assumptions.length} bets still live
                         </span>
                     ) : null}
-                    <span>Updated {formatDate(snapshot.lab.updated_at)}</span>
+                    <span>Updated {formatDate(snapshot.investigation.updated_at)}</span>
                 </p>
             </div>
 

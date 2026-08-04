@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
-import { requiredById } from "#src/lab-workspace/snapshot-entities";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import { requiredById } from "#src/investigation-workspace/snapshot-entities";
 import { RUN_FAILURE_EVENT } from "#src/research-cycle/agent-run-lifecycle.const";
 import type {
     AgentRunFailure,
@@ -16,7 +16,7 @@ export function newAgentRunId(role: AgentRole): string {
 }
 
 export async function startAgentRun(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     input: StartAgentRunInput
 ): Promise<void> {
     await workspace.update((draft) => {
@@ -38,7 +38,7 @@ export async function startAgentRun(
 }
 
 export async function finishAgentRun(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     runId: string,
     outcome: { readonly exitCode?: number | null; readonly manifestPath?: string } = {}
 ): Promise<void> {
@@ -57,7 +57,7 @@ export async function finishAgentRun(
 }
 
 export async function failAgentRun(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     runId: string,
     failure: AgentRunFailure
 ): Promise<void> {
@@ -75,7 +75,7 @@ export async function failAgentRun(
 
 /** A run that stopped because the operator holds something the agent cannot obtain for itself. */
 export async function blockAgentRun(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     runId: string,
     capabilityRequests: readonly CapabilityRequest[]
 ): Promise<void> {

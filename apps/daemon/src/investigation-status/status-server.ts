@@ -1,16 +1,16 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import FastifyStatic from "@fastify/static";
-import { assessLifecycleTransition } from "@lab/core/lab-lifecycle/lab-state-transitions";
-import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
+import { assessLifecycleTransition } from "@lab/core/investigation-lifecycle/investigation-state-transitions";
+import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import Fastify, { type FastifyInstance } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
-import { registerAgentActivityRoute } from "#src/lab-status/agent-activity-route";
-import { CapabilityResponseError } from "#src/lab-status/status-server.const";
-import type { StatusServerOptions } from "#src/lab-status/status-server.types";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { registerAgentActivityRoute } from "#src/investigation-status/agent-activity-route";
+import { CapabilityResponseError } from "#src/investigation-status/status-server.const";
+import type { StatusServerOptions } from "#src/investigation-status/status-server.types";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import {
     FRESH_READING_PARAM,
     FRESH_READING_VALUE,
@@ -18,7 +18,7 @@ import {
 } from "#src/subscription-allowance/subscription-allowance.const";
 
 export function createStatusServer(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     options: StatusServerOptions = {}
 ): FastifyInstance {
     const app = Fastify({
@@ -49,7 +49,7 @@ export function createStatusServer(
         );
     }
 
-    app.get("/health", async () => ({ ok: true, lab_id: workspace.labId }));
+    app.get("/health", async () => ({ ok: true, investigation_id: workspace.investigationId }));
     app.get("/api/status", async () => workspace.getSnapshot());
     app.get("/api/assumptions", async () => workspace.getSnapshot().assumptions);
     app.get("/api/capabilities", async () => workspace.getSnapshot().capability_requests);
@@ -67,31 +67,35 @@ export function createStatusServer(
      * A refusal names the state that blocked it, which is the part the operator can act on.
      */
     app.post("/api/wake", async (_request, reply) => {
-        const current = workspace.getSnapshot().lab.state;
+        const current = workspace.getSnapshot().investigation.state;
         const wakeTrigger = WakeTrigger.USER;
-        if (!assessLifecycleTransition(current, LabState.RUNNING, { wakeTrigger }).allowed) {
-            return reply.code(409).send({ error: `Cannot wake lab from ${current}` });
+        if (
+            !assessLifecycleTransition(current, InvestigationState.RUNNING, { wakeTrigger }).allowed
+        ) {
+            return reply.code(409).send({ error: `Cannot wake investigation from ${current}` });
         }
-        return workspace.transition(LabState.RUNNING, "External wake command", { wakeTrigger });
+        return workspace.transition(InvestigationState.RUNNING, "External wake command", {
+            wakeTrigger
+        });
     });
 
-    /** Pausing gives up the cycle in flight, so the agents are cancelled before the lab sleeps. */
+    /** Pausing gives up the cycle in flight, so the agents are cancelled before the investigation sleeps. */
     app.post("/api/pause", async (_request, reply) => {
-        const current = workspace.getSnapshot().lab.state;
-        if (!assessLifecycleTransition(current, LabState.HIBERNATING).allowed) {
-            return reply.code(409).send({ error: `Cannot pause lab from ${current}` });
+        const current = workspace.getSnapshot().investigation.state;
+        if (!assessLifecycleTransition(current, InvestigationState.HIBERNATING).allowed) {
+            return reply.code(409).send({ error: `Cannot pause investigation from ${current}` });
         }
         await options.onPause?.();
-        return workspace.transition(LabState.HIBERNATING, "External pause command");
+        return workspace.transition(InvestigationState.HIBERNATING, "External pause command");
     });
 
     app.post("/api/stop", async (_request, reply) => {
-        const current = workspace.getSnapshot().lab.state;
-        if (!assessLifecycleTransition(current, LabState.STOPPED).allowed) {
-            return reply.code(409).send({ error: `Cannot stop lab from ${current}` });
+        const current = workspace.getSnapshot().investigation.state;
+        if (!assessLifecycleTransition(current, InvestigationState.STOPPED).allowed) {
+            return reply.code(409).send({ error: `Cannot stop investigation from ${current}` });
         }
         await options.onStop?.();
-        return workspace.transition(LabState.STOPPED, "External stop command");
+        return workspace.transition(InvestigationState.STOPPED, "External stop command");
     });
 
     app.post<{ Params: { id: string } }>("/api/capabilities/:id/answer", async (request, reply) => {
@@ -116,7 +120,7 @@ export function createStatusServer(
     });
 
     app.get("/api/export", async () => ({
-        lab_id: workspace.labId,
+        investigation_id: workspace.investigationId,
         run_directory: workspace.runDirectory,
         files: await listRunFiles(workspace.runDirectory)
     }));

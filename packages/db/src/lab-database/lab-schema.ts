@@ -5,10 +5,10 @@ import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.co
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import { domainValues } from "@lab/protocol/finite-domain/finite-domain-values";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import {
     bigint,
     boolean,
@@ -22,7 +22,10 @@ import {
     uniqueIndex
 } from "drizzle-orm/pg-core";
 
-export const labStateEnum = pgEnum("lab_state", domainValues(LabState));
+export const investigationStateEnum = pgEnum(
+    "investigation_state",
+    domainValues(InvestigationState)
+);
 export const agentRoleEnum = pgEnum("agent_role", domainValues(AgentRole));
 export const agentRunStatusEnum = pgEnum("agent_run_status", domainValues(AgentRunStatus));
 export const agentHarnessEnum = pgEnum("agent_harness", domainValues(AgentHarnessKind));
@@ -37,13 +40,13 @@ const timestamps = {
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 };
 
-export const labs = pgTable(
-    "labs",
+export const investigations = pgTable(
+    "investigations",
     {
         id: text("id").primaryKey(),
         goal: text("goal").notNull(),
-        input: jsonb("input").$type<TaskInput>().notNull(),
-        state: labStateEnum("state").notNull().default(LabState.RUNNING),
+        input: jsonb("input").$type<InvestigationInput>().notNull(),
+        state: investigationStateEnum("state").notNull().default(InvestigationState.RUNNING),
         stateReason: text("state_reason"),
         workspacePath: text("workspace_path").notNull(),
         startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
@@ -60,9 +63,9 @@ export const assumptions = pgTable(
     "assumptions",
     {
         id: text("id").primaryKey(),
-        labId: text("lab_id")
+        investigationId: text("investigation_id")
             .notNull()
-            .references(() => labs.id, { onDelete: "cascade" }),
+            .references(() => investigations.id, { onDelete: "cascade" }),
         cycle: integer("cycle").notNull().default(0),
         statement: text("statement").notNull(),
         rationale: text("rationale").notNull(),
@@ -70,7 +73,9 @@ export const assumptions = pgTable(
         outcome: text("outcome"),
         ...timestamps
     },
-    (table) => [index("assumptions_lab_status_idx").on(table.labId, table.status)]
+    (table) => [
+        index("assumptions_investigation_status_idx").on(table.investigationId, table.status)
+    ]
 );
 
 /** One agent session. Replaces the agent, task, attempt and experiment records it used to take. */
@@ -78,9 +83,9 @@ export const agentRuns = pgTable(
     "agent_runs",
     {
         id: text("id").primaryKey(),
-        labId: text("lab_id")
+        investigationId: text("investigation_id")
             .notNull()
-            .references(() => labs.id, { onDelete: "cascade" }),
+            .references(() => investigations.id, { onDelete: "cascade" }),
         assumptionId: text("assumption_id").references(() => assumptions.id, {
             onDelete: "cascade"
         }),
@@ -99,7 +104,7 @@ export const agentRuns = pgTable(
         ...timestamps
     },
     (table) => [
-        index("agent_runs_lab_status_idx").on(table.labId, table.status),
+        index("agent_runs_investigation_status_idx").on(table.investigationId, table.status),
         index("agent_runs_assumption_idx").on(table.assumptionId)
     ]
 );
@@ -109,9 +114,9 @@ export const findings = pgTable(
     "findings",
     {
         id: text("id").primaryKey(),
-        labId: text("lab_id")
+        investigationId: text("investigation_id")
             .notNull()
-            .references(() => labs.id, { onDelete: "cascade" }),
+            .references(() => investigations.id, { onDelete: "cascade" }),
         assumptionId: text("assumption_id")
             .notNull()
             .references(() => assumptions.id, { onDelete: "cascade" }),
@@ -124,7 +129,7 @@ export const findings = pgTable(
         status: findingStatusEnum("status").notNull().default(FindingStatus.UNVERIFIED),
         createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
     },
-    (table) => [index("findings_lab_status_idx").on(table.labId, table.status)]
+    (table) => [index("findings_investigation_status_idx").on(table.investigationId, table.status)]
 );
 
 /** An independent verifier's prose answer about one finding. */
@@ -132,9 +137,9 @@ export const verdicts = pgTable(
     "verdicts",
     {
         id: text("id").primaryKey(),
-        labId: text("lab_id")
+        investigationId: text("investigation_id")
             .notNull()
-            .references(() => labs.id, { onDelete: "cascade" }),
+            .references(() => investigations.id, { onDelete: "cascade" }),
         findingId: text("finding_id")
             .notNull()
             .references(() => findings.id, { onDelete: "cascade" }),
@@ -153,25 +158,25 @@ export const events = pgTable(
     {
         sequence: bigint("sequence", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
         id: text("id").notNull(),
-        labId: text("lab_id")
+        investigationId: text("investigation_id")
             .notNull()
-            .references(() => labs.id, { onDelete: "cascade" }),
+            .references(() => investigations.id, { onDelete: "cascade" }),
         type: eventTypeEnum("type").notNull(),
         payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
         occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow()
     },
     (table) => [
         uniqueIndex("events_id_unique").on(table.id),
-        index("events_lab_sequence_idx").on(table.labId, table.sequence)
+        index("events_investigation_sequence_idx").on(table.investigationId, table.sequence)
     ]
 );
 
 export const runtimeCheckpoints = pgTable(
     "runtime_checkpoints",
     {
-        labId: text("lab_id")
+        investigationId: text("investigation_id")
             .primaryKey()
-            .references(() => labs.id, { onDelete: "cascade" }),
+            .references(() => investigations.id, { onDelete: "cascade" }),
         revision: bigint("revision", { mode: "number" }).notNull().default(1),
         snapshot: jsonb("snapshot").$type<StatusSnapshot>().notNull(),
         lastEventSequence: bigint("last_event_sequence", { mode: "number" }),
@@ -184,9 +189,9 @@ export const capabilityRequests = pgTable(
     "capability_requests",
     {
         id: text("id").primaryKey(),
-        labId: text("lab_id")
+        investigationId: text("investigation_id")
             .notNull()
-            .references(() => labs.id, { onDelete: "cascade" }),
+            .references(() => investigations.id, { onDelete: "cascade" }),
         assumptionId: text("assumption_id").references(() => assumptions.id, {
             onDelete: "set null"
         }),
@@ -200,5 +205,10 @@ export const capabilityRequests = pgTable(
         answeredAt: timestamp("answered_at", { withTimezone: true }),
         ...timestamps
     },
-    (table) => [index("capability_requests_lab_status_idx").on(table.labId, table.status)]
+    (table) => [
+        index("capability_requests_investigation_status_idx").on(
+            table.investigationId,
+            table.status
+        )
+    ]
 );

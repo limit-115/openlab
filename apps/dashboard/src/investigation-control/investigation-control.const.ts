@@ -1,72 +1,79 @@
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { CircleStopIcon, PauseIcon, PlayIcon } from "lucide-react";
-import type { LabControlPresentation } from "#src/lab-control/lab-control.types";
+import type { InvestigationControlPresentation } from "#src/investigation-control/investigation-control.types";
 
 /**
- * Putting the lab back to work is one transition, but it is not one thing to ask for: waking a
- * sleeping lab, carrying a breakthrough further and starting a settled run again are different
+ * Putting the investigation back to work is one transition, but it is not one thing to ask for: waking a
+ * sleeping investigation, carrying a breakthrough further and starting a settled run again are different
  * decisions, and a control named for the state it acts from says which one the operator is making.
  */
-export const LabControlAction = {
+export const InvestigationControlAction = {
     PAUSE: "PAUSE",
     WAKE: "WAKE",
     RESUME: "RESUME",
     START: "START",
     STOP: "STOP"
 } as const;
-export type LabControlAction = (typeof LabControlAction)[keyof typeof LabControlAction];
+export type InvestigationControlAction =
+    (typeof InvestigationControlAction)[keyof typeof InvestigationControlAction];
 
-export const LAB_CONTROL_ENDPOINT: Record<LabControlAction, string> = {
-    [LabControlAction.PAUSE]: "/api/pause",
-    [LabControlAction.WAKE]: "/api/wake",
-    [LabControlAction.RESUME]: "/api/wake",
-    [LabControlAction.START]: "/api/wake",
-    [LabControlAction.STOP]: "/api/stop"
+export const INVESTIGATION_CONTROL_ENDPOINT: Record<InvestigationControlAction, string> = {
+    [InvestigationControlAction.PAUSE]: "/api/pause",
+    [InvestigationControlAction.WAKE]: "/api/wake",
+    [InvestigationControlAction.RESUME]: "/api/wake",
+    [InvestigationControlAction.START]: "/api/wake",
+    [InvestigationControlAction.STOP]: "/api/stop"
 };
 
 /**
  * The states each control acts from, mirroring the lifecycle guard the daemon enforces so the island
  * never offers a transition the run would refuse. Every state a run can leave offers a way out of
- * it; only a failure is left with none, because it is the one state the lab refuses to reopen.
+ * it; only a failure is left with none, because it is the one state the investigation refuses to reopen.
  */
-export const LAB_CONTROL_ORIGIN_STATES: Record<LabControlAction, ReadonlySet<LabState>> = {
-    [LabControlAction.PAUSE]: new Set([LabState.RUNNING]),
-    [LabControlAction.WAKE]: new Set([LabState.HIBERNATING]),
-    [LabControlAction.RESUME]: new Set([LabState.BREAKTHROUGH]),
-    [LabControlAction.START]: new Set([LabState.STOPPED]),
-    [LabControlAction.STOP]: new Set([
-        LabState.RUNNING,
-        LabState.HIBERNATING,
-        LabState.BREAKTHROUGH
+export const INVESTIGATION_CONTROL_ORIGIN_STATES: Record<
+    InvestigationControlAction,
+    ReadonlySet<InvestigationState>
+> = {
+    [InvestigationControlAction.PAUSE]: new Set([InvestigationState.RUNNING]),
+    [InvestigationControlAction.WAKE]: new Set([InvestigationState.HIBERNATING]),
+    [InvestigationControlAction.RESUME]: new Set([InvestigationState.BREAKTHROUGH]),
+    [InvestigationControlAction.START]: new Set([InvestigationState.STOPPED]),
+    [InvestigationControlAction.STOP]: new Set([
+        InvestigationState.RUNNING,
+        InvestigationState.HIBERNATING,
+        InvestigationState.BREAKTHROUGH
     ])
 };
 
-export const LAB_CONTROL_PRESENTATION: Record<LabControlAction, LabControlPresentation> = {
-    [LabControlAction.PAUSE]: {
+export const INVESTIGATION_CONTROL_PRESENTATION: Record<
+    InvestigationControlAction,
+    InvestigationControlPresentation
+> = {
+    [InvestigationControlAction.PAUSE]: {
         label: "Pause",
         pendingLabel: "Pausing",
         icon: PauseIcon,
         tone: "outline"
     },
-    [LabControlAction.WAKE]: {
+    [InvestigationControlAction.WAKE]: {
         label: "Wake",
         pendingLabel: "Waking",
         icon: PlayIcon,
         tone: "default"
     },
-    [LabControlAction.RESUME]: {
+    [InvestigationControlAction.RESUME]: {
         label: "Resume",
         pendingLabel: "Resuming",
         icon: PlayIcon,
         tone: "default"
     },
-    [LabControlAction.START]: {
+    [InvestigationControlAction.START]: {
         label: "Start",
         pendingLabel: "Starting",
         icon: PlayIcon,
         tone: "default"
     },
-    [LabControlAction.STOP]: {
+    [InvestigationControlAction.STOP]: {
         label: "Stop",
         pendingLabel: "Stopping",
         icon: CircleStopIcon,
@@ -74,7 +81,7 @@ export const LAB_CONTROL_PRESENTATION: Record<LabControlAction, LabControlPresen
         confirmation: {
             title: "Stop the run?",
             consequence:
-                "The agents are cancelled and whatever they had in hand is lost. The lab settles as stopped and keeps everything it already proved, so you can start it again from here.",
+                "The agents are cancelled and whatever they had in hand is lost. The investigation settles as stopped and keeps everything it already proved, so you can start it again from here.",
             confirmLabel: "Stop the run"
         }
     }
@@ -83,20 +90,20 @@ export const LAB_CONTROL_PRESENTATION: Record<LabControlAction, LabControlPresen
 export const KEEP_RUN_LABEL = "Keep running" as const;
 
 /** Shown when the daemon is gone, which reads nothing like a refusal the operator can act on. */
-export const LAB_CONTROL_UNREACHABLE = "The lab daemon did not answer." as const;
+export const INVESTIGATION_CONTROL_UNREACHABLE = "The lab daemon did not answer." as const;
 
 /**
  * The controls float over the corner of the page instead of sitting in the header. Ending a run is
  * something the operator reaches for a few times a session, and it was crowding a header whose job
- * is to say where you are and how the lab is doing. The island keeps the same short offset at every
+ * is to say where you are and how the investigation is doing. The island keeps the same short offset at every
  * width: it belongs to the viewport corner, not to the column of text it happens to lie over.
  */
-export const LAB_CONTROL_DOCK =
+export const INVESTIGATION_CONTROL_DOCK =
     "fixed right-4 bottom-4 z-30 flex flex-col items-end gap-1.5" as const;
 
 /** Chrome of its own, because the island lies over whatever the page happens to be showing. */
-export const LAB_CONTROL_GROUP =
+export const INVESTIGATION_CONTROL_GROUP =
     "flex flex-wrap items-center justify-end gap-2 rounded-4xl border bg-background/85 p-1.5 shadow-lg backdrop-blur-lg" as const;
 
-export const LAB_CONTROL_FAILURE =
+export const INVESTIGATION_CONTROL_FAILURE =
     "rounded-2xl border bg-background/85 px-3 py-1.5 text-sm text-destructive shadow-lg backdrop-blur-lg" as const;

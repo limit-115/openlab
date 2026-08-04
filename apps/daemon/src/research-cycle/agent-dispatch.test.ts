@@ -8,7 +8,7 @@ import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { describe, expect, it } from "vitest";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
-import { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { DirectorPlanSchema } from "#src/research-contract/research-contract";
 import {
     HarnessCapabilityBlockedError,
@@ -50,11 +50,11 @@ function readings(spent: readonly HarnessKind[]): SubscriptionAllowanceReadings 
     });
 }
 
-async function testWorkspace(name: string): Promise<LabWorkspace> {
+async function testWorkspace(name: string): Promise<InvestigationWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), `lab-${name}-`));
     const taskPath = path.join(directory, "task.json");
     await writeFile(taskPath, JSON.stringify({ goal: "Spend the allowance wisely" }));
-    return LabWorkspace.initialize(directory, taskPath);
+    return InvestigationWorkspace.initialize(directory, taskPath);
 }
 
 describe("runAgentWithFallback", () => {

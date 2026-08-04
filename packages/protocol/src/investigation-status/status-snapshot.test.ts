@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { LabState } from "#src/lab-lifecycle/lab-state.const";
-import { StatusSnapshotSchema } from "#src/lab-status/status-snapshot.schema";
+import { InvestigationState } from "#src/investigation-lifecycle/investigation-state.const";
+import { StatusSnapshotSchema } from "#src/investigation-status/status-snapshot.schema";
 
 const RUNNING_LAB = {
-    lab: {
-        id: "lab-1",
-        state: LabState.RUNNING,
+    investigation: {
+        id: "investigation-1",
+        state: InvestigationState.RUNNING,
         goal: "Reach a breakthrough",
         started_at: "2026-08-03T00:00:00.000Z",
         updated_at: "2026-08-03T00:00:00.000Z",

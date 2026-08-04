@@ -1,7 +1,7 @@
 import { createDatabase, type DatabaseClient } from "@lab/db/lab-database/lab-database-client";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
-import type { WorkspaceRuntimePersistence } from "#src/lab-workspace/lab-workspace.types";
+import type { WorkspaceRuntimePersistence } from "#src/investigation-workspace/investigation-workspace.types";
 
 export interface DaemonDatabase {
     readonly persistence: WorkspaceRuntimePersistence;

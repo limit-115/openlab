@@ -3,10 +3,10 @@ import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const"
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { type DirectorPlan, DirectorPlanSchema } from "#src/research-contract/research-contract";
 import {
     HarnessCapabilityBlockedError,
@@ -37,7 +37,7 @@ import { cancelActiveWork } from "#src/research-cycle/research-work-recovery";
 import { directorPrompt } from "#src/research-prompts/research-prompts";
 
 export async function runResearchLoop(
-    workspace: LabWorkspace,
+    workspace: InvestigationWorkspace,
     options: ResearchLoopOptions = {}
 ): Promise<ResearchLoopOutcome> {
     const signal = options.signal;
@@ -66,7 +66,7 @@ export async function runResearchLoop(
 
         const task = await workspace.getTask();
         let cycle = workspace.recovered ? 1 : 0;
-        while (workspace.getSnapshot().lab.state === LabState.RUNNING) {
+        while (workspace.getSnapshot().investigation.state === InvestigationState.RUNNING) {
             throwIfAborted(signal);
             const cycleResult = await runResearchCycle({
                 workspace,
@@ -112,9 +112,11 @@ export async function runResearchLoop(
         }
 
         const reason = error instanceof Error ? error.message : String(error);
-        if (workspace.getSnapshot().lab.state === LabState.RUNNING) {
-            await workspace.transition(LabState.FAILED, reason, { failureReason: reason });
-            await workspace.appendEvent(EventType.LAB_FAILED, { reason });
+        if (workspace.getSnapshot().investigation.state === InvestigationState.RUNNING) {
+            await workspace.transition(InvestigationState.FAILED, reason, {
+                failureReason: reason
+            });
+            await workspace.appendEvent(EventType.INVESTIGATION_FAILED, { reason });
         }
         return { status: ResearchLoopOutcomeStatus.FAILED, reason };
     }
@@ -128,7 +130,7 @@ class DirectorExhaustedError extends Error {
     }
 }
 
-async function blockOnUnavailableHarnesses(workspace: LabWorkspace): Promise<void> {
+async function blockOnUnavailableHarnesses(workspace: InvestigationWorkspace): Promise<void> {
     await workspace.update((draft) => {
         for (const run of draft.runs) {
             if (run.status === AgentRunStatus.RUNNING) {

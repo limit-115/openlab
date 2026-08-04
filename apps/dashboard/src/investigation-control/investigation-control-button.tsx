@@ -12,13 +12,13 @@ import {
 import { Button } from "#src/design-system/button";
 import { Spinner } from "#src/design-system/spinner";
 import {
-    KEEP_RUN_LABEL,
-    LAB_CONTROL_PRESENTATION,
-    type LabControlAction
-} from "#src/lab-control/lab-control.const";
+    INVESTIGATION_CONTROL_PRESENTATION,
+    type InvestigationControlAction,
+    KEEP_RUN_LABEL
+} from "#src/investigation-control/investigation-control.const";
 
-interface LabControlButtonProps {
-    action: LabControlAction;
+interface InvestigationControlButtonProps {
+    action: InvestigationControlAction;
     /** Every control is held while one is in flight, so two transitions cannot race each other. */
     disabled: boolean;
     /** This is the control the daemon is currently applying. */
@@ -27,14 +27,19 @@ interface LabControlButtonProps {
 }
 
 /** One lifecycle control. A control the operator cannot undo asks before it reaches the daemon. */
-export function LabControlButton({ action, disabled, applying, run }: LabControlButtonProps) {
+export function InvestigationControlButton({
+    action,
+    disabled,
+    applying,
+    run
+}: InvestigationControlButtonProps) {
     const {
         label,
         pendingLabel,
         icon: Icon,
         tone,
         confirmation
-    } = LAB_CONTROL_PRESENTATION[action];
+    } = INVESTIGATION_CONTROL_PRESENTATION[action];
 
     const control = (
         <Button

@@ -1,46 +1,46 @@
 import {
-    LabState,
-    type LabState as LabStateValue
-} from "@lab/protocol/lab-lifecycle/lab-state.const";
-import { legalLabStateTransitions } from "#src/lab-lifecycle/lab-state-transitions.const";
+    InvestigationState,
+    type InvestigationState as InvestigationStateValue
+} from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { legalInvestigationStateTransitions } from "#src/investigation-lifecycle/investigation-state-transitions.const";
 import type {
     LifecycleContext,
     LifecycleDecision
-} from "#src/lab-lifecycle/lab-state-transitions.types";
+} from "#src/investigation-lifecycle/investigation-state-transitions.types";
 
 export function assessLifecycleTransition(
-    current: LabStateValue,
-    target: LabStateValue,
+    current: InvestigationStateValue,
+    target: InvestigationStateValue,
     context: LifecycleContext = {}
 ): LifecycleDecision {
     const reasons: string[] = [];
 
-    if (!legalLabStateTransitions[current].has(target)) {
+    if (!legalInvestigationStateTransitions[current].has(target)) {
         reasons.push(`Illegal lifecycle transition: ${current} -> ${target}`);
     }
 
     /**
-     * The one judgement the lab may not make about itself. A researcher is free to believe anything
+     * The one judgement the investigation may not make about itself. A researcher is free to believe anything
      * about its own work; only a verifier's confirmation turns that belief into a result.
      */
     if (
-        target === LabState.BREAKTHROUGH &&
+        target === InvestigationState.BREAKTHROUGH &&
         (context.confirmedFindingId === undefined || context.confirmedFindingId.trim().length === 0)
     ) {
         reasons.push("A breakthrough requires the finding a verifier confirmed");
     }
 
     /**
-     * A lab only ever reaches RUNNING by being resumed, because the state it starts in is the one
+     * An investigation only ever reaches RUNNING by being resumed, because the state it starts in is the one
      * it is born with. Every such return names what revived it, so the run's history says whether
      * a person or an answered capability put it back to work.
      */
-    if (target === LabState.RUNNING && context.wakeTrigger === undefined) {
-        reasons.push("Resuming a lab requires a trigger");
+    if (target === InvestigationState.RUNNING && context.wakeTrigger === undefined) {
+        reasons.push("Resuming an investigation requires a trigger");
     }
 
     if (
-        target === LabState.FAILED &&
+        target === InvestigationState.FAILED &&
         (context.failureReason === undefined || context.failureReason.trim().length === 0)
     ) {
         reasons.push("Failure requires a non-empty reason");
@@ -49,11 +49,11 @@ export function assessLifecycleTransition(
     return { allowed: reasons.length === 0, reasons };
 }
 
-export function transitionLabState(
-    current: LabStateValue,
-    target: LabStateValue,
+export function transitionInvestigationState(
+    current: InvestigationStateValue,
+    target: InvestigationStateValue,
     context: LifecycleContext = {}
-): LabStateValue {
+): InvestigationStateValue {
     const decision = assessLifecycleTransition(current, target, context);
     if (!decision.allowed) {
         throw new Error(decision.reasons.join("; "));

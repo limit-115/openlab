@@ -4,10 +4,10 @@ import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import type { Finding } from "@lab/protocol/findings/finding.types";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import type { z } from "zod";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type { CapabilityRequestCandidate } from "#src/research-contract/research-contract";
 import type {
     AgentWorkspace,
@@ -25,7 +25,7 @@ export interface ResearchLoopOutcome {
 export interface ResearchLoopOptions {
     readonly activity?: AgentActivityHub;
     readonly harnesses?: readonly AgentHarness[];
-    /** Absent leaves the lab dispatching blind, learning a spent allowance from the vendor. */
+    /** Absent leaves the investigation dispatching blind, learning a spent allowance from the vendor. */
     readonly subscriptions?: SubscriptionAllowanceReadings;
     readonly workspaceFactory?: AgentWorkspaceFactory;
     readonly signal?: AbortSignal;
@@ -41,9 +41,9 @@ export interface AvailableHarness {
 export type CreateAgentWorkspace = (role: AgentRole) => Promise<AgentWorkspace>;
 
 export interface ResearchCycleInput {
-    readonly workspace: LabWorkspace;
+    readonly workspace: InvestigationWorkspace;
     readonly activity: AgentActivityHub;
-    readonly task: TaskInput;
+    readonly task: InvestigationInput;
     readonly available: readonly AvailableHarness[];
     readonly subscriptions?: SubscriptionAllowanceReadings;
     readonly createAgentWorkspace: CreateAgentWorkspace;
@@ -58,9 +58,9 @@ export interface ResearchCycleResult {
 }
 
 export interface AssumptionResearchInput {
-    readonly workspace: LabWorkspace;
+    readonly workspace: InvestigationWorkspace;
     readonly activity: AgentActivityHub;
-    readonly task: TaskInput;
+    readonly task: InvestigationInput;
     readonly assumption: Assumption;
     readonly available: readonly AvailableHarness[];
     readonly subscriptions?: SubscriptionAllowanceReadings;
@@ -75,7 +75,7 @@ export interface AssumptionResearchResult {
 }
 
 export interface AgentDispatchInput<Output> {
-    readonly workspace: LabWorkspace;
+    readonly workspace: InvestigationWorkspace;
     readonly activity: AgentActivityHub;
     readonly available: readonly AvailableHarness[];
     readonly subscriptions?: SubscriptionAllowanceReadings;
@@ -99,6 +99,6 @@ export interface AgentRunOutput<Output> extends StructuredAgentRunOutput<Output>
 
 export interface AgentCapabilityOutput {
     readonly capability_requests: readonly CapabilityRequestCandidate[];
-    /** Absent for the director, which cannot stall the lab on an operator. */
+    /** Absent for the director, which cannot stall the investigation on an operator. */
     readonly capability_blocked?: boolean;
 }

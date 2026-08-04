@@ -7,22 +7,22 @@ import {
     CapabilityStatus
 } from "@lab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import type { LabEvent } from "@lab/protocol/lab-events/lab-event.types";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
-import type { TaskInput } from "@lab/protocol/research-task/task-input.types";
+import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
 const testRunId = randomUUID();
 
-export function testLabId(name: string): string {
-    return `lab-${testRunId}-${name}`;
+export function testInvestigationId(name: string): string {
+    return `investigation-${testRunId}-${name}`;
 }
 
-export function testEventId(labId: string, name: string): string {
-    return `${labId}-${name}`;
+export function testEventId(investigationId: string, name: string): string {
+    return `${investigationId}-${name}`;
 }
 
-export function makeTask(id = "lab-runtime"): TaskInput {
+export function makeTask(id = "investigation-runtime"): InvestigationInput {
     return {
         id,
         goal: "Find a reproducible result",
@@ -31,17 +31,20 @@ export function makeTask(id = "lab-runtime"): TaskInput {
     };
 }
 
-export function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING): StatusSnapshot {
-    const labId = task.id ?? "lab-runtime";
+export function makeSnapshot(
+    task: InvestigationInput,
+    state: InvestigationState = InvestigationState.RUNNING
+): StatusSnapshot {
+    const investigationId = task.id ?? "investigation-runtime";
     const timestamp = "2026-08-02T00:00:00.000Z";
-    const assumptionId = `${labId}-assumption-cache`;
-    const directorRunId = `${labId}-run-director`;
-    const researcherRunId = `${labId}-run-researcher`;
-    const verifierRunId = `${labId}-run-verifier`;
-    const findingId = `${labId}-finding-primary`;
+    const assumptionId = `${investigationId}-assumption-cache`;
+    const directorRunId = `${investigationId}-run-director`;
+    const researcherRunId = `${investigationId}-run-researcher`;
+    const verifierRunId = `${investigationId}-run-verifier`;
+    const findingId = `${investigationId}-finding-primary`;
     return {
-        lab: {
-            id: labId,
+        investigation: {
+            id: investigationId,
             state,
             goal: task.goal,
             started_at: timestamp,
@@ -104,7 +107,7 @@ export function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING
         verdicts: [],
         capability_requests: [
             {
-                id: `${labId}-capability-sandbox`,
+                id: `${investigationId}-capability-sandbox`,
                 type: CapabilityRequestType.CAPABILITY_REQUEST,
                 need: "A quiescent dedicated benchmarking host",
                 reason: "The measurement needs a machine without neighbouring load",
@@ -125,14 +128,14 @@ export function makeSnapshot(task: TaskInput, state: LabState = LabState.RUNNING
 }
 
 export function makeEvent(
-    type: LabEvent["type"],
-    labId: string,
+    type: InvestigationEvent["type"],
+    investigationId: string,
     id: string,
     occurredAt = "2026-08-02T00:00:00.000Z"
-): LabEvent {
+): InvestigationEvent {
     return {
-        id: testEventId(labId, id),
-        lab_id: labId,
+        id: testEventId(investigationId, id),
+        investigation_id: investigationId,
         type,
         occurred_at: occurredAt,
         payload: { source: "runtime-integration-test" }

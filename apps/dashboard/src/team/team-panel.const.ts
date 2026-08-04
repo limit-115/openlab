@@ -157,6 +157,6 @@ export const EFFORT_LABEL: Record<AgentEffortLevel, string> = {
 export const NO_AGENTS_TITLE = "No agent is running" as const;
 
 export const NO_AGENTS_DESCRIPTION =
-    "Directors, researchers, critics and verifiers appear here while the lab is working." as const;
+    "Directors, researchers, critics and verifiers appear here while the investigation is working." as const;
 
 export const NO_ACTIVITY_YET = "Waiting for the harness to report" as const;

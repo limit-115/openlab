@@ -6,4 +6,7 @@ if (taskPath === undefined) {
 }
 
 const daemon = await startDaemon({ taskPath });
-daemon.app.log.info({ url: daemon.url, lab_id: daemon.workspace.labId }, "lab daemon ready");
+daemon.app.log.info(
+    { url: daemon.url, investigation_id: daemon.workspace.investigationId },
+    "lab daemon ready"
+);

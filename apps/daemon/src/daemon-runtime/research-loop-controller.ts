@@ -1,8 +1,8 @@
 import type { AgentHarness } from "@lab/harness/agent-harness.types";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type {
     ResearchLoopOptions,
     ResearchLoopOutcome
@@ -10,10 +10,10 @@ import type {
 import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 export class ResearchLoopController {
-    readonly #workspace: LabWorkspace;
+    readonly #workspace: InvestigationWorkspace;
     readonly #activity: AgentActivityHub;
     readonly #run: (
-        workspace: LabWorkspace,
+        workspace: InvestigationWorkspace,
         options: ResearchLoopOptions
     ) => Promise<ResearchLoopOutcome>;
     readonly #harnesses: readonly AgentHarness[] | undefined;
@@ -24,10 +24,10 @@ export class ResearchLoopController {
     #unsubscribe: (() => void) | undefined;
 
     constructor(
-        workspace: LabWorkspace,
+        workspace: InvestigationWorkspace,
         activity: AgentActivityHub,
         run: (
-            workspace: LabWorkspace,
+            workspace: InvestigationWorkspace,
             options: ResearchLoopOptions
         ) => Promise<ResearchLoopOutcome>,
         harnesses?: readonly AgentHarness[],
@@ -40,9 +40,9 @@ export class ResearchLoopController {
         this.#subscriptions = subscriptions;
         this.#unsubscribe = workspace.subscribe((event, snapshot) => {
             if (
-                event.type === EventType.LAB_STATE_CHANGED &&
-                event.payload.state === LabState.RUNNING &&
-                snapshot.lab.state === LabState.RUNNING
+                event.type === EventType.INVESTIGATION_STATE_CHANGED &&
+                event.payload.state === InvestigationState.RUNNING &&
+                snapshot.investigation.state === InvestigationState.RUNNING
             ) {
                 this.start();
             }
@@ -50,7 +50,7 @@ export class ResearchLoopController {
     }
 
     start(): void {
-        if (this.#workspace.getSnapshot().lab.state !== LabState.RUNNING) {
+        if (this.#workspace.getSnapshot().investigation.state !== InvestigationState.RUNNING) {
             return;
         }
         if (this.#running !== undefined) {

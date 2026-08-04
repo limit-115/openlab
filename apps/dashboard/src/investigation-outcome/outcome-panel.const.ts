@@ -1,23 +1,23 @@
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 
 /** What the section calls itself, which is the lifecycle state that made it worth showing at all. */
-export const OUTCOME_TITLE: Record<LabState, string> = {
-    [LabState.RUNNING]: "Running lab",
-    [LabState.HIBERNATING]: "Hibernating lab",
-    [LabState.BREAKTHROUGH]: "Breakthrough",
-    [LabState.FAILED]: "Failed lab",
-    [LabState.STOPPED]: "Stopped lab"
+export const OUTCOME_TITLE: Record<InvestigationState, string> = {
+    [InvestigationState.RUNNING]: "Running investigation",
+    [InvestigationState.HIBERNATING]: "Hibernating investigation",
+    [InvestigationState.BREAKTHROUGH]: "Breakthrough",
+    [InvestigationState.FAILED]: "Failed investigation",
+    [InvestigationState.STOPPED]: "Stopped investigation"
 };
 
 export const OUTCOME_CARD = "rounded-2xl border p-6" as const;
 
-/** The card outline carries the outcome: a finished lab reads calm, a failed one reads adverse. */
-export const OUTCOME_SURFACE: Record<LabState, string> = {
-    [LabState.RUNNING]: "border-border",
-    [LabState.HIBERNATING]: "border-border",
-    [LabState.STOPPED]: "border-border",
-    [LabState.BREAKTHROUGH]: "border-success/40",
-    [LabState.FAILED]: "border-destructive/40"
+/** The card outline carries the outcome: a finished investigation reads calm, a failed one reads adverse. */
+export const OUTCOME_SURFACE: Record<InvestigationState, string> = {
+    [InvestigationState.RUNNING]: "border-border",
+    [InvestigationState.HIBERNATING]: "border-border",
+    [InvestigationState.STOPPED]: "border-border",
+    [InvestigationState.BREAKTHROUGH]: "border-success/40",
+    [InvestigationState.FAILED]: "border-destructive/40"
 };
 
 export const OUTCOME_SUMMARY = "text-sm leading-relaxed text-balance" as const;

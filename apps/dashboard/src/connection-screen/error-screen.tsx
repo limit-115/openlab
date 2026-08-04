@@ -30,7 +30,7 @@ export function ErrorDashboard({ error, retry, retrying }: ErrorDashboardProps) 
                     <EmptyMedia variant="icon" className={CENTER_STATE_MARK_ERROR}>
                         <TriangleAlertIcon />
                     </EmptyMedia>
-                    <EmptyTitle>Could not read lab status</EmptyTitle>
+                    <EmptyTitle>Could not read investigation status</EmptyTitle>
                     <EmptyDescription>{error.message}</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>

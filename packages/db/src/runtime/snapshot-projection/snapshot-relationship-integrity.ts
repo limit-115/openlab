@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/lab-status/status-snapshot.types";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { idsOf } from "#src/runtime/snapshot-projection/projected-entity-record";
 
 export function assertProjectionRelationships(snapshot: StatusSnapshot): void {
@@ -39,8 +39,8 @@ export function assertProjectionRelationships(snapshot: StatusSnapshot): void {
     }
     if (snapshot.breakthrough_finding_id !== undefined) {
         assertRelatedEntity(
-            "lab",
-            snapshot.lab.id,
+            "investigation",
+            snapshot.investigation.id,
             "finding",
             snapshot.breakthrough_finding_id,
             findingIds

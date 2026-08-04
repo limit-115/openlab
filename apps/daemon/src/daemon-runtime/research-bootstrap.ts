@@ -1,10 +1,10 @@
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import type { LabWorkspace } from "#src/lab-workspace/lab-workspace";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 
-export async function bootstrapResearch(workspace: LabWorkspace): Promise<void> {
+export async function bootstrapResearch(workspace: InvestigationWorkspace): Promise<void> {
     const task = await workspace.getTask();
     await workspace.appendEvent(
-        workspace.recovered ? EventType.LAB_RECOVERED : EventType.LAB_STARTED,
+        workspace.recovered ? EventType.INVESTIGATION_RECOVERED : EventType.INVESTIGATION_STARTED,
         {
             goal: task.goal,
             context_items: task.context.length,

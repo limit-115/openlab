@@ -1,18 +1,18 @@
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { WakeTrigger } from "@lab/core/lab-lifecycle/wake-trigger.const";
+import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
 import type {
     CommitRuntimeInput,
     CommitRuntimeResult,
     InitializeRuntimeInput,
-    PersistedLabEvent,
+    PersistedInvestigationEvent,
     PersistedRuntime,
     RecoverableRuntime,
     RuntimeCheckpoint
 } from "@lab/db/runtime/runtime-persistence.types";
-import { EventType } from "@lab/protocol/lab-events/event-type.const";
-import { LabState } from "@lab/protocol/lab-lifecycle/lab-state.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { describe, expect, it } from "vitest";
 import { startDaemon } from "#src/daemon-runtime/daemon-startup";
 import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
@@ -27,20 +27,20 @@ class InMemoryRuntimePersistence {
     #checkpoint: RuntimeCheckpoint | undefined;
     #task: InitializeRuntimeInput["task"] | undefined;
     #workspacePath: string | undefined;
-    readonly #events: PersistedLabEvent[] = [];
+    readonly #events: PersistedInvestigationEvent[] = [];
 
     async initialize(input: InitializeRuntimeInput): Promise<CommitRuntimeResult> {
         if (this.#checkpoint !== undefined) {
-            throw new Error(`Runtime ${input.snapshot.lab.id} is already initialized`);
+            throw new Error(`Runtime ${input.snapshot.investigation.id} is already initialized`);
         }
         this.#task = structuredClone(input.task);
         this.#workspacePath = input.workspacePath;
         return this.#store(input.snapshot, 1, input.event);
     }
 
-    async load(labId: string): Promise<PersistedRuntime | undefined> {
+    async load(investigationId: string): Promise<PersistedRuntime | undefined> {
         if (
-            this.#checkpoint?.snapshot.lab.id !== labId ||
+            this.#checkpoint?.snapshot.investigation.id !== investigationId ||
             this.#task === undefined ||
             this.#workspacePath === undefined
         ) {
@@ -50,7 +50,7 @@ class InMemoryRuntimePersistence {
             task: structuredClone(this.#task),
             workspacePath: this.#workspacePath,
             checkpoint: structuredClone(this.#checkpoint),
-            persistedAt: this.#checkpoint.snapshot.lab.updated_at
+            persistedAt: this.#checkpoint.snapshot.investigation.updated_at
         };
     }
 
@@ -61,10 +61,17 @@ class InMemoryRuntimePersistence {
         return this.#store(input.snapshot, input.expectedRevision + 1, input.event);
     }
 
-    async eventsAfter(labId: string, afterSequence = 0, limit = 200): Promise<PersistedLabEvent[]> {
+    async eventsAfter(
+        investigationId: string,
+        afterSequence = 0,
+        limit = 200
+    ): Promise<PersistedInvestigationEvent[]> {
         return structuredClone(
             this.#events
-                .filter((event) => event.lab_id === labId && event.sequence > afterSequence)
+                .filter(
+                    (event) =>
+                        event.investigation_id === investigationId && event.sequence > afterSequence
+                )
                 .slice(0, limit)
         );
     }
@@ -74,8 +81,8 @@ class InMemoryRuntimePersistence {
             this.#checkpoint === undefined ||
             this.#task === undefined ||
             this.#workspacePath === undefined ||
-            (this.#checkpoint.snapshot.lab.state !== LabState.RUNNING &&
-                this.#checkpoint.snapshot.lab.state !== LabState.HIBERNATING)
+            (this.#checkpoint.snapshot.investigation.state !== InvestigationState.RUNNING &&
+                this.#checkpoint.snapshot.investigation.state !== InvestigationState.HIBERNATING)
         ) {
             return [];
         }
@@ -84,7 +91,7 @@ class InMemoryRuntimePersistence {
                 task: structuredClone(this.#task),
                 workspacePath: this.#workspacePath,
                 checkpoint: structuredClone(this.#checkpoint),
-                persistedAt: this.#checkpoint.snapshot.lab.updated_at
+                persistedAt: this.#checkpoint.snapshot.investigation.updated_at
             }
         ];
     }
@@ -138,8 +145,8 @@ describe("daemon startup", () => {
                         await new Promise<void>((resolveWake) => {
                             const unsubscribe = workspace.subscribe((event, snapshot) => {
                                 if (
-                                    event.type === EventType.LAB_STATE_CHANGED &&
-                                    snapshot.lab.state === LabState.RUNNING
+                                    event.type === EventType.INVESTIGATION_STATE_CHANGED &&
+                                    snapshot.investigation.state === InvestigationState.RUNNING
                                 ) {
                                     unsubscribe();
                                     resolveWake();
@@ -167,7 +174,9 @@ describe("daemon startup", () => {
 
         try {
             await firstRunReady;
-            expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.HIBERNATING);
+            expect(daemon.workspace.getSnapshot().investigation.state).toBe(
+                InvestigationState.HIBERNATING
+            );
 
             const request = await daemon.workspace.requestCapability({
                 need: "An independent corpus",
@@ -183,14 +192,16 @@ describe("daemon startup", () => {
             });
             expect(response.statusCode).toBe(202);
 
-            expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+            expect(daemon.workspace.getSnapshot().investigation.state).toBe(
+                InvestigationState.RUNNING
+            );
             expect(
                 daemon.workspace
                     .getEvents()
                     .findLast(
                         (event) =>
-                            event.type === EventType.LAB_STATE_CHANGED &&
-                            event.payload.state === LabState.RUNNING
+                            event.type === EventType.INVESTIGATION_STATE_CHANGED &&
+                            event.payload.state === InvestigationState.RUNNING
                     )?.payload
             ).toMatchObject({ wake_trigger: WakeTrigger.CAPABILITY });
             await expect.poll(() => runs).toBe(2);
@@ -234,7 +245,7 @@ describe("daemon startup", () => {
         await daemon.workspace.answerCapability(request.id, CAPABILITY_ANSWER);
         await new Promise<void>((resolveTurn) => setImmediate(resolveTurn));
 
-        expect(daemon.workspace.getSnapshot().lab.state).toBe(LabState.RUNNING);
+        expect(daemon.workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         expect(runs).toBe(1);
     });
 });
