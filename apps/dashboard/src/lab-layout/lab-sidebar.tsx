@@ -56,12 +56,12 @@ export function LabSidebar() {
 
                 <SidebarGroup className="mt-auto">
                     <SidebarMenu>
-                        <LabEntry route={LAB_SETTINGS.route} label={LAB_SETTINGS.label} size="sm">
-                            <Settings2Icon />
-                        </LabEntry>
                         <SidebarMenuItem>
                             <ThemeEntry />
                         </SidebarMenuItem>
+                        <LabEntry route={LAB_SETTINGS.route} label={LAB_SETTINGS.label} size="sm">
+                            <Settings2Icon />
+                        </LabEntry>
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
