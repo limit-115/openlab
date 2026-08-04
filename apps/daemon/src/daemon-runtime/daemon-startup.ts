@@ -41,7 +41,10 @@ export async function startDaemon(
         const dispatch = new NotificationDispatch({
             settings: notificationSettings,
             labUrl: () => labUrl,
-            onFailure: (error) => app?.log.error({ err: error }, "Failed to notify the operator")
+            onFailure: (error) => app?.log.error({ err: error }, "Failed to notify the operator"),
+            ...(dependencies.openNotificationChannel === undefined
+                ? {}
+                : { open: dependencies.openNotificationChannel })
         });
         registry = new InvestigationRegistry({
             workspaceRoot: config.workspaceRoot,

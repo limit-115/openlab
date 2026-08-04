@@ -2,8 +2,11 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
+import type { NotificationMessage } from "@lab/notifier/notification-message.types";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
 import { describe, expect, it } from "vitest";
 import { startDaemon } from "#src/daemon-runtime/daemon-startup";
 import type { RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
@@ -195,5 +198,59 @@ describe("daemon startup", () => {
 
         expect(held.workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         expect(runs).toBe(1);
+    });
+
+    /**
+     * The one line that turns everything an investigation writes into something the operator hears
+     * about. Without it the settings page still works and nothing is ever sent.
+     */
+    it("carries a moment an investigation reached out to the channel configured for it", async () => {
+        const sent: NotificationMessage[] = [];
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-daemon-notify-"));
+        const runtime = new InMemoryRuntime();
+        const daemon = await startDaemon(
+            { workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
+            {
+                openDatabase: async () => ({
+                    persistence: runtime,
+                    investigations: runtime,
+                    settings: new InMemoryLabSettings(),
+                    notifications: new InMemoryNotificationSettings(
+                        NotificationSettingsSchema.parse({
+                            channels: [
+                                {
+                                    kind: NotificationChannelKind.TELEGRAM,
+                                    enabled: true,
+                                    events: [EventType.CAPABILITY_REQUESTED],
+                                    bot_token: "1234:secret",
+                                    chat_id: "-1001"
+                                }
+                            ]
+                        })
+                    ),
+                    close: async () => undefined
+                }),
+                researchLoop: async () => ({ status: ResearchLoopOutcomeStatus.CANCELLED }),
+                openNotificationChannel: () => ({
+                    kind: NotificationChannelKind.TELEGRAM,
+                    deliver: async (message) => {
+                        sent.push(message);
+                    }
+                })
+            }
+        );
+        const held = await openInvestigation(daemon, "Reach the operator");
+
+        await held.workspace.requestCapability({
+            need: "An independent corpus",
+            reason: "Nothing public settles the claim",
+            provisioningHint: "Point the run at a local copy",
+            blocking: true
+        });
+        await expect.poll(() => sent.length).toBe(1);
+
+        expect(sent[0]?.body).toBe("An independent corpus");
+        expect(sent[0]?.link?.url).toContain(held.workspace.investigationId);
+        await daemon.close();
     });
 });
