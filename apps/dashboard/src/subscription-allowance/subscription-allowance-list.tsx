@@ -22,20 +22,20 @@ import {
     ALLOWANCE_WINDOW_LIST,
     ALLOWANCE_WINDOW_RESET,
     HARNESS_SUBSCRIPTION_LABEL
-} from "#src/subscription-allowance/subscription-allowance-panel.const";
+} from "#src/subscription-allowance/subscription-allowance-list.const";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 const SPENT_PERCENT = 100;
 
-interface SubscriptionAllowancePanelProps {
+interface SubscriptionAllowanceListProps {
     allowances: SubscriptionAllowanceRoster;
 }
 
 /**
- * What every subscription the lab can run on has left. The whole address is the subscriptions, so
- * the list is the page rather than the contents of a card that would only repeat the header.
+ * One card per subscription, each metering the windows the vendor reports. The readings are drawn
+ * as a plain list under the block's heading rather than boxed in a card that would repeat it.
  */
-export function SubscriptionAllowancePanel({ allowances }: SubscriptionAllowancePanelProps) {
+export function SubscriptionAllowanceList({ allowances }: SubscriptionAllowanceListProps) {
     return (
         <ul className={ALLOWANCE_LIST} aria-label={ALLOWANCE_LIST_LABEL}>
             {allowances.map((allowance) => (

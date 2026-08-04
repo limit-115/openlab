@@ -1,5 +1,5 @@
 /**
- * The reading time sits with the subscriptions it dates rather than at the page's own spacing,
- * which separates sections that have nothing to do with each other.
+ * Settings is a stack of blocks that have nothing to do with each other, so the space between two
+ * of them stays clearly wider than the space a block keeps between its heading and its contents.
  */
-export const SUBSCRIPTIONS_PAGE = "grid gap-4" as const;
+export const SETTINGS_PAGE = "grid gap-10" as const;

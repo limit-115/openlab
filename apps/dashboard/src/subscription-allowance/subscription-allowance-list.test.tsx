@@ -3,7 +3,7 @@ import { SubscriptionAllowanceState } from "@lab/protocol/subscription-allowance
 import type { SubscriptionAllowanceRoster } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { SubscriptionAllowancePanel } from "#src/subscription-allowance/subscription-allowance-panel";
+import { SubscriptionAllowanceList } from "#src/subscription-allowance/subscription-allowance-list";
 
 const ROSTER: SubscriptionAllowanceRoster = [
     {
@@ -37,9 +37,9 @@ const ROSTER: SubscriptionAllowanceRoster = [
     }
 ];
 
-describe("SubscriptionAllowancePanel", () => {
+describe("SubscriptionAllowanceList", () => {
     it("meters each window against what the vendor said is spent", () => {
-        render(<SubscriptionAllowancePanel allowances={ROSTER} />);
+        render(<SubscriptionAllowanceList allowances={ROSTER} />);
 
         const session = screen.getByLabelText<HTMLProgressElement>("5 hours window");
         const week = screen.getAllByLabelText<HTMLProgressElement>("7 days window");
@@ -49,14 +49,14 @@ describe("SubscriptionAllowancePanel", () => {
     });
 
     it("marks the subscription the lab will pass over", () => {
-        render(<SubscriptionAllowancePanel allowances={ROSTER} />);
+        render(<SubscriptionAllowanceList allowances={ROSTER} />);
 
         expect(screen.getByText("No allowance left")).toBeInTheDocument();
         expect(screen.getByText("plus")).toBeInTheDocument();
     });
 
     it("gives the vendor's reason in full when a subscription could not be read", () => {
-        render(<SubscriptionAllowancePanel allowances={ROSTER} />);
+        render(<SubscriptionAllowanceList allowances={ROSTER} />);
 
         expect(
             screen.getByText("No ZCode login store at /Users/operator/.zcode/v2/config.json")

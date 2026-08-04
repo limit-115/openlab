@@ -1,7 +1,7 @@
 /** The two addresses that belong to the lab itself rather than to one investigation. */
 export const LabRoute = {
     ROSTER: "/",
-    SUBSCRIPTIONS: "/subscriptions"
+    SETTINGS: "/settings"
 } as const;
 export type LabRoute = (typeof LabRoute)[keyof typeof LabRoute];
 
@@ -25,7 +25,7 @@ export function investigationView(
 /** The addresses the lab header links to, in the order an operator reads them. */
 export const LAB_VIEWS = [
     { route: LabRoute.ROSTER, label: "Investigations" },
-    { route: LabRoute.SUBSCRIPTIONS, label: "Subscriptions" }
+    { route: LabRoute.SETTINGS, label: "Settings" }
 ] as const;
 
 /** The views one investigation offers, in the order its header lists them. */

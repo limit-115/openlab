@@ -6,12 +6,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { SubscriptionsView } from "#src/dashboard-routes/subscriptions-view";
 import {
     READ_AT_LABEL,
     REFRESH_LABEL
 } from "#src/subscription-allowance/allowance-reading-header.const";
-import { NO_ALLOWANCE_TITLE } from "#src/subscription-allowance/subscription-allowance-panel.const";
+import { SubscriptionAllowanceSection } from "#src/subscription-allowance/subscription-allowance-section";
+import { NO_ALLOWANCE_TITLE } from "#src/subscription-allowance/subscription-allowance-section.const";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 const HELD_READING = "2026-08-03T12:00:00.000Z";
@@ -60,14 +60,14 @@ function respondByReading(held: unknown, fresh: unknown) {
 
 function renderView() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return render(<SubscriptionsView />, {
+    return render(<SubscriptionAllowanceSection />, {
         wrapper: ({ children }: { children: ReactNode }) => (
             <QueryClientProvider client={client}>{children}</QueryClientProvider>
         )
     });
 }
 
-describe("SubscriptionsView", () => {
+describe("SubscriptionAllowanceSection", () => {
     it("reads the allowance off the runtime and meters it", async () => {
         respondWith(ROSTER);
         renderView();

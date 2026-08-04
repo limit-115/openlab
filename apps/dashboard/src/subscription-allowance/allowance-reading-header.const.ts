@@ -1,4 +1,4 @@
-import { ALLOWANCE_REFETCH_MILLISECONDS } from "#src/subscription-allowance/subscription-allowance-panel.const";
+import { ALLOWANCE_REFETCH_MILLISECONDS } from "#src/subscription-allowance/subscription-allowance-section.const";
 
 const MILLISECONDS_PER_MINUTE = 60_000;
 
