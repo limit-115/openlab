@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 import { investigationView } from "#src/dashboard-routes/dashboard-routes.const";
 import { cn } from "#src/design-system/class-names";
 import {
@@ -26,10 +26,19 @@ import {
 } from "#src/investigation-state/investigation-state-display.const";
 
 /**
+ * An investigation stays the open one across every view of it, so the entry is still marked when
+ * the operator has stepped from its overview into one of its views.
+ */
+function isOpen(pathname: string, address: string): boolean {
+    return pathname === address || pathname.startsWith(`${address}/`);
+}
+
+/**
  * The investigations the lab touched last, newest first. It reads the same roster the page does, so
  * the stream the roster subscribes to moves this list too.
  */
 export function RecentInvestigations() {
+    const { pathname } = useLocation();
     const roster = useQuery({
         queryKey: investigationRosterQueryKey,
         queryFn: ({ signal }) => fetchInvestigationRoster(signal),
@@ -55,6 +64,7 @@ export function RecentInvestigations() {
                         <SidebarMenuItem key={investigation.id}>
                             <SidebarMenuButton
                                 asChild
+                                isActive={isOpen(pathname, investigationView(investigation.id))}
                                 tooltip={`${investigation.goal} · ${INVESTIGATION_STATE_LABEL[investigation.state]}`}
                             >
                                 <NavLink to={investigationView(investigation.id)}>

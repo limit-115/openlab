@@ -1,6 +1,6 @@
 import { FlaskConicalIcon, MicroscopeIcon, Settings2Icon } from "lucide-react";
 import type * as React from "react";
-import { Link, NavLink } from "react-router";
+import { Link, NavLink, useMatch } from "react-router";
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import {
     Sidebar,
@@ -72,10 +72,13 @@ interface LabEntryProps {
     children: React.ReactNode;
 }
 
+/** An address the lab always offers. It is marked while the page it opens is the page being read. */
 function LabEntry({ route, label, size = "default", children }: LabEntryProps) {
+    const open = useMatch(route) !== null;
+
     return (
         <SidebarMenuItem>
-            <SidebarMenuButton asChild size={size} tooltip={label}>
+            <SidebarMenuButton asChild size={size} tooltip={label} isActive={open}>
                 <NavLink to={route} end>
                     {children}
                     <span>{label}</span>
