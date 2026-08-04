@@ -5,6 +5,7 @@ import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarGroup,
     SidebarHeader,
     SidebarMenu,
@@ -16,7 +17,11 @@ import { RecentInvestigations } from "#src/investigation-roster/recent-investiga
 import { LAB_NAME, LAB_SETTINGS, LAB_SUBTITLE, LAB_VIEWS } from "#src/lab-layout/lab-layout.const";
 import { ThemeEntry } from "#src/theme/theme-entry";
 
-/** Everything the lab is reachable through: what it is, what to open, and what it holds. */
+/**
+ * Everything the lab is reachable through: what it is, what to open, and what it holds. The
+ * addresses that stand apart from the lab's work sit on a shelf of their own, outside what scrolls,
+ * so a long roster cannot carry them off the screen.
+ */
 export function LabSidebar() {
     return (
         <Sidebar variant="inset">
@@ -53,18 +58,18 @@ export function LabSidebar() {
                 </SidebarGroup>
 
                 <RecentInvestigations />
-
-                <SidebarGroup className="mt-auto">
-                    <SidebarMenu>
-                        <SidebarMenuItem>
-                            <ThemeEntry />
-                        </SidebarMenuItem>
-                        <LabEntry route={LAB_SETTINGS.route} label={LAB_SETTINGS.label} size="sm">
-                            <Settings2Icon />
-                        </LabEntry>
-                    </SidebarMenu>
-                </SidebarGroup>
             </SidebarContent>
+
+            <SidebarFooter>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <ThemeEntry />
+                    </SidebarMenuItem>
+                    <LabEntry route={LAB_SETTINGS.route} label={LAB_SETTINGS.label} size="sm">
+                        <Settings2Icon />
+                    </LabEntry>
+                </SidebarMenu>
+            </SidebarFooter>
         </Sidebar>
     );
 }
