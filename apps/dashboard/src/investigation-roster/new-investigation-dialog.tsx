@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { investigationView } from "#src/dashboard-routes/dashboard-routes.const";
+import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import {
     Dialog,
     DialogContent,
@@ -37,7 +37,7 @@ export function NewInvestigationDialog() {
         onSuccess: async (snapshot) => {
             setComposing(false);
             await queryClient.invalidateQueries({ queryKey: investigationRosterQueryKey });
-            await navigate(investigationView(snapshot.investigation.id));
+            await navigate(investigationAddress(snapshot.investigation.id));
         }
     });
 

@@ -7,22 +7,18 @@ export type LabRoute = (typeof LabRoute)[keyof typeof LabRoute];
 
 export const INVESTIGATION_ROUTE = "/investigations/:id" as const;
 
-/** The views one investigation is read through, as path segments under its own address. */
+export function investigationAddress(investigationId: string): string {
+    return `/investigations/${encodeURIComponent(investigationId)}`;
+}
+
+/** The views one investigation is read through. They are panels of its page, not addresses. */
 export const InvestigationView = {
-    OVERVIEW: "",
+    OVERVIEW: "overview",
     TEAM: "team"
 } as const;
 export type InvestigationView = (typeof InvestigationView)[keyof typeof InvestigationView];
 
-export function investigationView(
-    investigationId: string,
-    view: InvestigationView = InvestigationView.OVERVIEW
-): string {
-    const address = `/investigations/${encodeURIComponent(investigationId)}`;
-    return view === InvestigationView.OVERVIEW ? address : `${address}/${view}`;
-}
-
-/** The views one investigation offers, in the order its header lists them. */
+/** The views one investigation offers, in the order its tabs list them. */
 export const INVESTIGATION_VIEWS = [
     { view: InvestigationView.OVERVIEW, label: "Overview" },
     { view: InvestigationView.TEAM, label: "Team" }

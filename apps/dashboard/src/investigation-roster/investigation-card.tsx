@@ -1,7 +1,7 @@
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import { Link } from "react-router";
-import { investigationView } from "#src/dashboard-routes/dashboard-routes.const";
+import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import { Button } from "#src/design-system/button";
 import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/investigation-header/elapsed-time";
@@ -47,7 +47,7 @@ export function InvestigationCard({ investigation, discard, discarding }: Invest
     return (
         <article className={CARD}>
             <header className={CARD_HEADER}>
-                <Link className={CARD_GOAL} to={investigationView(investigation.id)}>
+                <Link className={CARD_GOAL} to={investigationAddress(investigation.id)}>
                     {investigation.goal}
                 </Link>
                 <span className={CARD_STATE}>

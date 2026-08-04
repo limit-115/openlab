@@ -1,13 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { Outlet, useParams } from "react-router";
+import { useParams } from "react-router";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
+import { InvestigationView } from "#src/dashboard-routes/dashboard-routes.const";
+import { Tabs, TabsContent } from "#src/design-system/tabs";
 import { InvestigationControls } from "#src/investigation-control/investigation-controls";
 import { InvestigationHeader } from "#src/investigation-header/investigation-header";
 import {
     INVESTIGATION_DASHBOARD,
     INVESTIGATION_PAGE
 } from "#src/investigation-shell/investigation-shell.const";
+import { OverviewView } from "#src/investigation-shell/overview-view";
+import { TeamView } from "#src/investigation-shell/team-view";
 import { fetchStatus, statusQueryKey } from "#src/live-status/status-client";
 import { useLiveStatus } from "#src/live-status/status-stream";
 import { StreamState } from "#src/live-status/status-stream.const";
@@ -50,15 +54,18 @@ export function InvestigationShell() {
     const snapshot = statusQuery.data;
 
     return (
-        <div className={INVESTIGATION_PAGE}>
+        <Tabs defaultValue={InvestigationView.OVERVIEW} className={INVESTIGATION_PAGE}>
             <InvestigationHeader snapshot={snapshot} stream={stream} />
-            <div className={INVESTIGATION_DASHBOARD}>
-                <Outlet context={snapshot} />
-            </div>
+            <TabsContent value={InvestigationView.OVERVIEW} className={INVESTIGATION_DASHBOARD}>
+                <OverviewView snapshot={snapshot} />
+            </TabsContent>
+            <TabsContent value={InvestigationView.TEAM} className={INVESTIGATION_DASHBOARD}>
+                <TeamView snapshot={snapshot} />
+            </TabsContent>
             <InvestigationControls
                 investigationId={snapshot.investigation.id}
                 state={snapshot.investigation.state}
             />
-        </div>
+        </Tabs>
     );
 }

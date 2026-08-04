@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { NavLink, useLocation } from "react-router";
-import { investigationView } from "#src/dashboard-routes/dashboard-routes.const";
+import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import { cn } from "#src/design-system/class-names";
 import {
     SidebarGroup,
@@ -24,14 +24,6 @@ import {
     STATE_DOT,
     STATE_DOT_TONE
 } from "#src/investigation-state/investigation-state-display.const";
-
-/**
- * An investigation stays the open one across every view of it, so the entry is still marked when
- * the operator has stepped from its overview into one of its views.
- */
-function isOpen(pathname: string, address: string): boolean {
-    return pathname === address || pathname.startsWith(`${address}/`);
-}
 
 /**
  * The investigations the lab touched last, newest first. It reads the same roster the page does, so
@@ -64,10 +56,10 @@ export function RecentInvestigations() {
                         <SidebarMenuItem key={investigation.id}>
                             <SidebarMenuButton
                                 asChild
-                                isActive={isOpen(pathname, investigationView(investigation.id))}
+                                isActive={pathname === investigationAddress(investigation.id)}
                                 tooltip={`${investigation.goal} · ${INVESTIGATION_STATE_LABEL[investigation.state]}`}
                             >
-                                <NavLink to={investigationView(investigation.id)}>
+                                <NavLink to={investigationAddress(investigation.id)}>
                                     <span
                                         className={cn(
                                             STATE_DOT,

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
-import { investigationView, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
+import { investigationAddress, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { rosterFixture } from "#src/test-support/roster-fixture";
@@ -55,8 +55,8 @@ describe("LabBreadcrumbs", () => {
         vi.stubGlobal("EventSource", FakeEventSource);
     });
 
-    it("walks back from an open view through its investigation to the roster", async () => {
-        renderAt(`${investigationView(investigationId)}/team`);
+    it("walks back from an open investigation to the roster holding it", async () => {
+        renderAt(investigationAddress(investigationId));
 
         const trail = await screen.findByRole("navigation", { name: "breadcrumb" });
         await waitFor(() => expect(within(trail).getByText(goal)).toBeInTheDocument());
@@ -65,15 +65,11 @@ describe("LabBreadcrumbs", () => {
             "href",
             LabRoute.ROSTER
         );
-        expect(within(trail).getByRole("link", { name: goal })).toHaveAttribute(
-            "href",
-            investigationView(investigationId)
-        );
-        expect(within(trail).queryByRole("link", { name: "Team" })).toBeNull();
+        expect(within(trail).queryByRole("link", { name: goal })).toBeNull();
     });
 
     it("keeps a goal too long for the bar readable in full where it is clipped", async () => {
-        renderAt(investigationView(investigationId));
+        renderAt(investigationAddress(investigationId));
 
         const trail = await screen.findByRole("navigation", { name: "breadcrumb" });
         await waitFor(() => expect(within(trail).getByText(goal)).toBeInTheDocument());

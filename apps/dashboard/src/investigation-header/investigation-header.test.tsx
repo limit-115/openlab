@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
-import { investigationView } from "#src/dashboard-routes/dashboard-routes.const";
+import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
@@ -24,7 +25,9 @@ function wrapper() {
     };
 }
 
-function renderAt(path: string) {
+const address = investigationAddress(statusFixture.investigation.id);
+
+function renderInvestigation() {
     vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue(
@@ -33,13 +36,10 @@ function renderAt(path: string) {
             })
         )
     );
-    return render(
-        <RouterProvider router={createMemoryRouter(dashboardRoutes, { initialEntries: [path] })} />,
-        { wrapper: wrapper() }
-    );
+    const router = createMemoryRouter(dashboardRoutes, { initialEntries: [address] });
+    render(<RouterProvider router={router} />, { wrapper: wrapper() });
+    return router;
 }
-
-const investigationId = statusFixture.investigation.id;
 
 describe("InvestigationHeader", () => {
     beforeEach(() => {
@@ -47,31 +47,31 @@ describe("InvestigationHeader", () => {
         vi.stubGlobal("EventSource", FakeEventSource);
     });
 
-    it("keeps every view an address, so one can be opened in a tab of its own", async () => {
-        renderAt(investigationView(investigationId));
+    it("opens on the overview and leaves the team unasked for until it is picked", async () => {
+        renderInvestigation();
 
-        expect(await screen.findByRole("tab", { name: "Overview" })).toHaveAttribute(
-            "href",
-            investigationView(investigationId)
-        );
-        expect(screen.getByRole("tab", { name: "Team" })).toHaveAttribute(
-            "href",
-            `${investigationView(investigationId)}/team`
+        expect(
+            await screen.findByRole("heading", { name: statusFixture.investigation.goal })
+        ).toBeInTheDocument();
+        expect(screen.queryByText("No agent is running")).toBeNull();
+        expect(FakeEventSource.instances.some((source) => source.url.includes("agents"))).toBe(
+            false
         );
     });
 
-    it("selects the view the address names rather than the first one listed", async () => {
-        renderAt(`${investigationView(investigationId)}/team`);
+    it("swaps the panel for the view that was picked without leaving the investigation", async () => {
+        const user = userEvent.setup();
+        const router = renderInvestigation();
 
-        await waitFor(() =>
-            expect(screen.getByRole("tab", { name: "Team" })).toHaveAttribute(
-                "aria-selected",
-                "true"
-            )
+        await user.click(await screen.findByRole("tab", { name: "Team" }));
+
+        await waitFor(() => expect(screen.getByText("No agent is running")).toBeInTheDocument());
+        expect(
+            screen.queryByRole("heading", { name: statusFixture.investigation.goal })
+        ).toBeNull();
+        expect(FakeEventSource.instances.some((source) => source.url.includes("agents"))).toBe(
+            true
         );
-        expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute(
-            "aria-selected",
-            "false"
-        );
+        expect(router.state.location.pathname).toBe(address);
     });
 });

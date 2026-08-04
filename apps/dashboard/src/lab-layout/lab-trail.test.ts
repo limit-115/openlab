@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { investigationView, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
+import { investigationAddress, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import { labTrail } from "#src/lab-layout/lab-trail";
 import { rosterFixture } from "#src/test-support/roster-fixture";
 
@@ -17,22 +17,14 @@ describe("labTrail", () => {
     });
 
     it("names an open investigation by its goal and points back at the roster", () => {
-        expect(labTrail(investigationView(alphaId), rosterFixture)).toEqual([
+        expect(labTrail(investigationAddress(alphaId), rosterFixture)).toEqual([
             { label: "Investigations", route: LabRoute.ROSTER },
             { label: alphaGoal }
         ]);
     });
 
-    it("steps through the investigation to reach one of its views", () => {
-        expect(labTrail(`${investigationView(alphaId)}/team`, rosterFixture)).toEqual([
-            { label: "Investigations", route: LabRoute.ROSTER },
-            { label: alphaGoal, route: investigationView(alphaId) },
-            { label: "Team" }
-        ]);
-    });
-
     it("falls back to the identifier for an investigation the roster has not delivered yet", () => {
-        expect(labTrail(investigationView(alphaId), [])).toEqual([
+        expect(labTrail(investigationAddress(alphaId), [])).toEqual([
             { label: "Investigations", route: LabRoute.ROSTER },
             { label: alphaId }
         ]);

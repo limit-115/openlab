@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
-import { investigationView, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
+import { investigationAddress, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { rosterFixture } from "#src/test-support/roster-fixture";
@@ -85,8 +85,8 @@ describe("LabSidebar", () => {
         expect(entry("Investigations")).toHaveAttribute("data-active", "false");
     });
 
-    it("keeps the open investigation marked once the operator steps into one of its views", async () => {
-        renderAt(`${investigationView(investigationId)}/team`);
+    it("marks the open investigation alone, and not the roster it was reached from", async () => {
+        renderAt(investigationAddress(investigationId));
 
         await waitFor(() => expect(entry(goal)).toHaveAttribute("data-active", "true"));
         expect(entry(otherGoal)).toHaveAttribute("data-active", "false");

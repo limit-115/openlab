@@ -1,5 +1,4 @@
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
-import { useOutletContext } from "react-router";
 import { AssumptionsPanel } from "#src/assumptions/assumptions-panel";
 import { BreakthroughBanner } from "#src/breakthrough/breakthrough-banner";
 import { CapabilitiesPanel } from "#src/capabilities/capabilities-panel";
@@ -7,9 +6,7 @@ import { EventsPanel } from "#src/events/events-panel";
 import { OutcomePanel } from "#src/investigation-outcome/outcome-panel";
 import { MissionOverview } from "#src/mission-overview/mission-overview";
 
-export function OverviewView() {
-    const snapshot = useOutletContext<StatusSnapshot>();
-
+export function OverviewView({ snapshot }: { snapshot: StatusSnapshot }) {
     return (
         <>
             <MissionOverview snapshot={snapshot} />
