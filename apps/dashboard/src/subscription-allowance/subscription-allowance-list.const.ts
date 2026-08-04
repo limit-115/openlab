@@ -1,7 +1,5 @@
 import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 
-export const ALLOWANCE_LIST_LABEL = "Subscriptions" as const;
-
 export const HARNESS_SUBSCRIPTION_LABEL = {
     [AgentHarnessKind.CODEX]: "Codex",
     [AgentHarnessKind.CLAUDE]: "Claude",

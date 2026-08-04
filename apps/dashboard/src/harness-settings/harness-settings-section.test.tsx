@@ -7,11 +7,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import {
-    NO_SETTINGS_TITLE,
-    SAVE_LABEL,
-    SAVED_LABEL
-} from "#src/harness-settings/harness-settings.const";
+import { HARNESS_SETTINGS_EN } from "#src/harness-settings/harness-settings.i18n";
 import { HarnessSettingsSection } from "#src/harness-settings/harness-settings-section";
 
 const SHIPPED = LabSettingsSchema.parse({});
@@ -58,7 +54,7 @@ describe("HarnessSettingsSection", () => {
         const director = await roleField(AgentRole.DIRECTOR);
 
         await userEvent.type(director.getByLabelText(AgentHarnessKind.CLAUDE), "opus");
-        await userEvent.click(screen.getByRole("button", { name: SAVE_LABEL }));
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 
         const saved = savedSettings(request);
         expect(
@@ -74,8 +70,10 @@ describe("HarnessSettingsSection", () => {
         renderSection();
         const verifier = await roleField(AgentRole.VERIFIER);
 
-        await userEvent.click(verifier.getByRole("radio", { name: AgentEffortLevel.MAX }));
-        await userEvent.click(screen.getByRole("button", { name: SAVE_LABEL }));
+        await userEvent.click(
+            verifier.getByRole("radio", { name: HARNESS_SETTINGS_EN[AgentEffortLevel.MAX] })
+        );
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 
         expect(
             savedSettings(request).role_execution.find(({ role }) => role === AgentRole.VERIFIER)
@@ -90,7 +88,7 @@ describe("HarnessSettingsSection", () => {
         await userEvent.click(
             await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX })
         );
-        await userEvent.click(screen.getByRole("button", { name: SAVE_LABEL }));
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 
         expect(savedSettings(request).harness_roster).toEqual([
             AgentHarnessKind.CLAUDE,
@@ -106,7 +104,7 @@ describe("HarnessSettingsSection", () => {
             await userEvent.click(await screen.findByRole("checkbox", { name: harness }));
         }
 
-        expect(screen.getByRole("button", { name: SAVE_LABEL })).toBeDisabled();
+        expect(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save })).toBeDisabled();
     });
 
     it("shows what the lab stored rather than what was typed into the page", async () => {
@@ -126,7 +124,7 @@ describe("HarnessSettingsSection", () => {
         const director = await roleField(AgentRole.DIRECTOR);
         await userEvent.type(director.getByLabelText(AgentHarnessKind.CLAUDE), "opus");
 
-        await userEvent.click(screen.getByRole("button", { name: SAVE_LABEL }));
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 
         expect(
             (await roleField(AgentRole.DIRECTOR)).getByLabelText<HTMLInputElement>(
@@ -142,7 +140,9 @@ describe("HarnessSettingsSection", () => {
 
         await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX });
 
-        expect(screen.queryByRole("button", { name: SAVE_LABEL })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: HARNESS_SETTINGS_EN.save })
+        ).not.toBeInTheDocument();
     });
 
     it("takes the save away again once the lab has been given the settings", async () => {
@@ -151,17 +151,21 @@ describe("HarnessSettingsSection", () => {
         const director = await roleField(AgentRole.DIRECTOR);
 
         await userEvent.type(director.getByLabelText(AgentHarnessKind.CLAUDE), "opus");
-        await userEvent.click(screen.getByRole("button", { name: SAVE_LABEL }));
-        await screen.findByText(SAVED_LABEL);
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
+        await screen.findByText(HARNESS_SETTINGS_EN.saved);
 
-        expect(screen.queryByRole("button", { name: SAVE_LABEL })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: HARNESS_SETTINGS_EN.save })
+        ).not.toBeInTheDocument();
     });
 
     it("says why there is nothing to set when the runtime does not serve the settings", async () => {
         respond({ error: "Not found" }, undefined, 404);
         renderSection();
 
-        expect(await screen.findByText(NO_SETTINGS_TITLE)).toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: SAVE_LABEL })).not.toBeInTheDocument();
+        expect(await screen.findByText(HARNESS_SETTINGS_EN.unsupportedTitle)).toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: HARNESS_SETTINGS_EN.save })
+        ).not.toBeInTheDocument();
     });
 });

@@ -11,31 +11,6 @@ export const SETTABLE_ROLES = Object.values(AgentRole);
 
 export const EFFORT_LEVELS = Object.values(AgentEffortLevel);
 
-export const HARNESS_SETTINGS_TITLE = "Harnesses" as const;
-export const HARNESS_SETTINGS_DESCRIPTION =
-    "Which agent CLIs the lab dispatches to, and what each role runs as on them." as const;
-
-export const ROSTER_LABEL = "Roster" as const;
-export const ROSTER_HINT =
-    "What a new investigation starts on. It rotates through them in this order, and an investigation that named its own roster keeps it." as const;
-export const ROSTER_REQUIRED = "Choose at least one harness to dispatch to." as const;
-
-export const ROLE_EXECUTION_LABEL = "Roles" as const;
-export const ROLE_COLUMN_LABEL = "Role" as const;
-export const EFFORT_LABEL = "Reasoning effort" as const;
-export const MODEL_PLACEHOLDER = "Harness default" as const;
-export const MODEL_HINT =
-    "Leave a model empty to let the harness choose. Vendors share no model names, so each one is named on its own." as const;
-
-export const SAVE_LABEL = "Save settings" as const;
-export const SAVING_LABEL = "Saving" as const;
-export const SAVED_LABEL = "The lab is running these" as const;
-export const SAVE_FAILURE_LABEL = "The lab refused these settings." as const;
-export const SETTINGS_PENDING_LABEL = "Reading the settings" as const;
-export const NO_SETTINGS_TITLE = "This runtime does not serve the settings" as const;
-export const NO_SETTINGS_DESCRIPTION =
-    "It is running every role on its harness default. A daemon built with the settings store serves them here." as const;
-
 /** The two blocks the settings are set through, then the one control that hands them over. */
 export const SETTINGS_FORM = "grid gap-4" as const;
 export const SETTINGS_FAILURE = "text-sm text-destructive" as const;
@@ -64,8 +39,6 @@ export const ROLE_TABLE_CONTENT = "border-t px-0" as const;
 /** The first and last columns keep the card's own padding, so the rows line up with the heading. */
 export const ROLE_TABLE =
     "[&_td:last-child]:pr-6 [&_th:first-child]:pl-6 [&_th:last-child]:pr-6" as const;
-
-export const ROLE_NAME = "capitalize" as const;
 
 /**
  * The role and its effort take the width they need. The vendors ask for the same share of the

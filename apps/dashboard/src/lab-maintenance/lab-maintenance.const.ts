@@ -3,45 +3,6 @@ export const LabStorageEndpoint = {
     PURGE: "/api/storage/purge"
 } as const;
 
-export const STORAGE_TITLE = "Storage" as const;
-export const STORAGE_DESCRIPTION =
-    "Where the lab keeps every investigation's directory and what they take up." as const;
-
-export const STORAGE_PENDING_LABEL = "Measuring the investigation directories" as const;
-export const NO_STORAGE_TITLE = "This runtime does not report its disk" as const;
-export const NO_STORAGE_DESCRIPTION =
-    "A daemon started with a workspace root serves the reading here, and the purge with it." as const;
-export const EMPTY_LAB_TITLE = "The lab is holding nothing on disk" as const;
-export const EMPTY_LAB_DESCRIPTION =
-    "A directory appears here as soon as an investigation writes one." as const;
-
-export const TOTAL_SIZE_LABEL = "On disk" as const;
-/**
- * Directories, not investigations: one belongs to each investigation, but a directory left behind
- * outlives the investigation that wrote it, so the count is of what is on disk.
- */
-export const RUN_COUNT_LABEL = "Investigation directories" as const;
-export const TOTAL_FILE_COUNT_LABEL = "Files" as const;
-export const WORKSPACE_ROOT_COPY_LABEL = "Copy the workspace root path" as const;
-
-export const RUN_TABLE_LABEL = "Investigation directories" as const;
-export const UNHELD_RUN_LABEL = "No investigation holds this directory" as const;
-export const RUN_DIRECTORY_COPY_LABEL = "Copy the investigation directory path" as const;
-export const DIRECTORY_COLUMN_LABEL = "Directory" as const;
-export const SHARE_COLUMN_LABEL = "Share of the lab" as const;
-export const SIZE_COLUMN_LABEL = "Size" as const;
-export const FILE_COUNT_COLUMN_LABEL = "Files" as const;
-export const COPY_COLUMN_LABEL = "Copy" as const;
-
-export const PURGE_LABEL = "Purge the lab" as const;
-export const PURGING_LABEL = "Purging" as const;
-export const PURGE_TITLE = "Purge every investigation?" as const;
-export const PURGE_CONSEQUENCE =
-    "Every investigation stops, and its bets, findings, verdicts and directory are deleted along with every directory left behind. This cannot be undone." as const;
-export const PURGE_CONFIRM_LABEL = "Purge it all" as const;
-export const PURGE_CANCEL_LABEL = "Keep the lab" as const;
-export const PURGE_FAILURE_LABEL = "The lab could not be purged." as const;
-
 export const STORAGE_PENDING = "flex items-center gap-2 text-sm text-muted-foreground" as const;
 export const STORAGE_FAILURE =
     "rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive" as const;

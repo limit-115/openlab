@@ -5,14 +5,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "#src/design-system/tooltip";
-import {
-    EMPTY_LAB_TITLE,
-    NO_STORAGE_TITLE,
-    PURGE_CONFIRM_LABEL,
-    PURGE_LABEL,
-    RUN_TABLE_LABEL,
-    UNHELD_RUN_LABEL
-} from "#src/lab-maintenance/lab-maintenance.const";
+import { LAB_MAINTENANCE_EN } from "#src/lab-maintenance/lab-maintenance.i18n";
 import { LabStorageSection } from "#src/lab-maintenance/lab-storage-section";
 
 const WORKSPACE_ROOT = "/Users/operator/projects/lab/.lab";
@@ -67,7 +60,7 @@ function renderSection() {
 
 /** The run directory drawn at `position`, counting past the header row the table opens with. */
 async function runRow(position: number) {
-    const table = await screen.findByRole("table", { name: RUN_TABLE_LABEL });
+    const table = await screen.findByRole("table", { name: LAB_MAINTENANCE_EN.runTable });
     const [, ...rows] = within(table).getAllByRole("row");
     const row = rows[position];
     if (row === undefined) {
@@ -114,25 +107,31 @@ describe("LabStorageSection", () => {
         respond(HELD);
         renderSection();
 
-        expect(await screen.findByText(UNHELD_RUN_LABEL)).toBeInTheDocument();
+        expect(await screen.findByText(LAB_MAINTENANCE_EN.unheldRun)).toBeInTheDocument();
     });
 
     it("shows the emptied lab the daemon answered the purge with", async () => {
         respond(HELD);
         renderSection();
-        await userEvent.click(await screen.findByRole("button", { name: PURGE_LABEL }));
+        await userEvent.click(
+            await screen.findByRole("button", { name: LAB_MAINTENANCE_EN.purge })
+        );
 
-        await userEvent.click(screen.getByRole("button", { name: PURGE_CONFIRM_LABEL }));
+        await userEvent.click(
+            screen.getByRole("button", { name: LAB_MAINTENANCE_EN.purgeConfirm })
+        );
 
-        expect(await screen.findByText(EMPTY_LAB_TITLE)).toBeInTheDocument();
-        expect(screen.queryByText(UNHELD_RUN_LABEL)).not.toBeInTheDocument();
+        expect(await screen.findByText(LAB_MAINTENANCE_EN.emptyTitle)).toBeInTheDocument();
+        expect(screen.queryByText(LAB_MAINTENANCE_EN.unheldRun)).not.toBeInTheDocument();
     });
 
     it("asks before it purges, and purges nothing while the question stands", async () => {
         const request = respond(HELD);
         renderSection();
 
-        await userEvent.click(await screen.findByRole("button", { name: PURGE_LABEL }));
+        await userEvent.click(
+            await screen.findByRole("button", { name: LAB_MAINTENANCE_EN.purge })
+        );
 
         expect(screen.getByRole("alertdialog")).toBeInTheDocument();
         expect(request.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
@@ -142,7 +141,9 @@ describe("LabStorageSection", () => {
         respond({ error: "Not found" }, PURGED, 404);
         renderSection();
 
-        expect(await screen.findByText(NO_STORAGE_TITLE)).toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: PURGE_LABEL })).not.toBeInTheDocument();
+        expect(await screen.findByText(LAB_MAINTENANCE_EN.unsupportedTitle)).toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: LAB_MAINTENANCE_EN.purge })
+        ).not.toBeInTheDocument();
     });
 });

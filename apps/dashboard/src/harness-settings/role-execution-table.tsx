@@ -4,6 +4,7 @@ import type {
 } from "@lab/protocol/agents/agent-execution.const";
 import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { useId } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#src/design-system/card";
 import { Input } from "#src/design-system/input";
 import {
@@ -16,21 +17,16 @@ import {
 } from "#src/design-system/table";
 import { ToggleGroup, ToggleGroupItem } from "#src/design-system/toggle-group";
 import {
-    EFFORT_LABEL,
     EFFORT_LEVELS,
     EFFORT_OPTION,
     MODEL_COLUMN,
-    MODEL_HINT,
-    MODEL_PLACEHOLDER,
     ROLE_CARD,
-    ROLE_COLUMN_LABEL,
-    ROLE_EXECUTION_LABEL,
-    ROLE_NAME,
     ROLE_TABLE,
     ROLE_TABLE_CONTENT,
     SELECTABLE_HARNESSES,
     SETTABLE_ROLES
 } from "#src/harness-settings/harness-settings.const";
+import { HARNESS_SETTINGS_NAMESPACE } from "#src/harness-settings/harness-settings.i18n";
 import type { LabSettingsDraft } from "#src/harness-settings/harness-settings.types";
 import { isEffort, roleExecution, roleModel } from "#src/harness-settings/harness-settings-draft";
 
@@ -50,20 +46,21 @@ export function RoleExecutionTable({
     chooseEffort,
     chooseModel
 }: RoleExecutionTableProps) {
+    const { t } = useTranslation(HARNESS_SETTINGS_NAMESPACE);
     const fieldId = useId();
 
     return (
         <Card className={ROLE_CARD}>
             <CardHeader>
-                <CardTitle>{ROLE_EXECUTION_LABEL}</CardTitle>
-                <CardDescription>{MODEL_HINT}</CardDescription>
+                <CardTitle>{t("roles")}</CardTitle>
+                <CardDescription>{t("modelHint")}</CardDescription>
             </CardHeader>
             <CardContent className={ROLE_TABLE_CONTENT}>
-                <Table className={ROLE_TABLE} aria-label={ROLE_EXECUTION_LABEL}>
+                <Table className={ROLE_TABLE} aria-label={t("roles")}>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>{ROLE_COLUMN_LABEL}</TableHead>
-                            <TableHead id={`${fieldId}-effort`}>{EFFORT_LABEL}</TableHead>
+                            <TableHead>{t("roleColumn")}</TableHead>
+                            <TableHead id={`${fieldId}-effort`}>{t("effort")}</TableHead>
                             {SELECTABLE_HARNESSES.map((harness) => (
                                 <TableHead key={harness} className={MODEL_COLUMN}>
                                     {harness}
@@ -74,12 +71,8 @@ export function RoleExecutionTable({
                     <TableBody>
                         {SETTABLE_ROLES.map((role) => (
                             <TableRow key={role} aria-label={role}>
-                                <TableHead
-                                    scope="row"
-                                    id={`${fieldId}-${role}`}
-                                    className={ROLE_NAME}
-                                >
-                                    {role}
+                                <TableHead scope="row" id={`${fieldId}-${role}`}>
+                                    {t(role)}
                                 </TableHead>
                                 <TableCell>
                                     <ToggleGroup
@@ -99,10 +92,10 @@ export function RoleExecutionTable({
                                             <ToggleGroupItem
                                                 key={level}
                                                 value={level}
-                                                aria-label={level}
+                                                aria-label={t(level)}
                                                 className={EFFORT_OPTION}
                                             >
-                                                {level}
+                                                {t(level)}
                                             </ToggleGroupItem>
                                         ))}
                                     </ToggleGroup>
@@ -112,7 +105,7 @@ export function RoleExecutionTable({
                                         <Input
                                             aria-label={harness}
                                             value={roleModel(settings, role, harness)}
-                                            placeholder={MODEL_PLACEHOLDER}
+                                            placeholder={t("modelPlaceholder")}
                                             autoComplete="off"
                                             spellCheck={false}
                                             onChange={(event) =>

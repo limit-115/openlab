@@ -1,23 +1,17 @@
 import type { LabStorage } from "@lab/protocol/lab-storage/lab-storage.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "#src/design-system/card";
 import { cn } from "#src/design-system/class-names";
 import { Spinner } from "#src/design-system/spinner";
 import {
-    EMPTY_LAB_DESCRIPTION,
-    EMPTY_LAB_TITLE,
-    NO_STORAGE_DESCRIPTION,
-    NO_STORAGE_TITLE,
-    PURGE_FAILURE_LABEL,
     STORAGE_CARD,
     STORAGE_CARD_LISTING,
-    STORAGE_DESCRIPTION,
     STORAGE_DIRECTORIES,
     STORAGE_FAILURE,
-    STORAGE_PENDING,
-    STORAGE_PENDING_LABEL,
-    STORAGE_TITLE
+    STORAGE_PENDING
 } from "#src/lab-maintenance/lab-maintenance.const";
+import { LAB_MAINTENANCE_NAMESPACE } from "#src/lab-maintenance/lab-maintenance.i18n";
 import {
     fetchLabStorage,
     labStorageQueryKey,
@@ -34,6 +28,7 @@ import { PanelEmptyState } from "#src/panel/panel-empty-state";
  * purge from the answer the daemon gives, so the page never claims space that is already free.
  */
 export function LabStorageSection() {
+    const { t } = useTranslation(LAB_MAINTENANCE_NAMESPACE);
     const queryClient = useQueryClient();
     const storage = useQuery({
         queryKey: labStorageQueryKey,
@@ -47,10 +42,10 @@ export function LabStorageSection() {
     });
 
     return (
-        <Panel title={STORAGE_TITLE} description={STORAGE_DESCRIPTION}>
+        <Panel title={t("title")} description={t("description")}>
             {purge.isError ? (
                 <p role="alert" className={STORAGE_FAILURE}>
-                    {PURGE_FAILURE_LABEL}
+                    {t("purgeFailure")}
                 </p>
             ) : null}
             <StorageReading
@@ -71,14 +66,19 @@ interface StorageReadingProps {
 }
 
 function StorageReading({ storage, pending, purging, purge }: StorageReadingProps) {
+    const { t } = useTranslation(LAB_MAINTENANCE_NAMESPACE);
+
     if (storage === undefined) {
         return pending ? (
             <p className={STORAGE_PENDING}>
                 <Spinner />
-                {STORAGE_PENDING_LABEL}
+                {t("pending")}
             </p>
         ) : (
-            <PanelEmptyState title={NO_STORAGE_TITLE} description={NO_STORAGE_DESCRIPTION} />
+            <PanelEmptyState
+                title={t("unsupportedTitle")}
+                description={t("unsupportedDescription")}
+            />
         );
     }
 
@@ -97,8 +97,8 @@ function StorageReading({ storage, pending, purging, purge }: StorageReadingProp
             </Card>
             {storage.runs.length === 0 ? (
                 <PanelEmptyState
-                    title={EMPTY_LAB_TITLE}
-                    description={EMPTY_LAB_DESCRIPTION}
+                    title={t("emptyTitle")}
+                    description={t("emptyDescription")}
                     compact
                 />
             ) : null}

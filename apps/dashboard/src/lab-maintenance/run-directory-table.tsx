@@ -1,4 +1,5 @@
 import type { RunDirectoryUsage } from "@lab/protocol/lab-storage/lab-storage.types";
+import { useTranslation } from "react-i18next";
 import { CopyButton } from "#src/clipboard/copy-button";
 import {
     Table,
@@ -11,30 +12,23 @@ import {
 import {
     ACTION_CELL,
     ACTION_COLUMN,
-    COPY_COLUMN_LABEL,
     DIRECTORY_CELL,
     DIRECTORY_COLUMN,
-    DIRECTORY_COLUMN_LABEL,
     DIRECTORY_LINES,
     FILE_COUNT_CELL,
-    FILE_COUNT_COLUMN_LABEL,
     NUMBER_COLUMN,
-    RUN_DIRECTORY_COPY_LABEL,
     RUN_GOAL,
     RUN_PATH,
     RUN_TABLE,
-    RUN_TABLE_LABEL,
     RUN_UNHELD_GOAL,
     SHARE_CELL,
     SHARE_COLUMN,
-    SHARE_COLUMN_LABEL,
     SHARE_METER,
     SHARE_PERCENT,
     SHARE_READING,
-    SIZE_CELL,
-    SIZE_COLUMN_LABEL,
-    UNHELD_RUN_LABEL
+    SIZE_CELL
 } from "#src/lab-maintenance/lab-maintenance.const";
+import { LAB_MAINTENANCE_NAMESPACE } from "#src/lab-maintenance/lab-maintenance.i18n";
 import {
     formatShare,
     runDirectoryShares,
@@ -55,16 +49,17 @@ interface RunDirectoryTableProps {
  * artifacts next.
  */
 export function RunDirectoryTable({ runs, totalBytes }: RunDirectoryTableProps) {
+    const { t } = useTranslation(LAB_MAINTENANCE_NAMESPACE);
     return (
-        <Table className={RUN_TABLE} aria-label={RUN_TABLE_LABEL}>
+        <Table className={RUN_TABLE} aria-label={t("runTable")}>
             <TableHeader>
                 <TableRow>
-                    <TableHead className={DIRECTORY_COLUMN}>{DIRECTORY_COLUMN_LABEL}</TableHead>
-                    <TableHead className={SHARE_COLUMN}>{SHARE_COLUMN_LABEL}</TableHead>
-                    <TableHead className={NUMBER_COLUMN}>{SIZE_COLUMN_LABEL}</TableHead>
-                    <TableHead className={NUMBER_COLUMN}>{FILE_COUNT_COLUMN_LABEL}</TableHead>
+                    <TableHead className={DIRECTORY_COLUMN}>{t("directoryColumn")}</TableHead>
+                    <TableHead className={SHARE_COLUMN}>{t("shareColumn")}</TableHead>
+                    <TableHead className={NUMBER_COLUMN}>{t("sizeColumn")}</TableHead>
+                    <TableHead className={NUMBER_COLUMN}>{t("fileCountColumn")}</TableHead>
                     <TableHead className={ACTION_COLUMN}>
-                        <span className="sr-only">{COPY_COLUMN_LABEL}</span>
+                        <span className="sr-only">{t("copyColumn")}</span>
                     </TableHead>
                 </TableRow>
             </TableHeader>
@@ -74,7 +69,7 @@ export function RunDirectoryTable({ runs, totalBytes }: RunDirectoryTableProps) 
                         <TableCell className={DIRECTORY_CELL}>
                             <div className={DIRECTORY_LINES}>
                                 <p className={run.goal === null ? RUN_UNHELD_GOAL : RUN_GOAL}>
-                                    {run.goal ?? UNHELD_RUN_LABEL}
+                                    {run.goal ?? t("unheldRun")}
                                 </p>
                                 <p className={RUN_PATH}>{run.path}</p>
                             </div>
@@ -85,7 +80,7 @@ export function RunDirectoryTable({ runs, totalBytes }: RunDirectoryTableProps) 
                                     className={SHARE_METER}
                                     value={percent}
                                     max={WHOLE_SHARE}
-                                    aria-label={SHARE_COLUMN_LABEL}
+                                    aria-label={t("shareColumn")}
                                 />
                                 <span className={SHARE_PERCENT}>{formatShare(percent)}</span>
                             </div>
@@ -95,7 +90,7 @@ export function RunDirectoryTable({ runs, totalBytes }: RunDirectoryTableProps) 
                             {formatCount(run.file_count)}
                         </TableCell>
                         <TableCell className={ACTION_CELL}>
-                            <CopyButton value={run.path} label={RUN_DIRECTORY_COPY_LABEL} />
+                            <CopyButton value={run.path} label={t("copyRunDirectory")} />
                         </TableCell>
                     </TableRow>
                 ))}

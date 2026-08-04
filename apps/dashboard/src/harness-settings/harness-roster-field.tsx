@@ -1,20 +1,19 @@
 import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { useId } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#src/design-system/card";
 import { Checkbox } from "#src/design-system/checkbox";
 import { cn } from "#src/design-system/class-names";
 import {
     ROSTER_CARD,
     ROSTER_CONTENT,
-    ROSTER_HINT,
-    ROSTER_LABEL,
     ROSTER_OPTION,
     ROSTER_OPTION_CHOSEN,
     ROSTER_OPTIONS,
-    ROSTER_REQUIRED,
     SELECTABLE_HARNESSES,
     SETTINGS_FAILURE
 } from "#src/harness-settings/harness-settings.const";
+import { HARNESS_SETTINGS_NAMESPACE } from "#src/harness-settings/harness-settings.i18n";
 
 interface HarnessRosterFieldProps {
     roster: readonly AgentHarnessKind[];
@@ -27,13 +26,14 @@ interface HarnessRosterFieldProps {
  * harness rather than on a checkbox the size of a full stop.
  */
 export function HarnessRosterField({ roster, choose }: HarnessRosterFieldProps) {
+    const { t } = useTranslation(HARNESS_SETTINGS_NAMESPACE);
     const rosterId = useId();
 
     return (
         <Card className={ROSTER_CARD}>
             <CardHeader>
-                <CardTitle>{ROSTER_LABEL}</CardTitle>
-                <CardDescription>{ROSTER_HINT}</CardDescription>
+                <CardTitle>{t("rosterLabel")}</CardTitle>
+                <CardDescription>{t("rosterHint")}</CardDescription>
             </CardHeader>
             <CardContent className={ROSTER_CONTENT}>
                 <ul className={ROSTER_OPTIONS}>
@@ -58,7 +58,7 @@ export function HarnessRosterField({ roster, choose }: HarnessRosterFieldProps) 
                 </ul>
                 {roster.length === 0 ? (
                     <p role="alert" className={SETTINGS_FAILURE}>
-                        {ROSTER_REQUIRED}
+                        {t("rosterRequired")}
                     </p>
                 ) : null}
             </CardContent>

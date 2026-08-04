@@ -3,25 +3,18 @@ import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "#src/design-system/button";
 import { Spinner } from "#src/design-system/spinner";
 import { HarnessRosterField } from "#src/harness-settings/harness-roster-field";
 import {
-    HARNESS_SETTINGS_DESCRIPTION,
-    HARNESS_SETTINGS_TITLE,
-    NO_SETTINGS_DESCRIPTION,
-    NO_SETTINGS_TITLE,
-    SAVE_FAILURE_LABEL,
-    SAVE_LABEL,
-    SAVED_LABEL,
-    SAVING_LABEL,
     SETTINGS_ACTIONS,
     SETTINGS_FAILURE,
     SETTINGS_FORM,
     SETTINGS_PENDING,
-    SETTINGS_PENDING_LABEL,
     SETTINGS_SAVED
 } from "#src/harness-settings/harness-settings.const";
+import { HARNESS_SETTINGS_NAMESPACE } from "#src/harness-settings/harness-settings.i18n";
 import type {
     LabSettingsDraft,
     LabSettingsEdit
@@ -47,6 +40,7 @@ import { PanelEmptyState } from "#src/panel/panel-empty-state";
  * actually being run with, never what was typed.
  */
 export function HarnessSettingsSection() {
+    const { t } = useTranslation(HARNESS_SETTINGS_NAMESPACE);
     const queryClient = useQueryClient();
     const settings = useQuery({
         queryKey: labSettingsQueryKey,
@@ -74,16 +68,16 @@ export function HarnessSettingsSection() {
 
     if (edited === undefined) {
         return (
-            <Panel title={HARNESS_SETTINGS_TITLE} description={HARNESS_SETTINGS_DESCRIPTION}>
+            <Panel title={t("title")} description={t("description")}>
                 {settings.isPending ? (
                     <p className={SETTINGS_PENDING}>
                         <Spinner />
-                        {SETTINGS_PENDING_LABEL}
+                        {t("pending")}
                     </p>
                 ) : (
                     <PanelEmptyState
-                        title={NO_SETTINGS_TITLE}
-                        description={NO_SETTINGS_DESCRIPTION}
+                        title={t("unsupportedTitle")}
+                        description={t("unsupportedDescription")}
                     />
                 )}
             </Panel>
@@ -105,7 +99,7 @@ export function HarnessSettingsSection() {
     }
 
     return (
-        <Panel title={HARNESS_SETTINGS_TITLE} description={HARNESS_SETTINGS_DESCRIPTION}>
+        <Panel title={t("title")} description={t("description")}>
             <form
                 className={SETTINGS_FORM}
                 onSubmit={(event) => {
@@ -130,7 +124,7 @@ export function HarnessSettingsSection() {
                     <div className={SETTINGS_ACTIONS}>
                         {save.isError ? (
                             <p role="alert" className={SETTINGS_FAILURE}>
-                                {SAVE_FAILURE_LABEL}
+                                {t("saveFailure")}
                             </p>
                         ) : null}
                         <Button
@@ -138,7 +132,7 @@ export function HarnessSettingsSection() {
                             disabled={save.isPending || draft.harness_roster.length === 0}
                         >
                             {save.isPending ? <Spinner aria-hidden="true" /> : null}
-                            {save.isPending ? SAVING_LABEL : SAVE_LABEL}
+                            {save.isPending ? t("saving") : t("save")}
                         </Button>
                     </div>
                 ) : null}
@@ -146,7 +140,7 @@ export function HarnessSettingsSection() {
                 {save.isSuccess ? (
                     <p className={SETTINGS_SAVED}>
                         <CheckIcon aria-hidden="true" />
-                        {SAVED_LABEL}
+                        {t("saved")}
                     </p>
                 ) : null}
             </form>

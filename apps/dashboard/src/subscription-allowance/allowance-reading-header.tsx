@@ -1,19 +1,18 @@
 import { RefreshCwIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "#src/design-system/button";
 import { cn } from "#src/design-system/class-names";
 import {
-    AUTO_REFRESH_LABEL,
-    READ_AT_LABEL,
+    AUTO_REFRESH_MINUTES,
     READING_ACTIONS,
     READING_AUTO_REFRESH,
     READING_HEADER,
     READING_REFRESH_FAILURE,
     READING_REFRESH_TURNING,
     READING_STATE,
-    READING_TIME,
-    REFRESH_FAILURE_LABEL,
-    REFRESH_LABEL
+    READING_TIME
 } from "#src/subscription-allowance/allowance-reading-header.const";
+import { SUBSCRIPTION_ALLOWANCE_NAMESPACE } from "#src/subscription-allowance/subscription-allowance.i18n";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 interface AllowanceReadingHeaderProps {
@@ -40,18 +39,22 @@ export function AllowanceReadingHeader({
     reading,
     failed
 }: AllowanceReadingHeaderProps) {
+    const { t } = useTranslation(SUBSCRIPTION_ALLOWANCE_NAMESPACE);
+
     return (
         <div className={READING_HEADER}>
             <div className={READING_STATE}>
                 <p className={READING_TIME}>
-                    {READ_AT_LABEL} {formatDate(readAt)}
+                    {t("readAt")} {formatDate(readAt)}
                 </p>
-                <p className={READING_AUTO_REFRESH}>· {AUTO_REFRESH_LABEL}</p>
+                <p className={READING_AUTO_REFRESH}>
+                    · {t("autoRefresh", { count: AUTO_REFRESH_MINUTES })}
+                </p>
             </div>
             <div className={READING_ACTIONS}>
                 {failed ? (
                     <p role="alert" className={READING_REFRESH_FAILURE}>
-                        {REFRESH_FAILURE_LABEL}
+                        {t("refreshFailure")}
                     </p>
                 ) : null}
                 <Button
@@ -62,7 +65,7 @@ export function AllowanceReadingHeader({
                     disabled={reading}
                 >
                     <RefreshCwIcon className={cn(reading && READING_REFRESH_TURNING)} />
-                    {REFRESH_LABEL}
+                    {t("refresh")}
                 </Button>
             </div>
         </div>

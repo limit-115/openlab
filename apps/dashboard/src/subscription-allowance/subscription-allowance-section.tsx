@@ -1,10 +1,12 @@
 import type { SubscriptionAllowanceRoster } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Spinner } from "#src/design-system/spinner";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { AllowanceReadingHeader } from "#src/subscription-allowance/allowance-reading-header";
 import { allowanceReadingTime } from "#src/subscription-allowance/allowance-reading-time";
+import { SUBSCRIPTION_ALLOWANCE_NAMESPACE } from "#src/subscription-allowance/subscription-allowance.i18n";
 import {
     fetchSubscriptionAllowance,
     refreshSubscriptionAllowance,
@@ -13,11 +15,7 @@ import {
 import { SubscriptionAllowanceList } from "#src/subscription-allowance/subscription-allowance-list";
 import {
     ALLOWANCE_READING_PENDING,
-    ALLOWANCE_REFETCH_MILLISECONDS,
-    ALLOWANCE_SECTION_TITLE,
-    NO_ALLOWANCE_DESCRIPTION,
-    NO_ALLOWANCE_TITLE,
-    READING_PENDING_LABEL
+    ALLOWANCE_REFETCH_MILLISECONDS
 } from "#src/subscription-allowance/subscription-allowance-section.const";
 
 /**
@@ -26,6 +24,7 @@ import {
  * keeps its heading through the first reading and through a runtime that does not serve them.
  */
 export function SubscriptionAllowanceSection() {
+    const { t } = useTranslation(SUBSCRIPTION_ALLOWANCE_NAMESPACE);
     const queryClient = useQueryClient();
     const allowances = useQuery({
         queryKey: subscriptionAllowanceQueryKey,
@@ -47,7 +46,7 @@ export function SubscriptionAllowanceSection() {
     });
 
     return (
-        <Panel title={ALLOWANCE_SECTION_TITLE}>
+        <Panel title={t("title")}>
             <AllowanceReadings
                 allowances={allowances.data}
                 pending={allowances.isPending}
@@ -79,14 +78,16 @@ function AllowanceReadings({
     reading,
     failed
 }: AllowanceReadingsProps) {
+    const { t } = useTranslation(SUBSCRIPTION_ALLOWANCE_NAMESPACE);
+
     if (allowances === undefined) {
         return pending ? (
             <p className={ALLOWANCE_READING_PENDING}>
                 <Spinner />
-                {READING_PENDING_LABEL}
+                {t("pending")}
             </p>
         ) : (
-            <PanelEmptyState title={NO_ALLOWANCE_TITLE} description={NO_ALLOWANCE_DESCRIPTION} />
+            <PanelEmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
         );
     }
 

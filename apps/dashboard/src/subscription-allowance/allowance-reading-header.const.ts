@@ -2,23 +2,12 @@ import { ALLOWANCE_REFETCH_MILLISECONDS } from "#src/subscription-allowance/subs
 
 const MILLISECONDS_PER_MINUTE = 60_000;
 
-const AUTO_REFRESH_MINUTES = ALLOWANCE_REFETCH_MILLISECONDS / MILLISECONDS_PER_MINUTE;
-
-export const READ_AT_LABEL = "Read at" as const;
-
 /**
- * A page that never moves on its own reads the same as one nobody is updating, so it says the
- * readings come back by themselves. Taken from the interval that does the polling, so the promise
- * cannot outlive the behaviour.
+ * A page that never moves on its own reads the same as one nobody is updating, so it says how often
+ * the readings come back by themselves. Taken from the interval that does the polling, so the
+ * promise cannot outlive the behaviour.
  */
-export const AUTO_REFRESH_LABEL =
-    AUTO_REFRESH_MINUTES === 1
-        ? "Refreshes on its own every minute"
-        : `Refreshes on its own every ${AUTO_REFRESH_MINUTES} minutes`;
-
-export const REFRESH_LABEL = "Refresh" as const;
-
-export const REFRESH_FAILURE_LABEL = "The vendors could not be asked again." as const;
+export const AUTO_REFRESH_MINUTES = ALLOWANCE_REFETCH_MILLISECONDS / MILLISECONDS_PER_MINUTE;
 
 /** The reading time and the button that moves it, on one line above what they describe. */
 export const READING_HEADER =

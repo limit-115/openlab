@@ -1,4 +1,6 @@
+import { useTranslation } from "react-i18next";
 import {
+    SETTINGS_NAMESPACES,
     SETTINGS_PAGE,
     SETTINGS_SECTIONS,
     SettingsSection
@@ -14,12 +16,14 @@ import { SubscriptionAllowanceSection } from "#src/subscription-allowance/subscr
  * readings it shows: the page composes them without knowing what any of them talks to.
  */
 export function SettingsView() {
+    const { t } = useTranslation(SETTINGS_NAMESPACES);
+
     return (
         <Tabs defaultValue={SettingsSection.HARNESSES} className={SETTINGS_PAGE}>
             <TabsList>
                 {SETTINGS_SECTIONS.map((section) => (
                     <TabsTrigger key={section.section} value={section.section}>
-                        {section.label}
+                        {t(section.title)}
                     </TabsTrigger>
                 ))}
             </TabsList>

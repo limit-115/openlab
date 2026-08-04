@@ -1,10 +1,10 @@
 import type { LabStorage, RunDirectoryUsage } from "@lab/protocol/lab-storage/lab-storage.types";
 import { HardDriveIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { CopyButton } from "#src/clipboard/copy-button";
 import { CardAction, CardHeader } from "#src/design-system/card";
 import {
-    RUN_COUNT_LABEL,
     STORAGE_ACTION,
     STORAGE_ROOT_ICON,
     STORAGE_ROOT_PATH,
@@ -13,11 +13,9 @@ import {
     STORAGE_STAT_LABEL,
     STORAGE_STAT_VALUE,
     STORAGE_STATS,
-    STORAGE_SUMMARY,
-    TOTAL_FILE_COUNT_LABEL,
-    TOTAL_SIZE_LABEL,
-    WORKSPACE_ROOT_COPY_LABEL
+    STORAGE_SUMMARY
 } from "#src/lab-maintenance/lab-maintenance.const";
+import { LAB_MAINTENANCE_NAMESPACE } from "#src/lab-maintenance/lab-maintenance.i18n";
 import { formatByteSize } from "#src/value-display/byte-size";
 import { formatCount } from "#src/value-display/count-display";
 
@@ -32,13 +30,14 @@ interface LabStorageSummaryProps {
  * because it is the number that decides whether the operator does anything about it.
  */
 export function LabStorageSummary({ storage, action }: LabStorageSummaryProps) {
+    const { t } = useTranslation(LAB_MAINTENANCE_NAMESPACE);
     return (
         <CardHeader className={STORAGE_SUMMARY}>
             <div className={STORAGE_STATS}>
-                <StorageStat label={TOTAL_SIZE_LABEL} reading={formatByteSize(storage.bytes)} />
-                <StorageStat label={RUN_COUNT_LABEL} reading={formatCount(storage.runs.length)} />
+                <StorageStat label={t("totalSize")} reading={formatByteSize(storage.bytes)} />
+                <StorageStat label={t("runCount")} reading={formatCount(storage.runs.length)} />
                 <StorageStat
-                    label={TOTAL_FILE_COUNT_LABEL}
+                    label={t("totalFileCount")}
                     reading={formatCount(heldFileCount(storage.runs))}
                 />
             </div>
@@ -46,7 +45,7 @@ export function LabStorageSummary({ storage, action }: LabStorageSummaryProps) {
             <div className={STORAGE_ROOT_ROW}>
                 <HardDriveIcon className={STORAGE_ROOT_ICON} aria-hidden="true" />
                 <p className={STORAGE_ROOT_PATH}>{storage.workspace_root}</p>
-                <CopyButton value={storage.workspace_root} label={WORKSPACE_ROOT_COPY_LABEL} />
+                <CopyButton value={storage.workspace_root} label={t("copyWorkspaceRoot")} />
             </div>
         </CardHeader>
     );

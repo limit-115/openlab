@@ -6,12 +6,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import {
-    READ_AT_LABEL,
-    REFRESH_LABEL
-} from "#src/subscription-allowance/allowance-reading-header.const";
+import { SUBSCRIPTION_ALLOWANCE_EN } from "#src/subscription-allowance/subscription-allowance.i18n";
 import { SubscriptionAllowanceSection } from "#src/subscription-allowance/subscription-allowance-section";
-import { NO_ALLOWANCE_TITLE } from "#src/subscription-allowance/subscription-allowance-section.const";
+
 import { formatDate } from "#src/value-display/timestamp-display";
 
 const HELD_READING = "2026-08-03T12:00:00.000Z";
@@ -83,7 +80,9 @@ describe("SubscriptionAllowanceSection", () => {
         renderView();
 
         expect(
-            await screen.findByText(`${READ_AT_LABEL} ${formatDate(HELD_READING)}`)
+            await screen.findByText(
+                `${SUBSCRIPTION_ALLOWANCE_EN.readAt} ${formatDate(HELD_READING)}`
+            )
         ).toBeInTheDocument();
     });
 
@@ -92,10 +91,14 @@ describe("SubscriptionAllowanceSection", () => {
         renderView();
         await screen.findByLabelText("5 hours window");
 
-        await userEvent.click(screen.getByRole("button", { name: REFRESH_LABEL }));
+        await userEvent.click(
+            screen.getByRole("button", { name: SUBSCRIPTION_ALLOWANCE_EN.refresh })
+        );
 
         expect(
-            await screen.findByText(`${READ_AT_LABEL} ${formatDate(FRESH_READING)}`)
+            await screen.findByText(
+                `${SUBSCRIPTION_ALLOWANCE_EN.readAt} ${formatDate(FRESH_READING)}`
+            )
         ).toBeInTheDocument();
         expect(request.mock.calls.at(-1)?.[0]).toContain("fresh=1");
         expect(screen.getByLabelText<HTMLProgressElement>("5 hours window").value).toBe(12);
@@ -107,11 +110,13 @@ describe("SubscriptionAllowanceSection", () => {
         await screen.findByLabelText("5 hours window");
         respondWith({ error: "Codex is rate-limiting the usage endpoint" }, 503);
 
-        await userEvent.click(screen.getByRole("button", { name: REFRESH_LABEL }));
+        await userEvent.click(
+            screen.getByRole("button", { name: SUBSCRIPTION_ALLOWANCE_EN.refresh })
+        );
 
         expect(await screen.findByRole("alert")).toBeInTheDocument();
         expect(
-            screen.getByText(`${READ_AT_LABEL} ${formatDate(HELD_READING)}`)
+            screen.getByText(`${SUBSCRIPTION_ALLOWANCE_EN.readAt} ${formatDate(HELD_READING)}`)
         ).toBeInTheDocument();
     });
 
@@ -119,7 +124,7 @@ describe("SubscriptionAllowanceSection", () => {
         respondWith({ error: "Not found" }, 404);
         renderView();
 
-        expect(await screen.findByText(NO_ALLOWANCE_TITLE)).toBeInTheDocument();
+        expect(await screen.findByText(SUBSCRIPTION_ALLOWANCE_EN.emptyTitle)).toBeInTheDocument();
         expect(screen.queryByLabelText("5 hours window")).not.toBeInTheDocument();
     });
 });

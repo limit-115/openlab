@@ -4,8 +4,9 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { SettingsView } from "#src/dashboard-routes/settings-view";
-import { HARNESS_SETTINGS_TITLE } from "#src/harness-settings/harness-settings.const";
-import { LabStorageEndpoint, STORAGE_TITLE } from "#src/lab-maintenance/lab-maintenance.const";
+import { HARNESS_SETTINGS_EN } from "#src/harness-settings/harness-settings.i18n";
+import { LabStorageEndpoint } from "#src/lab-maintenance/lab-maintenance.const";
+import { LAB_MAINTENANCE_EN } from "#src/lab-maintenance/lab-maintenance.i18n";
 
 /** Nothing the page reads is served, so a block that is open falls back to its empty state. */
 function respondWithNothing() {
@@ -35,15 +36,17 @@ describe("SettingsView", () => {
         renderSettings();
 
         expect(
-            await screen.findByRole("heading", { name: HARNESS_SETTINGS_TITLE })
+            await screen.findByRole("heading", { name: HARNESS_SETTINGS_EN.title })
         ).toBeInTheDocument();
-        expect(screen.queryByRole("heading", { name: STORAGE_TITLE })).toBeNull();
+        expect(screen.queryByRole("heading", { name: LAB_MAINTENANCE_EN.title })).toBeNull();
         expect(reached(request, LabStorageEndpoint.USAGE)).toBe(false);
 
-        await userEvent.click(screen.getByRole("tab", { name: STORAGE_TITLE }));
+        await userEvent.click(screen.getByRole("tab", { name: LAB_MAINTENANCE_EN.title }));
 
-        expect(await screen.findByRole("heading", { name: STORAGE_TITLE })).toBeInTheDocument();
-        expect(screen.queryByRole("heading", { name: HARNESS_SETTINGS_TITLE })).toBeNull();
+        expect(
+            await screen.findByRole("heading", { name: LAB_MAINTENANCE_EN.title })
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("heading", { name: HARNESS_SETTINGS_EN.title })).toBeNull();
         expect(reached(request, LabStorageEndpoint.USAGE)).toBe(true);
     });
 });

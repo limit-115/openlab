@@ -1,4 +1,5 @@
 import { Trash2Icon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -12,14 +13,7 @@ import {
 } from "#src/design-system/alert-dialog";
 import { Button } from "#src/design-system/button";
 import { Spinner } from "#src/design-system/spinner";
-import {
-    PURGE_CANCEL_LABEL,
-    PURGE_CONFIRM_LABEL,
-    PURGE_CONSEQUENCE,
-    PURGE_LABEL,
-    PURGE_TITLE,
-    PURGING_LABEL
-} from "#src/lab-maintenance/lab-maintenance.const";
+import { LAB_MAINTENANCE_NAMESPACE } from "#src/lab-maintenance/lab-maintenance.i18n";
 
 interface LabPurgeControlProps {
     purging: boolean;
@@ -28,23 +22,24 @@ interface LabPurgeControlProps {
 
 /** Emptying the lab cannot be undone, so it asks before it reaches the daemon. */
 export function LabPurgeControl({ purging, purge }: LabPurgeControlProps) {
+    const { t } = useTranslation(LAB_MAINTENANCE_NAMESPACE);
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button type="button" variant="destructive" size="sm" disabled={purging}>
                     {purging ? <Spinner aria-hidden="true" /> : <Trash2Icon />}
-                    {purging ? PURGING_LABEL : PURGE_LABEL}
+                    {purging ? t("purging") : t("purge")}
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{PURGE_TITLE}</AlertDialogTitle>
-                    <AlertDialogDescription>{PURGE_CONSEQUENCE}</AlertDialogDescription>
+                    <AlertDialogTitle>{t("purgeTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("purgeConsequence")}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>{PURGE_CANCEL_LABEL}</AlertDialogCancel>
+                    <AlertDialogCancel>{t("purgeCancel")}</AlertDialogCancel>
                     <AlertDialogAction variant="destructive" onClick={purge}>
-                        {PURGE_CONFIRM_LABEL}
+                        {t("purgeConfirm")}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
