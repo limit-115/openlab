@@ -7,7 +7,6 @@ import {
     LAYOUT_BAR,
     LAYOUT_BAR_DIVIDER,
     LAYOUT_BAR_ROW,
-    LAYOUT_BAR_TRAIL,
     LAYOUT_BODY,
     LAYOUT_FRAME,
     LAYOUT_INSET,
@@ -15,7 +14,6 @@ import {
     LAYOUT_WRAPPER
 } from "#src/lab-layout/lab-layout.const";
 import { LabSidebar } from "#src/lab-layout/lab-sidebar";
-import { ModeToggle } from "#src/theme/mode-toggle";
 
 /** The one layout every page of the lab opens in: the sidebar, and the inset beside it. */
 export function LabLayout() {
@@ -25,12 +23,9 @@ export function LabLayout() {
             <SidebarInset className={LAYOUT_INSET}>
                 <header className={LAYOUT_BAR}>
                     <div className={cn(LAYOUT_FRAME, LAYOUT_BAR_ROW)}>
-                        <div className={LAYOUT_BAR_TRAIL}>
-                            <SidebarTrigger className="-ml-1" />
-                            <Separator orientation="vertical" className={LAYOUT_BAR_DIVIDER} />
-                            <LabBreadcrumbs />
-                        </div>
-                        <ModeToggle />
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator orientation="vertical" className={LAYOUT_BAR_DIVIDER} />
+                        <LabBreadcrumbs />
                     </div>
                 </header>
                 <main className={cn(LAYOUT_SCROLLER, LAYOUT_FRAME, LAYOUT_BODY)}>

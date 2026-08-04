@@ -14,6 +14,7 @@ import {
 import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
 import { RecentInvestigations } from "#src/investigation-roster/recent-investigations";
 import { LAB_NAME, LAB_SETTINGS, LAB_SUBTITLE, LAB_VIEWS } from "#src/lab-layout/lab-layout.const";
+import { ThemeEntry } from "#src/theme/theme-entry";
 
 /** Everything the lab is reachable through: what it is, what to open, and what it holds. */
 export function LabSidebar() {
@@ -58,6 +59,9 @@ export function LabSidebar() {
                         <LabEntry route={LAB_SETTINGS.route} label={LAB_SETTINGS.label} size="sm">
                             <Settings2Icon />
                         </LabEntry>
+                        <SidebarMenuItem>
+                            <ThemeEntry />
+                        </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>

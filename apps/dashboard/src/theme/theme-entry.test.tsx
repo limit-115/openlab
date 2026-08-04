@@ -1,9 +1,11 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SidebarProvider } from "#src/design-system/sidebar";
 import { FakeMediaQuery } from "#src/test-support/fake-media-query";
-import { ModeToggle } from "#src/theme/mode-toggle";
 import { THEME_LABEL, THEME_STORAGE_KEY, Theme } from "#src/theme/theme.const";
+import { ThemeEntry } from "#src/theme/theme-entry";
+import { THEME_ENTRY_LABEL } from "#src/theme/theme-entry.const";
 import { ThemeProvider } from "#src/theme/theme-provider";
 
 afterEach(() => {
@@ -11,10 +13,12 @@ afterEach(() => {
     document.documentElement.className = "";
 });
 
-function renderToggle() {
+function renderEntry() {
     return render(
         <ThemeProvider>
-            <ModeToggle />
+            <SidebarProvider>
+                <ThemeEntry />
+            </SidebarProvider>
         </ThemeProvider>
     );
 }
@@ -22,13 +26,13 @@ function renderToggle() {
 async function choose(label: string) {
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Toggle theme" }));
+    await user.click(screen.getByRole("button", { name: THEME_ENTRY_LABEL }));
     await user.click(await screen.findByRole("menuitem", { name: label }));
 }
 
-describe("ModeToggle", () => {
+describe("ThemeEntry", () => {
     it("repaints the document in the chosen palette and keeps the choice for the next visit", async () => {
-        renderToggle();
+        renderEntry();
 
         await choose(THEME_LABEL[Theme.LIGHT]);
 
@@ -40,7 +44,7 @@ describe("ModeToggle", () => {
     it("opens in the palette the operator last chose", () => {
         localStorage.setItem(THEME_STORAGE_KEY, Theme.LIGHT);
 
-        renderToggle();
+        renderEntry();
 
         expect(document.documentElement).toHaveClass(Theme.LIGHT, "scheme-light");
     });
@@ -48,7 +52,7 @@ describe("ModeToggle", () => {
     it("keeps following the machine after the operator hands the choice back to it", async () => {
         const systemDark = new FakeMediaQuery();
         vi.stubGlobal("matchMedia", () => systemDark);
-        renderToggle();
+        renderEntry();
 
         await choose("System");
         expect(document.documentElement).toHaveClass(Theme.LIGHT);

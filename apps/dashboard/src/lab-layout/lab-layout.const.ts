@@ -21,10 +21,8 @@ export const LAYOUT_INSET = "min-h-0 overflow-hidden" as const;
 /** The bar belongs to the frame rather than to the page, so it is outside what scrolls. */
 export const LAYOUT_BAR = "shrink-0 border-b" as const;
 
-export const LAYOUT_BAR_ROW = "flex items-center justify-between gap-4 py-3" as const;
-
-/** The way into the sidebar and the way back up the trail read as one group, so they sit together. */
-export const LAYOUT_BAR_TRAIL = "flex min-w-0 flex-1 items-center gap-2" as const;
+/** The bar carries one group: the way into the sidebar, and the way back up the trail beside it. */
+export const LAYOUT_BAR_ROW = "flex items-center gap-2 py-3" as const;
 
 /**
  * A vertical separator stretches by default, and stretching to a height it was also given lines it
