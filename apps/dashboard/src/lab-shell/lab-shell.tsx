@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router";
-import { APP_FOOTER, APP_SHELL, PAGE_BODY, PAGE_FRAME } from "#src/app.const";
+import { APP_FOOTER, APP_SHELL, INSET_FRAME, PAGE_BODY } from "#src/app.const";
 import { LAB_VIEWS } from "#src/dashboard-routes/dashboard-routes.const";
 import { AppSidebar } from "#src/design-system/app-sidebar";
 import { cn } from "#src/design-system/class-names";
@@ -20,7 +20,7 @@ export function LabShell() {
             <AppSidebar />
             <SidebarInset className={APP_SHELL}>
                 <header className={INVESTIGATION_HEADER_BAR}>
-                    <div className={cn(PAGE_FRAME, INVESTIGATION_HEADER_ROW)}>
+                    <div className={cn(INSET_FRAME, INVESTIGATION_HEADER_ROW)}>
                         <SidebarTrigger className="-ml-1" />
 
                         <nav className={INVESTIGATION_HEADER_VIEWS} aria-label="Views">
@@ -44,10 +44,10 @@ export function LabShell() {
                         <ModeToggle />
                     </div>
                 </header>
-                <main className={cn(PAGE_FRAME, PAGE_BODY)}>
+                <main className={cn(INSET_FRAME, PAGE_BODY)}>
                     <Outlet />
                 </main>
-                <footer className={cn(PAGE_FRAME, APP_FOOTER)}>
+                <footer className={cn(INSET_FRAME, APP_FOOTER)}>
                     <span>AI Research Lab · Local runtime</span>
                 </footer>
             </SidebarInset>
