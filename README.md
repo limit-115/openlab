@@ -87,6 +87,16 @@ The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build i
 
 Environment values are validated at startup. Empty values are treated as unset.
 
+Where the lab runs is environment; what it runs with is not. The harness roster a new investigation
+starts on, and the model and reasoning effort behind each of the director, researcher and verifier
+roles, are set on the dashboard's settings page and kept in the database. They apply to the next
+agent the lab dispatches, without a restart. An investigation that named its own roster keeps it,
+and a role that names no model is left to the harness default.
+
+The settings page also reports what each run directory takes up under `LAB_HOME`, including
+directories left behind by investigations the lab no longer holds, and purges the lab through the
+running daemon so every investigation's agents stop before its history and directory are deleted.
+
 ## Verification
 
 ```bash
