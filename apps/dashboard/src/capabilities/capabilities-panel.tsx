@@ -1,5 +1,7 @@
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { useTranslation } from "react-i18next";
+import { CAPABILITIES_NAMESPACE } from "#src/capabilities/capabilities.i18n";
 import { CAPABILITY_LIST } from "#src/capabilities/capabilities-panel.const";
 import { CapabilityCard } from "#src/capabilities/capability-card";
 
@@ -13,6 +15,8 @@ interface CapabilitiesPanelProps {
  * real request has to be noticed in, and there is no news in an investigation that is not blocked.
  */
 export function CapabilitiesPanel({ investigationId, requests }: CapabilitiesPanelProps) {
+    const { t } = useTranslation(CAPABILITIES_NAMESPACE);
+
     if (requests.length === 0) {
         return null;
     }
@@ -25,7 +29,7 @@ export function CapabilitiesPanel({ investigationId, requests }: CapabilitiesPan
     });
 
     return (
-        <ul className={CAPABILITY_LIST} aria-label="Capability requests">
+        <ul className={CAPABILITY_LIST} aria-label={t("requests")}>
             {ordered.map((request) => (
                 <li key={request.id}>
                     <CapabilityCard investigationId={investigationId} request={request} />

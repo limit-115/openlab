@@ -1,15 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { CAPABILITIES_NAMESPACE } from "#src/capabilities/capabilities.i18n";
 import {
-    ANSWER_CAPABILITY_LABEL,
     ANSWER_FORM,
     ANSWER_FORM_FAILURE,
     ANSWER_FORM_FIELD,
     ANSWER_FORM_LABEL,
-    ANSWER_FORM_ROW,
-    ANSWER_LABEL,
-    ANSWER_PLACEHOLDER,
-    ANSWERING_CAPABILITY_LABEL
+    ANSWER_FORM_ROW
 } from "#src/capabilities/capability-answer.const";
 import { answerCapability } from "#src/capabilities/capability-answer-request";
 import { Button } from "#src/design-system/button";
@@ -27,6 +25,7 @@ interface CapabilityAnswerFormProps {
  * no, or to say go build it yourself, is answering just as completely as one handing over a secret.
  */
 export function CapabilityAnswerForm({ investigationId, requestId }: CapabilityAnswerFormProps) {
+    const { t } = useTranslation(CAPABILITIES_NAMESPACE);
     const queryClient = useQueryClient();
     const fieldId = useId();
     const [answer, setAnswer] = useState("");
@@ -49,12 +48,12 @@ export function CapabilityAnswerForm({ investigationId, requestId }: CapabilityA
         <form className={ANSWER_FORM} onSubmit={submit} noValidate>
             <div className={ANSWER_FORM_FIELD}>
                 <label className={ANSWER_FORM_LABEL} htmlFor={fieldId}>
-                    {ANSWER_LABEL}
+                    {t("answerLabel")}
                 </label>
                 <Textarea
                     id={fieldId}
                     value={answer}
-                    placeholder={ANSWER_PLACEHOLDER}
+                    placeholder={t("answerPlaceholder")}
                     aria-invalid={failure !== undefined}
                     onChange={(event) => setAnswer(event.target.value)}
                 />
@@ -66,7 +65,7 @@ export function CapabilityAnswerForm({ investigationId, requestId }: CapabilityA
                     disabled={submission.isPending || answer.trim().length === 0}
                 >
                     {submission.isPending ? <Spinner aria-hidden="true" /> : null}
-                    {submission.isPending ? ANSWERING_CAPABILITY_LABEL : ANSWER_CAPABILITY_LABEL}
+                    {submission.isPending ? t("answering") : t("answer")}
                 </Button>
             </div>
             {failure === undefined ? null : (

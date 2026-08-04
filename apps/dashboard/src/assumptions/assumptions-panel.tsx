@@ -1,8 +1,10 @@
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import type { Finding } from "@lab/protocol/findings/finding.types";
 import type { Verdict } from "@lab/protocol/verdicts/verdict.types";
+import { useTranslation } from "react-i18next";
 import { AssumptionCard } from "#src/assumptions/assumption-card";
 import { ASSUMPTION_LIST } from "#src/assumptions/assumption-card.const";
+import { ASSUMPTIONS_NAMESPACE } from "#src/assumptions/assumptions.i18n";
 import { cn } from "#src/design-system/class-names";
 import { Panel } from "#src/panel/panel";
 import { PANEL_SCROLLER } from "#src/panel/panel.const";
@@ -15,13 +17,12 @@ interface AssumptionsPanelProps {
 }
 
 export function AssumptionsPanel({ assumptions, findings, verdicts }: AssumptionsPanelProps) {
+    const { t } = useTranslation(ASSUMPTIONS_NAMESPACE);
+
     return (
-        <Panel title="Bets" description="Where the director thinks the goal might be reachable">
+        <Panel title={t("title")} description={t("description")}>
             {assumptions.length === 0 ? (
-                <PanelEmptyState
-                    title="No bets placed yet"
-                    description="The director is still working out where this goal might be reachable."
-                />
+                <PanelEmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
             ) : (
                 <ul className={cn(ASSUMPTION_LIST, PANEL_SCROLLER)}>
                     {[...assumptions]

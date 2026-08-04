@@ -1,8 +1,9 @@
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { useTranslation } from "react-i18next";
+import { CAPABILITIES_NAMESPACE } from "#src/capabilities/capabilities.i18n";
 import { CapabilityAnswerForm } from "#src/capabilities/capability-answer-form";
 import {
-    BLOCKING_LABEL,
     CAPABILITY_CARD,
     CAPABILITY_CARD_OPEN,
     CAPABILITY_HEADER,
@@ -13,15 +14,8 @@ import {
     CAPABILITY_SETTLED,
     CAPABILITY_TAGS,
     CAPABILITY_WAITING,
-    COPY_PROVISIONING_COMMAND_LABEL,
-    HOW_TO_PROVIDE,
-    NOTHING_TRIED,
-    PROVISION_VIA_CLI,
     PROVISIONING_HINT_COMMAND,
-    PROVISIONING_HINT_HEADER,
-    WHAT_IT_TRIED,
-    WHAT_THIS_UNBLOCKS,
-    YOUR_ANSWER
+    PROVISIONING_HINT_HEADER
 } from "#src/capabilities/capability-card.const";
 import { CopyButton } from "#src/clipboard/copy-button";
 import { Badge } from "#src/design-system/badge";
@@ -37,6 +31,7 @@ interface CapabilityCardProps {
 }
 
 export function CapabilityCard({ investigationId, request }: CapabilityCardProps) {
+    const { t } = useTranslation(CAPABILITIES_NAMESPACE);
     const command = `lab answer ${request.id} <answer>`;
     const open = request.status === CapabilityStatus.OPEN;
 
@@ -48,40 +43,34 @@ export function CapabilityCard({ investigationId, request }: CapabilityCardProps
                     <p className={CAPABILITY_NEED}>{request.need}</p>
                 </div>
                 <div className={CAPABILITY_TAGS}>
-                    {request.blocking ? (
-                        <Badge variant="destructive">{BLOCKING_LABEL}</Badge>
-                    ) : null}
+                    {request.blocking ? <Badge variant="destructive">{t("blocking")}</Badge> : null}
                     <StatusTag status={request.status} />
                 </div>
             </header>
 
             <div className={CAPABILITY_PAIRS}>
                 <div className="flex min-w-0 flex-col gap-1">
-                    <p className={CAPABILITY_PAIR_LABEL}>{WHAT_THIS_UNBLOCKS}</p>
+                    <p className={CAPABILITY_PAIR_LABEL}>{t("unblocks")}</p>
                     <p className={CAPABILITY_PAIR_VALUE}>{request.reason}</p>
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
-                    <p className={CAPABILITY_PAIR_LABEL}>{WHAT_IT_TRIED}</p>
+                    <p className={CAPABILITY_PAIR_LABEL}>{t("whatItTried")}</p>
                     <p className={CAPABILITY_PAIR_VALUE}>
-                        {request.self_provisioning_attempt ?? NOTHING_TRIED}
+                        {request.self_provisioning_attempt ?? t("nothingTried")}
                     </p>
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
-                    <p className={CAPABILITY_PAIR_LABEL}>{HOW_TO_PROVIDE}</p>
+                    <p className={CAPABILITY_PAIR_LABEL}>{t("howToProvide")}</p>
                     <p className={CAPABILITY_PAIR_VALUE}>{request.provisioning_hint}</p>
                     <div className={PROVISIONING_HINT_HEADER}>
-                        <p className={CAPABILITY_PAIR_LABEL}>{PROVISION_VIA_CLI}</p>
-                        <CopyButton
-                            value={command}
-                            label={COPY_PROVISIONING_COMMAND_LABEL}
-                            className="-my-1"
-                        />
+                        <p className={CAPABILITY_PAIR_LABEL}>{t("viaCli")}</p>
+                        <CopyButton value={command} label={t("copyCommand")} className="-my-1" />
                     </div>
                     <code className={PROVISIONING_HINT_COMMAND}>{command}</code>
                 </div>
                 {request.answer === undefined ? null : (
                     <div className="flex min-w-0 flex-col gap-1">
-                        <p className={CAPABILITY_PAIR_LABEL}>{YOUR_ANSWER}</p>
+                        <p className={CAPABILITY_PAIR_LABEL}>{t("yourAnswer")}</p>
                         <p className={CAPABILITY_PAIR_VALUE}>{request.answer}</p>
                     </div>
                 )}
@@ -99,17 +88,20 @@ export function CapabilityCard({ investigationId, request }: CapabilityCardProps
  * standing still. A settled one only has to say when it happened.
  */
 function WaitedFor({ request }: CapabilityRequestProps) {
+    const { t } = useTranslation(CAPABILITIES_NAMESPACE);
     const waited = useElapsedTime(0, request.created_at, request.status === CapabilityStatus.OPEN);
 
     if (request.status === CapabilityStatus.OPEN) {
-        return <p className={CAPABILITY_WAITING}>Waiting for you · {formatDuration(waited)}</p>;
+        return (
+            <p className={CAPABILITY_WAITING}>{t("waiting", { waited: formatDuration(waited) })}</p>
+        );
     }
 
     return (
         <p className={CAPABILITY_SETTLED}>
             {request.answered_at === undefined
-                ? `Requested ${formatDate(request.created_at)}`
-                : `Answered ${formatDate(request.answered_at)}`}
+                ? t("requested", { at: formatDate(request.created_at) })
+                : t("answered", { at: formatDate(request.answered_at) })}
         </p>
     );
 }

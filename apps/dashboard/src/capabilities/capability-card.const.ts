@@ -26,21 +26,3 @@ export const CAPABILITY_PAIR_VALUE = "text-sm leading-relaxed break-words" as co
 export const PROVISIONING_HINT_HEADER = "flex items-center justify-between gap-2" as const;
 
 export const PROVISIONING_HINT_COMMAND = "font-mono text-sm break-all select-all" as const;
-
-/** What the copy button on a provisioning command announces to the operator. */
-export const COPY_PROVISIONING_COMMAND_LABEL = "Copy the provisioning command" as const;
-
-/** Marks the request the agent said it cannot work around, as opposed to one raised in passing. */
-export const BLOCKING_LABEL = "Direction is stalled" as const;
-
-export const WHAT_THIS_UNBLOCKS = "What this unblocks" as const;
-
-export const HOW_TO_PROVIDE = "How to provide it" as const;
-
-export const WHAT_IT_TRIED = "What it tried on its own" as const;
-
-export const NOTHING_TRIED = "Raised by the daemon; nothing was attempted." as const;
-
-export const YOUR_ANSWER = "Your answer" as const;
-
-export const PROVISION_VIA_CLI = "Or from the CLI" as const;

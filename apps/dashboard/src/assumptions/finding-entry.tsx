@@ -1,6 +1,7 @@
 import type { Finding } from "@lab/protocol/findings/finding.types";
 import type { Verdict } from "@lab/protocol/verdicts/verdict.types";
 import { ChevronRightIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
     FINDING_ARTIFACTS,
     FINDING_CLAIM,
@@ -9,9 +10,9 @@ import {
     FINDING_DISCLOSURE_CHEVRON,
     FINDING_ENTRY,
     FINDING_PROSE,
-    FINDING_SECTION_LABEL,
-    VERDICT_LABEL
+    FINDING_SECTION_LABEL
 } from "#src/assumptions/assumption-card.const";
+import { type ASSUMPTIONS_EN, ASSUMPTIONS_NAMESPACE } from "#src/assumptions/assumptions.i18n";
 import {
     Collapsible,
     CollapsibleContent,
@@ -29,6 +30,8 @@ interface FindingEntryProps {
  * in full, so the disclosure holds them whole rather than trimming either to a preview.
  */
 export function FindingEntry({ finding, verdict }: FindingEntryProps) {
+    const { t } = useTranslation(ASSUMPTIONS_NAMESPACE);
+
     return (
         <Collapsible asChild>
             <li className={`${FINDING_ENTRY} group/finding`}>
@@ -39,22 +42,22 @@ export function FindingEntry({ finding, verdict }: FindingEntryProps) {
 
                 <CollapsibleTrigger className={FINDING_DISCLOSURE}>
                     <ChevronRightIcon className={FINDING_DISCLOSURE_CHEVRON} aria-hidden="true" />
-                    {verdictSummary(verdict)}
+                    {t(verdictSummary(verdict))}
                 </CollapsibleTrigger>
                 <CollapsibleContent className={FINDING_DISCLOSURE_BODY}>
                     <div>
-                        <h4 className={FINDING_SECTION_LABEL}>How the researcher got there</h4>
+                        <h4 className={FINDING_SECTION_LABEL}>{t("researcher")}</h4>
                         <p className={FINDING_PROSE}>{finding.work}</p>
                     </div>
                     {verdict ? (
                         <div>
-                            <h4 className={FINDING_SECTION_LABEL}>What the verifier did</h4>
+                            <h4 className={FINDING_SECTION_LABEL}>{t("verifier")}</h4>
                             <p className={FINDING_PROSE}>{verdict.reasoning}</p>
                         </div>
                     ) : null}
                     {finding.artifact_paths.length > 0 ? (
                         <div>
-                            <h4 className={FINDING_SECTION_LABEL}>Files it left behind</h4>
+                            <h4 className={FINDING_SECTION_LABEL}>{t("artifacts")}</h4>
                             <ul className={FINDING_ARTIFACTS}>
                                 {finding.artifact_paths.map((artifactPath) => (
                                     <li key={artifactPath}>{artifactPath}</li>
@@ -68,9 +71,10 @@ export function FindingEntry({ finding, verdict }: FindingEntryProps) {
     );
 }
 
-function verdictSummary(verdict: Verdict | undefined): string {
+/** Which of the three things the disclosure has to say, before it is said in any language. */
+function verdictSummary(verdict: Verdict | undefined): keyof typeof ASSUMPTIONS_EN {
     if (verdict === undefined) {
-        return VERDICT_LABEL.PENDING;
+        return "verdictPending";
     }
-    return verdict.confirmed ? VERDICT_LABEL.CONFIRMED : VERDICT_LABEL.REFUTED;
+    return verdict.confirmed ? "verdictConfirmed" : "verdictRefuted";
 }

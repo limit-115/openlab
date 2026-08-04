@@ -39,9 +39,3 @@ export const FINDING_DISCLOSURE_CHEVRON =
     "size-4 flex-none transition-transform group-data-[state=open]/finding:rotate-90" as const;
 
 export const FINDING_DISCLOSURE_BODY = "grid gap-3 pt-3" as const;
-
-export const VERDICT_LABEL = {
-    CONFIRMED: "Verifier confirmed it",
-    REFUTED: "Verifier refuted it",
-    PENDING: "No verdict yet"
-} as const;

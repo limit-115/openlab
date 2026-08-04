@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ANSWER_LABEL } from "#src/capabilities/capability-answer.const";
+import { CAPABILITIES_EN } from "#src/capabilities/capabilities.i18n";
 import { CapabilityAnswerForm } from "#src/capabilities/capability-answer-form";
 
 const INVESTIGATION_ID = "investigation-alpha-2026";
@@ -39,7 +39,7 @@ describe("CapabilityAnswerForm", () => {
         const user = userEvent.setup();
         renderForm();
 
-        await user.type(screen.getByLabelText(ANSWER_LABEL), REFUSAL);
+        await user.type(screen.getByLabelText(CAPABILITIES_EN.answerLabel), REFUSAL);
         await user.click(screen.getByRole("button", { name: "Answer" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
@@ -57,7 +57,7 @@ describe("CapabilityAnswerForm", () => {
         const credential = "TON_API_KEY=sk-proj-abcdefghijklmnopqrstuvwxyz012345";
         renderForm();
 
-        await user.type(screen.getByLabelText(ANSWER_LABEL), credential);
+        await user.type(screen.getByLabelText(CAPABILITIES_EN.answerLabel), credential);
         await user.click(screen.getByRole("button", { name: "Answer" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
@@ -71,11 +71,11 @@ describe("CapabilityAnswerForm", () => {
         const user = userEvent.setup();
         renderForm();
 
-        const field = screen.getByLabelText(ANSWER_LABEL);
+        const field = screen.getByLabelText(CAPABILITIES_EN.answerLabel);
         await user.type(field, REFUSAL);
         await user.click(screen.getByRole("button", { name: "Answer" }));
 
-        expect(await screen.findByLabelText(ANSWER_LABEL)).toHaveValue("");
+        expect(await screen.findByLabelText(CAPABILITIES_EN.answerLabel)).toHaveValue("");
     });
 
     it("keeps the daemon's own wording when the request is already settled", async () => {
@@ -83,7 +83,7 @@ describe("CapabilityAnswerForm", () => {
         const user = userEvent.setup();
         renderForm();
 
-        await user.type(screen.getByLabelText(ANSWER_LABEL), REFUSAL);
+        await user.type(screen.getByLabelText(CAPABILITIES_EN.answerLabel), REFUSAL);
         await user.click(screen.getByRole("button", { name: "Answer" }));
 
         expect(await screen.findByRole("alert")).toHaveTextContent("already answered");

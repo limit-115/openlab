@@ -1,8 +1,18 @@
 import {
+    ASSUMPTIONS_EN,
+    ASSUMPTIONS_NAMESPACE,
+    ASSUMPTIONS_RU
+} from "#src/assumptions/assumptions.i18n";
+import {
     BREAKTHROUGH_EN,
     BREAKTHROUGH_NAMESPACE,
     BREAKTHROUGH_RU
 } from "#src/breakthrough/breakthrough-banner.i18n";
+import {
+    CAPABILITIES_EN,
+    CAPABILITIES_NAMESPACE,
+    CAPABILITIES_RU
+} from "#src/capabilities/capabilities.i18n";
 import {
     INTERFACE_LANGUAGE_EN,
     INTERFACE_LANGUAGE_NAMESPACE,
@@ -61,7 +71,9 @@ import { THEME_EN, THEME_NAMESPACE, THEME_RU } from "#src/theme/theme.i18n";
  * be handed a single object per language, and it is a list of features rather than a store of copy.
  */
 export const EN_TRANSLATIONS = {
+    [ASSUMPTIONS_NAMESPACE]: ASSUMPTIONS_EN,
     [BREAKTHROUGH_NAMESPACE]: BREAKTHROUGH_EN,
+    [CAPABILITIES_NAMESPACE]: CAPABILITIES_EN,
     [INTERFACE_LANGUAGE_NAMESPACE]: INTERFACE_LANGUAGE_EN,
     [INVESTIGATION_CONTROL_NAMESPACE]: INVESTIGATION_CONTROL_EN,
     [OUTCOME_PANEL_NAMESPACE]: OUTCOME_PANEL_EN,
@@ -77,7 +89,9 @@ export const EN_TRANSLATIONS = {
 
 /** Measured against the English source, so a namespace nobody translated fails the build. */
 export const RU_TRANSLATIONS = {
+    [ASSUMPTIONS_NAMESPACE]: ASSUMPTIONS_RU,
     [BREAKTHROUGH_NAMESPACE]: BREAKTHROUGH_RU,
+    [CAPABILITIES_NAMESPACE]: CAPABILITIES_RU,
     [INTERFACE_LANGUAGE_NAMESPACE]: INTERFACE_LANGUAGE_RU,
     [INVESTIGATION_CONTROL_NAMESPACE]: INVESTIGATION_CONTROL_RU,
     [OUTCOME_PANEL_NAMESPACE]: OUTCOME_PANEL_RU,

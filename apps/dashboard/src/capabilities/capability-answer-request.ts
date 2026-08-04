@@ -1,4 +1,5 @@
-import { CAPABILITY_UNREACHABLE } from "#src/capabilities/capability-answer.const";
+import i18next from "i18next";
+import { CAPABILITIES_NAMESPACE } from "#src/capabilities/capabilities.i18n";
 import type { CapabilityAnswer } from "#src/capabilities/capability-answer.types";
 import { investigationPath } from "#src/investigation-roster/investigation-address";
 
@@ -22,12 +23,13 @@ export async function answerCapability({
             }
         );
     } catch {
-        throw new Error(CAPABILITY_UNREACHABLE);
+        throw new Error(i18next.t("unreachable", { ns: CAPABILITIES_NAMESPACE }));
     }
 
     if (!response.ok) {
         throw new Error(
-            refusal(await response.json()) ?? `The lab refused with ${response.status}.`
+            refusal(await response.json()) ??
+                i18next.t("refused", { ns: CAPABILITIES_NAMESPACE, status: response.status })
         );
     }
 }
