@@ -45,6 +45,7 @@ export const SETTINGS_ACTIONS = "flex flex-wrap items-center justify-end gap-3" 
 export const SETTINGS_PENDING = "flex items-center gap-2 text-sm text-muted-foreground" as const;
 
 /** Harnesses are few and their names are short, so each one is a card of its own width. */
+export const ROSTER_CARD = "gap-5" as const;
 export const ROSTER_CONTENT = "grid gap-3" as const;
 export const ROSTER_OPTIONS = "flex flex-wrap gap-2" as const;
 export const ROSTER_OPTION =
@@ -53,16 +54,23 @@ export const ROSTER_OPTION_CHOSEN = "border-primary/50 bg-primary/10 hover:bg-pr
 
 /**
  * A role against every harness is a matrix, so it is drawn as one: a row per role, a column per
- * thing that role is set to. The outer cells drop their padding to line the grid up with the card's
- * own edge, and the table keeps a width the columns stay usable at rather than squeezing to fit.
+ * thing that role is set to. The rows run the whole card and the heading sits above the rule they
+ * start under, so the card's last row is its bottom edge.
  */
+export const ROLE_CARD = "gap-5 pb-0" as const;
+export const ROLE_TABLE_CONTENT = "border-t px-0" as const;
+
+/** The first and last columns keep the card's own padding, so the rows line up with the heading. */
 export const ROLE_TABLE =
-    "w-full min-w-224 table-fixed [&_td:first-child]:pl-0 [&_td:last-child]:pr-0 [&_th:first-child]:pl-0 [&_th:last-child]:pr-0" as const;
-export const ROLE_COLUMN = "w-40" as const;
+    "[&_td:last-child]:pr-6 [&_th:first-child]:pl-6 [&_th:last-child]:pr-6" as const;
+
 export const ROLE_NAME = "capitalize" as const;
 
-/** Wide enough for the whole scale, so the effort a role runs at is one click away at every row. */
-export const EFFORT_COLUMN = "w-80" as const;
+/**
+ * The role and its effort take the width they need. The vendors ask for the same share of the
+ * table as each other, so what is left over is split between them evenly however wide it is.
+ */
+export const MODEL_COLUMN = "w-1/4" as const;
 
 /**
  * The chosen level carries the same fill as a ticked box, because the shipped toggle marks it with

@@ -16,17 +16,18 @@ import {
 } from "#src/design-system/table";
 import { ToggleGroup, ToggleGroupItem } from "#src/design-system/toggle-group";
 import {
-    EFFORT_COLUMN,
     EFFORT_LABEL,
     EFFORT_LEVELS,
     EFFORT_OPTION,
+    MODEL_COLUMN,
     MODEL_HINT,
     MODEL_PLACEHOLDER,
-    ROLE_COLUMN,
+    ROLE_CARD,
     ROLE_COLUMN_LABEL,
     ROLE_EXECUTION_LABEL,
     ROLE_NAME,
     ROLE_TABLE,
+    ROLE_TABLE_CONTENT,
     SELECTABLE_HARNESSES,
     SETTABLE_ROLES
 } from "#src/harness-settings/harness-settings.const";
@@ -52,21 +53,21 @@ export function RoleExecutionTable({
     const fieldId = useId();
 
     return (
-        <Card>
+        <Card className={ROLE_CARD}>
             <CardHeader>
                 <CardTitle>{ROLE_EXECUTION_LABEL}</CardTitle>
                 <CardDescription>{MODEL_HINT}</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Table className={ROLE_TABLE}>
+            <CardContent className={ROLE_TABLE_CONTENT}>
+                <Table className={ROLE_TABLE} aria-label={ROLE_EXECUTION_LABEL}>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className={ROLE_COLUMN}>{ROLE_COLUMN_LABEL}</TableHead>
-                            <TableHead className={EFFORT_COLUMN} id={`${fieldId}-effort`}>
-                                {EFFORT_LABEL}
-                            </TableHead>
+                            <TableHead>{ROLE_COLUMN_LABEL}</TableHead>
+                            <TableHead id={`${fieldId}-effort`}>{EFFORT_LABEL}</TableHead>
                             {SELECTABLE_HARNESSES.map((harness) => (
-                                <TableHead key={harness}>{harness}</TableHead>
+                                <TableHead key={harness} className={MODEL_COLUMN}>
+                                    {harness}
+                                </TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>

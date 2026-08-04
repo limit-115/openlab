@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#src/
 import { Checkbox } from "#src/design-system/checkbox";
 import { cn } from "#src/design-system/class-names";
 import {
+    ROSTER_CARD,
     ROSTER_CONTENT,
     ROSTER_HINT,
     ROSTER_LABEL,
@@ -29,7 +30,7 @@ export function HarnessRosterField({ roster, choose }: HarnessRosterFieldProps) 
     const rosterId = useId();
 
     return (
-        <Card>
+        <Card className={ROSTER_CARD}>
             <CardHeader>
                 <CardTitle>{ROSTER_LABEL}</CardTitle>
                 <CardDescription>{ROSTER_HINT}</CardDescription>
