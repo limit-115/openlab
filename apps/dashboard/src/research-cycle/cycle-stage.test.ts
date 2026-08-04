@@ -49,9 +49,12 @@ describe("cycleStages", () => {
             run(AgentRole.RESEARCHER, AgentRunStatus.FAILED, "r-4")
         ]);
 
-        expect(stageFor(stages, AgentRole.RESEARCHER).note).toBe(
-            "2 working · 1 finished · 1 stopped"
-        );
+        expect(stageFor(stages, AgentRole.RESEARCHER).counts).toEqual({
+            running: 2,
+            blocked: 0,
+            succeeded: 1,
+            ended: 1
+        });
     });
 
     it("keeps the roles in the order a cycle runs them", () => {

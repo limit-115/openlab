@@ -22,4 +22,3 @@ export const EVENT_PAYLOAD =
 export const EVENT_PAYLOAD_COPY = "absolute top-1.5 right-1.5" as const;
 
 /** What the copy button on an event payload announces to the operator. */
-export const COPY_EVENT_PAYLOAD_LABEL = "Copy the event payload" as const;

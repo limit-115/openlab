@@ -1,7 +1,7 @@
 import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import { useTranslation } from "react-i18next";
 import { CopyButton } from "#src/clipboard/copy-button";
 import {
-    COPY_EVENT_PAYLOAD_LABEL,
     EVENT_BODY,
     EVENT_ENTRY,
     EVENT_HEADLINE,
@@ -14,6 +14,7 @@ import {
     EVENT_TYPE
 } from "#src/events/event-entry.const";
 import { formatEventPayload, humanizeEventType } from "#src/events/event-payload-display";
+import { EVENTS_NAMESPACE } from "#src/events/events.i18n";
 import { formatTime } from "#src/value-display/timestamp-display";
 
 interface EventEntryProps {
@@ -21,6 +22,7 @@ interface EventEntryProps {
 }
 
 export function EventEntry({ event }: EventEntryProps) {
+    const { t } = useTranslation(EVENTS_NAMESPACE);
     const { headline, detail } = formatEventPayload(event.payload);
 
     return (
@@ -40,7 +42,7 @@ export function EventEntry({ event }: EventEntryProps) {
                         <pre className={EVENT_PAYLOAD}>{detail}</pre>
                         <CopyButton
                             value={detail}
-                            label={COPY_EVENT_PAYLOAD_LABEL}
+                            label={t("copyPayload")}
                             className={EVENT_PAYLOAD_COPY}
                         />
                     </div>

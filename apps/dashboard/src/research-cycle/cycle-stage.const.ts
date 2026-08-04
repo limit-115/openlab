@@ -19,12 +19,3 @@ export const CycleStageState = {
     DONE: "done"
 } as const;
 export type CycleStageState = (typeof CycleStageState)[keyof typeof CycleStageState];
-
-export const CYCLE_STAGE_LABEL: Record<(typeof CYCLE_STAGES)[number], string> = {
-    [AgentRole.DIRECTOR]: "Director",
-    [AgentRole.RESEARCHER]: "Researchers",
-    [AgentRole.VERIFIER]: "Verifiers"
-};
-
-/** What a stage says about itself when no agent has reached it. */
-export const STAGE_NOT_REACHED = "Not reached yet" as const;
