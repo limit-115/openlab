@@ -1,13 +1,20 @@
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 
+/** The lab is called this in every language, the way a piece of software is called what it is. */
 export const LAB_NAME = "Research Lab" as const;
-export const LAB_SUBTITLE = "Local runtime" as const;
+
+/** The places the lab always has, each of which the interface has a word for in both languages. */
+export const LabPlace = {
+    ROSTER: "roster",
+    SETTINGS: "settings"
+} as const;
+export type LabPlace = (typeof LabPlace)[keyof typeof LabPlace];
 
 /** What the sidebar opens, in the order an operator reaches for it. */
-export const LAB_VIEWS = [{ route: LabRoute.ROSTER, label: "Investigations" }] as const;
+export const LAB_VIEWS = [{ route: LabRoute.ROSTER, place: LabPlace.ROSTER }] as const;
 
 /** The one address that is not a view of the lab's work, so it stands apart from the rest. */
-export const LAB_SETTINGS = { route: LabRoute.SETTINGS, label: "Settings" } as const;
+export const LAB_SETTINGS = { route: LabRoute.SETTINGS, place: LabPlace.SETTINGS } as const;
 
 /**
  * The layout is exactly as tall as the viewport and never grows past it. Nothing outside the page

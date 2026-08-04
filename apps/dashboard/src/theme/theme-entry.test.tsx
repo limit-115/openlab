@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SidebarProvider } from "#src/design-system/sidebar";
 import { FakeMediaQuery } from "#src/test-support/fake-media-query";
-import { THEME_LABEL, THEME_STORAGE_KEY, Theme } from "#src/theme/theme.const";
+import { THEME_STORAGE_KEY, Theme } from "#src/theme/theme.const";
+import { THEME_EN } from "#src/theme/theme.i18n";
 import { ThemeEntry } from "#src/theme/theme-entry";
-import { THEME_ENTRY_LABEL } from "#src/theme/theme-entry.const";
 import { ThemeProvider } from "#src/theme/theme-provider";
 
 afterEach(() => {
@@ -26,7 +26,7 @@ function renderEntry() {
 async function choose(label: string) {
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: THEME_ENTRY_LABEL }));
+    await user.click(screen.getByRole("button", { name: THEME_EN.label }));
     await user.click(await screen.findByRole("menuitem", { name: label }));
 }
 
@@ -34,7 +34,7 @@ describe("ThemeEntry", () => {
     it("repaints the document in the chosen palette and keeps the choice for the next visit", async () => {
         renderEntry();
 
-        await choose(THEME_LABEL[Theme.LIGHT]);
+        await choose(THEME_EN[Theme.LIGHT]);
 
         expect(document.documentElement).toHaveClass(Theme.LIGHT, "scheme-light");
         expect(document.documentElement).not.toHaveClass(Theme.DARK);
@@ -54,7 +54,7 @@ describe("ThemeEntry", () => {
         vi.stubGlobal("matchMedia", () => systemDark);
         renderEntry();
 
-        await choose("System");
+        await choose(THEME_EN[Theme.SYSTEM]);
         expect(document.documentElement).toHaveClass(Theme.LIGHT);
 
         act(() => systemDark.flipTo(true));

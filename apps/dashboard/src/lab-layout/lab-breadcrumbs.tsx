@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Fragment } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 import {
     Breadcrumb,
@@ -19,6 +20,7 @@ import {
     TRAIL_SEPARATOR,
     TRAIL_STEP
 } from "#src/lab-layout/lab-layout.const";
+import { LAB_LAYOUT_NAMESPACE } from "#src/lab-layout/lab-layout.i18n";
 import { labTrail } from "#src/lab-layout/lab-trail";
 
 /**
@@ -26,6 +28,7 @@ import { labTrail } from "#src/lab-layout/lab-trail";
  * the sidebar already holds, and falls back to the identifier until that roster arrives.
  */
 export function LabBreadcrumbs() {
+    const { t } = useTranslation(LAB_LAYOUT_NAMESPACE);
     const { pathname } = useLocation();
     const roster = useQuery({
         queryKey: investigationRosterQueryKey,
@@ -43,24 +46,29 @@ export function LabBreadcrumbs() {
     return (
         <Breadcrumb>
             <BreadcrumbList className={TRAIL_LIST}>
-                {trail.map((step, index) => (
-                    <Fragment key={step.label}>
-                        {index > 0 ? <BreadcrumbSeparator className={TRAIL_SEPARATOR} /> : null}
-                        <BreadcrumbItem className={TRAIL_ITEM}>
-                            {step.route === undefined ? (
-                                <BreadcrumbPage className={TRAIL_STEP} title={step.label}>
-                                    {step.label}
-                                </BreadcrumbPage>
-                            ) : (
-                                <BreadcrumbLink asChild className={TRAIL_STEP}>
-                                    <Link to={step.route} title={step.label}>
-                                        {step.label}
-                                    </Link>
-                                </BreadcrumbLink>
-                            )}
-                        </BreadcrumbItem>
-                    </Fragment>
-                ))}
+                {trail.map((step, index) => {
+                    const label = "goal" in step ? step.goal : t(step.place);
+                    const route = "goal" in step ? undefined : step.route;
+
+                    return (
+                        <Fragment key={label}>
+                            {index > 0 ? <BreadcrumbSeparator className={TRAIL_SEPARATOR} /> : null}
+                            <BreadcrumbItem className={TRAIL_ITEM}>
+                                {route === undefined ? (
+                                    <BreadcrumbPage className={TRAIL_STEP} title={label}>
+                                        {label}
+                                    </BreadcrumbPage>
+                                ) : (
+                                    <BreadcrumbLink asChild className={TRAIL_STEP}>
+                                        <Link to={route} title={label}>
+                                            {label}
+                                        </Link>
+                                    </BreadcrumbLink>
+                                )}
+                            </BreadcrumbItem>
+                        </Fragment>
+                    );
+                })}
             </BreadcrumbList>
         </Breadcrumb>
     );

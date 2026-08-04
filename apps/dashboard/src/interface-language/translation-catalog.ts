@@ -4,10 +4,16 @@ import {
     INTERFACE_LANGUAGE_RU
 } from "#src/interface-language/interface-language.i18n";
 import {
+    LAB_LAYOUT_EN,
+    LAB_LAYOUT_NAMESPACE,
+    LAB_LAYOUT_RU
+} from "#src/lab-layout/lab-layout.i18n";
+import {
     STATUS_TAG_EN,
     STATUS_TAG_NAMESPACE,
     STATUS_TAG_RU
 } from "#src/status-tag/status-tag.i18n";
+import { THEME_EN, THEME_NAMESPACE, THEME_RU } from "#src/theme/theme.i18n";
 
 /**
  * Every feature keeps its own words beside the code that renders them, under a namespace named
@@ -16,11 +22,15 @@ import {
  */
 export const EN_TRANSLATIONS = {
     [INTERFACE_LANGUAGE_NAMESPACE]: INTERFACE_LANGUAGE_EN,
-    [STATUS_TAG_NAMESPACE]: STATUS_TAG_EN
+    [LAB_LAYOUT_NAMESPACE]: LAB_LAYOUT_EN,
+    [STATUS_TAG_NAMESPACE]: STATUS_TAG_EN,
+    [THEME_NAMESPACE]: THEME_EN
 };
 
 /** Measured against the English source, so a namespace nobody translated fails the build. */
 export const RU_TRANSLATIONS = {
     [INTERFACE_LANGUAGE_NAMESPACE]: INTERFACE_LANGUAGE_RU,
-    [STATUS_TAG_NAMESPACE]: STATUS_TAG_RU
+    [LAB_LAYOUT_NAMESPACE]: LAB_LAYOUT_RU,
+    [STATUS_TAG_NAMESPACE]: STATUS_TAG_RU,
+    [THEME_NAMESPACE]: THEME_RU
 } satisfies typeof EN_TRANSLATIONS;

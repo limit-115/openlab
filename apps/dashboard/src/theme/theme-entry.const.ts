@@ -1,5 +1,3 @@
-export const THEME_ENTRY_LABEL = "Theme" as const;
-
 /** The icons share one box the size of every other entry's icon, so the label lines up with them. */
 export const THEME_ENTRY_ICONS =
     "relative flex size-4 shrink-0 items-center justify-center" as const;

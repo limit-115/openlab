@@ -1,5 +1,6 @@
 import { FlaskConicalIcon, MicroscopeIcon, Settings2Icon } from "lucide-react";
 import type * as React from "react";
+import { useTranslation } from "react-i18next";
 import { Link, NavLink, useMatch } from "react-router";
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import {
@@ -15,7 +16,8 @@ import {
 import { LanguageEntry } from "#src/interface-language/language-entry";
 import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
 import { RecentInvestigations } from "#src/investigation-roster/recent-investigations";
-import { LAB_NAME, LAB_SETTINGS, LAB_SUBTITLE, LAB_VIEWS } from "#src/lab-layout/lab-layout.const";
+import { LAB_NAME, LAB_SETTINGS, LAB_VIEWS } from "#src/lab-layout/lab-layout.const";
+import { LAB_LAYOUT_NAMESPACE } from "#src/lab-layout/lab-layout.i18n";
 import { ThemeEntry } from "#src/theme/theme-entry";
 
 /**
@@ -24,6 +26,8 @@ import { ThemeEntry } from "#src/theme/theme-entry";
  * so a long roster cannot carry them off the screen.
  */
 export function LabSidebar() {
+    const { t } = useTranslation(LAB_LAYOUT_NAMESPACE);
+
     return (
         <Sidebar variant="inset">
             <SidebarHeader>
@@ -36,7 +40,7 @@ export function LabSidebar() {
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="font-medium">{LAB_NAME}</span>
-                                    <span className="text-sm">{LAB_SUBTITLE}</span>
+                                    <span className="text-sm">{t("subtitle")}</span>
                                 </div>
                             </Link>
                         </SidebarMenuButton>
@@ -51,7 +55,7 @@ export function LabSidebar() {
                             <NewInvestigationDialog />
                         </SidebarMenuItem>
                         {LAB_VIEWS.map((view) => (
-                            <LabEntry key={view.route} route={view.route} label={view.label}>
+                            <LabEntry key={view.route} route={view.route} label={t(view.place)}>
                                 <MicroscopeIcon />
                             </LabEntry>
                         ))}
@@ -69,7 +73,7 @@ export function LabSidebar() {
                     <SidebarMenuItem>
                         <ThemeEntry />
                     </SidebarMenuItem>
-                    <LabEntry route={LAB_SETTINGS.route} label={LAB_SETTINGS.label} size="sm">
+                    <LabEntry route={LAB_SETTINGS.route} label={t(LAB_SETTINGS.place)} size="sm">
                         <Settings2Icon />
                     </LabEntry>
                 </SidebarMenu>

@@ -14,12 +14,6 @@ export const DEFAULT_THEME: Theme = Theme.DARK;
 
 export const THEME_STORAGE_KEY = "lab-ui-theme" as const;
 
-export const THEME_LABEL: Record<Theme, string> = {
-    [Theme.LIGHT]: "Light",
-    [Theme.DARK]: "Dark",
-    [Theme.SYSTEM]: "System"
-};
-
 /**
  * Scrollbars, form controls and the caret follow `color-scheme` rather than the palette variables,
  * so the scheme has to move with the class or the browser keeps drawing the old theme's chrome.
