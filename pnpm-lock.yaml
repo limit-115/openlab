@@ -248,6 +248,12 @@ importers:
         specifier: 4.0.3
         version: 4.0.3
 
+  packages/notifier:
+    dependencies:
+      '@lab/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
   packages/protocol:
     dependencies:
       zod:
