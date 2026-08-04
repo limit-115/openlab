@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { InvestigationState } from "#src/investigation-lifecycle/investigation-state.const";
 import { StatusSnapshotSchema } from "#src/investigation-status/status-snapshot.schema";
 
-const RUNNING_LAB = {
+const RUNNING_INVESTIGATION = {
     investigation: {
         id: "investigation-1",
         state: InvestigationState.RUNNING,
@@ -15,7 +15,7 @@ const RUNNING_LAB = {
 
 describe("StatusSnapshotSchema", () => {
     it("applies empty collection defaults", () => {
-        const status = StatusSnapshotSchema.parse(RUNNING_LAB);
+        const status = StatusSnapshotSchema.parse(RUNNING_INVESTIGATION);
 
         expect(status.assumptions).toEqual([]);
         expect(status.findings).toEqual([]);
@@ -24,7 +24,7 @@ describe("StatusSnapshotSchema", () => {
     });
 
     it("leaves the breakthrough pointer absent while nothing has been confirmed", () => {
-        const status = StatusSnapshotSchema.parse(RUNNING_LAB);
+        const status = StatusSnapshotSchema.parse(RUNNING_INVESTIGATION);
 
         expect(status.breakthrough_finding_id).toBeUndefined();
     });

@@ -183,7 +183,7 @@ export class RuntimePersistence {
     }
 
     async listRecoverable(limit = 100): Promise<RecoverableRuntime[]> {
-        assertPageSize(limit, RuntimePersistenceLimit.MAX_RECOVERABLE_LABS);
+        assertPageSize(limit, RuntimePersistenceLimit.MAX_RECOVERABLE_INVESTIGATIONS);
         const records = await this.#database
             .select({
                 investigationId: investigations.id,
