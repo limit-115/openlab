@@ -1,20 +1,10 @@
 "use client";
 
-import {
-    BookOpenIcon,
-    BotIcon,
-    FlaskConicalIcon,
-    FrameIcon,
-    MapIcon,
-    PieChartIcon,
-    Settings2Icon,
-    TerminalSquareIcon
-} from "lucide-react";
+import { FlaskConicalIcon, MicroscopeIcon, Settings2Icon } from "lucide-react";
 import type * as React from "react";
 import { Link } from "react-router";
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import { NavMain } from "#src/design-system/nav-main";
-import { NavProjects } from "#src/design-system/nav-projects";
 import { NavSecondary } from "#src/design-system/nav-secondary";
 import { NavUser } from "#src/design-system/nav-user";
 import {
@@ -36,89 +26,9 @@ const data = {
     },
     navMain: [
         {
-            title: "Playground",
-            url: "#",
-            icon: <TerminalSquareIcon />,
-            isActive: true,
-            items: [
-                {
-                    title: "History",
-                    url: "#"
-                },
-                {
-                    title: "Starred",
-                    url: "#"
-                },
-                {
-                    title: "Settings",
-                    url: "#"
-                }
-            ]
-        },
-        {
-            title: "Models",
-            url: "#",
-            icon: <BotIcon />,
-            items: [
-                {
-                    title: "Genesis",
-                    url: "#"
-                },
-                {
-                    title: "Explorer",
-                    url: "#"
-                },
-                {
-                    title: "Quantum",
-                    url: "#"
-                }
-            ]
-        },
-        {
-            title: "Documentation",
-            url: "#",
-            icon: <BookOpenIcon />,
-            items: [
-                {
-                    title: "Introduction",
-                    url: "#"
-                },
-                {
-                    title: "Get Started",
-                    url: "#"
-                },
-                {
-                    title: "Tutorials",
-                    url: "#"
-                },
-                {
-                    title: "Changelog",
-                    url: "#"
-                }
-            ]
-        },
-        {
-            title: "Settings",
-            url: "#",
-            icon: <Settings2Icon />,
-            items: [
-                {
-                    title: "General",
-                    url: "#"
-                },
-                {
-                    title: "Team",
-                    url: "#"
-                },
-                {
-                    title: "Billing",
-                    url: "#"
-                },
-                {
-                    title: "Limits",
-                    url: "#"
-                }
-            ]
+            title: "Investigations",
+            url: LabRoute.ROSTER,
+            icon: <MicroscopeIcon />
         }
     ],
     navSecondary: [
@@ -126,23 +36,6 @@ const data = {
             title: "Settings",
             url: LabRoute.SETTINGS,
             icon: <Settings2Icon />
-        }
-    ],
-    projects: [
-        {
-            name: "Design Engineering",
-            url: "#",
-            icon: <FrameIcon />
-        },
-        {
-            name: "Sales & Marketing",
-            url: "#",
-            icon: <PieChartIcon />
-        },
-        {
-            name: "Travel",
-            url: "#",
-            icon: <MapIcon />
         }
     ]
 };
@@ -169,7 +62,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={data.navMain} />
-                <NavProjects projects={data.projects} />
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>

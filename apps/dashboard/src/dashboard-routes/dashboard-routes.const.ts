@@ -22,9 +22,6 @@ export function investigationView(
     return view === InvestigationView.OVERVIEW ? address : `${address}/${view}`;
 }
 
-/** The addresses the lab header links to, in the order an operator reads them. */
-export const LAB_VIEWS = [{ route: LabRoute.ROSTER, label: "Investigations" }] as const;
-
 /** The views one investigation offers, in the order its header lists them. */
 export const INVESTIGATION_VIEWS = [
     { view: InvestigationView.OVERVIEW, label: "Overview" },
