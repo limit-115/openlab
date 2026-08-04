@@ -35,6 +35,7 @@ export async function startDaemon(
             persistence: database.persistence,
             investigations: database.investigations,
             subscriptions,
+            settings,
             ...(dependencies.researchLoop === undefined
                 ? {}
                 : { researchLoop: dependencies.researchLoop })

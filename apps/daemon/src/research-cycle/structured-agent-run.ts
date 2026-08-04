@@ -41,6 +41,8 @@ export async function runStructuredAgent<Output>(
         cwd: agentWorkspace.cwd,
         artifactDirectory: agentWorkspace.artifactDirectory,
         responseSchema: input.schema,
+        ...(input.model === undefined ? {} : { model: input.model }),
+        ...(input.effort === undefined ? {} : { effort: input.effort }),
         ...(input.executionProfile === undefined
             ? {}
             : { executionProfile: input.executionProfile })

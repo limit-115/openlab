@@ -8,6 +8,7 @@ import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investi
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { type DirectorPlan, DirectorPlanSchema } from "#src/research-contract/research-contract";
 import {
     HarnessCapabilityBlockedError,
@@ -46,6 +47,7 @@ export async function runResearchLoop(
         return { status: ResearchLoopOutcomeStatus.CANCELLED };
     }
 
+    const settings = options.settings ?? SHIPPED_LAB_SETTINGS;
     const harnesses = options.harnesses ?? createHarnesses(DEFAULT_HARNESS_KINDS);
     const workspaceFactory =
         options.workspaceFactory ?? new RunDirectoryWorkspaceFactory(workspace.runDirectory);
@@ -76,6 +78,7 @@ export async function runResearchLoop(
                 ...(options.subscriptions === undefined
                     ? {}
                     : { subscriptions: options.subscriptions }),
+                settings,
                 createAgentWorkspace,
                 cycle,
                 ...(signal === undefined ? {} : { signal })
@@ -158,6 +161,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         task,
         available,
         subscriptions,
+        settings,
         createAgentWorkspace,
         cycle,
         signal
@@ -178,6 +182,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
                 assumption,
                 available,
                 ...(subscriptions === undefined ? {} : { subscriptions }),
+                settings,
                 preferredHarnessIndex: cycle + index + 1,
                 createAgentWorkspace,
                 ...(signal === undefined ? {} : { signal })
@@ -216,6 +221,7 @@ async function directorPlan(
             activity: input.activity,
             available: input.available,
             ...(input.subscriptions === undefined ? {} : { subscriptions: input.subscriptions }),
+            settings: input.settings,
             preferredIndex: input.cycle,
             role: AgentRole.DIRECTOR,
             objective: "Find where this goal might be reachable",

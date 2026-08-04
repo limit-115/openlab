@@ -1,5 +1,5 @@
 import { rm } from "node:fs/promises";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import type { InvestigationRequest } from "@lab/protocol/investigation-input/investigation-input.types";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
@@ -18,6 +18,8 @@ import type {
 } from "#src/investigation-registry/investigation-registry.types";
 import { summarizeInvestigation } from "#src/investigation-registry/investigation-summary";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
+import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { createHarnesses } from "#src/research-cycle/harness-roster";
 import { runResearchLoop } from "#src/research-cycle/research-loop";
 import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
@@ -35,6 +37,7 @@ export class InvestigationRegistry {
     readonly #persistence: RegistryPersistence;
     readonly #investigations: InvestigationRecords;
     readonly #subscriptions: SubscriptionAllowanceReadings | undefined;
+    readonly #settings: LabSettingsReader;
     readonly #researchLoop: ResearchLoopRunner;
 
     constructor(options: InvestigationRegistryOptions) {
@@ -42,6 +45,7 @@ export class InvestigationRegistry {
         this.#persistence = options.persistence;
         this.#investigations = options.investigations;
         this.#subscriptions = options.subscriptions;
+        this.#settings = options.settings ?? SHIPPED_LAB_SETTINGS;
         this.#researchLoop = options.researchLoop ?? runResearchLoop;
     }
 
@@ -66,11 +70,18 @@ export class InvestigationRegistry {
         this.#publish();
     }
 
-    /** Takes on a new investigation and puts it to work straight away. */
-    async create(input: InvestigationInput): Promise<HeldInvestigation> {
+    /**
+     * Takes on a new investigation and puts it to work straight away. An operator who named no
+     * harnesses gets the lab's roster as it stands now, and the investigation keeps that roster for
+     * good: changing the lab's default later is not a reason to move work already under way.
+     */
+    async create(request: InvestigationRequest): Promise<HeldInvestigation> {
         const workspace = await InvestigationWorkspace.create(
             this.#workspaceRoot,
-            input,
+            {
+                ...request,
+                harness_kinds: request.harness_kinds ?? this.#settings.read().harness_roster
+            },
             this.#persistence
         );
         const held = this.#hold(workspace);
@@ -133,6 +144,7 @@ export class InvestigationRegistry {
             activity,
             this.#researchLoop,
             createHarnesses(workspace.input.harness_kinds),
+            this.#settings,
             this.#subscriptions
         );
         const held: HeldInvestigation = { workspace, activity, controller };

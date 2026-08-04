@@ -1,6 +1,6 @@
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import type { InvestigationRequest } from "@lab/protocol/investigation-input/investigation-input.types";
 import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
@@ -27,11 +27,11 @@ export class LabApiClient {
         return this.request<InvestigationSummary[]>("/api/investigations");
     }
 
-    create(input: InvestigationInput): Promise<StatusSnapshot> {
+    create(request: InvestigationRequest): Promise<StatusSnapshot> {
         return this.request<StatusSnapshot>("/api/investigations", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify(input)
+            body: JSON.stringify(request)
         });
     }
 

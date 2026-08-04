@@ -4,6 +4,7 @@ import { HarnessAbortedError, HarnessCapabilityError } from "@lab/harness/harnes
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import { resolveRoleExecution } from "#src/lab-settings/role-execution";
 import type { CapabilityRequestCandidate } from "#src/research-contract/research-contract";
 import {
     blockAgentRun,
@@ -56,6 +57,7 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
             continue;
         }
 
+        const execution = resolveRoleExecution(input.settings.read(), input.role, harness.kind);
         const agentWorkspace = await input.createAgentWorkspace(input.role);
         const runId = newAgentRunId(input.role);
         await startAgentRun(input.workspace, {
@@ -75,6 +77,8 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
                 agentWorkspace,
                 prompt: input.prompt,
                 schema: input.schema,
+                effort: execution.effort,
+                ...(execution.model === undefined ? {} : { model: execution.model }),
                 ...(input.executionProfile === undefined
                     ? {}
                     : { executionProfile: input.executionProfile }),

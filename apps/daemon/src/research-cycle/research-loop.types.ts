@@ -8,6 +8,7 @@ import type { InvestigationInput } from "@lab/protocol/investigation-input/inves
 import type { z } from "zod";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import type { CapabilityRequestCandidate } from "#src/research-contract/research-contract";
 import type {
     AgentWorkspace,
@@ -27,6 +28,8 @@ export interface ResearchLoopOptions {
     readonly harnesses?: readonly AgentHarness[];
     /** Absent leaves the investigation dispatching blind, learning a spent allowance from the vendor. */
     readonly subscriptions?: SubscriptionAllowanceReadings;
+    /** Absent leaves every role on its harness default, which is the lab as shipped. */
+    readonly settings?: LabSettingsReader;
     readonly workspaceFactory?: AgentWorkspaceFactory;
     readonly signal?: AbortSignal;
     readonly cycleBackoffMs?: number;
@@ -46,6 +49,8 @@ export interface ResearchCycleInput {
     readonly task: InvestigationInput;
     readonly available: readonly AvailableHarness[];
     readonly subscriptions?: SubscriptionAllowanceReadings;
+    /** The settings in force, already resolved by the loop for every stage of a cycle. */
+    readonly settings: LabSettingsReader;
     readonly createAgentWorkspace: CreateAgentWorkspace;
     readonly cycle: number;
     readonly signal?: AbortSignal;
@@ -64,6 +69,8 @@ export interface AssumptionResearchInput {
     readonly assumption: Assumption;
     readonly available: readonly AvailableHarness[];
     readonly subscriptions?: SubscriptionAllowanceReadings;
+    /** The settings in force, already resolved by the loop for every stage of a cycle. */
+    readonly settings: LabSettingsReader;
     readonly preferredHarnessIndex: number;
     readonly createAgentWorkspace: CreateAgentWorkspace;
     readonly signal?: AbortSignal;
@@ -79,6 +86,8 @@ export interface AgentDispatchInput<Output> {
     readonly activity: AgentActivityHub;
     readonly available: readonly AvailableHarness[];
     readonly subscriptions?: SubscriptionAllowanceReadings;
+    /** The settings in force, already resolved by the loop for every stage of a cycle. */
+    readonly settings: LabSettingsReader;
     readonly preferredIndex: number;
     readonly role: AgentRole;
     readonly assumptionId?: string;

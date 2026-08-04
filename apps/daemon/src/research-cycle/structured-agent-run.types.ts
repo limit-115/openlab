@@ -1,4 +1,4 @@
-import type { HarnessExecutionProfile } from "@lab/harness/agent-harness.const";
+import type { HarnessEffortLevel, HarnessExecutionProfile } from "@lab/harness/agent-harness.const";
 import type { AgentHarness, HarnessRunResult } from "@lab/harness/agent-harness.types";
 import type { z } from "zod";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
@@ -14,6 +14,9 @@ export interface StructuredAgentRunInput<Output> {
     readonly agentWorkspace: AgentWorkspace;
     readonly prompt: string;
     readonly schema: z.ZodType<Output>;
+    /** The model this role was set to run on. Absent leaves the choice to the harness. */
+    readonly model?: string;
+    readonly effort?: HarnessEffortLevel;
     readonly signal?: AbortSignal;
     readonly executionProfile?: HarnessExecutionProfile;
 }

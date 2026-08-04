@@ -3,6 +3,7 @@ import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import type {
     ResearchLoopOptions,
     ResearchLoopOutcome
@@ -17,6 +18,7 @@ export class ResearchLoopController {
         options: ResearchLoopOptions
     ) => Promise<ResearchLoopOutcome>;
     readonly #harnesses: readonly AgentHarness[] | undefined;
+    readonly #settings: LabSettingsReader | undefined;
     readonly #subscriptions: SubscriptionAllowanceReadings | undefined;
     #abortController: AbortController | undefined;
     #running: Promise<ResearchLoopOutcome> | undefined;
@@ -31,12 +33,14 @@ export class ResearchLoopController {
             options: ResearchLoopOptions
         ) => Promise<ResearchLoopOutcome>,
         harnesses?: readonly AgentHarness[],
+        settings?: LabSettingsReader,
         subscriptions?: SubscriptionAllowanceReadings
     ) {
         this.#workspace = workspace;
         this.#activity = activity;
         this.#run = run;
         this.#harnesses = harnesses;
+        this.#settings = settings;
         this.#subscriptions = subscriptions;
         this.#unsubscribe = workspace.subscribe((event, snapshot) => {
             if (
@@ -63,6 +67,7 @@ export class ResearchLoopController {
             activity: this.#activity,
             signal: abortController.signal,
             ...(this.#harnesses === undefined ? {} : { harnesses: this.#harnesses }),
+            ...(this.#settings === undefined ? {} : { settings: this.#settings }),
             ...(this.#subscriptions === undefined ? {} : { subscriptions: this.#subscriptions })
         });
         this.#running = running;

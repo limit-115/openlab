@@ -4,7 +4,7 @@ import FastifyStatic from "@fastify/static";
 import { assessLifecycleTransition } from "@lab/core/investigation-lifecycle/investigation-state-transitions";
 import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
-import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
+import { InvestigationRequestSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
@@ -94,7 +94,7 @@ export function createStatusServer(
     app.get(LabRoute.INVESTIGATIONS, async () => registry.list());
 
     app.post(LabRoute.INVESTIGATIONS, async (request, reply) => {
-        const parsedInput = InvestigationInputSchema.safeParse(request.body);
+        const parsedInput = InvestigationRequestSchema.safeParse(request.body);
         if (!parsedInput.success) {
             return reply.code(400).send({ error: StatusServerError.INVALID_INPUT });
         }

@@ -5,8 +5,8 @@ import { cancel, confirm, intro, isCancel, isTTY, note, outro, text } from "@cla
 import { planPurge, purgeRuns } from "@lab/daemon/run-purge/run-purge";
 import { startDaemon } from "@lab/daemon/server";
 import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import { InvestigationRequestSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
+import type { InvestigationRequest } from "@lab/protocol/investigation-input/investigation-input.types";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { Command, InvalidArgumentError } from "commander";
 import { consola } from "consola";
@@ -167,7 +167,7 @@ program
     )
     .option("-f, --file <path>", "read the goal and its options from a JSON file")
     .action(async (options: NewOptions, command: Command) => {
-        const snapshot = await client(command).create(await resolveInvestigationInput(options));
+        const snapshot = await client(command).create(await resolveInvestigationRequest(options));
         consola.success(
             `Investigation ${snapshot.investigation.id} is ${snapshot.investigation.state}`
         );
@@ -313,10 +313,10 @@ program
     });
 
 /** The goal and its options, from the flags, from a file, or asked for outright. */
-async function resolveInvestigationInput(options: NewOptions): Promise<InvestigationInput> {
+async function resolveInvestigationRequest(options: NewOptions): Promise<InvestigationRequest> {
     if (options.file !== undefined) {
         const source = await readFile(resolve(options.file), "utf8");
-        return InvestigationInputSchema.parse(JSON.parse(source));
+        return InvestigationRequestSchema.parse(JSON.parse(source));
     }
     let goal = options.goal;
     if (goal === undefined) {
@@ -332,7 +332,7 @@ async function resolveInvestigationInput(options: NewOptions): Promise<Investiga
         }
         goal = answer;
     }
-    return InvestigationInputSchema.parse({
+    return InvestigationRequestSchema.parse({
         goal,
         ...(options.context === undefined ? {} : { context: options.context }),
         ...(options.criteria === undefined ? {} : { success_criteria: options.criteria }),
