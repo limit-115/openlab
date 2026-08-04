@@ -32,9 +32,6 @@ importers:
       '@lab/daemon':
         specifier: workspace:*
         version: link:../daemon
-      '@lab/harness':
-        specifier: workspace:*
-        version: link:../../packages/harness
       '@lab/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
