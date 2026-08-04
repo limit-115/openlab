@@ -30,14 +30,14 @@ export const LAYOUT_BAR_ROW = "flex items-center gap-2 py-3" as const;
  * It keeps the row's own gap either side of it: a rule this tall reads as a divider when it sits
  * close to what it divides, and as a column of its own once it is given room.
  */
-export const LAYOUT_BAR_DIVIDER = "-my-3" as const;
+export const LAYOUT_BAR_DIVIDER = "-my-3 mx-2" as const;
 
 /**
- * The trigger stands between the frame's edge and the divider, and the frame keeps a page far wider
- * of that edge than the row's gap. It pulls the frame's padding back to that gap, so the same
- * distance falls either side of it and it sits in the middle of the column the divider closes.
+ * The trigger stands between the frame's edge and the divider, and the frame keeps a page wider of
+ * that edge than the divider is given. It gives back what the frame holds beyond the divider's own
+ * distance, so the same distance falls either side of it, in the middle of the column it opens.
  */
-export const LAYOUT_BAR_TRIGGER = "-ml-2 sm:-ml-4" as const;
+export const LAYOUT_BAR_TRIGGER = "sm:-ml-2" as const;
 
 /** The trail stays on one line: a long step is clipped rather than wrapped into a taller bar. */
 export const TRAIL_LIST = "min-w-0 flex-nowrap" as const;
