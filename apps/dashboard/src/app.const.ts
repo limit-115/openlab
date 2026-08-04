@@ -21,6 +21,3 @@ export const PAGE_BODY = "pt-6 pb-12" as const;
  * sections has to stay clearly wider than the gap a section keeps between its heading and its cards.
  */
 export const DASHBOARD = "grid gap-10 text-sm" as const;
-
-export const APP_FOOTER =
-    "flex flex-col gap-1 pb-8 text-sm text-muted-foreground sm:flex-row sm:justify-between" as const;

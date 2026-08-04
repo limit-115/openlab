@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useParams } from "react-router";
-import { APP_FOOTER, APP_SHELL, DASHBOARD, PAGE_BODY, PAGE_FRAME } from "#src/app.const";
+import { APP_SHELL, DASHBOARD, PAGE_BODY, PAGE_FRAME } from "#src/app.const";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
 import { cn } from "#src/design-system/class-names";
@@ -53,9 +53,6 @@ export function InvestigationShell() {
             <main className={cn(PAGE_FRAME, PAGE_BODY, DASHBOARD)}>
                 <Outlet context={snapshot} />
             </main>
-            <footer className={cn(PAGE_FRAME, APP_FOOTER)}>
-                <span>AI Research Lab · Local runtime</span>
-            </footer>
             <InvestigationControls
                 investigationId={snapshot.investigation.id}
                 state={snapshot.investigation.state}

@@ -1,5 +1,5 @@
 import { Outlet } from "react-router";
-import { APP_FOOTER, APP_SHELL, INSET_FRAME, PAGE_BODY } from "#src/app.const";
+import { APP_SHELL, INSET_FRAME, PAGE_BODY } from "#src/app.const";
 import { AppSidebar } from "#src/design-system/app-sidebar";
 import { cn } from "#src/design-system/class-names";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "#src/design-system/sidebar";
@@ -24,9 +24,6 @@ export function LabShell() {
                 <main className={cn(INSET_FRAME, PAGE_BODY)}>
                     <Outlet />
                 </main>
-                <footer className={cn(INSET_FRAME, APP_FOOTER)}>
-                    <span>AI Research Lab · Local runtime</span>
-                </footer>
             </SidebarInset>
         </SidebarProvider>
     );
