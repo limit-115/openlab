@@ -5,11 +5,7 @@
  */
 export const PAGE_FRAME = "mx-auto w-full max-w-320 px-4 sm:px-6 lg:px-12" as const;
 
-/**
- * The horizontal frame for a page hung inside the sidebar's inset. The inset already holds the page
- * off the viewport edge and rounds its own corners, so the page takes the whole width it is given
- * and keeps only enough padding to stay clear of that corner.
- */
+/** The horizontal frame for a page inside the sidebar's inset: full width, clear of its corner. */
 export const INSET_FRAME = "w-full px-4 sm:px-6" as const;
 
 export const APP_SHELL = "min-h-screen" as const;

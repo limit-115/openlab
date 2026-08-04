@@ -2,9 +2,8 @@
 
 import { FlaskConicalIcon, MicroscopeIcon, Settings2Icon } from "lucide-react";
 import type * as React from "react";
-import { Link } from "react-router";
+import { Link, NavLink } from "react-router";
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
-import { NavMain } from "#src/design-system/nav-main";
 import { NavSecondary } from "#src/design-system/nav-secondary";
 import { NavUser } from "#src/design-system/nav-user";
 import {
@@ -68,9 +67,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <SidebarMenuItem>
                             <NewInvestigationDialog />
                         </SidebarMenuItem>
+                        {data.navMain.map((item) => (
+                            <SidebarMenuItem key={item.title}>
+                                <SidebarMenuButton asChild tooltip={item.title}>
+                                    <NavLink to={item.url} end>
+                                        {item.icon}
+                                        <span>{item.title}</span>
+                                    </NavLink>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
                     </SidebarMenu>
                 </SidebarGroup>
-                <NavMain items={data.navMain} />
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>

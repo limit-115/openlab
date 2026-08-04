@@ -1,7 +1,6 @@
 /**
- * jsdom has no layout engine and so no matchMedia. The sidebar asks whether the viewport is narrow
- * enough to collapse it while it renders, so the tests need the function to exist. Every query comes
- * back unmatched, because a document without layout is never narrow.
+ * jsdom has no layout engine and so no matchMedia, which the sidebar calls as it renders. Every
+ * query comes back unmatched.
  */
 export function fakeMatchMedia(query: string): MediaQueryList {
     return {

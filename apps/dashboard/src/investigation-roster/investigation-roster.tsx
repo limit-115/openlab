@@ -21,10 +21,7 @@ import { useLiveRoster } from "#src/investigation-roster/investigation-roster-st
 import { StreamState } from "#src/live-status/status-stream.const";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
-/**
- * Everything the lab is investigating, one direction per card. Adding another is the sidebar's
- * business, because it can be reached from any page rather than only from this one.
- */
+/** Everything the lab is investigating, one direction per card. */
 export function InvestigationRoster() {
     const queryClient = useQueryClient();
     const stream = useLiveRoster();

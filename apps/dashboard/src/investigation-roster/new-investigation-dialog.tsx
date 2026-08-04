@@ -25,8 +25,7 @@ import { NewInvestigationForm } from "#src/investigation-roster/new-investigatio
 
 /**
  * The lab's way in. Composing a direction is a decision of its own, so it happens over the page
- * rather than in it, and the operator lands on the investigation the lab just opened. It reads as
- * the first entry of the sidebar because opening an investigation is what the lab is for.
+ * rather than in it, and the operator lands on the investigation the lab just opened.
  */
 export function NewInvestigationDialog() {
     const navigate = useNavigate();
