@@ -28,9 +28,15 @@ export type HarnessRunStatus = Exclude<
     typeof HarnessRunStatuses.RUNNING
 >;
 
+/**
+ * The run watchdog is there for a CLI that has stopped talking, not for one that is taking its time:
+ * a research agent that reads, builds and rechecks its own claims works for hours, and the clock
+ * counts every hour the machine spends asleep as well. Six hours is long enough that only a hung
+ * process reaches it.
+ */
 export const HarnessTimeoutMilliseconds = {
     PREFLIGHT: 30_000,
-    RUN: 3_600_000
+    RUN: 21_600_000
 } as const;
 
 export const HarnessInputSources = {
