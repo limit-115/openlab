@@ -8,10 +8,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import {
+    CANCEL_LABEL,
     EMPTY_ROSTER_TITLE,
     GOAL_LABEL,
     NEW_INVESTIGATION_LABEL,
-    ROSTER_TITLE
+    ROSTER_TITLE,
+    START_INVESTIGATION_LABEL
 } from "#src/investigation-roster/investigation-roster.const";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { rosterFixture } from "#src/test-support/roster-fixture";
@@ -86,9 +88,10 @@ describe("InvestigationRoster", () => {
         renderLab();
 
         await user.click(await screen.findByRole("button", { name: NEW_INVESTIGATION_LABEL }));
-        await user.type(screen.getByLabelText(GOAL_LABEL), "Measure the eviction tail");
-        await user.click(screen.getByRole("button", { name: AgentHarnessKind.CLAUDE }));
-        await user.click(screen.getByRole("button", { name: NEW_INVESTIGATION_LABEL }));
+        const composer = await screen.findByRole("dialog", { name: NEW_INVESTIGATION_LABEL });
+        await user.type(within(composer).getByLabelText(GOAL_LABEL), "Measure the eviction tail");
+        await user.click(within(composer).getByRole("checkbox", { name: AgentHarnessKind.CLAUDE }));
+        await user.click(within(composer).getByRole("button", { name: START_INVESTIGATION_LABEL }));
 
         await waitFor(() => {
             expect(fetchMock).toHaveBeenCalledWith(
@@ -102,6 +105,24 @@ describe("InvestigationRoster", () => {
                 })
             );
         });
+    });
+
+    it("starts nothing and keeps nothing when the operator backs out of the composer", async () => {
+        const fetchMock = serveRoster(rosterFixture);
+        const user = userEvent.setup();
+        renderLab();
+
+        await user.click(await screen.findByRole("button", { name: NEW_INVESTIGATION_LABEL }));
+        const composer = await screen.findByRole("dialog", { name: NEW_INVESTIGATION_LABEL });
+        await user.type(within(composer).getByLabelText(GOAL_LABEL), "Measure the eviction tail");
+        await user.click(within(composer).getByRole("button", { name: CANCEL_LABEL }));
+
+        await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+        expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+
+        await user.click(screen.getByRole("button", { name: NEW_INVESTIGATION_LABEL }));
+        const reopened = await screen.findByRole("dialog", { name: NEW_INVESTIGATION_LABEL });
+        expect(within(reopened).getByLabelText(GOAL_LABEL)).toHaveValue("");
     });
 
     it("asks the lab to discard the investigation the operator picked", async () => {

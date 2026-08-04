@@ -14,7 +14,11 @@ export const ROSTER_DESCRIPTION =
     "Every direction the lab is working on. Each one runs its own agents on its own goal." as const;
 
 export const NEW_INVESTIGATION_LABEL = "New investigation" as const;
+export const NEW_INVESTIGATION_DESCRIPTION =
+    "The lab starts working the moment you hand it a goal. Everything below the goal is optional." as const;
+export const START_INVESTIGATION_LABEL = "Start investigation" as const;
 export const STARTING_INVESTIGATION_LABEL = "Starting" as const;
+export const CANCEL_LABEL = "Cancel" as const;
 export const DISCARD_INVESTIGATION_LABEL = "Discard" as const;
 
 export const EMPTY_ROSTER_TITLE = "The lab is idle" as const;
@@ -43,7 +47,11 @@ export const AGENTS_LABEL = "Agents working" as const;
 export const BLOCKED_LABEL = "Waiting on you" as const;
 export const HARNESSES_LABEL = "Harnesses" as const;
 
-export const FORM = "grid gap-5" as const;
+/** The composer is as tall as the viewport allows and scrolls its fields, never the page. */
+export const COMPOSER_DIALOG = "flex max-h-[calc(100dvh-4rem)] flex-col gap-5 sm:max-w-xl" as const;
+
+export const FORM = "flex min-h-0 flex-1 flex-col gap-5" as const;
+export const FORM_FIELDS = "grid min-h-0 gap-5 overflow-y-auto" as const;
 export const FORM_FIELD = "grid gap-2" as const;
 export const FORM_LABEL = "text-sm font-medium" as const;
 export const FORM_HINT = "text-sm text-muted-foreground" as const;
@@ -64,8 +72,14 @@ export const CRITERIA_HINT =
     "Optional. What would have to be true for this to be an answer." as const;
 export const HARNESS_LABEL = "Harnesses" as const;
 export const HARNESS_HINT =
-    "Which agent CLIs this investigation rotates through, in the order chosen." as const;
+    "Which agent CLIs this investigation rotates through, in the order listed." as const;
 export const HARNESS_REQUIRED = "Choose at least one harness to dispatch to." as const;
+/** A legend sits outside the fieldset's content box, so it carries its own spacing. */
+export const HARNESS_LEGEND = "mb-2 text-sm font-medium" as const;
+export const HARNESS_OPTIONS = "grid gap-1" as const;
+export const HARNESS_OPTION =
+    "flex items-center gap-3 rounded-2xl bg-input/40 px-3 py-2.5 transition-colors hover:bg-input/70" as const;
+export const HARNESS_OPTION_NAME = "flex-1 cursor-pointer text-sm font-medium" as const;
 
 export const DISCARD_TITLE = "Discard this investigation?" as const;
 export const DISCARD_CONSEQUENCE =
