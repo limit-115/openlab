@@ -1,7 +1,7 @@
 import type { SubscriptionAllowanceRoster } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useId } from "react";
 import { Spinner } from "#src/design-system/spinner";
+import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { AllowanceReadingHeader } from "#src/subscription-allowance/allowance-reading-header";
 import { allowanceReadingTime } from "#src/subscription-allowance/allowance-reading-time";
@@ -14,21 +14,18 @@ import { SubscriptionAllowanceList } from "#src/subscription-allowance/subscript
 import {
     ALLOWANCE_READING_PENDING,
     ALLOWANCE_REFETCH_MILLISECONDS,
-    ALLOWANCE_SECTION,
     ALLOWANCE_SECTION_TITLE,
-    ALLOWANCE_SECTION_TITLE_TEXT,
     NO_ALLOWANCE_DESCRIPTION,
     NO_ALLOWANCE_TITLE,
     READING_PENDING_LABEL
 } from "#src/subscription-allowance/subscription-allowance-section.const";
 
 /**
- * What every subscription the lab can run on has left. Only this block reads them, so the vendors
- * are asked while somebody is looking at the numbers, and it keeps its heading through the first
- * reading and through a runtime that does not serve them at all.
+ * What every subscription the lab can run on has left, as one block of the page it sits on. Only
+ * this block reads them, so the vendors are asked while somebody is looking at the numbers, and it
+ * keeps its heading through the first reading and through a runtime that does not serve them.
  */
 export function SubscriptionAllowanceSection() {
-    const headingId = useId();
     const queryClient = useQueryClient();
     const allowances = useQuery({
         queryKey: subscriptionAllowanceQueryKey,
@@ -50,10 +47,7 @@ export function SubscriptionAllowanceSection() {
     });
 
     return (
-        <section className={ALLOWANCE_SECTION} aria-labelledby={headingId}>
-            <h1 id={headingId} className={ALLOWANCE_SECTION_TITLE_TEXT}>
-                {ALLOWANCE_SECTION_TITLE}
-            </h1>
+        <Panel title={ALLOWANCE_SECTION_TITLE}>
             <AllowanceReadings
                 allowances={allowances.data}
                 pending={allowances.isPending}
@@ -61,7 +55,7 @@ export function SubscriptionAllowanceSection() {
                 reading={refresh.isPending || allowances.isFetching}
                 failed={refresh.isError}
             />
-        </section>
+        </Panel>
     );
 }
 
