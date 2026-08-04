@@ -3,16 +3,18 @@
 import {
     BookOpenIcon,
     BotIcon,
+    FlaskConicalIcon,
     FrameIcon,
     LifeBuoyIcon,
     MapIcon,
     PieChartIcon,
     SendIcon,
     Settings2Icon,
-    TerminalIcon,
     TerminalSquareIcon
 } from "lucide-react";
 import type * as React from "react";
+import { Link } from "react-router";
+import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import { NavMain } from "#src/design-system/nav-main";
 import { NavProjects } from "#src/design-system/nav-projects";
 import { NavSecondary } from "#src/design-system/nav-secondary";
@@ -26,6 +28,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem
 } from "#src/design-system/sidebar";
+import { LAB_NAME, LAB_SUBTITLE } from "#src/lab-shell/lab-shell.const";
 
 const data = {
     user: {
@@ -158,15 +161,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <a href="#">
+                            <Link to={LabRoute.ROSTER}>
                                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <TerminalIcon className="size-4" />
+                                    <FlaskConicalIcon className="size-4" />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-medium">Acme Inc</span>
-                                    <span className="truncate text-xs">Enterprise</span>
+                                    <span className="font-medium">{LAB_NAME}</span>
+                                    <span className="text-sm">{LAB_SUBTITLE}</span>
                                 </div>
-                            </a>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
