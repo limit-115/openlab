@@ -6,6 +6,7 @@ import { RouterProvider } from "react-router/dom";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import { ThemeProvider } from "#src/theme/theme-provider";
+import "#src/interface-language/interface-language";
 import "#src/tailwind.css";
 
 const rootElement = document.getElementById("root");
