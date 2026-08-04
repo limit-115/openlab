@@ -18,8 +18,3 @@ export const BREAKTHROUGH_FILES =
     "flex list-none flex-wrap gap-2 text-sm break-all text-muted-foreground" as const;
 
 export const BREAKTHROUGH_FILE = "inline-flex items-center gap-2 rounded-xl border px-3 py-1.5";
-
-export const BREAKTHROUGH_TITLE = "Breakthrough" as const;
-
-export const BREAKTHROUGH_NOTE =
-    "An independent verifier confirmed this claim, so the investigation paused here." as const;

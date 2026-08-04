@@ -51,47 +51,41 @@ export const INVESTIGATION_CONTROL_PRESENTATION: Record<
     InvestigationControlPresentation
 > = {
     [InvestigationControlAction.PAUSE]: {
-        label: "Pause",
-        pendingLabel: "Pausing",
+        label: "pause",
+        pendingLabel: "pausing",
         icon: PauseIcon,
         tone: "outline"
     },
     [InvestigationControlAction.WAKE]: {
-        label: "Wake",
-        pendingLabel: "Waking",
+        label: "wake",
+        pendingLabel: "waking",
         icon: PlayIcon,
         tone: "default"
     },
     [InvestigationControlAction.RESUME]: {
-        label: "Resume",
-        pendingLabel: "Resuming",
+        label: "resume",
+        pendingLabel: "resuming",
         icon: PlayIcon,
         tone: "default"
     },
     [InvestigationControlAction.START]: {
-        label: "Start",
-        pendingLabel: "Starting",
+        label: "start",
+        pendingLabel: "starting",
         icon: PlayIcon,
         tone: "default"
     },
     [InvestigationControlAction.STOP]: {
-        label: "Stop",
-        pendingLabel: "Stopping",
+        label: "stop",
+        pendingLabel: "stopping",
         icon: CircleStopIcon,
         tone: "destructive",
         confirmation: {
-            title: "Stop the run?",
-            consequence:
-                "The agents are cancelled and whatever they had in hand is lost. The investigation settles as stopped and keeps everything it already proved, so you can start it again from here.",
-            confirmLabel: "Stop the run"
+            title: "stopTitle",
+            consequence: "stopConsequence",
+            confirmLabel: "stopConfirm"
         }
     }
 };
-
-export const KEEP_RUN_LABEL = "Keep running" as const;
-
-/** Shown when the daemon is gone, which reads nothing like a refusal the operator can act on. */
-export const INVESTIGATION_CONTROL_UNREACHABLE = "The lab daemon did not answer." as const;
 
 /**
  * The controls stand beside the views of the investigation they act on, because the page that opens

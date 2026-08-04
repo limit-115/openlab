@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,9 +14,9 @@ import { Button } from "#src/design-system/button";
 import { Spinner } from "#src/design-system/spinner";
 import {
     INVESTIGATION_CONTROL_PRESENTATION,
-    type InvestigationControlAction,
-    KEEP_RUN_LABEL
+    type InvestigationControlAction
 } from "#src/investigation-control/investigation-control.const";
+import { INVESTIGATION_CONTROL_NAMESPACE } from "#src/investigation-control/investigation-control.i18n";
 
 interface InvestigationControlButtonProps {
     action: InvestigationControlAction;
@@ -33,6 +34,7 @@ export function InvestigationControlButton({
     applying,
     run
 }: InvestigationControlButtonProps) {
+    const { t } = useTranslation(INVESTIGATION_CONTROL_NAMESPACE);
     const {
         label,
         pendingLabel,
@@ -50,7 +52,7 @@ export function InvestigationControlButton({
             {...(confirmation === undefined ? { onClick: run } : {})}
         >
             {applying ? <Spinner aria-hidden="true" /> : <Icon />}
-            {applying ? pendingLabel : label}
+            {applying ? t(pendingLabel) : t(label)}
         </Button>
     );
 
@@ -63,13 +65,13 @@ export function InvestigationControlButton({
             <AlertDialogTrigger asChild>{control}</AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{confirmation.title}</AlertDialogTitle>
-                    <AlertDialogDescription>{confirmation.consequence}</AlertDialogDescription>
+                    <AlertDialogTitle>{t(confirmation.title)}</AlertDialogTitle>
+                    <AlertDialogDescription>{t(confirmation.consequence)}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>{KEEP_RUN_LABEL}</AlertDialogCancel>
+                    <AlertDialogCancel>{t("keepRunning")}</AlertDialogCancel>
                     <AlertDialogAction variant={tone} onClick={run}>
-                        {confirmation.confirmLabel}
+                        {t(confirmation.confirmLabel)}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

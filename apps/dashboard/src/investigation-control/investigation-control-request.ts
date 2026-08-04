@@ -1,10 +1,11 @@
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import i18next from "i18next";
 import {
     INVESTIGATION_CONTROL_TRANSITION,
-    INVESTIGATION_CONTROL_UNREACHABLE,
     type InvestigationControlAction
 } from "#src/investigation-control/investigation-control.const";
+import { INVESTIGATION_CONTROL_NAMESPACE } from "#src/investigation-control/investigation-control.i18n";
 import { investigationPath } from "#src/investigation-roster/investigation-address";
 
 /**
@@ -25,14 +26,18 @@ export async function sendInvestigationControl(
             }
         );
     } catch {
-        throw new Error(INVESTIGATION_CONTROL_UNREACHABLE);
+        throw new Error(i18next.t("unreachable", { ns: INVESTIGATION_CONTROL_NAMESPACE }));
     }
 
     const payload: unknown = await response.json();
 
     if (!response.ok) {
         throw new Error(
-            refusal(payload) ?? `The investigation refused the control with ${response.status}.`
+            refusal(payload) ??
+                i18next.t("refused", {
+                    ns: INVESTIGATION_CONTROL_NAMESPACE,
+                    status: response.status
+                })
         );
     }
 

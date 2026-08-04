@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-    INVESTIGATION_CONTROL_UNREACHABLE,
-    InvestigationControlAction
-} from "#src/investigation-control/investigation-control.const";
+import { InvestigationControlAction } from "#src/investigation-control/investigation-control.const";
+import { INVESTIGATION_CONTROL_EN } from "#src/investigation-control/investigation-control.i18n";
 import { sendInvestigationControl } from "#src/investigation-control/investigation-control-request";
 import { statusFixture } from "#src/test-support/status-fixture";
 
@@ -42,6 +40,6 @@ describe("sendInvestigationControl", () => {
 
         await expect(
             sendInvestigationControl("investigation-alpha-2026", InvestigationControlAction.STOP)
-        ).rejects.toThrow(INVESTIGATION_CONTROL_UNREACHABLE);
+        ).rejects.toThrow(INVESTIGATION_CONTROL_EN.unreachable);
     });
 });
