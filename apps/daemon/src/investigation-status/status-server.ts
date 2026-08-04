@@ -6,6 +6,7 @@ import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.cons
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
@@ -22,6 +23,7 @@ import {
     StreamEvent
 } from "#src/investigation-status/status-server.const";
 import type { StatusServerOptions } from "#src/investigation-status/status-server.types";
+import { LAB_SETTINGS_ROUTE } from "#src/lab-settings/lab-settings.const";
 import {
     FRESH_READING_PARAM,
     FRESH_READING_VALUE,
@@ -46,6 +48,23 @@ export function createStatusServer(
         void app.register(FastifyStatic, {
             root: options.dashboardRoot,
             prefix: "/"
+        });
+    }
+
+    /**
+     * The settings the lab runs on. They are written whole, because a roster and the models each
+     * role runs on only mean anything together, and the answer is what is in force from that moment
+     * on rather than what was sent.
+     */
+    if (options.settings !== undefined) {
+        const settings = options.settings;
+        app.get(LAB_SETTINGS_ROUTE, async () => settings.read());
+        app.put(LAB_SETTINGS_ROUTE, async (request, reply) => {
+            const parsedSettings = LabSettingsSchema.safeParse(request.body);
+            if (!parsedSettings.success) {
+                return reply.code(400).send({ error: StatusServerError.INVALID_SETTINGS });
+            }
+            return settings.write(parsedSettings.data);
         });
     }
 

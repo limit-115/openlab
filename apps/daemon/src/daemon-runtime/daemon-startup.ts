@@ -8,6 +8,7 @@ import { PromiseSettlementStatus } from "#src/daemon-runtime/daemon-startup.cons
 import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { createStatusServer } from "#src/investigation-status/status-server";
+import { LabSettingsStore } from "#src/lab-settings/lab-settings-store";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 /**
@@ -27,6 +28,8 @@ export async function startDaemon(
     try {
         const dashboardRoot = await existingDirectory(config.dashboardRoot);
         const subscriptions = new SubscriptionAllowanceReadings();
+        const settings = new LabSettingsStore(database.settings);
+        await settings.load();
         registry = new InvestigationRegistry({
             workspaceRoot: config.workspaceRoot,
             persistence: database.persistence,
@@ -38,6 +41,7 @@ export async function startDaemon(
         });
         app = createStatusServer(registry, {
             subscriptions,
+            settings,
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel
         });

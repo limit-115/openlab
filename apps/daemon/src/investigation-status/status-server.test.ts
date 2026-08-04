@@ -1,10 +1,13 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
 import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
@@ -12,6 +15,8 @@ import type { HeldInvestigation } from "#src/investigation-registry/investigatio
 import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";
 import { createStatusServer } from "#src/investigation-status/status-server";
 import type { StatusServerOptions } from "#src/investigation-status/status-server.types";
+import { InMemoryLabSettings } from "#src/lab-settings/lab-settings.fixture";
+import { LabSettingsStore } from "#src/lab-settings/lab-settings-store";
 import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
 import type { ResearchLoopOutcome } from "#src/research-cycle/research-loop.types";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
@@ -299,6 +304,71 @@ describe("status server", () => {
         const lab = await createTestLab();
 
         const response = await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
+
+        expect(response.statusCode).toBe(404);
+        await lab.server.close();
+    });
+
+    it("serves the shipped defaults for a lab nobody has configured", async () => {
+        const lab = await createTestLab({
+            settings: new LabSettingsStore(new InMemoryLabSettings())
+        });
+
+        const response = await lab.server.inject({ method: "GET", url: "/api/settings" });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual(LabSettingsSchema.parse({}));
+        await lab.server.close();
+    });
+
+    it("puts the written settings in force, so the next read is the operator's document", async () => {
+        const lab = await createTestLab({
+            settings: new LabSettingsStore(new InMemoryLabSettings())
+        });
+        const settings = LabSettingsSchema.parse({
+            harness_roster: [AgentHarnessKind.CLAUDE],
+            role_execution: [
+                {
+                    role: AgentRole.DIRECTOR,
+                    effort: AgentEffortLevel.MAX,
+                    models: [{ harness: AgentHarnessKind.CLAUDE, model: "opus" }]
+                }
+            ]
+        });
+
+        const written = await lab.server.inject({
+            method: "PUT",
+            url: "/api/settings",
+            payload: settings
+        });
+        const read = await lab.server.inject({ method: "GET", url: "/api/settings" });
+
+        expect(written.statusCode).toBe(200);
+        expect(read.json()).toEqual(settings);
+        await lab.server.close();
+    });
+
+    it("refuses settings the lab cannot run and keeps the ones it had", async () => {
+        const lab = await createTestLab({
+            settings: new LabSettingsStore(new InMemoryLabSettings())
+        });
+
+        const response = await lab.server.inject({
+            method: "PUT",
+            url: "/api/settings",
+            payload: { harness_roster: ["a-harness-that-does-not-exist"] }
+        });
+        const read = await lab.server.inject({ method: "GET", url: "/api/settings" });
+
+        expect(response.statusCode).toBe(400);
+        expect(read.json()).toEqual(LabSettingsSchema.parse({}));
+        await lab.server.close();
+    });
+
+    it("leaves the settings route unserved when no store was wired in", async () => {
+        const lab = await createTestLab();
+
+        const response = await lab.server.inject({ method: "GET", url: "/api/settings" });
 
         expect(response.statusCode).toBe(404);
         await lab.server.close();

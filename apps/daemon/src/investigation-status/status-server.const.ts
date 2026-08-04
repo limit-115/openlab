@@ -5,6 +5,7 @@ export const CapabilityResponseError = {
 export const StatusServerError = {
     UNKNOWN_INVESTIGATION: "No such investigation",
     INVALID_INPUT: "An investigation needs a goal",
+    INVALID_SETTINGS: "The lab settings name a harness, a role or a model the lab cannot run",
     NOT_FOUND: "Not found"
 } as const;
 
