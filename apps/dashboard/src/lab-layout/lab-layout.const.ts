@@ -26,6 +26,12 @@ export const LAYOUT_BAR_ROW = "flex items-center justify-between gap-4 py-3" as 
 /** The way into the sidebar and the way back up the trail read as one group, so they sit together. */
 export const LAYOUT_BAR_TRAIL = "flex min-w-0 flex-1 items-center gap-2" as const;
 
+/**
+ * A vertical separator stretches by default, and stretching to a height it was also given lines it
+ * up with the top of the row instead of its middle. It is centred here, against the row it divides.
+ */
+export const LAYOUT_BAR_DIVIDER = "mr-1 h-4 data-vertical:self-center" as const;
+
 /** The trail stays on one line: a long step is clipped rather than wrapped into a taller bar. */
 export const TRAIL_LIST = "min-w-0 flex-nowrap" as const;
 

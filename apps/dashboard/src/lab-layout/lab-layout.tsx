@@ -5,6 +5,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "#src/design-syste
 import { LabBreadcrumbs } from "#src/lab-layout/lab-breadcrumbs";
 import {
     LAYOUT_BAR,
+    LAYOUT_BAR_DIVIDER,
     LAYOUT_BAR_ROW,
     LAYOUT_BAR_TRAIL,
     LAYOUT_BODY,
@@ -26,7 +27,7 @@ export function LabLayout() {
                     <div className={cn(LAYOUT_FRAME, LAYOUT_BAR_ROW)}>
                         <div className={LAYOUT_BAR_TRAIL}>
                             <SidebarTrigger className="-ml-1" />
-                            <Separator orientation="vertical" className="mr-1 h-4" />
+                            <Separator orientation="vertical" className={LAYOUT_BAR_DIVIDER} />
                             <LabBreadcrumbs />
                         </div>
                         <ModeToggle />
