@@ -1,7 +1,7 @@
 import { CycleStageState } from "#src/research-cycle/cycle-stage.const";
 
 export const CYCLE_RAIL =
-    "grid list-none overflow-hidden rounded-2xl border sm:grid-cols-4" as const;
+    "grid list-none overflow-hidden rounded-2xl border sm:grid-cols-3" as const;
 
 export const CYCLE_STAGE =
     "flex min-w-0 flex-col gap-1 border-b p-4 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0" as const;
