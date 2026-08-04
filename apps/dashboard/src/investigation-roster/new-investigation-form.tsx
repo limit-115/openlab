@@ -1,10 +1,15 @@
 import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
+import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import { Button } from "#src/design-system/button";
 import { Checkbox } from "#src/design-system/checkbox";
 import { Spinner } from "#src/design-system/spinner";
 import { Textarea } from "#src/design-system/textarea";
+import {
+    fetchLabSettings,
+    labSettingsQueryKey
+} from "#src/harness-settings/harness-settings-client";
 import {
     CANCEL_LABEL,
     CONTEXT_HINT,
@@ -68,13 +73,27 @@ export function NewInvestigationForm({
     const [goal, setGoal] = useState("");
     const [context, setContext] = useState("");
     const [criteria, setCriteria] = useState("");
-    const [harnesses, setHarnesses] = useState<AgentHarnessKind[]>([...DEFAULT_HARNESS_KINDS]);
+    /**
+     * Untouched, the roster is the lab's own: the boxes show what the lab would start this
+     * investigation on, and the request leaves the field out so the lab fills it in as it stands
+     * when the investigation opens. Ticking a box makes the roster this operator's instead.
+     */
+    const [chosenHarnesses, setChosenHarnesses] = useState<AgentHarnessKind[] | undefined>(
+        undefined
+    );
+    const labSettings = useQuery({
+        queryKey: labSettingsQueryKey,
+        queryFn: ({ signal }) => fetchLabSettings(signal),
+        retry: false
+    });
+    const harnesses = chosenHarnesses ??
+        labSettings.data?.harness_roster ?? [...DEFAULT_HARNESS_KINDS];
 
     /** The roster keeps the listed order however the boxes are ticked, because dispatch follows it. */
     function chooseHarness(kind: AgentHarnessKind, chosen: boolean) {
-        setHarnesses((current) =>
+        setChosenHarnesses(
             SELECTABLE_HARNESSES.filter((candidate) =>
-                candidate === kind ? chosen : current.includes(candidate)
+                candidate === kind ? chosen : harnesses.includes(candidate)
             )
         );
     }
@@ -87,7 +106,7 @@ export function NewInvestigationForm({
             goal: goal.trim(),
             ...(contextLines.length === 0 ? {} : { context: contextLines }),
             ...(criteriaLines.length === 0 ? {} : { success_criteria: criteriaLines }),
-            harness_kinds: harnesses
+            ...(chosenHarnesses === undefined ? {} : { harness_kinds: chosenHarnesses })
         });
     }
 
