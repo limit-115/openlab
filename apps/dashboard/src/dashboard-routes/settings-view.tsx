@@ -1,5 +1,6 @@
 import { SETTINGS_PAGE } from "#src/dashboard-routes/settings-view.const";
 import { HarnessSettingsSection } from "#src/harness-settings/harness-settings-section";
+import { LabStorageSection } from "#src/lab-maintenance/lab-storage-section";
 import { SubscriptionAllowanceSection } from "#src/subscription-allowance/subscription-allowance-section";
 
 /**
@@ -12,6 +13,7 @@ export function SettingsView() {
         <div className={SETTINGS_PAGE}>
             <HarnessSettingsSection />
             <SubscriptionAllowanceSection />
+            <LabStorageSection />
         </div>
     );
 }
