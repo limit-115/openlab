@@ -9,6 +9,8 @@ import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daem
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { createStatusServer } from "#src/investigation-status/status-server";
 import { LabSettingsStore } from "#src/lab-settings/lab-settings-store";
+import { NotificationDispatch } from "#src/operator-notifications/notification-dispatch";
+import { NotificationSettingsStore } from "#src/operator-notifications/notification-settings-store";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 /**
@@ -29,7 +31,18 @@ export async function startDaemon(
         const dashboardRoot = await existingDirectory(config.dashboardRoot);
         const subscriptions = new SubscriptionAllowanceReadings();
         const settings = new LabSettingsStore(database.settings);
-        await settings.load();
+        const notificationSettings = new NotificationSettingsStore(database.notifications);
+        await Promise.all([settings.load(), notificationSettings.load()]);
+        /**
+         * Every message carries a link back into the lab and the lab does not know which port it is
+         * on until it is listening, so its address is read at the moment a message is written.
+         */
+        let labUrl = `http://${config.host}:${config.port}`;
+        const dispatch = new NotificationDispatch({
+            settings: notificationSettings,
+            labUrl: () => labUrl,
+            onFailure: (error) => app?.log.error({ err: error }, "Failed to notify the operator")
+        });
         registry = new InvestigationRegistry({
             workspaceRoot: config.workspaceRoot,
             persistence: database.persistence,
@@ -43,6 +56,7 @@ export async function startDaemon(
         app = createStatusServer(registry, {
             subscriptions,
             settings,
+            notifications: { settings: notificationSettings, dispatch },
             workspaceRoot: config.workspaceRoot,
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel
@@ -50,6 +64,12 @@ export async function startDaemon(
         await app.listen({ host: config.host, port: config.port });
         const address = app.server.address() as AddressInfo;
         const url = `http://${config.host}:${address.port}`;
+        labUrl = url;
+        /**
+         * Reporting is wired before the interrupted investigations are reopened, so an operator is
+         * told about a run that fails the moment the lab picks it back up.
+         */
+        registry.subscribeToEvents((event, snapshot) => dispatch.record(event, snapshot));
         await registry.restore();
         const runningApp = app;
         const runningRegistry = registry;

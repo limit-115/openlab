@@ -7,6 +7,9 @@ import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capabi
 import { InvestigationRequestSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
+import { withoutChannelSecrets } from "@lab/protocol/operator-notifications/notification-channel-secrets";
+import { NotificationSettingsUpdateSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
+import { NotificationTestRequestSchema } from "@lab/protocol/operator-notifications/notification-test.schema";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
@@ -26,6 +29,10 @@ import type { StatusServerOptions } from "#src/investigation-status/status-serve
 import { LAB_SETTINGS_ROUTE } from "#src/lab-settings/lab-settings.const";
 import { purgeLabStorage, readLabStorage } from "#src/lab-storage/lab-storage";
 import { LabStorageRoute } from "#src/lab-storage/lab-storage.const";
+import {
+    NotificationRequestError,
+    NotificationRoute
+} from "#src/operator-notifications/operator-notifications.const";
 import {
     FRESH_READING_PARAM,
     FRESH_READING_VALUE,
@@ -67,6 +74,39 @@ export function createStatusServer(
                 return reply.code(400).send({ error: StatusServerError.INVALID_SETTINGS });
             }
             return settings.write(parsedSettings.data);
+        });
+    }
+
+    /**
+     * Who the lab reports to. The document is served without the credential any channel
+     * authenticates with, and taken back the same way: a page that was never shown a secret says
+     * nothing about it, and the store reads that silence as "keep the one you have".
+     */
+    if (options.notifications !== undefined) {
+        const { settings: notificationSettings, dispatch } = options.notifications;
+
+        app.get(NotificationRoute.SETTINGS, async () =>
+            withoutChannelSecrets(notificationSettings.read())
+        );
+
+        app.put(NotificationRoute.SETTINGS, async (request, reply) => {
+            const parsed = NotificationSettingsUpdateSchema.safeParse(request.body);
+            if (!parsed.success) {
+                return reply.code(400).send({ error: NotificationRequestError.INVALID_SETTINGS });
+            }
+            return withoutChannelSecrets(await notificationSettings.write(parsed.data));
+        });
+
+        /** Sends through what the lab has stored, so a pass means the lab can reach the operator. */
+        app.post(NotificationRoute.TEST, async (request, reply) => {
+            const parsed = NotificationTestRequestSchema.safeParse(request.body);
+            if (!parsed.success) {
+                return reply.code(400).send({ error: NotificationRequestError.INVALID_TEST });
+            }
+            const result = await dispatch.test(parsed.data.kind);
+            return result === undefined
+                ? reply.code(404).send({ error: StatusServerError.UNCONFIGURED_CHANNEL })
+                : result;
         });
     }
 

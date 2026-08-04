@@ -13,6 +13,7 @@ import type {
 } from "#src/investigation-registry/investigation-registry.types";
 import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";
 import { InMemoryLabSettings } from "#src/lab-settings/lab-settings.fixture";
+import { InMemoryNotificationSettings } from "#src/operator-notifications/notification-settings.fixture";
 import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
 
 const TestDatabase = {
@@ -35,6 +36,7 @@ async function startTestDaemon(
                 persistence: runtime,
                 investigations: runtime,
                 settings: new InMemoryLabSettings(),
+                notifications: new InMemoryNotificationSettings(),
                 close: async () => undefined
             }),
             researchLoop

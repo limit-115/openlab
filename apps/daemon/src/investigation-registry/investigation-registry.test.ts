@@ -2,6 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationRequestSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
@@ -258,6 +259,32 @@ describe("InvestigationRegistry", () => {
         await registry.create(request("Nobody is listening any more"));
 
         expect(published).toEqual([1, 1, 0]);
+        await registry.close();
+    });
+
+    /** Anything reporting on the lab as a whole watches here rather than each investigation. */
+    it("carries every investigation's events to one subscriber, whenever it was taken on", async () => {
+        const workspaceRoot = await testRoot("event-stream");
+        const runtime = new InMemoryRuntime();
+        const registry = new InvestigationRegistry({
+            workspaceRoot,
+            persistence: runtime,
+            investigations: runtime,
+            researchLoop: async (): Promise<ResearchLoopOutcome> => ({
+                status: ResearchLoopOutcomeStatus.CANCELLED
+            })
+        });
+        const seen: string[] = [];
+        const unsubscribe = registry.subscribeToEvents((event, snapshot) =>
+            seen.push(`${snapshot.investigation.goal}/${event.type}`)
+        );
+
+        const held = await registry.create(request("Watched from the start"));
+        await held.workspace.appendEvent(EventType.BREAKTHROUGH_RECORDED, {});
+        unsubscribe();
+        await held.workspace.appendEvent(EventType.INVESTIGATION_FAILED, {});
+
+        expect(seen).toEqual([`Watched from the start/${EventType.BREAKTHROUGH_RECORDED}`]);
         await registry.close();
     });
 });

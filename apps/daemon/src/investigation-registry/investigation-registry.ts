@@ -18,6 +18,7 @@ import type {
 } from "#src/investigation-registry/investigation-registry.types";
 import { summarizeInvestigation } from "#src/investigation-registry/investigation-summary";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type { StatusListener } from "#src/investigation-workspace/investigation-workspace.types";
 import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { createHarnesses } from "#src/research-cycle/harness-roster";
@@ -33,6 +34,7 @@ export class InvestigationRegistry {
     readonly #held = new Map<string, HeldInvestigation>();
     readonly #unsubscribes = new Map<string, () => void>();
     readonly #listeners = new Set<RegistryListener>();
+    readonly #eventListeners = new Set<StatusListener>();
     readonly #workspaceRoot: string;
     readonly #persistence: RegistryPersistence;
     readonly #investigations: InvestigationRecords;
@@ -121,9 +123,20 @@ export class InvestigationRegistry {
         return true;
     }
 
+    /** The roster, whenever any investigation in it moves. */
     subscribe(listener: RegistryListener): () => void {
         this.#listeners.add(listener);
         return () => this.#listeners.delete(listener);
+    }
+
+    /**
+     * Every event every investigation writes, as it is written. The roster says which investigation
+     * moved and this says what happened, which is what anything reporting on the lab as a whole
+     * needs: it watches one place rather than each investigation as it is taken on.
+     */
+    subscribeToEvents(listener: StatusListener): () => void {
+        this.#eventListeners.add(listener);
+        return () => this.#eventListeners.delete(listener);
     }
 
     async close(): Promise<void> {
@@ -151,7 +164,12 @@ export class InvestigationRegistry {
         this.#held.set(workspace.investigationId, held);
         this.#unsubscribes.set(
             workspace.investigationId,
-            workspace.subscribe(() => this.#publish())
+            workspace.subscribe((event, snapshot) => {
+                this.#publish();
+                for (const listener of this.#eventListeners) {
+                    listener(event, snapshot);
+                }
+            })
         );
         return held;
     }

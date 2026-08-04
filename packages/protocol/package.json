@@ -54,6 +54,8 @@
         "./operator-notifications/notification-settings.const": "./src/operator-notifications/notification-settings.const.ts",
         "./operator-notifications/notification-settings.schema": "./src/operator-notifications/notification-settings.schema.ts",
         "./operator-notifications/notification-settings.types": "./src/operator-notifications/notification-settings.types.ts",
+        "./operator-notifications/notification-test.schema": "./src/operator-notifications/notification-test.schema.ts",
+        "./operator-notifications/notification-test.types": "./src/operator-notifications/notification-test.types.ts",
         "./lab-storage/lab-storage.schema": "./src/lab-storage/lab-storage.schema.ts",
         "./lab-storage/lab-storage.types": "./src/lab-storage/lab-storage.types.ts",
         "./subscription-allowance/subscription-allowance.const": "./src/subscription-allowance/subscription-allowance.const.ts",
