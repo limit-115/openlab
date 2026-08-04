@@ -32,10 +32,11 @@ import { formatDuration } from "#src/value-display/duration-display";
 import { formatDate } from "#src/value-display/timestamp-display";
 
 interface CapabilityCardProps {
+    investigationId: string;
     request: CapabilityRequest;
 }
 
-export function CapabilityCard({ request }: CapabilityCardProps) {
+export function CapabilityCard({ investigationId, request }: CapabilityCardProps) {
     const command = `lab answer ${request.id} <answer>`;
     const open = request.status === CapabilityStatus.OPEN;
 
@@ -86,7 +87,9 @@ export function CapabilityCard({ request }: CapabilityCardProps) {
                 )}
             </div>
 
-            {open ? <CapabilityAnswerForm requestId={request.id} /> : null}
+            {open ? (
+                <CapabilityAnswerForm investigationId={investigationId} requestId={request.id} />
+            ) : null}
         </article>
     );
 }

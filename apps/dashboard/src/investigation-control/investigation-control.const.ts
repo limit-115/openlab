@@ -17,12 +17,13 @@ export const InvestigationControlAction = {
 export type InvestigationControlAction =
     (typeof InvestigationControlAction)[keyof typeof InvestigationControlAction];
 
-export const INVESTIGATION_CONTROL_ENDPOINT: Record<InvestigationControlAction, string> = {
-    [InvestigationControlAction.PAUSE]: "/api/pause",
-    [InvestigationControlAction.WAKE]: "/api/wake",
-    [InvestigationControlAction.RESUME]: "/api/wake",
-    [InvestigationControlAction.START]: "/api/wake",
-    [InvestigationControlAction.STOP]: "/api/stop"
+/** The transition each control asks for. Three of them are the same one, asked from three states. */
+export const INVESTIGATION_CONTROL_TRANSITION: Record<InvestigationControlAction, string> = {
+    [InvestigationControlAction.PAUSE]: "pause",
+    [InvestigationControlAction.WAKE]: "wake",
+    [InvestigationControlAction.RESUME]: "wake",
+    [InvestigationControlAction.START]: "wake",
+    [InvestigationControlAction.STOP]: "stop"
 };
 
 /**

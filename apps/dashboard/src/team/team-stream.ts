@@ -7,7 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 import { StreamState } from "#src/live-status/status-stream.const";
 import { createAgentActivityStore } from "#src/team/agent-transcript-store";
 import type { AgentActivityState } from "#src/team/agent-transcript-store.types";
-import { AGENT_ACTIVITY_STREAM_URL } from "#src/team/team-stream.const";
+import { agentActivityStreamUrl } from "#src/team/team-stream.const";
 import type { LiveAgents } from "#src/team/team-stream.types";
 
 function selectLiveAgents({ state, agents }: AgentActivityState): LiveAgents {
@@ -20,7 +20,7 @@ function selectLiveAgents({ state, agents }: AgentActivityState): LiveAgents {
  * The stream is opened on mount and closed on unmount, so an investigation nobody is watching pays nothing for
  * the frames it would otherwise have to send.
  */
-export function useAgentActivity(enabled = true): LiveAgents {
+export function useAgentActivity(investigationId: string, enabled = true): LiveAgents {
     const store = useMemo(() => createAgentActivityStore(), []);
     /** The selector builds its result, so it is compared field by field rather than by identity. */
     const live = useStore(store, useShallow(selectLiveAgents));
@@ -33,7 +33,7 @@ export function useAgentActivity(enabled = true): LiveAgents {
             return;
         }
 
-        const source = new EventSource(AGENT_ACTIVITY_STREAM_URL);
+        const source = new EventSource(agentActivityStreamUrl(investigationId));
         const read = (event: Event) => JSON.parse((event as MessageEvent<string>).data);
 
         source.addEventListener(AgentActivityStreamEvent.ROSTER, (event) => {
@@ -61,7 +61,7 @@ export function useAgentActivity(enabled = true): LiveAgents {
             source.close();
             clear();
         };
-    }, [enabled, store]);
+    }, [enabled, investigationId, store]);
 
     return live;
 }

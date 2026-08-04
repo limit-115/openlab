@@ -1,18 +1,26 @@
 import { CAPABILITY_UNREACHABLE } from "#src/capabilities/capability-answer.const";
 import type { CapabilityAnswer } from "#src/capabilities/capability-answer.types";
+import { investigationPath } from "#src/investigation-roster/investigation-address";
 
 /**
  * Settles an open capability request. A refusal keeps the daemon's own wording, because it names
  * what the request already settled as.
  */
-export async function answerCapability({ id, answer }: CapabilityAnswer): Promise<void> {
+export async function answerCapability({
+    investigationId,
+    id,
+    answer
+}: CapabilityAnswer): Promise<void> {
     let response: Response;
     try {
-        response = await fetch(`/api/capabilities/${encodeURIComponent(id)}/answer`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({ answer })
-        });
+        response = await fetch(
+            `${investigationPath(investigationId)}/capabilities/${encodeURIComponent(id)}/answer`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify({ answer })
+            }
+        );
     } catch {
         throw new Error(CAPABILITY_UNREACHABLE);
     }

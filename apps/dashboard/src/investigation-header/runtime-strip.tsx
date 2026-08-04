@@ -5,15 +5,17 @@ import { ActivityIcon } from "lucide-react";
 import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/investigation-header/elapsed-time";
 import {
-    INVESTIGATION_STATE_LABEL,
     RUNTIME_AGENT_COUNT,
     RUNTIME_ICON,
     RUNTIME_READING,
     RUNTIME_STRIP,
-    RUNTIME_STRIP_VALUE,
+    RUNTIME_STRIP_VALUE
+} from "#src/investigation-header/runtime-strip.const";
+import {
+    INVESTIGATION_STATE_LABEL,
     STATE_DOT,
     STATE_DOT_TONE
-} from "#src/investigation-header/runtime-strip.const";
+} from "#src/investigation-state/investigation-state-display.const";
 import { ConnectionBadge } from "#src/live-status/connection-badge";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
 import { formatDuration } from "#src/value-display/duration-display";

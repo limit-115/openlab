@@ -21,10 +21,10 @@ describe("sendInvestigationControl", () => {
     it("posts to the endpoint that owns the transition", async () => {
         const fetchMock = answerWith(statusFixture);
 
-        await sendInvestigationControl(InvestigationControlAction.WAKE);
+        await sendInvestigationControl("investigation-alpha-2026", InvestigationControlAction.WAKE);
 
         expect(fetchMock).toHaveBeenCalledWith(
-            "/api/wake",
+            "/api/investigations/investigation-alpha-2026/wake",
             expect.objectContaining({ method: "POST" })
         );
     });
@@ -32,16 +32,16 @@ describe("sendInvestigationControl", () => {
     it("keeps the daemon's own wording when it refuses the transition", async () => {
         answerWith({ error: "Cannot wake investigation from RUNNING" }, 409);
 
-        await expect(sendInvestigationControl(InvestigationControlAction.WAKE)).rejects.toThrow(
-            "Cannot wake investigation from RUNNING"
-        );
+        await expect(
+            sendInvestigationControl("investigation-alpha-2026", InvestigationControlAction.WAKE)
+        ).rejects.toThrow("Cannot wake investigation from RUNNING");
     });
 
     it("reports an unreachable daemon rather than a transport failure", async () => {
         vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
 
-        await expect(sendInvestigationControl(InvestigationControlAction.STOP)).rejects.toThrow(
-            INVESTIGATION_CONTROL_UNREACHABLE
-        );
+        await expect(
+            sendInvestigationControl("investigation-alpha-2026", InvestigationControlAction.STOP)
+        ).rejects.toThrow(INVESTIGATION_CONTROL_UNREACHABLE);
     });
 });

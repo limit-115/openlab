@@ -15,7 +15,10 @@ export function OverviewView() {
             <MissionOverview snapshot={snapshot} />
             <BreakthroughBanner snapshot={snapshot} />
             <OutcomePanel snapshot={snapshot} />
-            <CapabilitiesPanel requests={snapshot.capability_requests} />
+            <CapabilitiesPanel
+                investigationId={snapshot.investigation.id}
+                requests={snapshot.capability_requests}
+            />
             <AssumptionsPanel
                 assumptions={snapshot.assumptions}
                 findings={snapshot.findings}

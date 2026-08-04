@@ -1,14 +1,35 @@
-/** The three addresses the dashboard answers on. */
-export const DashboardRoute = {
-    OVERVIEW: "/",
-    TEAM: "/team",
+/** The two addresses that belong to the lab itself rather than to one investigation. */
+export const LabRoute = {
+    ROSTER: "/",
     SUBSCRIPTIONS: "/subscriptions"
 } as const;
-export type DashboardRoute = (typeof DashboardRoute)[keyof typeof DashboardRoute];
+export type LabRoute = (typeof LabRoute)[keyof typeof LabRoute];
 
-/** The addresses the header links to, in the order an operator reads them. */
-export const DASHBOARD_VIEWS = [
-    { route: DashboardRoute.OVERVIEW, label: "Overview" },
-    { route: DashboardRoute.TEAM, label: "Team" },
-    { route: DashboardRoute.SUBSCRIPTIONS, label: "Subscriptions" }
+export const INVESTIGATION_ROUTE = "/investigations/:id" as const;
+
+/** The views one investigation is read through, as path segments under its own address. */
+export const InvestigationView = {
+    OVERVIEW: "",
+    TEAM: "team"
+} as const;
+export type InvestigationView = (typeof InvestigationView)[keyof typeof InvestigationView];
+
+export function investigationView(
+    investigationId: string,
+    view: InvestigationView = InvestigationView.OVERVIEW
+): string {
+    const address = `/investigations/${encodeURIComponent(investigationId)}`;
+    return view === InvestigationView.OVERVIEW ? address : `${address}/${view}`;
+}
+
+/** The addresses the lab header links to, in the order an operator reads them. */
+export const LAB_VIEWS = [
+    { route: LabRoute.ROSTER, label: "Investigations" },
+    { route: LabRoute.SUBSCRIPTIONS, label: "Subscriptions" }
+] as const;
+
+/** The views one investigation offers, in the order its header lists them. */
+export const INVESTIGATION_VIEWS = [
+    { view: InvestigationView.OVERVIEW, label: "Overview" },
+    { view: InvestigationView.TEAM, label: "Team" }
 ] as const;

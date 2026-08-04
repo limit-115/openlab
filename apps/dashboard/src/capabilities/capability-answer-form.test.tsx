@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ANSWER_LABEL } from "#src/capabilities/capability-answer.const";
 import { CapabilityAnswerForm } from "#src/capabilities/capability-answer-form";
 
+const INVESTIGATION_ID = "investigation-alpha-2026";
 const REQUEST_ID = "capability-dataset";
 
 const REFUSAL = "Not giving you this one, rebuild it from the public mirrors";
@@ -24,7 +25,10 @@ function renderForm() {
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     return render(
         <QueryClientProvider client={client}>
-            <CapabilityAnswerForm requestId={REQUEST_ID} />
+            <CapabilityAnswerForm
+                investigationId="investigation-alpha-2026"
+                requestId={REQUEST_ID}
+            />
         </QueryClientProvider>
     );
 }
@@ -39,7 +43,7 @@ describe("CapabilityAnswerForm", () => {
         await user.click(screen.getByRole("button", { name: "Answer" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
-            `/api/capabilities/${REQUEST_ID}/answer`,
+            `/api/investigations/${INVESTIGATION_ID}/capabilities/${REQUEST_ID}/answer`,
             expect.objectContaining({
                 method: "POST",
                 body: JSON.stringify({ answer: REFUSAL })
@@ -57,7 +61,7 @@ describe("CapabilityAnswerForm", () => {
         await user.click(screen.getByRole("button", { name: "Answer" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
-            `/api/capabilities/${REQUEST_ID}/answer`,
+            `/api/investigations/${INVESTIGATION_ID}/capabilities/${REQUEST_ID}/answer`,
             expect.objectContaining({ body: JSON.stringify({ answer: credential }) })
         );
     });

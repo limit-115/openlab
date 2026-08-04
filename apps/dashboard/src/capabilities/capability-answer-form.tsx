@@ -18,6 +18,7 @@ import { Textarea } from "#src/design-system/textarea";
 import { statusQueryKey } from "#src/live-status/status-client";
 
 interface CapabilityAnswerFormProps {
+    investigationId: string;
     requestId: string;
 }
 
@@ -25,7 +26,7 @@ interface CapabilityAnswerFormProps {
  * Answers an open capability request. Nothing here inspects the prose: an operator who wants to say
  * no, or to say go build it yourself, is answering just as completely as one handing over a secret.
  */
-export function CapabilityAnswerForm({ requestId }: CapabilityAnswerFormProps) {
+export function CapabilityAnswerForm({ investigationId, requestId }: CapabilityAnswerFormProps) {
     const queryClient = useQueryClient();
     const fieldId = useId();
     const [answer, setAnswer] = useState("");
@@ -33,13 +34,13 @@ export function CapabilityAnswerForm({ requestId }: CapabilityAnswerFormProps) {
         mutationFn: answerCapability,
         onSuccess: () => {
             setAnswer("");
-            void queryClient.invalidateQueries({ queryKey: statusQueryKey });
+            void queryClient.invalidateQueries({ queryKey: statusQueryKey(investigationId) });
         }
     });
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        submission.mutate({ id: requestId, answer: answer.trim() });
+        submission.mutate({ investigationId, id: requestId, answer: answer.trim() });
     }
 
     const failure = submission.error?.message;

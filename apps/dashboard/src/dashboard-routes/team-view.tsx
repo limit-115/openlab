@@ -9,7 +9,7 @@ import { useAgentActivity } from "#src/team/team-stream";
  */
 export function TeamView() {
     const snapshot = useOutletContext<StatusSnapshot>();
-    const { agents } = useAgentActivity();
+    const { agents } = useAgentActivity(snapshot.investigation.id);
 
     return <TeamPanel agents={agents} runs={snapshot.runs} />;
 }

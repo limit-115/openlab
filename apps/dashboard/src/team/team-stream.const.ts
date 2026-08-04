@@ -1,1 +1,5 @@
-export const AGENT_ACTIVITY_STREAM_URL = "/api/agents/activity" as const;
+import { investigationPath } from "#src/investigation-roster/investigation-address";
+
+export function agentActivityStreamUrl(investigationId: string): string {
+    return `${investigationPath(investigationId)}/agents/activity`;
+}

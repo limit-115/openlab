@@ -11,7 +11,7 @@ import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
 
 function StreamObserver() {
-    const stream = useLiveStatus();
+    const stream = useLiveStatus("investigation-alpha-2026");
     return <output>{stream.state}</output>;
 }
 
@@ -29,7 +29,7 @@ describe("useLiveStatus", () => {
 
     it("tracks reconnect state and appends typed investigation events", async () => {
         const client = new QueryClient();
-        client.setQueryData(statusQueryKey, statusFixture);
+        client.setQueryData(statusQueryKey("investigation-alpha-2026"), statusFixture);
         render(<StreamObserver />, { wrapper: wrapper(client) });
         const source = FakeEventSource.instances[0];
         expect(source).toBeDefined();
@@ -48,7 +48,9 @@ describe("useLiveStatus", () => {
 
         await waitFor(() => {
             expect(
-                client.getQueryData<typeof statusFixture>(statusQueryKey)?.recent_events[0]
+                client.getQueryData<typeof statusFixture>(
+                    statusQueryKey("investigation-alpha-2026")
+                )?.recent_events[0]
             ).toEqual(event);
         });
 

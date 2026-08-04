@@ -4,6 +4,7 @@ import { CAPABILITY_LIST } from "#src/capabilities/capabilities-panel.const";
 import { CapabilityCard } from "#src/capabilities/capability-card";
 
 interface CapabilitiesPanelProps {
+    investigationId: string;
     requests: CapabilityRequest[];
 }
 
@@ -11,7 +12,7 @@ interface CapabilitiesPanelProps {
  * Nothing is drawn while the investigation has everything it needs. A panel saying so would take the place a
  * real request has to be noticed in, and there is no news in an investigation that is not blocked.
  */
-export function CapabilitiesPanel({ requests }: CapabilitiesPanelProps) {
+export function CapabilitiesPanel({ investigationId, requests }: CapabilitiesPanelProps) {
     if (requests.length === 0) {
         return null;
     }
@@ -27,7 +28,7 @@ export function CapabilitiesPanel({ requests }: CapabilitiesPanelProps) {
         <ul className={CAPABILITY_LIST} aria-label="Capability requests">
             {ordered.map((request) => (
                 <li key={request.id}>
-                    <CapabilityCard request={request} />
+                    <CapabilityCard investigationId={investigationId} request={request} />
                 </li>
             ))}
         </ul>

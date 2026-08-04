@@ -15,7 +15,7 @@ describe("fetchStatus", () => {
             )
         );
 
-        await expect(fetchStatus()).resolves.toEqual(statusFixture);
+        await expect(fetchStatus("investigation-alpha-2026")).resolves.toEqual(statusFixture);
     });
 
     it("rejects a malformed runtime payload", async () => {
@@ -28,14 +28,30 @@ describe("fetchStatus", () => {
             )
         );
 
-        await expect(fetchStatus()).rejects.toThrow();
+        await expect(fetchStatus("investigation-alpha-2026")).rejects.toThrow();
     });
 
-    it("returns an actionable message when no investigation exists", async () => {
+    it("says the investigation is gone rather than reporting a bare 404", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 404 })));
 
-        const request = fetchStatus();
+        const request = fetchStatus("investigation-alpha-2026");
         await expect(request).rejects.toBeInstanceOf(StatusRequestError);
-        await expect(request).rejects.toThrow("Start one from the CLI");
+        await expect(request).rejects.toThrow("not holding this investigation");
+    });
+
+    it("asks for the investigation the caller named", async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+            new Response(JSON.stringify(statusFixture), {
+                headers: { "Content-Type": "application/json" }
+            })
+        );
+        vi.stubGlobal("fetch", fetchMock);
+
+        await fetchStatus("investigation alpha");
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            "/api/investigations/investigation%20alpha/status",
+            expect.anything()
+        );
     });
 });

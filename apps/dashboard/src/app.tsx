@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Outlet } from "react-router";
+import { Outlet, useParams } from "react-router";
 import { APP_FOOTER, APP_SHELL, DASHBOARD, PAGE_FRAME } from "#src/app.const";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
@@ -10,12 +10,16 @@ import { fetchStatus, statusQueryKey } from "#src/live-status/status-client";
 import { useLiveStatus } from "#src/live-status/status-stream";
 import { StreamState } from "#src/live-status/status-stream.const";
 
-/** The shell every view is shown in: it resolves the snapshot once and hands it to the route. */
-export function App() {
-    const stream = useLiveStatus();
+/**
+ * The shell one investigation is shown in: it resolves that investigation's snapshot once and hands
+ * it to whichever of its views is open.
+ */
+export function InvestigationShell() {
+    const investigationId = useParams().id ?? "";
+    const stream = useLiveStatus(investigationId);
     const statusQuery = useQuery({
-        queryKey: statusQueryKey,
-        queryFn: ({ signal }) => fetchStatus(signal),
+        queryKey: statusQueryKey(investigationId),
+        queryFn: ({ signal }) => fetchStatus(investigationId, signal),
         retry: 2,
         staleTime: 5_000,
         refetchInterval: stream.state === StreamState.LIVE ? false : 10_000,
@@ -52,7 +56,10 @@ export function App() {
             <footer className={cn(PAGE_FRAME, APP_FOOTER)}>
                 <span>AI Research Lab · Local runtime</span>
             </footer>
-            <InvestigationControls state={snapshot.investigation.state} />
+            <InvestigationControls
+                investigationId={snapshot.investigation.id}
+                state={snapshot.investigation.state}
+            />
         </div>
     );
 }

@@ -22,7 +22,7 @@ function renderControls(state: InvestigationState) {
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     const view = render(
         <QueryClientProvider client={client}>
-            <InvestigationControls state={state} />
+            <InvestigationControls investigationId="investigation-alpha-2026" state={state} />
         </QueryClientProvider>
     );
     return { ...view, client };
@@ -41,11 +41,11 @@ describe("InvestigationControls", () => {
         await user.click(screen.getByRole("button", { name: "Wake" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
-            "/api/wake",
+            "/api/investigations/investigation-alpha-2026/wake",
             expect.objectContaining({ method: "POST" })
         );
         await vi.waitFor(() =>
-            expect(client.getQueryData(statusQueryKey)).toMatchObject({
+            expect(client.getQueryData(statusQueryKey("investigation-alpha-2026"))).toMatchObject({
                 investigation: { state: InvestigationState.RUNNING }
             })
         );
@@ -66,7 +66,7 @@ describe("InvestigationControls", () => {
         await user.click(screen.getByRole("button", { name: "Stop the run" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
-            "/api/stop",
+            "/api/investigations/investigation-alpha-2026/stop",
             expect.objectContaining({ method: "POST" })
         );
     });
@@ -83,11 +83,11 @@ describe("InvestigationControls", () => {
         await user.click(screen.getByRole("button", { name: "Pause" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
-            "/api/pause",
+            "/api/investigations/investigation-alpha-2026/pause",
             expect.objectContaining({ method: "POST" })
         );
         await vi.waitFor(() =>
-            expect(client.getQueryData(statusQueryKey)).toMatchObject({
+            expect(client.getQueryData(statusQueryKey("investigation-alpha-2026"))).toMatchObject({
                 investigation: { state: InvestigationState.HIBERNATING }
             })
         );
@@ -105,11 +105,11 @@ describe("InvestigationControls", () => {
         await user.click(screen.getByRole("button", { name: "Start" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
-            "/api/wake",
+            "/api/investigations/investigation-alpha-2026/wake",
             expect.objectContaining({ method: "POST" })
         );
         await vi.waitFor(() =>
-            expect(client.getQueryData(statusQueryKey)).toMatchObject({
+            expect(client.getQueryData(statusQueryKey("investigation-alpha-2026"))).toMatchObject({
                 investigation: { state: InvestigationState.RUNNING }
             })
         );
@@ -128,7 +128,7 @@ describe("InvestigationControls", () => {
         await user.click(screen.getByRole("button", { name: "Resume" }));
 
         expect(fetchMock).toHaveBeenCalledWith(
-            "/api/wake",
+            "/api/investigations/investigation-alpha-2026/wake",
             expect.objectContaining({ method: "POST" })
         );
     });

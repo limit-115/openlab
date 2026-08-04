@@ -1,24 +1,29 @@
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import {
-    INVESTIGATION_CONTROL_ENDPOINT,
+    INVESTIGATION_CONTROL_TRANSITION,
     INVESTIGATION_CONTROL_UNREACHABLE,
     type InvestigationControlAction
 } from "#src/investigation-control/investigation-control.const";
+import { investigationPath } from "#src/investigation-roster/investigation-address";
 
 /**
  * Runs a lifecycle control and returns the snapshot the daemon settled on. A refusal keeps the
  * daemon's own wording, because it names the state that blocked the transition.
  */
 export async function sendInvestigationControl(
+    investigationId: string,
     action: InvestigationControlAction
 ): Promise<StatusSnapshot> {
     let response: Response;
     try {
-        response = await fetch(INVESTIGATION_CONTROL_ENDPOINT[action], {
-            method: "POST",
-            headers: { Accept: "application/json" }
-        });
+        response = await fetch(
+            `${investigationPath(investigationId)}/${INVESTIGATION_CONTROL_TRANSITION[action]}`,
+            {
+                method: "POST",
+                headers: { Accept: "application/json" }
+            }
+        );
     } catch {
         throw new Error(INVESTIGATION_CONTROL_UNREACHABLE);
     }

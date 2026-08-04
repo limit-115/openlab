@@ -7,7 +7,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
-import { INVESTIGATION_STATE_LABEL } from "#src/investigation-header/runtime-strip.const";
+import { INVESTIGATION_STATE_LABEL } from "#src/investigation-state/investigation-state-display.const";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
 import { ThemeProvider } from "#src/theme/theme-provider";
@@ -31,9 +31,10 @@ function wrapper() {
 }
 
 function renderDashboard() {
-    return render(<RouterProvider router={createMemoryRouter(dashboardRoutes)} />, {
-        wrapper: wrapper()
+    const router = createMemoryRouter(dashboardRoutes, {
+        initialEntries: [`/investigations/${statusFixture.investigation.id}`]
     });
+    return render(<RouterProvider router={router} />, { wrapper: wrapper() });
 }
 
 function respondWith(payload: unknown) {
@@ -57,7 +58,9 @@ describe("App", () => {
         respondWith(statusFixture);
         renderDashboard();
 
-        expect(await screen.findByText(statusFixture.investigation.goal)).toBeInTheDocument();
+        expect(
+            await screen.findByRole("heading", { name: statusFixture.investigation.goal })
+        ).toBeInTheDocument();
         expect(
             screen.getByText(statusFixture.assumptions[0]?.statement ?? "missing")
         ).toBeInTheDocument();
@@ -152,7 +155,9 @@ describe("App", () => {
         respondWith({ ...statusFixture, capability_requests: [] });
         renderDashboard();
 
-        expect(await screen.findByText(statusFixture.investigation.goal)).toBeInTheDocument();
+        expect(
+            await screen.findByRole("heading", { name: statusFixture.investigation.goal })
+        ).toBeInTheDocument();
         expect(screen.queryByRole("list", { name: "Capability requests" })).toBeNull();
     });
 

@@ -4,6 +4,7 @@ import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { investigationPath } from "#src/investigation-roster/investigation-address";
 import { statusQueryKey } from "#src/live-status/status-client";
 import { StreamEventType, StreamState } from "#src/live-status/status-stream.const";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
@@ -23,7 +24,7 @@ function prependEvent(snapshot: StatusSnapshot, event: InvestigationEvent): Stat
     };
 }
 
-export function useLiveStatus(enabled = true): LiveStatus {
+export function useLiveStatus(investigationId: string, enabled = true): LiveStatus {
     const queryClient = useQueryClient();
     const [status, setStatus] = useState<LiveStatus>({ state: StreamState.CONNECTING });
 
@@ -33,7 +34,7 @@ export function useLiveStatus(enabled = true): LiveStatus {
             return;
         }
 
-        const source = new EventSource("/api/events");
+        const source = new EventSource(`${investigationPath(investigationId)}/events`);
 
         const markProtocolError = (error: unknown) => {
             const message = error instanceof Error ? error.message : "Invalid live update";
@@ -45,7 +46,7 @@ export function useLiveStatus(enabled = true): LiveStatus {
                 const snapshot = StatusSnapshotSchema.parse(
                     readPayload(event as MessageEvent<string>)
                 );
-                queryClient.setQueryData(statusQueryKey, snapshot);
+                queryClient.setQueryData(statusQueryKey(investigationId), snapshot);
                 setStatus({ state: StreamState.LIVE });
             } catch (error) {
                 markProtocolError(error);
@@ -57,11 +58,12 @@ export function useLiveStatus(enabled = true): LiveStatus {
                 const labEvent = InvestigationEventSchema.parse(
                     readPayload(event as MessageEvent<string>)
                 );
-                queryClient.setQueryData<StatusSnapshot>(statusQueryKey, (snapshot) =>
-                    snapshot ? prependEvent(snapshot, labEvent) : snapshot
+                queryClient.setQueryData<StatusSnapshot>(
+                    statusQueryKey(investigationId),
+                    (snapshot) => (snapshot ? prependEvent(snapshot, labEvent) : snapshot)
                 );
                 setStatus({ state: StreamState.LIVE });
-                void queryClient.invalidateQueries({ queryKey: statusQueryKey });
+                void queryClient.invalidateQueries({ queryKey: statusQueryKey(investigationId) });
             } catch (error) {
                 markProtocolError(error);
             }
@@ -87,7 +89,7 @@ export function useLiveStatus(enabled = true): LiveStatus {
         return () => {
             source.close();
         };
-    }, [enabled, queryClient]);
+    }, [enabled, investigationId, queryClient]);
 
     return status;
 }

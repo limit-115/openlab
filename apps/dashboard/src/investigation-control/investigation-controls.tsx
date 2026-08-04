@@ -12,6 +12,7 @@ import { sendInvestigationControl } from "#src/investigation-control/investigati
 import { statusQueryKey } from "#src/live-status/status-client";
 
 interface InvestigationControlsProps {
+    investigationId: string;
     state: InvestigationState;
 }
 
@@ -20,11 +21,12 @@ interface InvestigationControlsProps {
  * the current state allows are offered, so a failed run leaves the corner empty and every other
  * state carries its way out of itself.
  */
-export function InvestigationControls({ state }: InvestigationControlsProps) {
+export function InvestigationControls({ investigationId, state }: InvestigationControlsProps) {
     const queryClient = useQueryClient();
     const control = useMutation({
-        mutationFn: sendInvestigationControl,
-        onSuccess: (snapshot) => queryClient.setQueryData(statusQueryKey, snapshot)
+        mutationFn: (action: InvestigationControlAction) =>
+            sendInvestigationControl(investigationId, action),
+        onSuccess: (snapshot) => queryClient.setQueryData(statusQueryKey(investigationId), snapshot)
     });
 
     const offered = Object.values(InvestigationControlAction).filter((action) =>
