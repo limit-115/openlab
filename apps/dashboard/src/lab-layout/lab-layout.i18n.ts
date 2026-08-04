@@ -1,3 +1,4 @@
+import type { Translated } from "#src/interface-language/translation-catalog.types";
 import { LabPlace } from "#src/lab-layout/lab-layout.const";
 
 export const LAB_LAYOUT_NAMESPACE = "lab-layout" as const;
@@ -16,4 +17,4 @@ export const LAB_LAYOUT_RU = {
     subtitle: "Локальная среда",
     [LabPlace.ROSTER]: "Исследования",
     [LabPlace.SETTINGS]: "Настройки"
-} satisfies typeof LAB_LAYOUT_EN;
+} satisfies Translated<typeof LAB_LAYOUT_EN>;

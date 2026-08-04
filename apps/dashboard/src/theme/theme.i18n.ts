@@ -1,3 +1,4 @@
+import type { Translated } from "#src/interface-language/translation-catalog.types";
 import { Theme } from "#src/theme/theme.const";
 
 export const THEME_NAMESPACE = "theme" as const;
@@ -14,4 +15,4 @@ export const THEME_RU = {
     [Theme.LIGHT]: "Светлая",
     [Theme.DARK]: "Тёмная",
     [Theme.SYSTEM]: "Системная"
-} satisfies typeof THEME_EN;
+} satisfies Translated<typeof THEME_EN>;

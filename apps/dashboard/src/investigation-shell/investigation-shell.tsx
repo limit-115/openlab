@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
 import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
@@ -9,6 +10,7 @@ import {
     INVESTIGATION_DASHBOARD,
     INVESTIGATION_PAGE
 } from "#src/investigation-shell/investigation-shell.const";
+import { INVESTIGATION_SHELL_NAMESPACE } from "#src/investigation-shell/investigation-shell.i18n";
 import { OverviewView } from "#src/investigation-shell/overview-view";
 import { TeamView } from "#src/investigation-shell/team-view";
 import { fetchStatus, statusQueryKey } from "#src/live-status/status-client";
@@ -20,6 +22,7 @@ import { StreamState } from "#src/live-status/status-stream.const";
  * investigation's boundary, not a shell: the layout around it is the one every page opens in.
  */
 export function InvestigationShell() {
+    const { t } = useTranslation(INVESTIGATION_SHELL_NAMESPACE);
     const investigationId = useParams().id ?? "";
     const stream = useLiveStatus(investigationId);
     const statusQuery = useQuery({
@@ -39,7 +42,7 @@ export function InvestigationShell() {
         const error =
             statusQuery.error instanceof Error
                 ? statusQuery.error
-                : new Error("The local runtime did not return a status snapshot.");
+                : new Error(t("missingSnapshot"));
 
         return (
             <ErrorDashboard

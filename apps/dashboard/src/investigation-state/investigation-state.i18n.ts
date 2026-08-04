@@ -1,4 +1,5 @@
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { Translated } from "#src/interface-language/translation-catalog.types";
 
 export const INVESTIGATION_STATE_NAMESPACE = "investigation-state" as const;
 
@@ -20,4 +21,4 @@ export const INVESTIGATION_STATE_RU = {
     [InvestigationState.BREAKTHROUGH]: "Прорыв",
     [InvestigationState.FAILED]: "Сбой",
     [InvestigationState.STOPPED]: "Остановлено"
-} satisfies typeof INVESTIGATION_STATE_EN;
+} satisfies Translated<typeof INVESTIGATION_STATE_EN>;

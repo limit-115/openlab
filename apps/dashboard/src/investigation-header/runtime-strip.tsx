@@ -5,6 +5,7 @@ import { ActivityIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/investigation-header/elapsed-time";
+import { INVESTIGATION_HEADER_NAMESPACE } from "#src/investigation-header/investigation-header.i18n";
 import {
     RUNTIME_AGENT_COUNT,
     RUNTIME_ICON,
@@ -27,7 +28,8 @@ interface RuntimeStripProps {
 }
 
 export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
-    const { t } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
+    const { t } = useTranslation(INVESTIGATION_HEADER_NAMESPACE);
+    const { t: state } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
     const uptime = useElapsedTime(
         snapshot.investigation.uptime_ms,
         snapshot.investigation.updated_at,
@@ -38,18 +40,22 @@ export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
     ).length;
 
     return (
-        <div className={RUNTIME_STRIP} role="status" aria-label="Lab runtime status">
+        <div className={RUNTIME_STRIP} role="status" aria-label={t("runtime")}>
             <span className={RUNTIME_READING}>
                 <span
                     className={cn(STATE_DOT, STATE_DOT_TONE[snapshot.investigation.state])}
                     aria-hidden="true"
                 />
-                <strong className={RUNTIME_STRIP_VALUE}>{t(snapshot.investigation.state)}</strong>
+                <strong className={RUNTIME_STRIP_VALUE}>
+                    {state(snapshot.investigation.state)}
+                </strong>
             </span>
             <span className={RUNTIME_READING}>
                 <ActivityIcon className={RUNTIME_ICON} aria-hidden="true" />
                 <strong className={RUNTIME_STRIP_VALUE}>{formatDuration(uptime)}</strong>
-                <span className={RUNTIME_AGENT_COUNT}>· {activeAgents} active</span>
+                <span className={RUNTIME_AGENT_COUNT}>
+                    · {t("activeAgents", { count: activeAgents })}
+                </span>
             </span>
             <ConnectionBadge stream={stream} />
         </div>

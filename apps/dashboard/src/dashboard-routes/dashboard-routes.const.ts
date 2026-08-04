@@ -19,7 +19,4 @@ export const InvestigationView = {
 export type InvestigationView = (typeof InvestigationView)[keyof typeof InvestigationView];
 
 /** The views one investigation offers, in the order its tabs list them. */
-export const INVESTIGATION_VIEWS = [
-    { view: InvestigationView.OVERVIEW, label: "Overview" },
-    { view: InvestigationView.TEAM, label: "Team" }
-] as const;
+export const INVESTIGATION_VIEWS = [InvestigationView.OVERVIEW, InvestigationView.TEAM] as const;

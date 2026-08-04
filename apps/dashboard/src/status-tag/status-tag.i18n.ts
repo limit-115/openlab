@@ -2,6 +2,7 @@ import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const"
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
+import type { Translated } from "#src/interface-language/translation-catalog.types";
 import type { TaggedStatus } from "#src/status-tag/status-tag.types";
 
 export const STATUS_TAG_NAMESPACE = "status-tag" as const;
@@ -41,4 +42,4 @@ export const STATUS_TAG_RU = {
     [FindingStatus.UNVERIFIED]: "Не проверено",
     [FindingStatus.REFUTED]: "Опровергнуто",
     [CapabilityStatus.ANSWERED]: "Отвечено"
-} satisfies typeof STATUS_TAG_EN;
+} satisfies Translated<typeof STATUS_TAG_EN>;
