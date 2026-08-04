@@ -1,9 +1,12 @@
 import { Outlet } from "react-router";
 import { cn } from "#src/design-system/class-names";
+import { Separator } from "#src/design-system/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "#src/design-system/sidebar";
+import { LabBreadcrumbs } from "#src/lab-layout/lab-breadcrumbs";
 import {
     LAYOUT_BAR,
     LAYOUT_BAR_ROW,
+    LAYOUT_BAR_TRAIL,
     LAYOUT_BODY,
     LAYOUT_FRAME,
     LAYOUT_INSET,
@@ -21,7 +24,11 @@ export function LabLayout() {
             <SidebarInset className={LAYOUT_INSET}>
                 <header className={LAYOUT_BAR}>
                     <div className={cn(LAYOUT_FRAME, LAYOUT_BAR_ROW)}>
-                        <SidebarTrigger className="-ml-1" />
+                        <div className={LAYOUT_BAR_TRAIL}>
+                            <SidebarTrigger className="-ml-1" />
+                            <Separator orientation="vertical" className="mr-1 h-4" />
+                            <LabBreadcrumbs />
+                        </div>
                         <ModeToggle />
                     </div>
                 </header>

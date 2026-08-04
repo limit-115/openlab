@@ -23,6 +23,9 @@ export const LAYOUT_BAR = "shrink-0 border-b" as const;
 
 export const LAYOUT_BAR_ROW = "flex items-center justify-between gap-4 py-3" as const;
 
+/** The way into the sidebar and the way back up the trail read as one group, so they sit together. */
+export const LAYOUT_BAR_TRAIL = "flex min-w-0 items-center gap-2" as const;
+
 /** The one scrolling region of the layout: everything the open page put in the inset. */
 export const LAYOUT_SCROLLER = "min-h-0 flex-1 overflow-y-auto" as const;
 
