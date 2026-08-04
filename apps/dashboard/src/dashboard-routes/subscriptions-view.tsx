@@ -55,7 +55,7 @@ export function SubscriptionsView() {
             <AllowanceReadingHeader
                 readAt={allowanceReadingTime(allowances.data)}
                 refresh={() => refresh.mutate()}
-                refreshing={refresh.isPending}
+                reading={refresh.isPending || allowances.isFetching}
                 failed={refresh.isError}
             />
             <SubscriptionAllowancePanel allowances={allowances.data} />
