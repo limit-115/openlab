@@ -7,7 +7,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
-import { INVESTIGATION_STATE_LABEL } from "#src/investigation-state/investigation-state-display.const";
+import { INVESTIGATION_STATE_EN } from "#src/investigation-state/investigation-state.i18n";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { statusFixture } from "#src/test-support/status-fixture";
 import { ThemeProvider } from "#src/theme/theme-provider";
@@ -131,7 +131,7 @@ describe("InvestigationShell", () => {
 
         const runtime = screen.getByRole("status", { name: "Lab runtime status" });
         expect(
-            await within(runtime).findByText(INVESTIGATION_STATE_LABEL[InvestigationState.RUNNING])
+            await within(runtime).findByText(INVESTIGATION_STATE_EN[InvestigationState.RUNNING])
         ).toBeInTheDocument();
         expect(screen.queryByRole("button", { name: "Wake" })).not.toBeInTheDocument();
     });

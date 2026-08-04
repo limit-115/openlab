@@ -4,6 +4,11 @@ import {
     INTERFACE_LANGUAGE_RU
 } from "#src/interface-language/interface-language.i18n";
 import {
+    INVESTIGATION_STATE_EN,
+    INVESTIGATION_STATE_NAMESPACE,
+    INVESTIGATION_STATE_RU
+} from "#src/investigation-state/investigation-state.i18n";
+import {
     LAB_LAYOUT_EN,
     LAB_LAYOUT_NAMESPACE,
     LAB_LAYOUT_RU
@@ -22,6 +27,7 @@ import { THEME_EN, THEME_NAMESPACE, THEME_RU } from "#src/theme/theme.i18n";
  */
 export const EN_TRANSLATIONS = {
     [INTERFACE_LANGUAGE_NAMESPACE]: INTERFACE_LANGUAGE_EN,
+    [INVESTIGATION_STATE_NAMESPACE]: INVESTIGATION_STATE_EN,
     [LAB_LAYOUT_NAMESPACE]: LAB_LAYOUT_EN,
     [STATUS_TAG_NAMESPACE]: STATUS_TAG_EN,
     [THEME_NAMESPACE]: THEME_EN
@@ -30,6 +36,7 @@ export const EN_TRANSLATIONS = {
 /** Measured against the English source, so a namespace nobody translated fails the build. */
 export const RU_TRANSLATIONS = {
     [INTERFACE_LANGUAGE_NAMESPACE]: INTERFACE_LANGUAGE_RU,
+    [INVESTIGATION_STATE_NAMESPACE]: INVESTIGATION_STATE_RU,
     [LAB_LAYOUT_NAMESPACE]: LAB_LAYOUT_RU,
     [STATUS_TAG_NAMESPACE]: STATUS_TAG_RU,
     [THEME_NAMESPACE]: THEME_RU

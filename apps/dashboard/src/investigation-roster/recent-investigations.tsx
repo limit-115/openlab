@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router";
 import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import { cn } from "#src/design-system/class-names";
@@ -19,8 +20,8 @@ import {
     fetchInvestigationRoster,
     investigationRosterQueryKey
 } from "#src/investigation-roster/investigation-roster-client";
+import { INVESTIGATION_STATE_NAMESPACE } from "#src/investigation-state/investigation-state.i18n";
 import {
-    INVESTIGATION_STATE_LABEL,
     STATE_DOT,
     STATE_DOT_TONE
 } from "#src/investigation-state/investigation-state-display.const";
@@ -30,6 +31,7 @@ import {
  * the stream the roster subscribes to moves this list too.
  */
 export function RecentInvestigations() {
+    const { t } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
     const { pathname } = useLocation();
     const roster = useQuery({
         queryKey: investigationRosterQueryKey,
@@ -57,7 +59,7 @@ export function RecentInvestigations() {
                             <SidebarMenuButton
                                 asChild
                                 isActive={pathname === investigationAddress(investigation.id)}
-                                tooltip={`${investigation.goal} · ${INVESTIGATION_STATE_LABEL[investigation.state]}`}
+                                tooltip={`${investigation.goal} · ${t(investigation.state)}`}
                             >
                                 <NavLink to={investigationAddress(investigation.id)}>
                                     <span

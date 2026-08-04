@@ -2,6 +2,7 @@ import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const"
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { ActivityIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/investigation-header/elapsed-time";
 import {
@@ -11,8 +12,8 @@ import {
     RUNTIME_STRIP,
     RUNTIME_STRIP_VALUE
 } from "#src/investigation-header/runtime-strip.const";
+import { INVESTIGATION_STATE_NAMESPACE } from "#src/investigation-state/investigation-state.i18n";
 import {
-    INVESTIGATION_STATE_LABEL,
     STATE_DOT,
     STATE_DOT_TONE
 } from "#src/investigation-state/investigation-state-display.const";
@@ -26,6 +27,7 @@ interface RuntimeStripProps {
 }
 
 export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
+    const { t } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
     const uptime = useElapsedTime(
         snapshot.investigation.uptime_ms,
         snapshot.investigation.updated_at,
@@ -42,9 +44,7 @@ export function RuntimeStrip({ snapshot, stream }: RuntimeStripProps) {
                     className={cn(STATE_DOT, STATE_DOT_TONE[snapshot.investigation.state])}
                     aria-hidden="true"
                 />
-                <strong className={RUNTIME_STRIP_VALUE}>
-                    {INVESTIGATION_STATE_LABEL[snapshot.investigation.state]}
-                </strong>
+                <strong className={RUNTIME_STRIP_VALUE}>{t(snapshot.investigation.state)}</strong>
             </span>
             <span className={RUNTIME_READING}>
                 <ActivityIcon className={RUNTIME_ICON} aria-hidden="true" />

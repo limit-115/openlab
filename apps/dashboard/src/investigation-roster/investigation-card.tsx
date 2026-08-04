@@ -1,5 +1,6 @@
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import { Button } from "#src/design-system/button";
@@ -20,8 +21,8 @@ import {
     FINDINGS_LABEL,
     HARNESSES_LABEL
 } from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_STATE_NAMESPACE } from "#src/investigation-state/investigation-state.i18n";
 import {
-    INVESTIGATION_STATE_LABEL,
     STATE_DOT,
     STATE_DOT_TONE
 } from "#src/investigation-state/investigation-state-display.const";
@@ -38,6 +39,7 @@ interface InvestigationCardProps {
  * looking for; everything else on the card answers whether it is worth opening right now.
  */
 export function InvestigationCard({ investigation, discard, discarding }: InvestigationCardProps) {
+    const { t } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
     const uptime = useElapsedTime(
         investigation.uptime_ms,
         investigation.updated_at,
@@ -55,7 +57,7 @@ export function InvestigationCard({ investigation, discard, discarding }: Invest
                         className={cn(STATE_DOT, STATE_DOT_TONE[investigation.state])}
                         aria-hidden="true"
                     />
-                    {INVESTIGATION_STATE_LABEL[investigation.state]}
+                    {t(investigation.state)}
                 </span>
             </header>
 
