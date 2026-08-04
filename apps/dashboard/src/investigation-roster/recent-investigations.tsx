@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router";
 import { investigationView } from "#src/dashboard-routes/dashboard-routes.const";
+import { cn } from "#src/design-system/class-names";
 import {
     SidebarGroup,
     SidebarGroupContent,
@@ -18,6 +19,11 @@ import {
     fetchInvestigationRoster,
     investigationRosterQueryKey
 } from "#src/investigation-roster/investigation-roster-client";
+import {
+    INVESTIGATION_STATE_LABEL,
+    STATE_DOT,
+    STATE_DOT_TONE
+} from "#src/investigation-state/investigation-state-display.const";
 
 /**
  * The investigations the lab touched last, newest first. It reads the same roster the page does, so
@@ -47,8 +53,18 @@ export function RecentInvestigations() {
                 <SidebarMenu aria-label={RECENTS_LABEL}>
                     {recent.map((investigation) => (
                         <SidebarMenuItem key={investigation.id}>
-                            <SidebarMenuButton asChild tooltip={investigation.goal}>
+                            <SidebarMenuButton
+                                asChild
+                                tooltip={`${investigation.goal} · ${INVESTIGATION_STATE_LABEL[investigation.state]}`}
+                            >
                                 <NavLink to={investigationView(investigation.id)}>
+                                    <span
+                                        className={cn(
+                                            STATE_DOT,
+                                            STATE_DOT_TONE[investigation.state]
+                                        )}
+                                        aria-hidden="true"
+                                    />
                                     <span className={RECENT_GOAL}>{investigation.goal}</span>
                                 </NavLink>
                             </SidebarMenuButton>
