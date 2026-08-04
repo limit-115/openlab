@@ -2,14 +2,11 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { transitionInvestigationState } from "@lab/core/investigation-lifecycle/investigation-state-transitions";
-import { legalInvestigationStateTransitions } from "@lab/core/investigation-lifecycle/investigation-state-transitions.const";
 import type { LifecycleContext } from "@lab/core/investigation-lifecycle/investigation-state-transitions.types";
 import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
-import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
 import type {
     PersistedInvestigationEvent,
-    PersistedRuntime,
-    RecoverableRuntime
+    PersistedRuntime
 } from "@lab/db/runtime/runtime-persistence.types";
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
 import {
@@ -38,17 +35,11 @@ import {
     type InvestigationReportSubject,
     renderInvestigationReport
 } from "#src/investigation-workspace/investigation-report";
+import { resolveRunDirectory } from "#src/investigation-workspace/investigation-run-directory";
 import {
-    type CurrentPointer,
-    CurrentPointerStatus,
-    readCurrentPointer,
-    resolveRunDirectory,
-    writeCurrentPointer
-} from "#src/investigation-workspace/investigation-run-pointer";
-import {
+    WorkspaceFile,
     WorkspaceLayout,
-    WorkspaceMutationAction,
-    WorkspaceRecoveryLimit
+    WorkspaceMutationAction
 } from "#src/investigation-workspace/investigation-workspace.const";
 import type {
     SnapshotUpdater,
@@ -61,6 +52,8 @@ import type {
 export class InvestigationWorkspace {
     readonly runDirectory: string;
     readonly investigationId: string;
+    /** What the operator asked this investigation to do. Fixed for the life of the run. */
+    readonly input: InvestigationInput;
     readonly recovered: boolean;
 
     private readonly mutex = new Mutex();
@@ -73,6 +66,7 @@ export class InvestigationWorkspace {
     private constructor(
         runDirectory: string,
         snapshot: StatusSnapshot,
+        input: InvestigationInput,
         events: InvestigationEvent[],
         recovered: boolean,
         runtimePersistence?: WorkspaceRuntimePersistence,
@@ -80,6 +74,7 @@ export class InvestigationWorkspace {
     ) {
         this.runDirectory = runDirectory;
         this.investigationId = snapshot.investigation.id;
+        this.input = input;
         this.snapshot = snapshot;
         this.events = events;
         this.recovered = recovered;
@@ -87,67 +82,13 @@ export class InvestigationWorkspace {
         this.runtimeRevision = runtimeRevision;
     }
 
-    static async openOrCreate(
+    /** Opens a run directory for an investigation the operator just asked the lab to take on. */
+    static async create(
         workspaceRoot: string,
-        taskPath: string,
+        requestedInput: InvestigationInput,
         runtimePersistence?: WorkspaceRuntimePersistence
     ): Promise<InvestigationWorkspace> {
-        const requestedTask = InvestigationInputSchema.parse(
-            JSON.parse(await readFile(taskPath, "utf8"))
-        );
-        const current = await readCurrentPointer(workspaceRoot);
-        if (current.status === CurrentPointerStatus.VALID) {
-            if (runtimePersistence === undefined) {
-                const workspace = await InvestigationWorkspace.load(
-                    workspaceRoot,
-                    current.pointer.run_directory
-                );
-                const existingTask = await workspace.getTask();
-                if (
-                    InvestigationWorkspace.isResumable(
-                        workspace.getSnapshot().investigation.state
-                    ) &&
-                    InvestigationWorkspace.tasksMatch(existingTask, requestedTask)
-                ) {
-                    return workspace;
-                }
-            } else {
-                const workspace = await InvestigationWorkspace.loadFromRuntime(
-                    workspaceRoot,
-                    current.pointer,
-                    requestedTask,
-                    runtimePersistence
-                );
-                if (workspace !== undefined) {
-                    return workspace;
-                }
-            }
-        }
-        if (runtimePersistence !== undefined) {
-            const recoverable = await InvestigationWorkspace.selectRecoverableRuntime(
-                workspaceRoot,
-                requestedTask,
-                runtimePersistence
-            );
-            if (recoverable !== undefined) {
-                return InvestigationWorkspace.loadPersistedRuntime(
-                    workspaceRoot,
-                    recoverable,
-                    runtimePersistence
-                );
-            }
-        } else if (current.status === CurrentPointerStatus.INVALID) {
-            throw current.error;
-        }
-        return InvestigationWorkspace.initialize(workspaceRoot, taskPath, runtimePersistence);
-    }
-
-    static async initialize(
-        workspaceRoot: string,
-        taskPath: string,
-        runtimePersistence?: WorkspaceRuntimePersistence
-    ): Promise<InvestigationWorkspace> {
-        const task = InvestigationInputSchema.parse(JSON.parse(await readFile(taskPath, "utf8")));
+        const input = InvestigationInputSchema.parse(requestedInput);
         const investigationId = `investigation-${randomUUID()}`;
         const runDirectory = path.join(
             workspaceRoot,
@@ -159,7 +100,7 @@ export class InvestigationWorkspace {
             investigation: {
                 id: investigationId,
                 state: InvestigationState.RUNNING,
-                goal: task.goal,
+                goal: input.goal,
                 started_at: now,
                 updated_at: now,
                 uptime_ms: 0
@@ -167,87 +108,21 @@ export class InvestigationWorkspace {
         });
 
         await mkdir(runDirectory, { recursive: true });
-        const workspace = new InvestigationWorkspace(runDirectory, snapshot, [], false);
-        await workspace.writeJson("task.json", task);
+        const workspace = new InvestigationWorkspace(runDirectory, snapshot, input, [], false);
+        await workspace.writeJson(WorkspaceFile.INPUT, input);
         await workspace.persistFilesystemSnapshot();
         if (runtimePersistence !== undefined) {
-            await workspace.attachRuntimePersistence(runtimePersistence, task);
+            await workspace.startRuntimePersistence(runtimePersistence);
         }
-        await writeCurrentPointer(workspaceRoot, {
-            investigation_id: investigationId,
-            run_directory: runDirectory
-        });
 
         return workspace;
     }
 
-    static async load(
-        workspaceRoot: string,
-        runDirectory: string
-    ): Promise<InvestigationWorkspace> {
-        const resolvedRunDirectory = resolveRunDirectory(workspaceRoot, runDirectory);
-        const [snapshotSource, eventsSource] = await Promise.all([
-            readFile(path.join(resolvedRunDirectory, "status.json"), "utf8"),
-            readFile(path.join(resolvedRunDirectory, "events.json"), "utf8")
-        ]);
-        const snapshot = StatusSnapshotSchema.parse(JSON.parse(snapshotSource));
-        const events = InvestigationEventSchema.array().parse(JSON.parse(eventsSource));
-        return new InvestigationWorkspace(resolvedRunDirectory, snapshot, events, true);
-    }
-
-    private static async loadFromRuntime(
-        workspaceRoot: string,
-        current: CurrentPointer,
-        requestedTask: InvestigationInput,
-        runtimePersistence: WorkspaceRuntimePersistence
-    ): Promise<InvestigationWorkspace | undefined> {
-        resolveRunDirectory(workspaceRoot, current.run_directory);
-        const persisted = await InvestigationWorkspace.loadResumableRuntime(
-            runtimePersistence,
-            current.investigation_id
-        );
-        if (persisted === undefined) {
-            return undefined;
-        }
-        InvestigationWorkspace.validatePersistedRuntime(
-            workspaceRoot,
-            persisted,
-            current.investigation_id
-        );
-        if (!InvestigationWorkspace.tasksMatch(persisted.task, requestedTask)) {
-            return undefined;
-        }
-        if (
-            !InvestigationWorkspace.isResumable(persisted.checkpoint.snapshot.investigation.state)
-        ) {
-            return undefined;
-        }
-        return InvestigationWorkspace.loadPersistedRuntime(
-            workspaceRoot,
-            persisted,
-            runtimePersistence
-        );
-    }
-
     /**
-     * A checkpoint written before a protocol change describes a run this build cannot act on, so it
-     * joins a mismatched task and a failed run as a reason to start fresh rather than resume.
+     * Reopens an investigation the lab already holds. The database checkpoint is the truth: the run
+     * directory is rewritten from it, which is also how a corrupt or half-written file is repaired.
      */
-    private static async loadResumableRuntime(
-        runtimePersistence: WorkspaceRuntimePersistence,
-        investigationId: string
-    ): Promise<PersistedRuntime | undefined> {
-        try {
-            return await runtimePersistence.load(investigationId);
-        } catch (error) {
-            if (error instanceof IncompatibleCheckpointError) {
-                return undefined;
-            }
-            throw error;
-        }
-    }
-
-    private static async loadPersistedRuntime(
+    static async open(
         workspaceRoot: string,
         persisted: PersistedRuntime,
         runtimePersistence: WorkspaceRuntimePersistence
@@ -263,53 +138,15 @@ export class InvestigationWorkspace {
         const workspace = new InvestigationWorkspace(
             runDirectory,
             persisted.checkpoint.snapshot,
+            persisted.task,
             events,
             true,
             runtimePersistence,
             persisted.checkpoint.revision
         );
-        await workspace.writeJson("task.json", persisted.task);
+        await workspace.writeJson(WorkspaceFile.INPUT, persisted.task);
         await workspace.persistFilesystemSnapshot();
-        await writeCurrentPointer(workspaceRoot, {
-            investigation_id: investigationId,
-            run_directory: runDirectory
-        });
         return workspace;
-    }
-
-    private static async selectRecoverableRuntime(
-        workspaceRoot: string,
-        requestedTask: InvestigationInput,
-        runtimePersistence: WorkspaceRuntimePersistence
-    ): Promise<RecoverableRuntime | undefined> {
-        const recoverable = await runtimePersistence.listRecoverable(
-            WorkspaceRecoveryLimit.MAX_RECORDS
-        );
-        const identifierMismatch = recoverable.find(
-            ({ task }) =>
-                requestedTask.id !== undefined &&
-                task.id === requestedTask.id &&
-                !InvestigationWorkspace.tasksMatch(task, requestedTask)
-        );
-        if (identifierMismatch !== undefined) {
-            throw new Error(
-                `Recoverable task ${requestedTask.id} does not match the requested task input`
-            );
-        }
-
-        const matching = recoverable
-            .filter(({ task }) => InvestigationWorkspace.tasksMatch(task, requestedTask))
-            .map((candidate) => {
-                InvestigationWorkspace.validatePersistedRuntime(workspaceRoot, candidate);
-                return candidate;
-            })
-            .sort((left, right) => Date.parse(right.persistedAt) - Date.parse(left.persistedAt));
-        const latest = matching[0];
-        const next = matching[1];
-        if (latest !== undefined && next?.persistedAt === latest.persistedAt) {
-            throw new Error("Multiple recoverable runtimes share the latest checkpoint timestamp");
-        }
-        return latest;
     }
 
     private static validatePersistedRuntime(
@@ -331,25 +168,6 @@ export class InvestigationWorkspace {
             throw new Error("Persisted runtime checkpoint timestamp is invalid");
         }
         resolveRunDirectory(workspaceRoot, persisted.workspacePath);
-    }
-
-    /**
-     * A run the daemon reattaches to rather than replacing with a fresh one. That is the lifecycle's
-     * own question — a settled run is worth reopening exactly when RUNNING is still reachable from
-     * where it settled — so it is read off the state machine instead of being restated here, where a
-     * second copy of the rule would drift from the first.
-     */
-    private static isResumable(state: InvestigationStateValue): boolean {
-        return (
-            state === InvestigationState.RUNNING ||
-            legalInvestigationStateTransitions[state].has(InvestigationState.RUNNING)
-        );
-    }
-
-    getTask(): Promise<InvestigationInput> {
-        return readFile(path.join(this.runDirectory, "task.json"), "utf8").then((value) =>
-            InvestigationInputSchema.parse(JSON.parse(value))
-        );
     }
 
     getSnapshot(): StatusSnapshot {
@@ -457,7 +275,7 @@ export class InvestigationWorkspace {
 
     /** Puts the investigation to sleep once its bets are spent, or once nothing can run it. */
     async hibernate(reason: string): Promise<StatusSnapshot> {
-        const reportPath = path.join(this.runDirectory, "report.md");
+        const reportPath = path.join(this.runDirectory, WorkspaceFile.REPORT);
         await writeFileAtomic(
             reportPath,
             renderInvestigationReport(this.reportSubject(), "Hibernation report", reason)
@@ -492,14 +310,14 @@ export class InvestigationWorkspace {
         if (verdict === undefined || !verdict.confirmed) {
             throw new Error(`Finding ${finding.id} carries no confirming verdict`);
         }
-        const reportPath = path.join(this.runDirectory, "report.md");
-        const resultPath = path.join(this.runDirectory, "result.json");
+        const reportPath = path.join(this.runDirectory, WorkspaceFile.REPORT);
+        const resultPath = path.join(this.runDirectory, WorkspaceFile.RESULT);
         await Promise.all([
             writeFileAtomic(
                 reportPath,
                 renderInvestigationReport(this.reportSubject(), "Breakthrough", finding.claim)
             ),
-            this.writeJson("result.json", {
+            this.writeJson(WorkspaceFile.RESULT, {
                 investigation_id: this.investigationId,
                 status: InvestigationState.BREAKTHROUGH,
                 claim: finding.claim,
@@ -665,45 +483,15 @@ export class InvestigationWorkspace {
         return structuredClone(request);
     }
 
-    private async attachRuntimePersistence(
-        runtimePersistence: WorkspaceRuntimePersistence,
-        task: InvestigationInput
+    /** Writes the row and the first checkpoint a freshly created investigation is committed from. */
+    private async startRuntimePersistence(
+        runtimePersistence: WorkspaceRuntimePersistence
     ): Promise<void> {
-        const persisted = await runtimePersistence.load(this.investigationId);
-        if (persisted !== undefined) {
-            if (!InvestigationWorkspace.tasksMatch(persisted.task, task)) {
-                throw new Error("Persisted runtime task does not match task.json");
-            }
-            if (path.resolve(persisted.workspacePath) !== path.resolve(this.runDirectory)) {
-                throw new Error("Persisted runtime workspace does not match the run directory");
-            }
-            const checkpoint = persisted.checkpoint;
-            this.runtimePersistence = runtimePersistence;
-            this.runtimeRevision = checkpoint.revision;
-            this.snapshot = checkpoint.snapshot;
-            const events = await InvestigationWorkspace.readAllRuntimeEvents(
-                runtimePersistence,
-                this.investigationId
-            );
-            this.events.splice(0, this.events.length, ...events);
-            await this.persistFilesystemSnapshot();
-            return;
-        }
-
-        const [firstEvent, ...remainingEvents] = this.events;
-        let initialized = await runtimePersistence.initialize({
-            task,
+        const initialized = await runtimePersistence.initialize({
+            task: this.input,
             workspacePath: this.runDirectory,
-            snapshot: this.snapshot,
-            ...(firstEvent === undefined ? {} : { event: firstEvent })
+            snapshot: this.snapshot
         });
-        for (const event of remainingEvents) {
-            initialized = await runtimePersistence.commit({
-                snapshot: this.snapshot,
-                expectedRevision: initialized.revision,
-                event
-            });
-        }
         this.runtimePersistence = runtimePersistence;
         this.runtimeRevision = initialized.revision;
         this.snapshot = initialized.snapshot;
@@ -740,9 +528,9 @@ export class InvestigationWorkspace {
 
     private async persistFilesystemSnapshot(): Promise<void> {
         await Promise.all([
-            this.writeJson("status.json", this.snapshot),
-            this.writeJson("events.json", this.events),
-            this.writeJson("assumptions.json", this.researchJournal())
+            this.writeJson(WorkspaceFile.STATUS, this.snapshot),
+            this.writeJson(WorkspaceFile.EVENTS, this.events),
+            this.writeJson(WorkspaceFile.ASSUMPTIONS, this.researchJournal())
         ]);
     }
 
@@ -806,9 +594,5 @@ export class InvestigationWorkspace {
             snapshot: this.snapshot,
             runDirectory: this.runDirectory
         };
-    }
-
-    private static tasksMatch(left: InvestigationInput, right: InvestigationInput): boolean {
-        return JSON.stringify(left) === JSON.stringify(right);
     }
 }

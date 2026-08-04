@@ -3,100 +3,184 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
+import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
+import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
+import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";
 import { createStatusServer } from "#src/investigation-status/status-server";
-import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type { StatusServerOptions } from "#src/investigation-status/status-server.types";
+import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
+import type { ResearchLoopOutcome } from "#src/research-cycle/research-loop.types";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
-async function createTestWorkspace(goal: string): Promise<InvestigationWorkspace> {
-    const directory = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
-    const taskPath = path.join(directory, "task.json");
-    await writeFile(taskPath, JSON.stringify({ goal }));
-    return InvestigationWorkspace.initialize(directory, taskPath);
-}
-
-async function createTestServer() {
-    return createStatusServer(await createTestWorkspace("Inspect the API"));
+async function createTestLab(options: StatusServerOptions = {}) {
+    const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
+    const runtime = new InMemoryRuntime();
+    const registry = new InvestigationRegistry({
+        workspaceRoot,
+        persistence: runtime,
+        investigations: runtime,
+        researchLoop: async (): Promise<ResearchLoopOutcome> => ({
+            status: ResearchLoopOutcomeStatus.CANCELLED
+        })
+    });
+    return {
+        workspaceRoot,
+        registry,
+        server: createStatusServer(registry, options),
+        open: (goal: string): Promise<HeldInvestigation> =>
+            registry.create(InvestigationInputSchema.parse({ goal }))
+    };
 }
 
 describe("status server", () => {
-    it("returns a validated snapshot", async () => {
-        const server = await createTestServer();
-        const response = await server.inject({ method: "GET", url: "/api/status" });
+    it("returns a validated snapshot for the investigation the address names", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Inspect the API");
+
+        const response = await lab.server.inject({
+            method: "GET",
+            url: `/api/investigations/${held.workspace.investigationId}/status`
+        });
 
         expect(response.statusCode).toBe(200);
         expect(response.json().investigation.goal).toBe("Inspect the API");
-        await server.close();
+        await lab.server.close();
+    });
+
+    it("answers 404 for an investigation the lab does not hold", async () => {
+        const lab = await createTestLab();
+
+        const response = await lab.server.inject({
+            method: "GET",
+            url: "/api/investigations/investigation-nobody-started/status"
+        });
+
+        expect(response.statusCode).toBe(404);
+        await lab.server.close();
+    });
+
+    it("creates an investigation from a goal and lists it beside the others", async () => {
+        const lab = await createTestLab();
+        await lab.open("The first lead");
+
+        const created = await lab.server.inject({
+            method: "POST",
+            url: "/api/investigations",
+            payload: { goal: "The second lead" }
+        });
+        const roster = await lab.server.inject({ method: "GET", url: "/api/investigations" });
+
+        expect(created.statusCode).toBe(201);
+        expect(created.json().investigation.state).toBe(InvestigationState.RUNNING);
+        expect(roster.json().map((entry: { goal: string }) => entry.goal)).toEqual(
+            expect.arrayContaining(["The first lead", "The second lead"])
+        );
+        await lab.server.close();
+    });
+
+    it("refuses an investigation with no goal to chase", async () => {
+        const lab = await createTestLab();
+
+        const response = await lab.server.inject({
+            method: "POST",
+            url: "/api/investigations",
+            payload: { context: ["Nothing to chase"] }
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(lab.registry.list()).toEqual([]);
+        await lab.server.close();
+    });
+
+    it("discards an investigation and forgets it, then reports it gone", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Discard me");
+
+        const discarded = await lab.server.inject({
+            method: "DELETE",
+            url: `/api/investigations/${held.workspace.investigationId}`
+        });
+        const again = await lab.server.inject({
+            method: "DELETE",
+            url: `/api/investigations/${held.workspace.investigationId}`
+        });
+
+        expect(discarded.statusCode).toBe(204);
+        expect(again.statusCode).toBe(404);
+        expect(lab.registry.list()).toEqual([]);
+        await lab.server.close();
     });
 
     it("rejects waking a running investigation", async () => {
-        const server = await createTestServer();
-        const response = await server.inject({ method: "POST", url: "/api/wake" });
+        const lab = await createTestLab();
+        const held = await lab.open("Already running");
 
-        expect(response.statusCode).toBe(409);
-        await server.close();
-    });
-
-    it("pauses a running investigation and gives up the cycle in flight before it sleeps", async () => {
-        const workspace = await createTestWorkspace("Pause the run");
-        const cancelled: string[] = [];
-        const server = createStatusServer(workspace, {
-            onPause: async () => {
-                cancelled.push(workspace.getSnapshot().investigation.state);
-            }
+        const response = await lab.server.inject({
+            method: "POST",
+            url: `/api/investigations/${held.workspace.investigationId}/wake`
         });
 
-        const response = await server.inject({ method: "POST", url: "/api/pause" });
+        expect(response.statusCode).toBe(409);
+        await lab.server.close();
+    });
+
+    it("pauses one investigation without touching the other", async () => {
+        const lab = await createTestLab();
+        const paused = await lab.open("Pause this one");
+        const untouched = await lab.open("Keep working");
+
+        const response = await lab.server.inject({
+            method: "POST",
+            url: `/api/investigations/${paused.workspace.investigationId}/pause`
+        });
 
         expect(response.statusCode).toBe(200);
         expect(response.json().investigation.state).toBe(InvestigationState.HIBERNATING);
-        expect(cancelled).toEqual([InvestigationState.RUNNING]);
-        await server.close();
+        expect(untouched.workspace.getSnapshot().investigation.state).toBe(
+            InvestigationState.RUNNING
+        );
+        await lab.server.close();
     });
 
-    it("starts a stopped run again on the operator's command", async () => {
-        const workspace = await createTestWorkspace("Start the run again");
-        const server = createStatusServer(workspace);
-        await server.inject({ method: "POST", url: "/api/stop" });
+    it("starts a stopped investigation again on the operator's command", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Start the investigation again");
+        const url = `/api/investigations/${held.workspace.investigationId}`;
+        await lab.server.inject({ method: "POST", url: `${url}/stop` });
 
-        const restarted = await server.inject({ method: "POST", url: "/api/wake" });
+        const restarted = await lab.server.inject({ method: "POST", url: `${url}/wake` });
 
         expect(restarted.statusCode).toBe(200);
         expect(restarted.json().investigation.state).toBe(InvestigationState.RUNNING);
-        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
-        await server.close();
+        expect(held.workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
+        await lab.server.close();
     });
 
-    it("keeps a failed run settled and holds the loop it never cancelled", async () => {
-        const workspace = await createTestWorkspace("Leave the failure alone");
-        let cancelled = false;
-        const server = createStatusServer(workspace, {
-            onStop: async () => {
-                cancelled = true;
-            }
-        });
-        await workspace.transition(InvestigationState.FAILED, "The director never answered", {
+    it("keeps a failed investigation settled", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Leave the failure alone");
+        const url = `/api/investigations/${held.workspace.investigationId}`;
+        await held.workspace.transition(InvestigationState.FAILED, "The director never answered", {
             failureReason: "The director never answered"
         });
 
-        const stop = await server.inject({ method: "POST", url: "/api/stop" });
-        const wake = await server.inject({ method: "POST", url: "/api/wake" });
+        const stop = await lab.server.inject({ method: "POST", url: `${url}/stop` });
+        const wake = await lab.server.inject({ method: "POST", url: `${url}/wake` });
 
         expect(stop.statusCode).toBe(409);
         expect(wake.statusCode).toBe(409);
-        expect(cancelled).toBe(false);
-        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.FAILED);
-        await server.close();
+        expect(held.workspace.getSnapshot().investigation.state).toBe(InvestigationState.FAILED);
+        await lab.server.close();
     });
 
     it("handles a repeated answer idempotently and a changed one as a conflict", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-route-test-"));
-        const taskPath = path.join(directory, "task.json");
-        await writeFile(taskPath, JSON.stringify({ goal: "Resume with a capability" }));
-        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
-        const request = await workspace.requestCapability({
+        const lab = await createTestLab();
+        const held = await lab.open("Resume with a capability");
+        const request = await held.workspace.requestCapability({
             need: "Independent dataset",
             reason: "The verifier needs independent observations",
             provisioningHint: "Mount the dataset in the run workspace",
@@ -104,22 +188,14 @@ describe("status server", () => {
                 "Rebuilt it from public mirrors, which overlap the training set",
             blocking: true
         });
-        const server = createStatusServer(workspace);
+        const url = `/api/investigations/${held.workspace.investigationId}/capabilities/${request.id}/answer`;
         const answer = "No. Report the overlap and carry the limitation instead.";
 
-        const first = await server.inject({
+        const first = await lab.server.inject({ method: "POST", url, payload: { answer } });
+        const retry = await lab.server.inject({ method: "POST", url, payload: { answer } });
+        const conflict = await lab.server.inject({
             method: "POST",
-            url: `/api/capabilities/${request.id}/answer`,
-            payload: { answer }
-        });
-        const retry = await server.inject({
-            method: "POST",
-            url: `/api/capabilities/${request.id}/answer`,
-            payload: { answer }
-        });
-        const conflict = await server.inject({
-            method: "POST",
-            url: `/api/capabilities/${request.id}/answer`,
+            url,
             payload: { answer: "Changed my mind, mounted at /srv/corpora/independent-v1" }
         });
 
@@ -127,70 +203,57 @@ describe("status server", () => {
         expect(retry.statusCode).toBe(202);
         expect(conflict.statusCode).toBe(409);
         expect(
-            workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
+            held.workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
         ).toMatchObject({ status: CapabilityStatus.ANSWERED, answer });
         expect(
-            workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_ANSWERED)
+            held.workspace.getEvents().filter(({ type }) => type === EventType.CAPABILITY_ANSWERED)
         ).toHaveLength(1);
-        await server.close();
+        await lab.server.close();
     });
 
     it("returns 400 for an empty answer without settling the request", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-capability-empty-route-test-"));
-        const taskPath = path.join(directory, "task.json");
-        await writeFile(taskPath, JSON.stringify({ goal: "Answer a capability request" }));
-        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
-        const request = await workspace.requestCapability({
+        const lab = await createTestLab();
+        const held = await lab.open("Answer a capability request");
+        const request = await held.workspace.requestCapability({
             need: "Licensed dataset",
             reason: "The verifier needs licensed observations",
             provisioningHint: "Point the run at a local copy",
             selfProvisioningAttempt: "Checked the open mirrors and none carry the licensed split",
             blocking: true
         });
-        const server = createStatusServer(workspace);
 
-        const response = await server.inject({
+        const response = await lab.server.inject({
             method: "POST",
-            url: `/api/capabilities/${request.id}/answer`,
+            url: `/api/investigations/${held.workspace.investigationId}/capabilities/${request.id}/answer`,
             payload: { answer: "   " }
         });
 
         expect(response.statusCode).toBe(400);
         expect(response.json()).toEqual({ error: "A capability answer must not be empty" });
         expect(
-            workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
+            held.workspace.getSnapshot().capability_requests.find(({ id }) => id === request.id)
         ).toMatchObject({ status: CapabilityStatus.OPEN });
-        expect(workspace.getEvents().map(({ type }) => type)).not.toContain(
+        expect(held.workspace.getEvents().map(({ type }) => type)).not.toContain(
             EventType.CAPABILITY_ANSWERED
         );
-        await server.close();
+        await lab.server.close();
     });
 
     it("serves the built dashboard when provided", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-dashboard-test-"));
-        const taskPath = path.join(directory, "task.json");
-        const dashboardRoot = path.join(directory, "dashboard");
-        await mkdir(dashboardRoot);
-        await Promise.all([
-            writeFile(taskPath, JSON.stringify({ goal: "Observe the investigation" })),
-            writeFile(path.join(dashboardRoot, "index.html"), "<main>dashboard</main>")
-        ]);
-        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
-        const server = createStatusServer(workspace, { dashboardRoot });
+        const dashboardRoot = await mkdtemp(path.join(tmpdir(), "lab-dashboard-test-"));
+        await mkdir(dashboardRoot, { recursive: true });
+        await writeFile(path.join(dashboardRoot, "index.html"), "<main>dashboard</main>");
+        const lab = await createTestLab({ dashboardRoot });
 
-        const response = await server.inject({ method: "GET", url: "/claims/claim-1" });
+        const response = await lab.server.inject({ method: "GET", url: "/claims/claim-1" });
 
         expect(response.statusCode).toBe(200);
         expect(response.body).toContain("dashboard");
-        await server.close();
+        await lab.server.close();
     });
 
     it("serves every subscription against the schema the dashboard validates with", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-subscriptions-test-"));
-        const taskPath = path.join(directory, "task.json");
-        await writeFile(taskPath, JSON.stringify({ goal: "Watch the subscriptions" }));
-        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
-        const server = createStatusServer(workspace, {
+        const lab = await createTestLab({
             subscriptions: new SubscriptionAllowanceReadings({
                 read: async (kind) => ({
                     kind,
@@ -200,20 +263,16 @@ describe("status server", () => {
             })
         });
 
-        const response = await server.inject({ method: "GET", url: "/api/subscriptions" });
+        const response = await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
 
         expect(response.statusCode).toBe(200);
         expect(SubscriptionAllowanceRosterSchema.parse(response.json())).toHaveLength(3);
-        await server.close();
+        await lab.server.close();
     });
 
     it("re-asks the vendors for a refresh and serves the held reading to every other poll", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-subscriptions-refresh-test-"));
-        const taskPath = path.join(directory, "task.json");
-        await writeFile(taskPath, JSON.stringify({ goal: "Watch the subscriptions" }));
-        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
         let asked = 0;
-        const server = createStatusServer(workspace, {
+        const lab = await createTestLab({
             subscriptions: new SubscriptionAllowanceReadings({
                 read: async (kind) => {
                     asked += 1;
@@ -222,10 +281,10 @@ describe("status server", () => {
             })
         });
 
-        await server.inject({ method: "GET", url: "/api/subscriptions" });
-        await server.inject({ method: "GET", url: "/api/subscriptions" });
+        await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
+        await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
         const polled = asked;
-        const refreshed = await server.inject({
+        const refreshed = await lab.server.inject({
             method: "GET",
             url: "/api/subscriptions?fresh=1"
         });
@@ -233,44 +292,48 @@ describe("status server", () => {
         expect(polled).toBe(3);
         expect(asked).toBe(6);
         expect(refreshed.statusCode).toBe(200);
-        await server.close();
+        await lab.server.close();
     });
 
     it("leaves the subscriptions route unserved when no readings were wired in", async () => {
-        const server = await createTestServer();
+        const lab = await createTestLab();
 
-        const response = await server.inject({ method: "GET", url: "/api/subscriptions" });
+        const response = await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
 
         expect(response.statusCode).toBe(404);
-        await server.close();
+        await lab.server.close();
     });
 
     it("exports every durable run file using portable relative paths", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-export-test-"));
-        const taskPath = path.join(directory, "task.json");
-        await writeFile(taskPath, JSON.stringify({ goal: "Export every artifact" }));
-        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
-        const artifactDirectory = path.join(workspace.runDirectory, "artifacts", "experiment-1");
+        const lab = await createTestLab();
+        const held = await lab.open("Export every artifact");
+        const artifactDirectory = path.join(
+            held.workspace.runDirectory,
+            "artifacts",
+            "experiment-1"
+        );
         await mkdir(artifactDirectory, { recursive: true });
         await writeFile(path.join(artifactDirectory, "metrics.json"), JSON.stringify({ score: 1 }));
-        const server = createStatusServer(workspace);
 
-        const response = await server.inject({ method: "GET", url: "/api/export" });
+        const response = await lab.server.inject({
+            method: "GET",
+            url: `/api/investigations/${held.workspace.investigationId}/export`
+        });
 
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
-            investigation_id: workspace.investigationId,
-            run_directory: workspace.runDirectory
+            investigation_id: held.workspace.investigationId,
+            run_directory: held.workspace.runDirectory
         });
         expect(response.json().files).toEqual(
             expect.arrayContaining([
                 "artifacts/experiment-1/metrics.json",
                 "assumptions.json",
                 "events.json",
-                "status.json",
-                "task.json"
+                "investigation.json",
+                "status.json"
             ])
         );
-        await server.close();
+        await lab.server.close();
     });
 });

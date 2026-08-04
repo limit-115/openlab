@@ -1,4 +1,4 @@
-export const AGENT_ACTIVITY_ROUTE = "/api/agents/activity" as const;
+export const AGENT_ACTIVITY_ROUTE = "/api/investigations/:id/agents/activity" as const;
 
 /** Keeps an idle stream from being closed by a proxy or an impatient client. */
 export const ACTIVITY_HEARTBEAT_MS = 15_000;

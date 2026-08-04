@@ -1,0 +1,40 @@
+import type { InvestigationRepository } from "@lab/db/investigations/investigation-repository";
+import type { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
+import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
+import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import type { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
+import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type {
+    ResearchLoopOptions,
+    ResearchLoopOutcome
+} from "#src/research-cycle/research-loop.types";
+import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
+
+export type RegistryPersistence = Pick<
+    RuntimePersistence,
+    "initialize" | "load" | "commit" | "eventsAfter" | "listPersisted"
+>;
+
+export type InvestigationRecords = Pick<InvestigationRepository, "delete">;
+
+export type ResearchLoopRunner = (
+    workspace: InvestigationWorkspace,
+    options: ResearchLoopOptions
+) => Promise<ResearchLoopOutcome>;
+
+export type RegistryListener = (roster: readonly InvestigationSummary[]) => void;
+
+/** One investigation the lab is holding: its record, its live agents and its research loop. */
+export interface HeldInvestigation {
+    readonly workspace: InvestigationWorkspace;
+    readonly activity: AgentActivityHub;
+    readonly controller: ResearchLoopController;
+}
+
+export interface InvestigationRegistryOptions {
+    readonly workspaceRoot: string;
+    readonly persistence: RegistryPersistence;
+    readonly investigations: InvestigationRecords;
+    readonly subscriptions?: SubscriptionAllowanceReadings;
+    readonly researchLoop?: ResearchLoopRunner;
+}

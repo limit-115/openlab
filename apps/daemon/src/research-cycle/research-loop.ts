@@ -4,6 +4,7 @@ import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
@@ -16,7 +17,6 @@ import { RunDirectoryWorkspaceFactory } from "#src/research-cycle/agent-workspac
 import type { AgentWorkspaceFactory } from "#src/research-cycle/agent-workspace.types";
 import { researchAssumption } from "#src/research-cycle/assumption-research";
 import { createHarnesses, preflightHarnesses } from "#src/research-cycle/harness-roster";
-import { DEFAULT_HARNESS_KINDS } from "#src/research-cycle/harness-roster.const";
 import { throwIfAborted } from "#src/research-cycle/research-cancellation";
 import { recordAssumptions } from "#src/research-cycle/research-journal";
 import {
@@ -64,7 +64,7 @@ export async function runResearchLoop(
             };
         }
 
-        const task = await workspace.getTask();
+        const task = workspace.input;
         let cycle = workspace.recovered ? 1 : 0;
         while (workspace.getSnapshot().investigation.state === InvestigationState.RUNNING) {
             throwIfAborted(signal);

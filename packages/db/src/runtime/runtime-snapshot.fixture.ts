@@ -8,6 +8,7 @@ import {
 } from "@lab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
 import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
@@ -22,20 +23,20 @@ export function testEventId(investigationId: string, name: string): string {
     return `${investigationId}-${name}`;
 }
 
-export function makeTask(id = "investigation-runtime"): InvestigationInput {
+export function makeInput(): InvestigationInput {
     return {
-        id,
         goal: "Find a reproducible result",
         context: ["Known observation"],
-        success_criteria: ["Independent reproduction"]
+        success_criteria: ["Independent reproduction"],
+        harness_kinds: [...DEFAULT_HARNESS_KINDS]
     };
 }
 
 export function makeSnapshot(
-    task: InvestigationInput,
+    investigationId: string,
+    input: InvestigationInput = makeInput(),
     state: InvestigationState = InvestigationState.RUNNING
 ): StatusSnapshot {
-    const investigationId = task.id ?? "investigation-runtime";
     const timestamp = "2026-08-02T00:00:00.000Z";
     const assumptionId = `${investigationId}-assumption-cache`;
     const directorRunId = `${investigationId}-run-director`;
@@ -46,7 +47,7 @@ export function makeSnapshot(
         investigation: {
             id: investigationId,
             state,
-            goal: task.goal,
+            goal: input.goal,
             started_at: timestamp,
             updated_at: timestamp,
             uptime_ms: 0

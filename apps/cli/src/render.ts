@@ -3,11 +3,36 @@ import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
+import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import Table from "cli-table3";
 
 function lines(items: string[]): string {
     return items.length === 0 ? "—" : items.map((item) => `• ${item}`).join("\n");
+}
+
+/** The roster: what the lab is chasing, and where each investigation stands. */
+export function renderInvestigations(roster: readonly InvestigationSummary[]): string {
+    if (roster.length === 0) {
+        return 'The lab holds no investigations. Start one with "lab new".';
+    }
+    const table = new Table({
+        head: ["ID", "State", "Goal", "Bets", "Findings", "Agents"],
+        colWidths: [40, 14, 44, 8, 12, 8],
+        wordWrap: true,
+        style: { head: ["cyan"], border: ["gray"] }
+    });
+    for (const investigation of roster) {
+        table.push([
+            investigation.id,
+            investigation.state,
+            investigation.goal,
+            String(investigation.assumption_count),
+            `${investigation.confirmed_finding_count} of ${investigation.finding_count}`,
+            String(investigation.active_run_count)
+        ]);
+    }
+    return table.toString();
 }
 
 export function renderStatus(status: StatusSnapshot): string {

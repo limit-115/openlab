@@ -1,22 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import type { DaemonDatabase } from "#src/daemon-runtime/daemon-database";
-import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
-import type {
-    ResearchLoopOptions,
-    ResearchLoopOutcome
-} from "#src/research-cycle/research-loop.types";
+import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
+import type { ResearchLoopRunner } from "#src/investigation-registry/investigation-registry.types";
 
 export interface RunningDaemon {
     app: FastifyInstance;
-    workspace: InvestigationWorkspace;
+    registry: InvestigationRegistry;
     url: string;
     close(): Promise<void>;
 }
 
 export interface DaemonDependencies {
-    researchLoop?: (
-        workspace: InvestigationWorkspace,
-        options: ResearchLoopOptions
-    ) => Promise<ResearchLoopOutcome>;
+    researchLoop?: ResearchLoopRunner;
     openDatabase?: (databaseUrl: string) => Promise<DaemonDatabase>;
 }

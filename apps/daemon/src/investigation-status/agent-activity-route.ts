@@ -3,13 +3,14 @@ import { AgentActivityStreamEvent } from "@lab/protocol/agent-activity/agent-act
 import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
 import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
 import type { FastifyInstance } from "fastify";
-import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { replayAgentActivity } from "#src/agent-activity/agent-activity-replay";
+import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import {
     ACTIVITY_HEARTBEAT_MS,
     ACTIVITY_STREAM_HEADERS,
     AGENT_ACTIVITY_ROUTE
 } from "#src/investigation-status/agent-activity-route.const";
+import { StatusServerError } from "#src/investigation-status/status-server.const";
 
 /**
  * Streams what every agent is doing, to whoever is watching.
@@ -23,8 +24,16 @@ import {
  * worth paying for while somebody is looking at it, and it must never put weight on the stream the
  * rest of the dashboard depends on.
  */
-export function registerAgentActivityRoute(app: FastifyInstance, activity: AgentActivityHub): void {
-    app.get(AGENT_ACTIVITY_ROUTE, async (request, reply) => {
+export function registerAgentActivityRoute(
+    app: FastifyInstance,
+    registry: InvestigationRegistry
+): void {
+    app.get<{ Params: { id: string } }>(AGENT_ACTIVITY_ROUTE, async (request, reply) => {
+        const investigation = registry.get(request.params.id);
+        if (investigation === undefined) {
+            return reply.code(404).send({ error: StatusServerError.UNKNOWN_INVESTIGATION });
+        }
+        const activity = investigation.activity;
         reply.hijack();
         const stream = new ActivityStream(reply.raw);
         const buffered: AgentActivityFrame[] = [];

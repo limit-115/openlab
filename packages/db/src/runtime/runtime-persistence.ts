@@ -1,7 +1,6 @@
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
-import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events, investigations, runtimeCheckpoints } from "#src/lab-database/lab-schema";
 import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
@@ -25,8 +24,7 @@ import type {
     CommitRuntimeResult,
     InitializeRuntimeInput,
     PersistedInvestigationEvent,
-    PersistedRuntime,
-    RecoverableRuntime
+    PersistedRuntime
 } from "#src/runtime/runtime-persistence.types";
 import { RuntimeRevisionConflictError } from "#src/runtime/runtime-revision-conflict";
 import { projectRuntimeSnapshot } from "#src/runtime/snapshot-projection/snapshot-projection";
@@ -182,7 +180,12 @@ export class RuntimePersistence {
         return toPersistedRuntime(this.#database, record);
     }
 
-    async listRecoverable(limit = 100): Promise<RecoverableRuntime[]> {
+    /**
+     * Every investigation the lab holds, whatever state it settled in, most recently active first.
+     * A settled run is listed as readily as a running one: the operator still has to see it, read
+     * its report and decide whether to reopen it.
+     */
+    async listPersisted(limit = 100): Promise<PersistedRuntime[]> {
         assertPageSize(limit, RuntimePersistenceLimit.MAX_RECOVERABLE_INVESTIGATIONS);
         const records = await this.#database
             .select({
@@ -196,12 +199,6 @@ export class RuntimePersistence {
             })
             .from(runtimeCheckpoints)
             .innerJoin(investigations, eq(investigations.id, runtimeCheckpoints.investigationId))
-            .where(
-                inArray(investigations.state, [
-                    InvestigationState.RUNNING,
-                    InvestigationState.HIBERNATING
-                ])
-            )
             .orderBy(desc(runtimeCheckpoints.persistedAt))
             .limit(limit);
 
@@ -217,7 +214,7 @@ export class RuntimePersistence {
                 }
             })
         );
-        return runtimes.filter((runtime): runtime is RecoverableRuntime => runtime !== undefined);
+        return runtimes.filter((runtime): runtime is PersistedRuntime => runtime !== undefined);
     }
 
     async eventsAfter(

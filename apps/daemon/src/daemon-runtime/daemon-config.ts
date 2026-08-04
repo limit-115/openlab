@@ -3,7 +3,6 @@ import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 import { DaemonLogLevel, DatabaseProtocol } from "#src/daemon-runtime/daemon-config.const";
 import type { DaemonConfig, DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
-import { DEFAULT_HARNESS_KINDS } from "#src/research-cycle/harness-roster.const";
 
 const DatabaseUrlSchema = z
     .url()
@@ -13,7 +12,7 @@ const DatabaseUrlSchema = z
         "DATABASE_URL must use the postgres or postgresql protocol"
     );
 
-export function resolveDaemonConfig(options: DaemonOptions): DaemonConfig {
+export function resolveDaemonConfig(options: DaemonOptions = {}): DaemonConfig {
     const environment = createEnv({
         server: {
             LAB_HOST: z.string().min(1).default("127.0.0.1"),
@@ -34,7 +33,6 @@ export function resolveDaemonConfig(options: DaemonOptions): DaemonConfig {
     });
 
     return {
-        taskPath: path.resolve(options.taskPath),
         host: environment.LAB_HOST,
         port: environment.LAB_PORT,
         workspaceRoot: path.resolve(environment.LAB_HOME ?? path.join(process.cwd(), ".lab")),
@@ -43,7 +41,6 @@ export function resolveDaemonConfig(options: DaemonOptions): DaemonConfig {
                 path.join(import.meta.dirname, "..", "..", "..", "dashboard", "dist")
         ),
         databaseUrl: environment.DATABASE_URL,
-        logLevel: environment.LAB_LOG_LEVEL,
-        harnessKinds: options.harnessKinds ?? DEFAULT_HARNESS_KINDS
+        logLevel: environment.LAB_LOG_LEVEL
     };
 }

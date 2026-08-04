@@ -21,7 +21,6 @@
     "dependencies": {
         "@clack/prompts": "1.7.0",
         "@lab/daemon": "workspace:*",
-        "@lab/harness": "workspace:*",
         "@lab/protocol": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "cli-table3": "0.6.5",

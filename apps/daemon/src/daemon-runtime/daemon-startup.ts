@@ -1,75 +1,65 @@
 import { stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import type { FastifyInstance } from "fastify";
-import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { resolveDaemonConfig } from "#src/daemon-runtime/daemon-config";
 import type { DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
 import { type DaemonDatabase, openDaemonDatabase } from "#src/daemon-runtime/daemon-database";
 import { PromiseSettlementStatus } from "#src/daemon-runtime/daemon-startup.const";
 import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
-import { bootstrapResearch } from "#src/daemon-runtime/research-bootstrap";
-import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
+import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { createStatusServer } from "#src/investigation-status/status-server";
-import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
-import { createHarnesses } from "#src/research-cycle/harness-roster";
-import { runResearchLoop } from "#src/research-cycle/research-loop";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
+/**
+ * Brings up the lab: the database it keeps its investigations in, the registry that holds them,
+ * and the one address the CLI and the dashboard both talk to. Nothing is researched until an
+ * investigation is created or an interrupted one is reopened.
+ */
 export async function startDaemon(
-    options: DaemonOptions,
+    options: DaemonOptions = {},
     dependencies: DaemonDependencies = {}
 ): Promise<RunningDaemon> {
     const config = resolveDaemonConfig(options);
     const database = await (dependencies.openDatabase ?? openDaemonDatabase)(config.databaseUrl);
     let app: FastifyInstance | undefined;
-    let controller: ResearchLoopController | undefined;
+    let registry: InvestigationRegistry | undefined;
 
     try {
-        const workspace = await InvestigationWorkspace.openOrCreate(
-            config.workspaceRoot,
-            config.taskPath,
-            database.persistence
-        );
         const dashboardRoot = await existingDirectory(config.dashboardRoot);
-        const activity = new AgentActivityHub();
         const subscriptions = new SubscriptionAllowanceReadings();
-        controller = new ResearchLoopController(
-            workspace,
-            activity,
-            dependencies.researchLoop ?? runResearchLoop,
-            createHarnesses(config.harnessKinds),
-            subscriptions
-        );
-        app = createStatusServer(workspace, {
-            activity,
+        registry = new InvestigationRegistry({
+            workspaceRoot: config.workspaceRoot,
+            persistence: database.persistence,
+            investigations: database.investigations,
+            subscriptions,
+            ...(dependencies.researchLoop === undefined
+                ? {}
+                : { researchLoop: dependencies.researchLoop })
+        });
+        app = createStatusServer(registry, {
             subscriptions,
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
-            logLevel: config.logLevel,
-            onPause: () =>
-                controller?.cancel(new Error("External pause command")) ?? Promise.resolve(),
-            onStop: () =>
-                controller?.cancel(new Error("External stop command")) ?? Promise.resolve()
+            logLevel: config.logLevel
         });
         await app.listen({ host: config.host, port: config.port });
         const address = app.server.address() as AddressInfo;
         const url = `http://${config.host}:${address.port}`;
-        await bootstrapResearch(workspace);
-        controller.start();
+        await registry.restore();
         const runningApp = app;
-        const runningController = controller;
+        const runningRegistry = registry;
         let closing: Promise<void> | undefined;
 
         return {
             app: runningApp,
-            workspace,
+            registry: runningRegistry,
             url,
             close: () => {
-                closing ??= closeDaemonResources(runningController, runningApp, database);
+                closing ??= closeDaemonResources(runningRegistry, runningApp, database);
                 return closing;
             }
         };
     } catch (error) {
-        const cleanupErrors = await cleanupFailedStart(controller, app, database);
+        const cleanupErrors = await cleanupFailedStart(registry, app, database);
         if (cleanupErrors.length > 0) {
             throw new AggregateError(
                 [error, ...cleanupErrors],
@@ -81,11 +71,11 @@ export async function startDaemon(
 }
 
 async function closeDaemonResources(
-    controller: ResearchLoopController,
+    registry: InvestigationRegistry,
     app: FastifyInstance,
     database: DaemonDatabase
 ): Promise<void> {
-    await controller.close(new Error("Daemon closing"));
+    await registry.close();
     const results = await Promise.allSettled([app.close(), database.close()]);
     const errors = rejectedReasons(results);
     if (errors.length > 0) {
@@ -94,7 +84,7 @@ async function closeDaemonResources(
 }
 
 async function cleanupFailedStart(
-    controller: ResearchLoopController | undefined,
+    registry: InvestigationRegistry | undefined,
     app: FastifyInstance | undefined,
     database: DaemonDatabase
 ): Promise<unknown[]> {
@@ -102,8 +92,8 @@ async function cleanupFailedStart(
     if (app !== undefined) {
         cleanups.push(app.close());
     }
-    if (controller !== undefined) {
-        cleanups.push(controller.close(new Error("Daemon start failed")));
+    if (registry !== undefined) {
+        cleanups.push(registry.close());
     }
     return rejectedReasons(await Promise.allSettled(cleanups));
 }

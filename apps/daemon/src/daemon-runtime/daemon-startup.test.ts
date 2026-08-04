@@ -1,20 +1,17 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
-import type {
-    CommitRuntimeInput,
-    CommitRuntimeResult,
-    InitializeRuntimeInput,
-    PersistedInvestigationEvent,
-    PersistedRuntime,
-    RecoverableRuntime,
-    RuntimeCheckpoint
-} from "@lab/db/runtime/runtime-persistence.types";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { describe, expect, it } from "vitest";
 import { startDaemon } from "#src/daemon-runtime/daemon-startup";
+import type { RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
+import type {
+    HeldInvestigation,
+    ResearchLoopRunner
+} from "#src/investigation-registry/investigation-registry.types";
+import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";
 import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
 
 const TestDatabase = {
@@ -23,162 +20,87 @@ const TestDatabase = {
 
 const CAPABILITY_ANSWER = "Mounted at /srv/corpora/independent-v1" as const;
 
-class InMemoryRuntimePersistence {
-    #checkpoint: RuntimeCheckpoint | undefined;
-    #task: InitializeRuntimeInput["task"] | undefined;
-    #workspacePath: string | undefined;
-    readonly #events: PersistedInvestigationEvent[] = [];
-
-    async initialize(input: InitializeRuntimeInput): Promise<CommitRuntimeResult> {
-        if (this.#checkpoint !== undefined) {
-            throw new Error(`Runtime ${input.snapshot.investigation.id} is already initialized`);
+async function startTestDaemon(
+    name: string,
+    researchLoop: ResearchLoopRunner,
+    runtime: InMemoryRuntime = new InMemoryRuntime(),
+    home?: string
+): Promise<RunningDaemon> {
+    const workspaceRoot = home ?? (await mkdtemp(path.join(tmpdir(), `lab-daemon-${name}-`)));
+    return startDaemon(
+        { workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
+        {
+            openDatabase: async () => ({
+                persistence: runtime,
+                investigations: runtime,
+                close: async () => undefined
+            }),
+            researchLoop
         }
-        this.#task = structuredClone(input.task);
-        this.#workspacePath = input.workspacePath;
-        return this.#store(input.snapshot, 1, input.event);
-    }
+    );
+}
 
-    async load(investigationId: string): Promise<PersistedRuntime | undefined> {
-        if (
-            this.#checkpoint?.snapshot.investigation.id !== investigationId ||
-            this.#task === undefined ||
-            this.#workspacePath === undefined
-        ) {
-            return undefined;
-        }
-        return {
-            task: structuredClone(this.#task),
-            workspacePath: this.#workspacePath,
-            checkpoint: structuredClone(this.#checkpoint),
-            persistedAt: this.#checkpoint.snapshot.investigation.updated_at
-        };
+async function openInvestigation(daemon: RunningDaemon, goal: string): Promise<HeldInvestigation> {
+    const created = await daemon.app.inject({
+        method: "POST",
+        url: "/api/investigations",
+        payload: { goal }
+    });
+    const held = daemon.registry.get(created.json().investigation.id);
+    if (held === undefined) {
+        throw new Error("The daemon did not hold the investigation it just created");
     }
-
-    async commit(input: CommitRuntimeInput): Promise<CommitRuntimeResult> {
-        if (this.#checkpoint?.revision !== input.expectedRevision) {
-            throw new Error(`Unexpected runtime revision ${input.expectedRevision}`);
-        }
-        return this.#store(input.snapshot, input.expectedRevision + 1, input.event);
-    }
-
-    async eventsAfter(
-        investigationId: string,
-        afterSequence = 0,
-        limit = 200
-    ): Promise<PersistedInvestigationEvent[]> {
-        return structuredClone(
-            this.#events
-                .filter(
-                    (event) =>
-                        event.investigation_id === investigationId && event.sequence > afterSequence
-                )
-                .slice(0, limit)
-        );
-    }
-
-    async listRecoverable(): Promise<RecoverableRuntime[]> {
-        if (
-            this.#checkpoint === undefined ||
-            this.#task === undefined ||
-            this.#workspacePath === undefined ||
-            (this.#checkpoint.snapshot.investigation.state !== InvestigationState.RUNNING &&
-                this.#checkpoint.snapshot.investigation.state !== InvestigationState.HIBERNATING)
-        ) {
-            return [];
-        }
-        return [
-            {
-                task: structuredClone(this.#task),
-                workspacePath: this.#workspacePath,
-                checkpoint: structuredClone(this.#checkpoint),
-                persistedAt: this.#checkpoint.snapshot.investigation.updated_at
-            }
-        ];
-    }
-
-    #store(
-        snapshot: RuntimeCheckpoint["snapshot"],
-        revision: number,
-        event?: InitializeRuntimeInput["event"]
-    ): CommitRuntimeResult {
-        const appendedEvent =
-            event === undefined ? undefined : { ...event, sequence: this.#events.length + 1 };
-        if (appendedEvent !== undefined) {
-            this.#events.push(appendedEvent);
-        }
-        const checkpoint: RuntimeCheckpoint = {
-            snapshot: structuredClone(snapshot),
-            revision,
-            ...(appendedEvent === undefined ? {} : { lastEventSequence: appendedEvent.sequence })
-        };
-        this.#checkpoint = checkpoint;
-        return {
-            ...structuredClone(checkpoint),
-            ...(appendedEvent === undefined ? {} : { appendedEvent })
-        };
-    }
+    return held;
 }
 
 describe("daemon startup", () => {
     it("starts research exactly once after a committed capability wake transition", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-daemon-trigger-test-"));
-        const taskPath = path.join(directory, "task.json");
-        const workspaceRoot = path.join(directory, "workspace");
-        await writeFile(taskPath, JSON.stringify({ goal: "Resume autonomous research" }));
         let runs = 0;
         let markFirstRunReady: () => void = () => undefined;
         const firstRunReady = new Promise<void>((resolveReady) => {
             markFirstRunReady = resolveReady;
         });
-        const daemon = await startDaemon(
-            { taskPath, workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
-            {
-                openDatabase: async () => ({
-                    persistence: new InMemoryRuntimePersistence(),
-                    close: async () => undefined
-                }),
-                researchLoop: async (workspace, { signal }) => {
-                    runs += 1;
-                    if (runs === 1) {
-                        const reason = "Test plateau";
-                        await workspace.hibernate(reason);
-                        await new Promise<void>((resolveWake) => {
-                            const unsubscribe = workspace.subscribe((event, snapshot) => {
-                                if (
-                                    event.type === EventType.INVESTIGATION_STATE_CHANGED &&
-                                    snapshot.investigation.state === InvestigationState.RUNNING
-                                ) {
-                                    unsubscribe();
-                                    resolveWake();
-                                }
-                            });
-                            signal?.addEventListener(
-                                "abort",
-                                () => {
-                                    unsubscribe();
-                                    resolveWake();
-                                },
-                                { once: true }
-                            );
-                            markFirstRunReady();
-                        });
-                        if (signal?.aborted === true) {
-                            return { status: ResearchLoopOutcomeStatus.CANCELLED };
+        const daemon = await startTestDaemon("trigger-test", async (workspace, { signal }) => {
+            runs += 1;
+            if (runs === 1) {
+                const reason = "Test plateau";
+                await workspace.hibernate(reason);
+                await new Promise<void>((resolveWake) => {
+                    const unsubscribe = workspace.subscribe((event, snapshot) => {
+                        if (
+                            event.type === EventType.INVESTIGATION_STATE_CHANGED &&
+                            snapshot.investigation.state === InvestigationState.RUNNING
+                        ) {
+                            unsubscribe();
+                            resolveWake();
                         }
-                        return { status: ResearchLoopOutcomeStatus.HIBERNATING, reason };
-                    }
+                    });
+                    signal?.addEventListener(
+                        "abort",
+                        () => {
+                            unsubscribe();
+                            resolveWake();
+                        },
+                        { once: true }
+                    );
+                    markFirstRunReady();
+                });
+                if (signal?.aborted === true) {
                     return { status: ResearchLoopOutcomeStatus.CANCELLED };
                 }
+                return { status: ResearchLoopOutcomeStatus.HIBERNATING, reason };
             }
-        );
+            return { status: ResearchLoopOutcomeStatus.CANCELLED };
+        });
 
         try {
+            const held = await openInvestigation(daemon, "Resume autonomous research");
             await firstRunReady;
-            expect(daemon.workspace.getSnapshot().investigation.state).toBe(
+            expect(held.workspace.getSnapshot().investigation.state).toBe(
                 InvestigationState.HIBERNATING
             );
 
-            const request = await daemon.workspace.requestCapability({
+            const request = await held.workspace.requestCapability({
                 need: "An independent corpus",
                 reason: "The research loop requires an operator-held resource",
                 provisioningHint: "Point the run at a local copy",
@@ -187,16 +109,16 @@ describe("daemon startup", () => {
             });
             const response = await daemon.app.inject({
                 method: "POST",
-                url: `/api/capabilities/${request.id}/answer`,
+                url: `/api/investigations/${held.workspace.investigationId}/capabilities/${request.id}/answer`,
                 payload: { answer: CAPABILITY_ANSWER }
             });
             expect(response.statusCode).toBe(202);
 
-            expect(daemon.workspace.getSnapshot().investigation.state).toBe(
+            expect(held.workspace.getSnapshot().investigation.state).toBe(
                 InvestigationState.RUNNING
             );
             expect(
-                daemon.workspace
+                held.workspace
                     .getEvents()
                     .findLast(
                         (event) =>
@@ -212,28 +134,50 @@ describe("daemon startup", () => {
         }
     });
 
-    it("unsubscribes the research controller when the daemon closes", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-daemon-close-test-"));
-        const taskPath = path.join(directory, "task.json");
-        const workspaceRoot = path.join(directory, "workspace");
-        await writeFile(taskPath, JSON.stringify({ goal: "Close lifecycle listeners" }));
-        let runs = 0;
-        const daemon = await startDaemon(
-            { taskPath, workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
-            {
-                openDatabase: async () => ({
-                    persistence: new InMemoryRuntimePersistence(),
-                    close: async () => undefined
-                }),
-                researchLoop: async () => {
-                    runs += 1;
-                    return { status: ResearchLoopOutcomeStatus.CANCELLED };
-                }
-            }
+    it("reopens what the lab was working on when the daemon comes back", async () => {
+        const runtime = new InMemoryRuntime();
+        const home = await mkdtemp(path.join(tmpdir(), "lab-daemon-restart-"));
+        const first = await startTestDaemon(
+            "restart",
+            async () => ({ status: ResearchLoopOutcomeStatus.CANCELLED }),
+            runtime,
+            home
         );
+        const working = await openInvestigation(first, "Carry on after the restart");
+        const settled = await openInvestigation(first, "Stay settled after the restart");
+        await settled.workspace.transition(InvestigationState.STOPPED, "Operator stopped it");
+        await first.close();
+
+        const resumed: string[] = [];
+        const restarted = await startTestDaemon(
+            "restart",
+            async (workspace) => {
+                resumed.push(workspace.investigationId);
+                return { status: ResearchLoopOutcomeStatus.CANCELLED };
+            },
+            runtime,
+            home
+        );
+
+        try {
+            await expect.poll(() => resumed.length).toBe(1);
+            expect(resumed).toEqual([working.workspace.investigationId]);
+            expect(restarted.registry.list()).toHaveLength(2);
+        } finally {
+            await restarted.close();
+        }
+    });
+
+    it("unsubscribes the research controller when the daemon closes", async () => {
+        let runs = 0;
+        const daemon = await startTestDaemon("close-test", async () => {
+            runs += 1;
+            return { status: ResearchLoopOutcomeStatus.CANCELLED };
+        });
+        const held = await openInvestigation(daemon, "Close lifecycle listeners");
         await expect.poll(() => runs).toBe(1);
 
-        const request = await daemon.workspace.requestCapability({
+        const request = await held.workspace.requestCapability({
             need: "An independent corpus",
             reason: "The research loop requires an operator-held resource",
             provisioningHint: "Point the run at a local copy",
@@ -241,11 +185,11 @@ describe("daemon startup", () => {
             blocking: true
         });
         await daemon.close();
-        await daemon.workspace.hibernate("Test listener cleanup");
-        await daemon.workspace.answerCapability(request.id, CAPABILITY_ANSWER);
+        await held.workspace.hibernate("Test listener cleanup");
+        await held.workspace.answerCapability(request.id, CAPABILITY_ANSWER);
         await new Promise<void>((resolveTurn) => setImmediate(resolveTurn));
 
-        expect(daemon.workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
+        expect(held.workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         expect(runs).toBe(1);
     });
 });

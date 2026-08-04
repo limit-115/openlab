@@ -1,0 +1,156 @@
+import { rm } from "node:fs/promises";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
+import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
+import {
+    RESTORED_INVESTIGATION_LIMIT,
+    RegistryCloseReason
+} from "#src/investigation-registry/investigation-registry.const";
+import type {
+    HeldInvestigation,
+    InvestigationRecords,
+    InvestigationRegistryOptions,
+    RegistryListener,
+    RegistryPersistence,
+    ResearchLoopRunner
+} from "#src/investigation-registry/investigation-registry.types";
+import { summarizeInvestigation } from "#src/investigation-registry/investigation-summary";
+import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import { createHarnesses } from "#src/research-cycle/harness-roster";
+import { runResearchLoop } from "#src/research-cycle/research-loop";
+import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
+
+/**
+ * Every investigation the lab is holding. One lab, one database, one set of subscriptions — and as
+ * many investigations as the operator has started, each with its own run directory, its own agents
+ * and its own research loop running alongside the others.
+ */
+export class InvestigationRegistry {
+    readonly #held = new Map<string, HeldInvestigation>();
+    readonly #unsubscribes = new Map<string, () => void>();
+    readonly #listeners = new Set<RegistryListener>();
+    readonly #workspaceRoot: string;
+    readonly #persistence: RegistryPersistence;
+    readonly #investigations: InvestigationRecords;
+    readonly #subscriptions: SubscriptionAllowanceReadings | undefined;
+    readonly #researchLoop: ResearchLoopRunner;
+
+    constructor(options: InvestigationRegistryOptions) {
+        this.#workspaceRoot = options.workspaceRoot;
+        this.#persistence = options.persistence;
+        this.#investigations = options.investigations;
+        this.#subscriptions = options.subscriptions;
+        this.#researchLoop = options.researchLoop ?? runResearchLoop;
+    }
+
+    /**
+     * Reopens what the lab already holds. A run that was working when the daemon went down goes
+     * back to work; one that had settled is held so the operator can read it and decide, which is
+     * the same offer the lifecycle makes anywhere else.
+     */
+    async restore(): Promise<void> {
+        const persisted = await this.#persistence.listPersisted(RESTORED_INVESTIGATION_LIMIT);
+        for (const runtime of persisted) {
+            const workspace = await InvestigationWorkspace.open(
+                this.#workspaceRoot,
+                runtime,
+                this.#persistence
+            );
+            const held = this.#hold(workspace);
+            if (workspace.getSnapshot().investigation.state === InvestigationState.RUNNING) {
+                held.controller.start();
+            }
+        }
+        this.#publish();
+    }
+
+    /** Takes on a new investigation and puts it to work straight away. */
+    async create(input: InvestigationInput): Promise<HeldInvestigation> {
+        const workspace = await InvestigationWorkspace.create(
+            this.#workspaceRoot,
+            input,
+            this.#persistence
+        );
+        const held = this.#hold(workspace);
+        held.controller.start();
+        this.#publish();
+        return held;
+    }
+
+    get(investigationId: string): HeldInvestigation | undefined {
+        return this.#held.get(investigationId);
+    }
+
+    /** The roster, most recently active first. */
+    list(): InvestigationSummary[] {
+        return [...this.#held.values()]
+            .map(({ workspace }) => summarizeInvestigation(workspace))
+            .sort((left, right) => right.updated_at.localeCompare(left.updated_at));
+    }
+
+    /**
+     * Forgets an investigation for good: the loop is cancelled, the row and everything cascading
+     * from it are deleted, and the run directory goes with them. The database is cleared first, so
+     * an interrupted removal leaves a readable directory rather than a row pointing at nothing.
+     */
+    async remove(investigationId: string): Promise<boolean> {
+        const held = this.#held.get(investigationId);
+        if (held === undefined) {
+            return false;
+        }
+        await held.controller.close(new Error(RegistryCloseReason.REMOVED));
+        this.#unsubscribes.get(investigationId)?.();
+        this.#unsubscribes.delete(investigationId);
+        this.#held.delete(investigationId);
+        await this.#investigations.delete(investigationId);
+        await rm(held.workspace.runDirectory, { recursive: true, force: true });
+        this.#publish();
+        return true;
+    }
+
+    subscribe(listener: RegistryListener): () => void {
+        this.#listeners.add(listener);
+        return () => this.#listeners.delete(listener);
+    }
+
+    async close(): Promise<void> {
+        const closing = [...this.#held.values()].map((held) =>
+            held.controller.close(new Error(RegistryCloseReason.DAEMON_CLOSING))
+        );
+        for (const unsubscribe of this.#unsubscribes.values()) {
+            unsubscribe();
+        }
+        this.#unsubscribes.clear();
+        await Promise.all(closing);
+    }
+
+    #hold(workspace: InvestigationWorkspace): HeldInvestigation {
+        const activity = new AgentActivityHub();
+        const controller = new ResearchLoopController(
+            workspace,
+            activity,
+            this.#researchLoop,
+            createHarnesses(workspace.input.harness_kinds),
+            this.#subscriptions
+        );
+        const held: HeldInvestigation = { workspace, activity, controller };
+        this.#held.set(workspace.investigationId, held);
+        this.#unsubscribes.set(
+            workspace.investigationId,
+            workspace.subscribe(() => this.#publish())
+        );
+        return held;
+    }
+
+    #publish(): void {
+        if (this.#listeners.size === 0) {
+            return;
+        }
+        const roster = this.list();
+        for (const listener of this.#listeners) {
+            listener(roster);
+        }
+    }
+}

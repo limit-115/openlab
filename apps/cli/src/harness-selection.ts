@@ -1,9 +1,9 @@
-import { type HarnessKind, HarnessKinds } from "@lab/harness/agent-harness.const";
+import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { InvalidArgumentError } from "commander";
 
 const HARNESS_KIND_SEPARATOR = ",";
 
-const selectableHarnessKinds: readonly HarnessKind[] = Object.values(HarnessKinds);
+const selectableHarnessKinds: readonly AgentHarnessKind[] = Object.values(AgentHarnessKind);
 
 /** Names every harness an operator may put in a roster, in the order the help text lists them. */
 export function harnessKindList(): string {
@@ -11,14 +11,14 @@ export function harnessKindList(): string {
 }
 
 /**
- * Collects `--harness` into the roster a run rotates through, keeping the order it was written in,
+ * Collects `--harness` into the roster an investigation rotates through, keeping the written order,
  * because that order decides which harness each stage of a cycle lands on. Repeating the flag
  * appends, so `--harness glm --harness codex` and `--harness glm,codex` mean the same thing.
  */
 export function parseHarnessKinds(
     value: string,
-    previous: readonly HarnessKind[] | undefined
-): readonly HarnessKind[] {
+    previous: readonly AgentHarnessKind[] | undefined
+): readonly AgentHarnessKind[] {
     const named = value
         .split(HARNESS_KIND_SEPARATOR)
         .map((entry) => entry.trim())

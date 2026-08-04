@@ -1,22 +1,22 @@
-import { type HarnessKind, HarnessKinds } from "@lab/harness/agent-harness.const";
 import type { AgentHarness } from "@lab/harness/agent-harness.types";
 import { ClaudeHarness } from "@lab/harness/claude-harness";
 import { CodexHarness } from "@lab/harness/codex-harness";
 import { GlmHarness } from "@lab/harness/glm-harness";
 import { HarnessCapabilityError } from "@lab/harness/harness-error";
+import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { requestSubscriptionCapability } from "#src/research-cycle/agent-dispatch";
 import type { AvailableHarness } from "#src/research-cycle/research-loop.types";
 
-const HARNESS_FACTORY: Record<HarnessKind, () => AgentHarness> = {
-    [HarnessKinds.CODEX]: () => new CodexHarness(),
-    [HarnessKinds.CLAUDE]: () => new ClaudeHarness(),
-    [HarnessKinds.GLM]: () => new GlmHarness()
+const HARNESS_FACTORY: Record<AgentHarnessKind, () => AgentHarness> = {
+    [AgentHarnessKind.CODEX]: () => new CodexHarness(),
+    [AgentHarnessKind.CLAUDE]: () => new ClaudeHarness(),
+    [AgentHarnessKind.GLM]: () => new GlmHarness()
 };
 
-/** Builds the roster a run rotates through, in the order the operator asked for. */
-export function createHarnesses(kinds: readonly HarnessKind[]): AgentHarness[] {
+/** Builds the roster one investigation rotates through, in the order the operator asked for. */
+export function createHarnesses(kinds: readonly AgentHarnessKind[]): AgentHarness[] {
     return kinds.map((kind) => HARNESS_FACTORY[kind]());
 }
 

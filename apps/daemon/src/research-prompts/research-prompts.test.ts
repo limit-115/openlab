@@ -2,6 +2,7 @@ import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
 import type { Finding } from "@lab/protocol/findings/finding.types";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { describe, expect, it } from "vitest";
 import {
     directorPrompt,
@@ -10,11 +11,10 @@ import {
 } from "#src/research-prompts/research-prompts";
 import { MISSING_CAPABILITY_POLICY } from "#src/research-prompts/research-prompts.const";
 
-const task = {
+const task = InvestigationInputSchema.parse({
     goal: "Find a faster algorithm",
-    context: [],
     success_criteria: ["Reproduce a speedup"]
-};
+});
 
 const timestamp = "2026-08-03T00:00:00.000Z";
 

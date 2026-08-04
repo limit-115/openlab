@@ -10,13 +10,15 @@ import {
     investigations
 } from "@lab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
+import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { writeCurrentPointer } from "#src/investigation-workspace/investigation-run-pointer";
-import { WorkspaceLayout } from "#src/investigation-workspace/investigation-workspace.const";
+import {
+    WorkspaceFile,
+    WorkspaceLayout
+} from "#src/investigation-workspace/investigation-workspace.const";
 import { planPurge, purgeRuns } from "#src/run-purge/run-purge";
-import { PurgeScope } from "#src/run-purge/run-purge.const";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
@@ -44,7 +46,12 @@ describeDatabase("purgeRuns", () => {
         await client.db.insert(investigations).values({
             id: investigationId,
             goal: `Goal for ${investigationId}`,
-            input: { goal: `Goal for ${investigationId}`, context: [], success_criteria: [] },
+            input: {
+                goal: `Goal for ${investigationId}`,
+                context: [],
+                success_criteria: [],
+                harness_kinds: [AgentHarnessKind.CODEX]
+            },
             workspacePath: `/tmp/${investigationId}`
         });
         await client.db.insert(assumptions).values({
@@ -86,7 +93,10 @@ describeDatabase("purgeRuns", () => {
                 investigationId
             );
             await mkdir(runDirectory, { recursive: true });
-            await writeFile(path.join(runDirectory, "report.md"), `Report for ${investigationId}`);
+            await writeFile(
+                path.join(runDirectory, WorkspaceFile.REPORT),
+                `Report for ${investigationId}`
+            );
         }
         return workspaceRoot;
     }
@@ -95,11 +105,7 @@ describeDatabase("purgeRuns", () => {
         await seedInvestigation("investigation-alpha");
         const workspaceRoot = await seedWorkspace(["investigation-alpha"]);
 
-        const result = await purgeRuns({
-            workspaceRoot,
-            databaseUrl: databaseUrl as string,
-            scope: PurgeScope.ALL
-        });
+        const result = await purgeRuns({ workspaceRoot, databaseUrl: databaseUrl as string });
 
         expect(result.purgedInvestigationRowCount).toBe(1);
         expect(result.purgedDirectoryCount).toBe(1);
@@ -108,33 +114,19 @@ describeDatabase("purgeRuns", () => {
         expect(await client.db.select().from(events)).toEqual([]);
     });
 
-    it("retains the current run and its rows", async () => {
+    it("empties the lab, leaving no investigation behind", async () => {
         await seedInvestigation("investigation-alpha");
         await seedInvestigation("investigation-beta");
         const workspaceRoot = await seedWorkspace(["investigation-alpha", "investigation-beta"]);
-        await writeCurrentPointer(workspaceRoot, {
-            investigation_id: "investigation-beta",
-            run_directory: path.join(
-                workspaceRoot,
-                WorkspaceLayout.RUNS_DIRECTORY,
-                "investigation-beta"
-            )
-        });
 
-        const result = await purgeRuns({
-            workspaceRoot,
-            databaseUrl: databaseUrl as string,
-            scope: PurgeScope.EXCEPT_CURRENT
-        });
+        const result = await purgeRuns({ workspaceRoot, databaseUrl: databaseUrl as string });
 
-        expect(result.purgedInvestigationIds).toEqual(["investigation-alpha"]);
-        expect(result.keptInvestigationId).toBe("investigation-beta");
-        expect((await client.db.select().from(investigations)).map((row) => row.id)).toEqual([
+        expect(result.purgedInvestigationIds).toEqual([
+            "investigation-alpha",
             "investigation-beta"
         ]);
-        expect((await client.db.select().from(findings)).map((row) => row.id)).toEqual([
-            "finding-investigation-beta"
-        ]);
+        expect(await client.db.select().from(investigations)).toEqual([]);
+        expect(await client.db.select().from(findings)).toEqual([]);
     });
 
     it("plans rows that outlived their run directory", async () => {

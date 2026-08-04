@@ -1,6 +1,15 @@
 export const WorkspaceLayout = {
-    RUNS_DIRECTORY: "runs",
-    CURRENT_POINTER_FILE: "current.json"
+    RUNS_DIRECTORY: "runs"
+} as const;
+
+/** The files a run directory carries for whoever reads it after the fact. */
+export const WorkspaceFile = {
+    INPUT: "investigation.json",
+    STATUS: "status.json",
+    EVENTS: "events.json",
+    ASSUMPTIONS: "assumptions.json",
+    RESULT: "result.json",
+    REPORT: "report.md"
 } as const;
 
 export const WorkspaceMutationAction = {
@@ -9,7 +18,3 @@ export const WorkspaceMutationAction = {
 } as const;
 export type WorkspaceMutationAction =
     (typeof WorkspaceMutationAction)[keyof typeof WorkspaceMutationAction];
-
-export const WorkspaceRecoveryLimit = {
-    MAX_RECORDS: 1_000
-} as const;

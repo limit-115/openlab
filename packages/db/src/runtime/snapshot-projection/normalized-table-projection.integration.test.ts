@@ -17,8 +17,8 @@ import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
 import { RuntimePersistence } from "#src/runtime/runtime-persistence";
 import {
     makeEvent,
+    makeInput,
     makeSnapshot,
-    makeTask,
     testEventId,
     testInvestigationId
 } from "#src/runtime/runtime-snapshot.fixture";
@@ -44,8 +44,8 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
     });
 
     it("projects checkpoint state into normalized tables and removes stale rows", async () => {
-        const task = makeTask(testInvestigationId("projection"));
-        const snapshot = makeSnapshot(task);
+        const input = makeInput();
+        const snapshot = makeSnapshot(testInvestigationId("projection"), input);
         const abandonedAssumptionId = `${snapshot.investigation.id}-assumption-abandoned`;
         snapshot.assumptions.push({
             id: abandonedAssumptionId,
@@ -58,7 +58,7 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
         });
 
         await persistence.initialize({
-            task,
+            task: input,
             workspacePath: "/tmp/lab-runtime-projection",
             snapshot
         });

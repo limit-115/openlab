@@ -1,10 +1,5 @@
 import { InvestigationRepository } from "@lab/db/investigations/investigation-repository";
 import { createDatabase } from "@lab/db/lab-database/lab-database-client";
-import {
-    CurrentPointerStatus,
-    readCurrentPointer
-} from "#src/investigation-workspace/investigation-run-pointer";
-import { PurgeScope } from "#src/run-purge/run-purge.const";
 import type {
     PurgePlan,
     PurgePlanInput,
@@ -12,15 +7,6 @@ import type {
     PurgeRunsInput
 } from "#src/run-purge/run-purge.types";
 import { listRunInvestigationIds, purgeRunDirectories } from "#src/run-purge/run-purge-directories";
-
-export async function readCurrentInvestigationId(
-    workspaceRoot: string
-): Promise<string | undefined> {
-    const pointer = await readCurrentPointer(workspaceRoot);
-    return pointer.status === CurrentPointerStatus.VALID
-        ? pointer.pointer.investigation_id
-        : undefined;
-}
 
 /**
  * Reports what a purge would remove. Disk and database are unioned because they drift apart
@@ -38,41 +24,30 @@ export async function planPurge(input: PurgePlanInput): Promise<PurgePlan> {
     return {
         investigationIds: [
             ...new Set([...persistedInvestigationIds, ...directoryInvestigationIds])
-        ].sort(),
-        currentInvestigationId: await readCurrentInvestigationId(input.workspaceRoot)
+        ].sort()
     };
 }
 
 /**
- * Deletes run history from the database first and from disk second, so that an interrupted purge
- * leaves recoverable directories rather than rows pointing at directories that no longer exist.
+ * Empties the lab: every investigation, from the database first and from disk second, so that an
+ * interrupted purge leaves recoverable directories rather than rows pointing at directories that
+ * no longer exist. Discarding one investigation is the daemon's job, not this one's.
  */
 export async function purgeRuns(input: PurgeRunsInput): Promise<PurgeResult> {
-    const keptInvestigationId =
-        input.scope === PurgeScope.EXCEPT_CURRENT
-            ? await readCurrentInvestigationId(input.workspaceRoot)
-            : undefined;
-
     const client = createDatabase(input.databaseUrl, { max: 1 });
     let purgedInvestigationIds: string[];
     try {
-        purgedInvestigationIds = await new InvestigationRepository(client.db).purge(
-            keptInvestigationId
-        );
+        purgedInvestigationIds = await new InvestigationRepository(client.db).purge();
     } finally {
         await client.close();
     }
 
-    const purgedDirectories = await purgeRunDirectories({
-        workspaceRoot: input.workspaceRoot,
-        keptInvestigationId
-    });
+    const purgedDirectories = await purgeRunDirectories({ workspaceRoot: input.workspaceRoot });
 
     return {
         purgedInvestigationIds: [
             ...new Set([...purgedInvestigationIds, ...purgedDirectories])
         ].sort(),
-        keptInvestigationId,
         purgedDirectoryCount: purgedDirectories.length,
         purgedInvestigationRowCount: purgedInvestigationIds.length
     };

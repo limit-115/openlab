@@ -6,6 +6,7 @@ import { HarnessEventTypes, HarnessToolPhases } from "@lab/harness/harness-event
 import { HarnessArtifactFiles } from "@lab/harness/harness-run-artifacts.const";
 import { AgentActivityStreamEvent } from "@lab/protocol/agent-activity/agent-activity.const";
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import type { FastifyInstance } from "fastify";
 import { describe, expect, it } from "vitest";
 import {
@@ -13,11 +14,14 @@ import {
     harnessEvents,
     harnessRunResult
 } from "#src/agent-activity/agent-activity.fixture";
-import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { AgentActivityRun } from "#src/agent-activity/agent-activity-hub.types";
-import { AGENT_ACTIVITY_ROUTE } from "#src/investigation-status/agent-activity-route.const";
+import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
+import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
+import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";
 import { createStatusServer } from "#src/investigation-status/status-server";
-import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
+import type { ResearchLoopOutcome } from "#src/research-cycle/research-loop.types";
 
 const HISTORY = harnessEvents([
     { type: HarnessEventTypes.SESSION_STARTED, resumed: false },
@@ -90,27 +94,34 @@ async function startedRun(hub: AgentActivityHub, withHistory: boolean): Promise<
     return hub.startRun(activityIdentity({ artifact_directory: artifactDirectory }));
 }
 
-async function serve(hub?: AgentActivityHub): Promise<FastifyInstance> {
-    const directory = await mkdtemp(path.join(tmpdir(), "lab-activity-server-"));
-    const taskPath = path.join(directory, "task.json");
-    await writeFile(taskPath, JSON.stringify({ goal: "Watch the team" }));
-    const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
-    const server = createStatusServer(workspace, hub === undefined ? {} : { activity: hub });
+/** A lab holding one investigation, listening, with its own activity hub to publish through. */
+async function serve(): Promise<{ server: FastifyInstance; held: HeldInvestigation }> {
+    const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-activity-server-"));
+    const runtime = new InMemoryRuntime();
+    const registry = new InvestigationRegistry({
+        workspaceRoot,
+        persistence: runtime,
+        investigations: runtime,
+        researchLoop: async (): Promise<ResearchLoopOutcome> => ({
+            status: ResearchLoopOutcomeStatus.CANCELLED
+        })
+    });
+    const server = createStatusServer(registry);
+    const held = await registry.create(InvestigationInputSchema.parse({ goal: "Watch the team" }));
     await server.listen({ host: "127.0.0.1", port: 0 });
-    return server;
+    return { server, held };
 }
 
-function streamUrl(server: FastifyInstance): string {
+function streamUrl(server: FastifyInstance, investigationId: string): string {
     const address = server.server.address() as AddressInfo;
-    return `http://127.0.0.1:${address.port}${AGENT_ACTIVITY_ROUTE}`;
+    return `http://127.0.0.1:${address.port}/api/investigations/${investigationId}/agents/activity`;
 }
 
 describe("agent activity route", () => {
     it("sends the roster before the history the frames belong to", async () => {
-        const hub = new AgentActivityHub();
-        await startedRun(hub, true);
-        const server = await serve(hub);
-        const response = await fetch(streamUrl(server));
+        const { server, held } = await serve();
+        await startedRun(held.activity, true);
+        const response = await fetch(streamUrl(server, held.workspace.investigationId));
         const viewer = new ActivityViewer(response.body as ReadableStream<Uint8Array>);
 
         const roster = await viewer.next();
@@ -134,10 +145,9 @@ describe("agent activity route", () => {
     });
 
     it("carries on into what the agent does after a viewer has joined", async () => {
-        const hub = new AgentActivityHub();
-        const run = await startedRun(hub, false);
-        const server = await serve(hub);
-        const response = await fetch(streamUrl(server));
+        const { server, held } = await serve();
+        const run = await startedRun(held.activity, false);
+        const response = await fetch(streamUrl(server, held.workspace.investigationId));
         const viewer = new ActivityViewer(response.body as ReadableStream<Uint8Array>);
         await viewer.next();
 
@@ -159,10 +169,13 @@ describe("agent activity route", () => {
         await server.close();
     });
 
-    it("does not serve the stream to an investigation that is not publishing activity", async () => {
-        const server = await serve();
+    it("does not serve the stream for an investigation the lab does not hold", async () => {
+        const { server } = await serve();
 
-        const response = await server.inject({ method: "GET", url: AGENT_ACTIVITY_ROUTE });
+        const response = await server.inject({
+            method: "GET",
+            url: "/api/investigations/investigation-nobody-started/agents/activity"
+        });
 
         expect(response.statusCode).toBe(404);
         await server.close();

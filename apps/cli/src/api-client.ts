@@ -1,5 +1,7 @@
 import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 
 export class LabApiError extends Error {
@@ -21,40 +23,77 @@ export class LabApiClient {
         this.baseUrl = baseUrl.replace(/\/$/, "");
     }
 
-    status(): Promise<StatusSnapshot> {
-        return this.request<StatusSnapshot>("/api/status");
+    investigations(): Promise<InvestigationSummary[]> {
+        return this.request<InvestigationSummary[]>("/api/investigations");
     }
 
-    assumptions(): Promise<Assumption[]> {
-        return this.request<Assumption[]>("/api/assumptions");
-    }
-
-    inspect(id: string): Promise<unknown> {
-        return this.request(`/api/inspect/${encodeURIComponent(id)}`);
-    }
-
-    capabilities(): Promise<CapabilityRequest[]> {
-        return this.request<CapabilityRequest[]>("/api/capabilities");
-    }
-
-    wake(): Promise<StatusSnapshot> {
-        return this.request<StatusSnapshot>("/api/wake", { method: "POST" });
-    }
-
-    stop(): Promise<StatusSnapshot> {
-        return this.request<StatusSnapshot>("/api/stop", { method: "POST" });
-    }
-
-    answer(id: string, answer: string): Promise<{ accepted: boolean }> {
-        return this.request(`/api/capabilities/${encodeURIComponent(id)}/answer`, {
+    create(input: InvestigationInput): Promise<StatusSnapshot> {
+        return this.request<StatusSnapshot>("/api/investigations", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ answer })
+            body: JSON.stringify(input)
         });
     }
 
-    exportRun(): Promise<{ investigation_id: string; run_directory: string; files: string[] }> {
-        return this.request("/api/export");
+    remove(investigationId: string): Promise<void> {
+        return this.request<void>(this.investigationPath(investigationId), { method: "DELETE" });
+    }
+
+    status(investigationId: string): Promise<StatusSnapshot> {
+        return this.request<StatusSnapshot>(`${this.investigationPath(investigationId)}/status`);
+    }
+
+    assumptions(investigationId: string): Promise<Assumption[]> {
+        return this.request<Assumption[]>(`${this.investigationPath(investigationId)}/assumptions`);
+    }
+
+    inspect(investigationId: string, entityId: string): Promise<unknown> {
+        return this.request(
+            `${this.investigationPath(investigationId)}/inspect/${encodeURIComponent(entityId)}`
+        );
+    }
+
+    capabilities(investigationId: string): Promise<CapabilityRequest[]> {
+        return this.request<CapabilityRequest[]>(
+            `${this.investigationPath(investigationId)}/capabilities`
+        );
+    }
+
+    wake(investigationId: string): Promise<StatusSnapshot> {
+        return this.request<StatusSnapshot>(`${this.investigationPath(investigationId)}/wake`, {
+            method: "POST"
+        });
+    }
+
+    stop(investigationId: string): Promise<StatusSnapshot> {
+        return this.request<StatusSnapshot>(`${this.investigationPath(investigationId)}/stop`, {
+            method: "POST"
+        });
+    }
+
+    answer(
+        investigationId: string,
+        capabilityId: string,
+        answer: string
+    ): Promise<{ accepted: boolean }> {
+        return this.request(
+            `${this.investigationPath(investigationId)}/capabilities/${encodeURIComponent(capabilityId)}/answer`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ answer })
+            }
+        );
+    }
+
+    exportRun(
+        investigationId: string
+    ): Promise<{ investigation_id: string; run_directory: string; files: string[] }> {
+        return this.request(`${this.investigationPath(investigationId)}/export`);
+    }
+
+    private investigationPath(investigationId: string): string {
+        return `/api/investigations/${encodeURIComponent(investigationId)}`;
     }
 
     private async request<T>(pathname: string, init?: RequestInit): Promise<T> {

@@ -48,6 +48,19 @@ export class InvestigationRepository {
     }
 
     /**
+     * Deletes one investigation and, through the schema cascade, everything that hangs off it.
+     * Reports whether there was a row to delete, which is how a caller tells a stale identifier
+     * from a run it has just discarded.
+     */
+    async delete(investigationId: string): Promise<boolean> {
+        const rows = await this.#database
+            .delete(investigations)
+            .where(eq(investigations.id, investigationId))
+            .returning({ id: investigations.id });
+        return rows.length > 0;
+    }
+
+    /**
      * Deletes investigation rows and, through the schema cascade, every assumption, agent run, finding,
      * verdict, event, checkpoint, and capability request that hangs off them. Passing an investigation id
      * spares that one run. Returns the deleted investigation ids.

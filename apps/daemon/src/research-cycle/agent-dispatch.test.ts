@@ -6,6 +6,7 @@ import type { AgentHarness, HarnessPreflight } from "@lab/harness/agent-harness.
 import type { SubscriptionAllowance as HarnessAllowance } from "@lab/harness/subscription-allowance.types";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { describe, expect, it } from "vitest";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
@@ -52,9 +53,10 @@ function readings(spent: readonly HarnessKind[]): SubscriptionAllowanceReadings 
 
 async function testWorkspace(name: string): Promise<InvestigationWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), `lab-${name}-`));
-    const taskPath = path.join(directory, "task.json");
-    await writeFile(taskPath, JSON.stringify({ goal: "Spend the allowance wisely" }));
-    return InvestigationWorkspace.initialize(directory, taskPath);
+    return InvestigationWorkspace.create(
+        directory,
+        InvestigationInputSchema.parse({ goal: "Spend the allowance wisely" })
+    );
 }
 
 describe("runAgentWithFallback", () => {

@@ -2,8 +2,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
-import { IncompatibleCheckpointError } from "@lab/db/runtime/incompatible-checkpoint";
-import type { RecoverableRuntime } from "@lab/db/runtime/runtime-persistence.types";
+import type { PersistedRuntime } from "@lab/db/runtime/runtime-persistence.types";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
@@ -11,11 +10,12 @@ import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.
 import type { Finding } from "@lab/protocol/findings/finding.types";
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { afterEach, describe, expect, it } from "vitest";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import { WorkspaceFile } from "#src/investigation-workspace/investigation-workspace.const";
 import type { WorkspaceRuntimePersistence } from "#src/investigation-workspace/investigation-workspace.types";
 
 const directories: string[] = [];
@@ -24,12 +24,14 @@ afterEach(() => {
     directories.length = 0;
 });
 
-async function createWorkspace(): Promise<InvestigationWorkspace> {
+async function createWorkspace(goal = "Test a research claim"): Promise<InvestigationWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), "lab-workspace-test-"));
     directories.push(directory);
-    const taskPath = path.join(directory, "task.json");
-    await writeFile(taskPath, JSON.stringify({ goal: "Test a research claim" }));
-    return InvestigationWorkspace.initialize(directory, taskPath);
+    return InvestigationWorkspace.create(directory, InvestigationInputSchema.parse({ goal }));
+}
+
+function workspaceRootOf(workspace: InvestigationWorkspace): string {
+    return path.dirname(path.dirname(workspace.runDirectory));
 }
 
 /** Fills a workspace with the bet, run and claim a verdict needs something to point at. */
@@ -99,7 +101,7 @@ describe("InvestigationWorkspace", () => {
 
         expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         const journal = JSON.parse(
-            await readFile(path.join(workspace.runDirectory, "assumptions.json"), "utf8")
+            await readFile(path.join(workspace.runDirectory, WorkspaceFile.ASSUMPTIONS), "utf8")
         );
         expect(journal).toEqual([]);
     });
@@ -115,173 +117,37 @@ describe("InvestigationWorkspace", () => {
         expect(observed).toContain(EventType.INVESTIGATION_STATE_CHANGED);
     });
 
-    it("recovers an unfinished run for the same task", async () => {
-        const workspace = await createWorkspace();
-        const taskPath = path.join(path.dirname(path.dirname(workspace.runDirectory)), "task.json");
-        const recovered = await InvestigationWorkspace.openOrCreate(
-            path.dirname(path.dirname(workspace.runDirectory)),
-            taskPath
-        );
+    it("reopens an investigation from its checkpoint and rewrites the run directory", async () => {
+        const workspace = await createWorkspace("Reopen this investigation");
+        const workspaceRoot = workspaceRootOf(workspace);
+        await writeFile(path.join(workspace.runDirectory, WorkspaceFile.INPUT), "{corrupt");
 
-        expect(recovered.investigationId).toBe(workspace.investigationId);
-        expect(recovered.recovered).toBe(true);
-    });
-
-    it("reopens a stopped run and replaces a failed one", async () => {
-        const stopped = await createWorkspace();
-        const stoppedRoot = path.dirname(path.dirname(stopped.runDirectory));
-        await stopped.transition(InvestigationState.STOPPED, "The operator ended the run");
-        const failed = await createWorkspace();
-        const failedRoot = path.dirname(path.dirname(failed.runDirectory));
-        await failed.transition(InvestigationState.FAILED, "The director never answered", {
-            failureReason: "The director never answered"
-        });
-
-        const reopened = await InvestigationWorkspace.openOrCreate(
-            stoppedRoot,
-            path.join(stoppedRoot, "task.json")
-        );
-        const replaced = await InvestigationWorkspace.openOrCreate(
-            failedRoot,
-            path.join(failedRoot, "task.json")
-        );
-
-        expect(reopened.investigationId).toBe(stopped.investigationId);
-        expect(reopened.getSnapshot().investigation.state).toBe(InvestigationState.STOPPED);
-        expect(replaced.investigationId).not.toBe(failed.investigationId);
-        expect(replaced.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
-    });
-
-    it("starts a fresh run when the pointed-at checkpoint predates the protocol", async () => {
-        const workspace = await createWorkspace();
-        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
-        const taskPath = path.join(workspaceRoot, "task.json");
-
-        const started = await InvestigationWorkspace.openOrCreate(workspaceRoot, taskPath, {
-            ...recoveryOnlyPersistence([]),
-            initialize: async ({ snapshot }) => ({ snapshot, revision: 1 }),
-            load: async (investigationId) => {
-                if (investigationId !== workspace.investigationId) {
-                    return undefined;
-                }
-                throw new IncompatibleCheckpointError(investigationId);
-            }
-        });
-
-        expect(started.investigationId).not.toBe(workspace.investigationId);
-        expect(started.recovered).toBe(false);
-    });
-
-    it("selects the latest matching database runtime when the pointer is corrupt", async () => {
-        const workspace = await createWorkspace();
-        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
-        const taskPath = path.join(workspaceRoot, "task.json");
-        const task = await workspace.getTask();
-        const older = makeRecoverableRuntime(
-            task,
-            workspace.getSnapshot(),
-            workspace.runDirectory,
-            "2026-08-02T00:00:00.000Z"
-        );
-        const latest = makeRecoverableRuntime(
-            task,
-            workspace.getSnapshot(),
-            path.join(workspaceRoot, "runs", "investigation-latest"),
-            "2026-08-02T00:01:00.000Z",
-            "investigation-latest"
-        );
-        await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
-
-        const recovered = await InvestigationWorkspace.openOrCreate(
+        const reopened = await InvestigationWorkspace.open(
             workspaceRoot,
-            taskPath,
-            recoveryOnlyPersistence([older, latest])
+            persistedRuntime(workspace),
+            readOnlyPersistence()
         );
 
-        expect(recovered.investigationId).toBe("investigation-latest");
-        expect(recovered.runDirectory).toBe(latest.workspacePath);
-    });
-
-    it("rejects a matching database runtime outside LAB_HOME", async () => {
-        const workspace = await createWorkspace();
-        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
-        const taskPath = path.join(workspaceRoot, "task.json");
-        const task = await workspace.getTask();
-        const escaped = makeRecoverableRuntime(
-            task,
-            workspace.getSnapshot(),
-            path.join(workspaceRoot, "..", "escaped-run"),
-            "2026-08-02T00:00:00.000Z"
-        );
-        await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
-
-        await expect(
-            InvestigationWorkspace.openOrCreate(
-                workspaceRoot,
-                taskPath,
-                recoveryOnlyPersistence([escaped])
+        expect(reopened.investigationId).toBe(workspace.investigationId);
+        expect(reopened.recovered).toBe(true);
+        expect(
+            JSON.parse(
+                await readFile(path.join(reopened.runDirectory, WorkspaceFile.INPUT), "utf8")
             )
-        ).rejects.toThrow("escapes LAB_HOME");
+        ).toEqual(workspace.input);
     });
 
-    it("rejects a recoverable task whose reused id has different input", async () => {
-        const directory = await mkdtemp(path.join(tmpdir(), "lab-workspace-task-mismatch-"));
-        const taskPath = path.join(directory, "task.json");
-        const requestedTask = {
-            id: "task-stable-id",
-            goal: "Requested goal",
-            context: [],
-            success_criteria: []
+    it("refuses to reopen a run directory outside LAB_HOME", async () => {
+        const workspace = await createWorkspace("Escape the home");
+        const workspaceRoot = workspaceRootOf(workspace);
+        const escaped = {
+            ...persistedRuntime(workspace),
+            workspacePath: path.join(workspaceRoot, "..", "escaped-run")
         };
-        await writeFile(taskPath, JSON.stringify(requestedTask));
-        const workspace = await InvestigationWorkspace.initialize(directory, taskPath);
-        const storedTask = { ...requestedTask, goal: "Different stored goal" };
-        const snapshot = workspace.getSnapshot();
-        snapshot.investigation.goal = storedTask.goal;
-        const mismatched = makeRecoverableRuntime(
-            storedTask,
-            snapshot,
-            workspace.runDirectory,
-            "2026-08-02T00:00:00.000Z"
-        );
-        await writeFile(path.join(directory, "current.json"), "{corrupt");
 
         await expect(
-            InvestigationWorkspace.openOrCreate(
-                directory,
-                taskPath,
-                recoveryOnlyPersistence([mismatched])
-            )
-        ).rejects.toThrow("does not match the requested task input");
-    });
-
-    it("rejects recoverable runtimes tied for the latest checkpoint", async () => {
-        const workspace = await createWorkspace();
-        const workspaceRoot = path.dirname(path.dirname(workspace.runDirectory));
-        const taskPath = path.join(workspaceRoot, "task.json");
-        const task = await workspace.getTask();
-        const first = makeRecoverableRuntime(
-            task,
-            workspace.getSnapshot(),
-            workspace.runDirectory,
-            "2026-08-02T00:00:00.000Z"
-        );
-        const second = makeRecoverableRuntime(
-            task,
-            workspace.getSnapshot(),
-            path.join(workspaceRoot, "runs", "investigation-tied"),
-            first.persistedAt,
-            "investigation-tied"
-        );
-        await writeFile(path.join(workspaceRoot, "current.json"), "{corrupt");
-
-        await expect(
-            InvestigationWorkspace.openOrCreate(
-                workspaceRoot,
-                taskPath,
-                recoveryOnlyPersistence([first, second])
-            )
-        ).rejects.toThrow("share the latest checkpoint timestamp");
+            InvestigationWorkspace.open(workspaceRoot, escaped, readOnlyPersistence())
+        ).rejects.toThrow("escapes LAB_HOME");
     });
 
     it("deduplicates open capability requests", async () => {
@@ -437,7 +303,7 @@ describe("InvestigationWorkspace", () => {
         expect(snapshot.investigation.state).toBe(InvestigationState.BREAKTHROUGH);
         expect(snapshot.breakthrough_finding_id).toBe(finding.id);
         const result = JSON.parse(
-            await readFile(path.join(workspace.runDirectory, "result.json"), "utf8")
+            await readFile(path.join(workspace.runDirectory, WorkspaceFile.RESULT), "utf8")
         );
         expect(result).toMatchObject({ claim: finding.claim, verdict_id: "verdict-1" });
         expect(
@@ -446,26 +312,18 @@ describe("InvestigationWorkspace", () => {
     });
 });
 
-function makeRecoverableRuntime(
-    task: InvestigationInput,
-    sourceSnapshot: StatusSnapshot,
-    workspacePath: string,
-    persistedAt: string,
-    investigationId: string = sourceSnapshot.investigation.id
-): RecoverableRuntime {
-    const snapshot = structuredClone(sourceSnapshot);
-    snapshot.investigation.id = investigationId;
+function persistedRuntime(workspace: InvestigationWorkspace): PersistedRuntime {
+    const snapshot = workspace.getSnapshot();
     return {
-        task: structuredClone(task),
-        workspacePath,
+        task: structuredClone(workspace.input) as InvestigationInput,
+        workspacePath: workspace.runDirectory,
         checkpoint: { snapshot, revision: 1 },
-        persistedAt
+        persistedAt: snapshot.investigation.updated_at
     };
 }
 
-function recoveryOnlyPersistence(
-    recoverable: readonly RecoverableRuntime[]
-): WorkspaceRuntimePersistence {
+/** Reopening reads events and commits nothing until the investigation moves. */
+function readOnlyPersistence(): WorkspaceRuntimePersistence {
     return {
         initialize: async () => {
             throw new Error("Unexpected runtime initialization");
@@ -474,7 +332,6 @@ function recoveryOnlyPersistence(
         commit: async () => {
             throw new Error("Unexpected runtime commit");
         },
-        eventsAfter: async () => [],
-        listRecoverable: async () => [...structuredClone(recoverable)]
+        eventsAfter: async () => []
     };
 }
