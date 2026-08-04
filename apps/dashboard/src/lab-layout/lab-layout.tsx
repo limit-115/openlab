@@ -7,6 +7,7 @@ import {
     LAYOUT_BAR,
     LAYOUT_BAR_DIVIDER,
     LAYOUT_BAR_ROW,
+    LAYOUT_BAR_TRIGGER,
     LAYOUT_BODY,
     LAYOUT_FRAME,
     LAYOUT_INSET,
@@ -23,7 +24,7 @@ export function LabLayout() {
             <SidebarInset className={LAYOUT_INSET}>
                 <header className={LAYOUT_BAR}>
                     <div className={cn(LAYOUT_FRAME, LAYOUT_BAR_ROW)}>
-                        <SidebarTrigger />
+                        <SidebarTrigger className={LAYOUT_BAR_TRIGGER} />
                         <Separator orientation="vertical" className={LAYOUT_BAR_DIVIDER} />
                         <LabBreadcrumbs />
                     </div>
