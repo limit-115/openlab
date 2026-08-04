@@ -22,7 +22,10 @@ import {
     SETTINGS_PENDING_LABEL,
     SETTINGS_SAVED
 } from "#src/harness-settings/harness-settings.const";
-import type { LabSettingsDraft } from "#src/harness-settings/harness-settings.types";
+import type {
+    LabSettingsDraft,
+    LabSettingsEdit
+} from "#src/harness-settings/harness-settings.types";
 import {
     fetchLabSettings,
     labSettingsQueryKey,
@@ -31,7 +34,8 @@ import {
 import {
     chooseHarness,
     chooseRoleEffort,
-    chooseRoleModel
+    chooseRoleModel,
+    hasUnsavedEdits
 } from "#src/harness-settings/harness-settings-draft";
 import { RoleExecutionTable } from "#src/harness-settings/role-execution-table";
 import { Panel } from "#src/panel/panel";
@@ -49,20 +53,26 @@ export function HarnessSettingsSection() {
         queryFn: ({ signal }) => fetchLabSettings(signal),
         retry: false
     });
-    const [draft, setDraft] = useState<LabSettingsDraft | undefined>(undefined);
-    const [seeded, setSeeded] = useState<LabSettings | undefined>(undefined);
+    const [edited, setEdited] = useState<LabSettingsEdit | undefined>(undefined);
 
-    if (settings.data !== undefined && settings.data !== seeded) {
-        setSeeded(settings.data);
-        setDraft(settings.data);
+    if (settings.data !== undefined && settings.data !== edited?.saved) {
+        setEdited({ saved: settings.data, draft: settings.data });
     }
 
     const save = useMutation({
-        mutationFn: (edited: LabSettingsDraft) => saveLabSettings(LabSettingsSchema.parse(edited)),
-        onSuccess: (saved) => queryClient.setQueryData(labSettingsQueryKey, saved)
+        mutationFn: (draft: LabSettingsDraft) => saveLabSettings(LabSettingsSchema.parse(draft)),
+        /**
+         * The lab's answer becomes the page in one step rather than through the read noticing it.
+         * A document identical to the one already held is handed back as the very object the cache
+         * keeps, so waiting for it to look new would leave what was typed on screen for good.
+         */
+        onSuccess: (stored) => {
+            const held = queryClient.setQueryData<LabSettings>(labSettingsQueryKey, stored);
+            setEdited({ saved: held ?? stored, draft: held ?? stored });
+        }
     });
 
-    if (draft === undefined) {
+    if (edited === undefined) {
         return (
             <Panel title={HARNESS_SETTINGS_TITLE} description={HARNESS_SETTINGS_DESCRIPTION}>
                 {settings.isPending ? (
@@ -80,13 +90,17 @@ export function HarnessSettingsSection() {
         );
     }
 
+    const { draft, saved } = edited;
+    /** Only settings the lab has not been given are worth a control, so nothing else grows one. */
+    const unsaved = hasUnsavedEdits(draft, saved);
+
     /**
      * An edit puts the page ahead of the lab again, so the answer to the last save stops speaking
      * for what is on screen: neither the refusal nor the confirmation outlives the settings it was
      * given for.
      */
-    function edit(edited: LabSettingsDraft) {
-        setDraft(edited);
+    function change(next: LabSettingsDraft) {
+        setEdited({ saved, draft: next });
         save.reset();
     }
 
@@ -101,37 +115,40 @@ export function HarnessSettingsSection() {
             >
                 <HarnessRosterField
                     roster={draft.harness_roster}
-                    choose={(harness, chosen) => edit(chooseHarness(draft, harness, chosen))}
+                    choose={(harness, chosen) => change(chooseHarness(draft, harness, chosen))}
                 />
 
                 <RoleExecutionTable
                     settings={draft}
-                    chooseEffort={(role, effort) => edit(chooseRoleEffort(draft, role, effort))}
+                    chooseEffort={(role, effort) => change(chooseRoleEffort(draft, role, effort))}
                     chooseModel={(role, harness, model) =>
-                        edit(chooseRoleModel(draft, role, harness, model))
+                        change(chooseRoleModel(draft, role, harness, model))
                     }
                 />
 
-                <div className={SETTINGS_ACTIONS}>
-                    {save.isError ? (
-                        <p role="alert" className={SETTINGS_FAILURE}>
-                            {SAVE_FAILURE_LABEL}
-                        </p>
-                    ) : null}
-                    {save.isSuccess ? (
-                        <p className={SETTINGS_SAVED}>
-                            <CheckIcon aria-hidden="true" />
-                            {SAVED_LABEL}
-                        </p>
-                    ) : null}
-                    <Button
-                        type="submit"
-                        disabled={save.isPending || draft.harness_roster.length === 0}
-                    >
-                        {save.isPending ? <Spinner aria-hidden="true" /> : null}
-                        {save.isPending ? SAVING_LABEL : SAVE_LABEL}
-                    </Button>
-                </div>
+                {unsaved ? (
+                    <div className={SETTINGS_ACTIONS}>
+                        {save.isError ? (
+                            <p role="alert" className={SETTINGS_FAILURE}>
+                                {SAVE_FAILURE_LABEL}
+                            </p>
+                        ) : null}
+                        <Button
+                            type="submit"
+                            disabled={save.isPending || draft.harness_roster.length === 0}
+                        >
+                            {save.isPending ? <Spinner aria-hidden="true" /> : null}
+                            {save.isPending ? SAVING_LABEL : SAVE_LABEL}
+                        </Button>
+                    </div>
+                ) : null}
+
+                {save.isSuccess ? (
+                    <p className={SETTINGS_SAVED}>
+                        <CheckIcon aria-hidden="true" />
+                        {SAVED_LABEL}
+                    </p>
+                ) : null}
             </form>
         </Panel>
     );

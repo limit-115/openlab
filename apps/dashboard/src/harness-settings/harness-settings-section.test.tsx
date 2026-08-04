@@ -7,7 +7,11 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { NO_SETTINGS_TITLE, SAVE_LABEL } from "#src/harness-settings/harness-settings.const";
+import {
+    NO_SETTINGS_TITLE,
+    SAVE_LABEL,
+    SAVED_LABEL
+} from "#src/harness-settings/harness-settings.const";
 import { HarnessSettingsSection } from "#src/harness-settings/harness-settings-section";
 
 const SHIPPED = LabSettingsSchema.parse({});
@@ -130,6 +134,27 @@ describe("HarnessSettingsSection", () => {
             )
         ).toHaveValue("sonnet");
         expect(screen.getByRole("checkbox", { name: AgentHarnessKind.CODEX })).not.toBeChecked();
+    });
+
+    it("offers no save while the page holds exactly what the lab does", async () => {
+        respond(SHIPPED);
+        renderSection();
+
+        await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX });
+
+        expect(screen.queryByRole("button", { name: SAVE_LABEL })).not.toBeInTheDocument();
+    });
+
+    it("takes the save away again once the lab has been given the settings", async () => {
+        respond(SHIPPED);
+        renderSection();
+        const director = await roleField(AgentRole.DIRECTOR);
+
+        await userEvent.type(director.getByLabelText(AgentHarnessKind.CLAUDE), "opus");
+        await userEvent.click(screen.getByRole("button", { name: SAVE_LABEL }));
+        await screen.findByText(SAVED_LABEL);
+
+        expect(screen.queryByRole("button", { name: SAVE_LABEL })).not.toBeInTheDocument();
     });
 
     it("says why there is nothing to set when the runtime does not serve the settings", async () => {

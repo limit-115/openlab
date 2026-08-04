@@ -39,8 +39,9 @@ export const NO_SETTINGS_DESCRIPTION =
 /** The two blocks the settings are set through, then the one control that hands them over. */
 export const SETTINGS_FORM = "grid gap-4" as const;
 export const SETTINGS_FAILURE = "text-sm text-destructive" as const;
+/** Takes the place the save was in, so the answer to it lands where the control stood. */
 export const SETTINGS_SAVED =
-    "flex items-center gap-1.5 text-sm text-muted-foreground [&_svg]:size-4" as const;
+    "flex items-center justify-end gap-1.5 text-sm text-muted-foreground [&_svg]:size-4" as const;
 export const SETTINGS_ACTIONS = "flex flex-wrap items-center justify-end gap-3" as const;
 export const SETTINGS_PENDING = "flex items-center gap-2 text-sm text-muted-foreground" as const;
 
