@@ -1,10 +1,12 @@
 import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { AgentRoster } from "#src/team/agent-roster";
 import { AgentThread } from "#src/team/agent-thread";
 import type { WatchedAgent } from "#src/team/agent-transcript.types";
-import { NO_AGENTS_DESCRIPTION, NO_AGENTS_TITLE, TEAM_SPLIT } from "#src/team/team-panel.const";
+import { TEAM_NAMESPACE } from "#src/team/team.i18n";
+import { TEAM_SPLIT } from "#src/team/team-panel.const";
 
 interface TeamPanelProps {
     agents: readonly WatchedAgent[];
@@ -12,6 +14,7 @@ interface TeamPanelProps {
 }
 
 export function TeamPanel({ agents, runs }: TeamPanelProps) {
+    const { t } = useTranslation(TEAM_NAMESPACE);
     const [chosenId, setChosenId] = useState<string | undefined>(undefined);
 
     /**
@@ -21,7 +24,9 @@ export function TeamPanel({ agents, runs }: TeamPanelProps) {
     const selected = agents.find(({ activity }) => activity.run_id === chosenId) ?? agents[0];
 
     if (selected === undefined) {
-        return <PanelEmptyState title={NO_AGENTS_TITLE} description={NO_AGENTS_DESCRIPTION} />;
+        return (
+            <PanelEmptyState title={t("noAgentsTitle")} description={t("noAgentsDescription")} />
+        );
     }
 
     /**

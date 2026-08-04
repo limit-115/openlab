@@ -1,5 +1,6 @@
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import { ChevronRightIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useStickToBottom } from "use-stick-to-bottom";
 import { cn } from "#src/design-system/class-names";
 import {
@@ -14,10 +15,10 @@ import type {
     TranscriptToolCall,
     TranscriptTurn
 } from "#src/team/agent-transcript.types";
+import { TEAM_NAMESPACE } from "#src/team/team.i18n";
 import {
     AGENT_TRANSCRIPT,
     DIAGNOSTIC_TONE,
-    NO_ACTIVITY_YET,
     TOOL_PHASE_MARK,
     TRANSCRIPT_DETAIL,
     TRANSCRIPT_ENTRIES,
@@ -39,10 +40,11 @@ interface AgentTranscriptProps {
  * grows the last line instead of adding one.
  */
 export function AgentTranscript({ entries }: AgentTranscriptProps) {
+    const { t } = useTranslation(TEAM_NAMESPACE);
     const { scrollRef, contentRef } = useStickToBottom({ initial: TRANSCRIPT_INITIAL_SCROLL });
 
     if (entries.length === 0) {
-        return <p className="text-sm text-muted-foreground">{NO_ACTIVITY_YET}</p>;
+        return <p className="text-sm text-muted-foreground">{t("noActivity")}</p>;
     }
 
     return (
@@ -77,6 +79,8 @@ function TranscriptLine({ entry }: { entry: TranscriptEntry }) {
 
 /** Reasoning is folded away by default: it is the longest thing an agent produces and the least read. */
 function ThinkingLine({ turn }: { turn: TranscriptTurn }) {
+    const { t } = useTranslation(TEAM_NAMESPACE);
+
     return (
         <Collapsible>
             <CollapsibleTrigger className={cn(TRANSCRIPT_THINKING_TRIGGER, "group/thinking")}>
@@ -84,7 +88,7 @@ function ThinkingLine({ turn }: { turn: TranscriptTurn }) {
                     className="size-4 transition-transform group-data-[state=open]/thinking:rotate-90"
                     aria-hidden="true"
                 />
-                Thinking · {turn.text.length} characters
+                {t("thinking", { count: turn.text.length })}
             </CollapsibleTrigger>
             <CollapsibleContent>
                 <AgentProse

@@ -2,7 +2,6 @@ import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.
 import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentLatestLine } from "#src/team/agent-latest-line.types";
 import type { TranscriptEntry, WatchedAgent } from "#src/team/agent-transcript.types";
-import { PHASE_LABEL } from "#src/team/team-panel.const";
 
 /**
  * The one line that says what an agent is doing, for the roster where every agent is listed at
@@ -13,10 +12,10 @@ export function agentLatestLine({ activity, transcript }: WatchedAgent): AgentLa
     const call = lastToolCall(transcript);
 
     if (activity.phase === AgentActivityPhase.USING_TOOL && call !== undefined) {
-        return { verb: call.toolName, detail: call.detail };
+        return { toolName: call.toolName, detail: call.detail, phase: activity.phase };
     }
 
-    return { verb: PHASE_LABEL[activity.phase], detail: null };
+    return { toolName: null, detail: null, phase: activity.phase };
 }
 
 function lastToolCall(transcript: readonly TranscriptEntry[]) {

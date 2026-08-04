@@ -1,10 +1,9 @@
-import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
 import {
     AgentDiagnosticLevel,
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import type { BadgeVariant } from "#src/status-tag/status-tag.types";
 
 /**
@@ -35,7 +34,7 @@ export const ROSTER_ENTRY_SELECTED = "border-primary/50" as const;
 
 export const ROSTER_ENTRY_TOP = "flex flex-wrap items-center gap-x-2 gap-y-1" as const;
 
-export const ROSTER_ROLE = "text-sm font-semibold capitalize" as const;
+export const ROSTER_ROLE = "text-sm font-semibold" as const;
 
 export const ROSTER_EXECUTION = "text-sm text-muted-foreground" as const;
 
@@ -93,29 +92,12 @@ export const TRANSCRIPT_THINKING_TRIGGER =
 /** Full paths stay readable by wrapping, because an operator has to be able to copy them. */
 export const AGENT_ARTIFACTS = "wrap-anywhere text-sm text-muted-foreground" as const;
 
-export const PHASE_LABEL: Record<AgentActivityPhase, string> = {
-    [AgentActivityPhase.STARTING]: "Starting",
-    [AgentActivityPhase.THINKING]: "Thinking",
-    [AgentActivityPhase.RESPONDING]: "Writing",
-    [AgentActivityPhase.USING_TOOL]: "Using a tool",
-    [AgentActivityPhase.FINISHED]: "Finished"
-};
-
 /**
  * What the agent is doing and how its run is going are two different questions, so every place an
  * agent appears answers both. The phase is the quieter of the two: it changes every few seconds,
  * while the status is what an operator scanning the roster is looking for.
  */
 export const PHASE_TONE: BadgeVariant = "outline";
-
-export const RUN_STATUS_LABEL: Record<AgentRunStatus, string> = {
-    [AgentRunStatus.RUNNING]: "Running",
-    [AgentRunStatus.SUCCEEDED]: "Succeeded",
-    [AgentRunStatus.FAILED]: "Failed",
-    [AgentRunStatus.TIMED_OUT]: "Timed out",
-    [AgentRunStatus.CANCELLED]: "Cancelled",
-    [AgentRunStatus.BLOCKED]: "Blocked"
-};
 
 /** The same four colours the rest of the dashboard reads statuses in. */
 export const RUN_STATUS_TONE: Record<AgentRunStatus, BadgeVariant> = {
@@ -139,24 +121,9 @@ export const DIAGNOSTIC_TONE: Record<AgentDiagnosticLevel, string> = {
     [AgentDiagnosticLevel.ERROR]: "text-destructive"
 };
 
+/** A harness is called what its vendor calls it, so this is a spelling rather than a translation. */
 export const HARNESS_LABEL: Record<AgentHarnessKind, string> = {
     [AgentHarnessKind.CODEX]: "Codex",
     [AgentHarnessKind.CLAUDE]: "Claude",
     [AgentHarnessKind.GLM]: "GLM"
 };
-
-/** The execution line reads as three items rather than a sentence, so the effort opens like one. */
-export const EFFORT_LABEL: Record<AgentEffortLevel, string> = {
-    [AgentEffortLevel.LOW]: "Low",
-    [AgentEffortLevel.MEDIUM]: "Medium",
-    [AgentEffortLevel.HIGH]: "High",
-    [AgentEffortLevel.XHIGH]: "Extra high",
-    [AgentEffortLevel.MAX]: "Maximum"
-};
-
-export const NO_AGENTS_TITLE = "No agent is running" as const;
-
-export const NO_AGENTS_DESCRIPTION =
-    "Directors, researchers, critics and verifiers appear here while the investigation is working." as const;
-
-export const NO_ACTIVITY_YET = "Waiting for the harness to report" as const;

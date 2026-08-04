@@ -1,6 +1,9 @@
+import type { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
+
 export interface AgentLatestLine {
-    /** What the agent is doing: the tool it called, or the phase it is in. */
-    verb: string;
+    /** The tool the agent called, when a tool is the more useful thing to say than the phase. */
+    toolName: string | null;
     /** What the tool was called on, shown whole or not at all. */
     detail: string | null;
+    phase: AgentActivityPhase;
 }

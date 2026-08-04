@@ -11,6 +11,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { TranscriptEntry, WatchedAgent } from "#src/team/agent-transcript.types";
 import { watchedActivity } from "#src/team/team.fixture";
+import { TEAM_EN } from "#src/team/team.i18n";
 import { TeamPanel } from "#src/team/team-panel";
 
 const REASONING =
@@ -84,7 +85,9 @@ describe("TeamPanel", () => {
     it("names the harness, model and effort behind the agent, beside its task", () => {
         render(<TeamPanel agents={[agent([])]} runs={[RUN]} />);
 
-        const card = screen.getByRole("heading", { name: "researcher" }).closest("article");
+        const card = screen
+            .getByRole("heading", { name: TEAM_EN[AgentRole.RESEARCHER] })
+            .closest("article");
 
         expect(card?.textContent).toContain("Claude · claude-opus-5 · High effort");
         expect(card?.textContent).toContain(RUN.objective);
@@ -107,7 +110,9 @@ describe("TeamPanel", () => {
             />
         );
 
-        const card = screen.getByRole("heading", { name: "researcher" }).closest("article");
+        const card = screen
+            .getByRole("heading", { name: TEAM_EN[AgentRole.RESEARCHER] })
+            .closest("article");
 
         expect(card?.textContent).toContain("claude harness run timed out");
         expect(card?.textContent).toContain("Failed");
@@ -129,7 +134,9 @@ describe("TeamPanel", () => {
             />
         );
 
-        const card = screen.getByRole("heading", { name: "researcher" }).closest("article");
+        const card = screen
+            .getByRole("heading", { name: TEAM_EN[AgentRole.RESEARCHER] })
+            .closest("article");
 
         expect(card?.textContent).toContain("Using a tool");
         expect(card?.textContent).toContain("Running");

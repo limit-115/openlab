@@ -1,9 +1,11 @@
 import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
+import { useTranslation } from "react-i18next";
 import { cn } from "#src/design-system/class-names";
 import { agentExecutionLine } from "#src/team/agent-execution-line";
 import { agentLatestLine } from "#src/team/agent-latest-line";
 import { AgentStatusBadges } from "#src/team/agent-status-badges";
 import type { WatchedAgent } from "#src/team/agent-transcript.types";
+import { TEAM_NAMESPACE } from "#src/team/team.i18n";
 import {
     ROSTER_DETAIL,
     ROSTER_ENTRY,
@@ -29,8 +31,10 @@ interface AgentRosterProps {
  * right now. Reading one of them in full is a click away and does not hide the others.
  */
 export function AgentRoster({ agents, runs, selectedId, onSelect }: AgentRosterProps) {
+    const { t } = useTranslation(TEAM_NAMESPACE);
+
     return (
-        <ul className={TEAM_ROSTER} aria-label="Agents">
+        <ul className={TEAM_ROSTER} aria-label={t("agents")}>
             {agents.map((agent) => {
                 const { activity } = agent;
                 const run = runs.find(({ id }) => id === activity.run_id);
@@ -48,7 +52,7 @@ export function AgentRoster({ agents, runs, selectedId, onSelect }: AgentRosterP
                             )}
                         >
                             <span className={ROSTER_ENTRY_TOP}>
-                                <span className={ROSTER_ROLE}>{activity.role}</span>
+                                <span className={ROSTER_ROLE}>{t(activity.role)}</span>
                                 <AgentStatusBadges
                                     phase={activity.phase}
                                     status={activity.status}
@@ -56,7 +60,7 @@ export function AgentRoster({ agents, runs, selectedId, onSelect }: AgentRosterP
                             </span>
 
                             <span className={ROSTER_EXECUTION}>
-                                {agentExecutionLine(activity.execution)}
+                                {agentExecutionLine(activity.execution, t)}
                             </span>
 
                             {run === undefined ? null : (
@@ -64,7 +68,9 @@ export function AgentRoster({ agents, runs, selectedId, onSelect }: AgentRosterP
                             )}
 
                             <span className={ROSTER_LINE}>
-                                <span className={ROSTER_VERB}>{line.verb}</span>
+                                <span className={ROSTER_VERB}>
+                                    {line.toolName ?? t(line.phase)}
+                                </span>
                                 {line.detail === null ? null : (
                                     <span className={ROSTER_DETAIL}>{line.detail}</span>
                                 )}
