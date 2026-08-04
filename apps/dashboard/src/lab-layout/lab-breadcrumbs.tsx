@@ -13,6 +13,12 @@ import {
     fetchInvestigationRoster,
     investigationRosterQueryKey
 } from "#src/investigation-roster/investigation-roster-client";
+import {
+    TRAIL_ITEM,
+    TRAIL_LIST,
+    TRAIL_SEPARATOR,
+    TRAIL_STEP
+} from "#src/lab-layout/lab-layout.const";
 import { labTrail } from "#src/lab-layout/lab-trail";
 
 /**
@@ -36,16 +42,20 @@ export function LabBreadcrumbs() {
 
     return (
         <Breadcrumb>
-            <BreadcrumbList>
+            <BreadcrumbList className={TRAIL_LIST}>
                 {trail.map((step, index) => (
                     <Fragment key={step.label}>
-                        {index > 0 ? <BreadcrumbSeparator /> : null}
-                        <BreadcrumbItem>
+                        {index > 0 ? <BreadcrumbSeparator className={TRAIL_SEPARATOR} /> : null}
+                        <BreadcrumbItem className={TRAIL_ITEM}>
                             {step.route === undefined ? (
-                                <BreadcrumbPage>{step.label}</BreadcrumbPage>
+                                <BreadcrumbPage className={TRAIL_STEP} title={step.label}>
+                                    {step.label}
+                                </BreadcrumbPage>
                             ) : (
-                                <BreadcrumbLink asChild>
-                                    <Link to={step.route}>{step.label}</Link>
+                                <BreadcrumbLink asChild className={TRAIL_STEP}>
+                                    <Link to={step.route} title={step.label}>
+                                        {step.label}
+                                    </Link>
                                 </BreadcrumbLink>
                             )}
                         </BreadcrumbItem>

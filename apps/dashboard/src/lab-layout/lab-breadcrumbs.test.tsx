@@ -72,6 +72,15 @@ describe("LabBreadcrumbs", () => {
         expect(within(trail).queryByRole("link", { name: "Team" })).toBeNull();
     });
 
+    it("keeps a goal too long for the bar readable in full where it is clipped", async () => {
+        renderAt(investigationView(investigationId));
+
+        const trail = await screen.findByRole("navigation", { name: "breadcrumb" });
+        await waitFor(() => expect(within(trail).getByText(goal)).toBeInTheDocument());
+
+        expect(within(trail).getByText(goal)).toHaveAttribute("title", goal);
+    });
+
     it("offers nowhere to go from the page the operator is already on", async () => {
         renderAt(LabRoute.ROSTER);
 
