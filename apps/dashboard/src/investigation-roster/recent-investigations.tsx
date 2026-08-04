@@ -49,7 +49,7 @@ export function RecentInvestigations() {
 
     return (
         <SidebarGroup>
-            <SidebarGroupLabel className="text-sm">{RECENTS_LABEL}</SidebarGroupLabel>
+            <SidebarGroupLabel>{RECENTS_LABEL}</SidebarGroupLabel>
             <SidebarGroupContent>
                 <SidebarMenu aria-label={RECENTS_LABEL}>
                     {recent.map((investigation) => (
