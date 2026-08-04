@@ -7,20 +7,15 @@ import { Button } from "#src/design-system/button";
 import { cn } from "#src/design-system/class-names";
 import { useElapsedTime } from "#src/investigation-header/elapsed-time";
 import {
-    AGENTS_LABEL,
-    BETS_LABEL,
-    BLOCKED_LABEL,
     CARD,
     CARD_FOOTER,
     CARD_GOAL,
     CARD_HEADER,
     CARD_READING_LABEL,
     CARD_READINGS,
-    CARD_STATE,
-    DISCARD_INVESTIGATION_LABEL,
-    FINDINGS_LABEL,
-    HARNESSES_LABEL
+    CARD_STATE
 } from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_ROSTER_NAMESPACE } from "#src/investigation-roster/investigation-roster.i18n";
 import { INVESTIGATION_STATE_NAMESPACE } from "#src/investigation-state/investigation-state.i18n";
 import {
     STATE_DOT,
@@ -39,7 +34,8 @@ interface InvestigationCardProps {
  * looking for; everything else on the card answers whether it is worth opening right now.
  */
 export function InvestigationCard({ investigation, discard, discarding }: InvestigationCardProps) {
-    const { t } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
+    const { t } = useTranslation(INVESTIGATION_ROSTER_NAMESPACE);
+    const { t: state } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
     const uptime = useElapsedTime(
         investigation.uptime_ms,
         investigation.updated_at,
@@ -57,20 +53,23 @@ export function InvestigationCard({ investigation, discard, discarding }: Invest
                         className={cn(STATE_DOT, STATE_DOT_TONE[investigation.state])}
                         aria-hidden="true"
                     />
-                    {t(investigation.state)}
+                    {state(investigation.state)}
                 </span>
             </header>
 
             <dl className={CARD_READINGS}>
-                <Reading label={BETS_LABEL} value={String(investigation.assumption_count)} />
+                <Reading label={t("bets")} value={String(investigation.assumption_count)} />
                 <Reading
-                    label={FINDINGS_LABEL}
-                    value={`${investigation.confirmed_finding_count} of ${investigation.finding_count}`}
+                    label={t("findings")}
+                    value={t("ofTotal", {
+                        done: investigation.confirmed_finding_count,
+                        total: investigation.finding_count
+                    })}
                 />
-                <Reading label={AGENTS_LABEL} value={String(investigation.active_run_count)} />
+                <Reading label={t("agents")} value={String(investigation.active_run_count)} />
                 {investigation.open_capability_count > 0 ? (
                     <Reading
-                        label={BLOCKED_LABEL}
+                        label={t("blocked")}
                         value={String(investigation.open_capability_count)}
                     />
                 ) : null}
@@ -78,11 +77,11 @@ export function InvestigationCard({ investigation, discard, discarding }: Invest
 
             <footer className={CARD_FOOTER}>
                 <span>
-                    {investigation.id} · {formatDuration(uptime)} · {HARNESSES_LABEL}:{" "}
+                    {investigation.id} · {formatDuration(uptime)} · {t("harnesses")}:{" "}
                     {investigation.harness_kinds.join(", ")}
                 </span>
                 <Button variant="ghost" size="sm" onClick={discard} disabled={discarding}>
-                    {DISCARD_INVESTIGATION_LABEL}
+                    {t("discard")}
                 </Button>
             </footer>
         </article>

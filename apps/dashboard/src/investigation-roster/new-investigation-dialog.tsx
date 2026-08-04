@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import {
@@ -12,11 +13,8 @@ import {
     DialogTrigger
 } from "#src/design-system/dialog";
 import { SidebarMenuButton } from "#src/design-system/sidebar";
-import {
-    COMPOSER_DIALOG,
-    NEW_INVESTIGATION_DESCRIPTION,
-    NEW_INVESTIGATION_LABEL
-} from "#src/investigation-roster/investigation-roster.const";
+import { COMPOSER_DIALOG } from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_ROSTER_NAMESPACE } from "#src/investigation-roster/investigation-roster.i18n";
 import {
     createInvestigation,
     investigationRosterQueryKey
@@ -28,6 +26,7 @@ import { NewInvestigationForm } from "#src/investigation-roster/new-investigatio
  * rather than in it, and the operator lands on the investigation the lab just opened.
  */
 export function NewInvestigationDialog() {
+    const { t } = useTranslation(INVESTIGATION_ROSTER_NAMESPACE);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [composing, setComposing] = useState(false);
@@ -53,13 +52,13 @@ export function NewInvestigationDialog() {
             <DialogTrigger asChild>
                 <SidebarMenuButton>
                     <PlusIcon />
-                    <span>{NEW_INVESTIGATION_LABEL}</span>
+                    <span>{t("newInvestigation")}</span>
                 </SidebarMenuButton>
             </DialogTrigger>
             <DialogContent className={COMPOSER_DIALOG}>
                 <DialogHeader>
-                    <DialogTitle>{NEW_INVESTIGATION_LABEL}</DialogTitle>
-                    <DialogDescription>{NEW_INVESTIGATION_DESCRIPTION}</DialogDescription>
+                    <DialogTitle>{t("newInvestigation")}</DialogTitle>
+                    <DialogDescription>{t("newInvestigationDescription")}</DialogDescription>
                 </DialogHeader>
                 <NewInvestigationForm
                     start={(investigation) => start.mutate(investigation)}

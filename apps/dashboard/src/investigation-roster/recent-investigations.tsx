@@ -11,11 +11,8 @@ import {
     SidebarMenuButton,
     SidebarMenuItem
 } from "#src/design-system/sidebar";
-import {
-    RECENT_GOAL,
-    RECENTS_LABEL,
-    RECENTS_SHOWN
-} from "#src/investigation-roster/investigation-roster.const";
+import { RECENT_GOAL, RECENTS_SHOWN } from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_ROSTER_NAMESPACE } from "#src/investigation-roster/investigation-roster.i18n";
 import {
     fetchInvestigationRoster,
     investigationRosterQueryKey
@@ -31,7 +28,8 @@ import {
  * the stream the roster subscribes to moves this list too.
  */
 export function RecentInvestigations() {
-    const { t } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
+    const { t } = useTranslation(INVESTIGATION_ROSTER_NAMESPACE);
+    const { t: state } = useTranslation(INVESTIGATION_STATE_NAMESPACE);
     const { pathname } = useLocation();
     const roster = useQuery({
         queryKey: investigationRosterQueryKey,
@@ -51,15 +49,15 @@ export function RecentInvestigations() {
 
     return (
         <SidebarGroup>
-            <SidebarGroupLabel>{RECENTS_LABEL}</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("recents")}</SidebarGroupLabel>
             <SidebarGroupContent>
-                <SidebarMenu aria-label={RECENTS_LABEL}>
+                <SidebarMenu aria-label={t("recents")}>
                     {recent.map((investigation) => (
                         <SidebarMenuItem key={investigation.id}>
                             <SidebarMenuButton
                                 asChild
                                 isActive={pathname === investigationAddress(investigation.id)}
-                                tooltip={`${investigation.goal} · ${t(investigation.state)}`}
+                                tooltip={`${investigation.goal} · ${state(investigation.state)}`}
                             >
                                 <NavLink to={investigationAddress(investigation.id)}>
                                     <span

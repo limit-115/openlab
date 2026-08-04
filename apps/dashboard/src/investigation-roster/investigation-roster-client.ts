@@ -2,11 +2,10 @@ import { InvestigationSummarySchema } from "@lab/protocol/investigation-status/i
 import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import i18next from "i18next";
 import { investigationPath } from "#src/investigation-roster/investigation-address";
-import {
-    INVESTIGATIONS_ENDPOINT,
-    ROSTER_UNREACHABLE
-} from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATIONS_ENDPOINT } from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_ROSTER_NAMESPACE } from "#src/investigation-roster/investigation-roster.i18n";
 import type { NewInvestigation } from "#src/investigation-roster/investigation-roster.types";
 
 export const investigationRosterQueryKey = ["investigations"] as const;
@@ -44,11 +43,16 @@ async function request(url: string, init: RequestInit): Promise<Response> {
     try {
         response = await fetch(url, init);
     } catch {
-        throw new Error(ROSTER_UNREACHABLE);
+        // Read at the throw rather than at import, so a refusal speaks whichever language is on.
+        throw new Error(i18next.t("unreachable", { ns: INVESTIGATION_ROSTER_NAMESPACE }));
     }
     if (!response.ok) {
         throw new Error(
-            refusal(await readBody(response)) ?? `The lab answered ${response.status}.`
+            refusal(await readBody(response)) ??
+                i18next.t("answered", {
+                    ns: INVESTIGATION_ROSTER_NAMESPACE,
+                    status: response.status
+                })
         );
     }
     return response;

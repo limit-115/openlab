@@ -1,17 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
 import { InvestigationCard } from "#src/investigation-roster/investigation-card";
 import {
-    EMPTY_ROSTER_DESCRIPTION,
-    EMPTY_ROSTER_TITLE,
-    ROSTER_DESCRIPTION,
     ROSTER_DESCRIPTION_TEXT,
     ROSTER_HEADER,
     ROSTER_LIST,
     ROSTER_PAGE,
-    ROSTER_TITLE,
     ROSTER_TITLE_TEXT
 } from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_ROSTER_NAMESPACE } from "#src/investigation-roster/investigation-roster.i18n";
 import {
     discardInvestigation,
     fetchInvestigationRoster,
@@ -23,6 +21,7 @@ import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 /** Everything the lab is investigating, one direction per card. */
 export function InvestigationRoster() {
+    const { t } = useTranslation(INVESTIGATION_ROSTER_NAMESPACE);
     const queryClient = useQueryClient();
     const stream = useLiveRoster();
     const roster = useQuery({
@@ -47,17 +46,14 @@ export function InvestigationRoster() {
     return (
         <div className={ROSTER_PAGE}>
             <header className={ROSTER_HEADER}>
-                <h1 className={ROSTER_TITLE_TEXT}>{ROSTER_TITLE}</h1>
-                <p className={ROSTER_DESCRIPTION_TEXT}>{ROSTER_DESCRIPTION}</p>
+                <h1 className={ROSTER_TITLE_TEXT}>{t("title")}</h1>
+                <p className={ROSTER_DESCRIPTION_TEXT}>{t("description")}</p>
             </header>
 
             {investigations.length === 0 ? (
-                <PanelEmptyState
-                    title={EMPTY_ROSTER_TITLE}
-                    description={EMPTY_ROSTER_DESCRIPTION}
-                />
+                <PanelEmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
             ) : (
-                <ul className={ROSTER_LIST} aria-label={ROSTER_TITLE}>
+                <ul className={ROSTER_LIST} aria-label={t("title")}>
                     {investigations.map((investigation) => (
                         <li key={investigation.id}>
                             <InvestigationCard

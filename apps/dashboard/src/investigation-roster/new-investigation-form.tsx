@@ -2,6 +2,7 @@ import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
 import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "#src/design-system/button";
 import { Checkbox } from "#src/design-system/checkbox";
 import { Spinner } from "#src/design-system/spinner";
@@ -11,13 +12,6 @@ import {
     labSettingsQueryKey
 } from "#src/harness-settings/harness-settings-client";
 import {
-    CANCEL_LABEL,
-    CONTEXT_HINT,
-    CONTEXT_LABEL,
-    CONTEXT_PLACEHOLDER,
-    CRITERIA_HINT,
-    CRITERIA_LABEL,
-    CRITERIA_PLACEHOLDER,
     FORM,
     FORM_FAILURE,
     FORM_FIELD,
@@ -25,19 +19,12 @@ import {
     FORM_HINT,
     FORM_LABEL,
     FORM_ROW,
-    GOAL_HINT,
-    GOAL_LABEL,
-    GOAL_PLACEHOLDER,
-    HARNESS_HINT,
-    HARNESS_LABEL,
     HARNESS_LEGEND,
     HARNESS_OPTION,
     HARNESS_OPTION_NAME,
-    HARNESS_OPTIONS,
-    HARNESS_REQUIRED,
-    START_INVESTIGATION_LABEL,
-    STARTING_INVESTIGATION_LABEL
+    HARNESS_OPTIONS
 } from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_ROSTER_NAMESPACE } from "#src/investigation-roster/investigation-roster.i18n";
 import type { NewInvestigation } from "#src/investigation-roster/investigation-roster.types";
 
 interface NewInvestigationFormProps {
@@ -66,6 +53,7 @@ export function NewInvestigationForm({
     cancel,
     failure
 }: NewInvestigationFormProps) {
+    const { t } = useTranslation(INVESTIGATION_ROSTER_NAMESPACE);
     const goalId = useId();
     const contextId = useId();
     const criteriaId = useId();
@@ -117,45 +105,45 @@ export function NewInvestigationForm({
             <div className={FORM_FIELDS}>
                 <div className={FORM_FIELD}>
                     <label className={FORM_LABEL} htmlFor={goalId}>
-                        {GOAL_LABEL}
+                        {t("goalLabel")}
                     </label>
                     <Textarea
                         id={goalId}
                         value={goal}
-                        placeholder={GOAL_PLACEHOLDER}
+                        placeholder={t("goalPlaceholder")}
                         onChange={(event) => setGoal(event.target.value)}
                     />
-                    <p className={FORM_HINT}>{GOAL_HINT}</p>
+                    <p className={FORM_HINT}>{t("goalHint")}</p>
                 </div>
 
                 <div className={FORM_FIELD}>
                     <label className={FORM_LABEL} htmlFor={contextId}>
-                        {CONTEXT_LABEL}
+                        {t("contextLabel")}
                     </label>
                     <Textarea
                         id={contextId}
                         value={context}
-                        placeholder={CONTEXT_PLACEHOLDER}
+                        placeholder={t("contextPlaceholder")}
                         onChange={(event) => setContext(event.target.value)}
                     />
-                    <p className={FORM_HINT}>{CONTEXT_HINT}</p>
+                    <p className={FORM_HINT}>{t("contextHint")}</p>
                 </div>
 
                 <div className={FORM_FIELD}>
                     <label className={FORM_LABEL} htmlFor={criteriaId}>
-                        {CRITERIA_LABEL}
+                        {t("criteriaLabel")}
                     </label>
                     <Textarea
                         id={criteriaId}
                         value={criteria}
-                        placeholder={CRITERIA_PLACEHOLDER}
+                        placeholder={t("criteriaPlaceholder")}
                         onChange={(event) => setCriteria(event.target.value)}
                     />
-                    <p className={FORM_HINT}>{CRITERIA_HINT}</p>
+                    <p className={FORM_HINT}>{t("criteriaHint")}</p>
                 </div>
 
                 <fieldset className={FORM_FIELD}>
-                    <legend className={HARNESS_LEGEND}>{HARNESS_LABEL}</legend>
+                    <legend className={HARNESS_LEGEND}>{t("harnesses")}</legend>
                     <div className={HARNESS_OPTIONS}>
                         {SELECTABLE_HARNESSES.map((kind) => (
                             <div key={kind} className={HARNESS_OPTION}>
@@ -175,7 +163,9 @@ export function NewInvestigationForm({
                             </div>
                         ))}
                     </div>
-                    <p className={FORM_HINT}>{rosterIsEmpty ? HARNESS_REQUIRED : HARNESS_HINT}</p>
+                    <p className={FORM_HINT}>
+                        {rosterIsEmpty ? t("harnessRequired") : t("harnessHint")}
+                    </p>
                 </fieldset>
             </div>
 
@@ -187,14 +177,14 @@ export function NewInvestigationForm({
 
             <div className={FORM_ROW}>
                 <Button type="button" variant="outline" onClick={cancel} disabled={starting}>
-                    {CANCEL_LABEL}
+                    {t("cancel")}
                 </Button>
                 <Button
                     type="submit"
                     disabled={starting || goal.trim().length === 0 || rosterIsEmpty}
                 >
                     {starting ? <Spinner aria-hidden="true" /> : null}
-                    {starting ? STARTING_INVESTIGATION_LABEL : START_INVESTIGATION_LABEL}
+                    {starting ? t("starting") : t("start")}
                 </Button>
             </div>
         </form>

@@ -5,10 +5,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
-import {
-    NEW_INVESTIGATION_LABEL,
-    RECENTS_LABEL
-} from "#src/investigation-roster/investigation-roster.const";
+import { INVESTIGATION_ROSTER_EN } from "#src/investigation-roster/investigation-roster.i18n";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { rosterFixture } from "#src/test-support/roster-fixture";
 import { ThemeProvider } from "#src/theme/theme-provider";
@@ -53,7 +50,7 @@ describe("RecentInvestigations", () => {
     it("opens each investigation it lists at that investigation's own address", async () => {
         renderLab(rosterFixture);
 
-        const recents = await screen.findByRole("list", { name: RECENTS_LABEL });
+        const recents = await screen.findByRole("list", { name: INVESTIGATION_ROSTER_EN.recents });
 
         expect(
             within(recents).getByRole("link", { name: rosterFixture[0]?.goal ?? "missing" })
@@ -66,7 +63,7 @@ describe("RecentInvestigations", () => {
     it("puts the investigation the lab moved last at the top, whatever order it arrives in", async () => {
         renderLab([...rosterFixture].reverse());
 
-        const recents = await screen.findByRole("list", { name: RECENTS_LABEL });
+        const recents = await screen.findByRole("list", { name: INVESTIGATION_ROSTER_EN.recents });
         const listed = within(recents)
             .getAllByRole("link")
             .map((link) => link.getAttribute("href"));
@@ -80,7 +77,7 @@ describe("RecentInvestigations", () => {
     it("says nothing at all while the lab holds no investigations", async () => {
         renderLab([]);
 
-        await screen.findByRole("button", { name: NEW_INVESTIGATION_LABEL });
-        expect(screen.queryByRole("list", { name: RECENTS_LABEL })).toBeNull();
+        await screen.findByRole("button", { name: INVESTIGATION_ROSTER_EN.newInvestigation });
+        expect(screen.queryByRole("list", { name: INVESTIGATION_ROSTER_EN.recents })).toBeNull();
     });
 });
