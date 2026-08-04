@@ -1,13 +1,7 @@
-export const INVESTIGATION_HEADER_BAR =
-    "sticky top-0 z-20 border-b bg-background/85 backdrop-blur-lg" as const;
-
 export const INVESTIGATION_HEADER_ROW =
-    "flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-3" as const;
+    "flex flex-wrap items-center justify-between gap-x-8 gap-y-3" as const;
 
-/** The readings and the palette control share the end of the row and wrap together. */
-export const INVESTIGATION_HEADER_RUNTIME = "flex flex-wrap items-center gap-x-5 gap-y-2" as const;
-
-/** The views sit in the header because it is the only navigation the dashboard has. */
+/** The views the investigation is read through, as a row of addresses. */
 export const INVESTIGATION_HEADER_VIEWS =
     "flex w-fit flex-wrap items-center gap-x-6 gap-y-2" as const;
 

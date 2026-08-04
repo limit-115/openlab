@@ -48,7 +48,7 @@ function respondWith(payload: unknown) {
     );
 }
 
-describe("App", () => {
+describe("InvestigationShell", () => {
     beforeEach(() => {
         FakeEventSource.reset();
         vi.stubGlobal("EventSource", FakeEventSource);

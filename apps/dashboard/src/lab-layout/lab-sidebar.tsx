@@ -1,15 +1,10 @@
-"use client";
-
 import { FlaskConicalIcon, MicroscopeIcon, Settings2Icon } from "lucide-react";
 import type * as React from "react";
 import { Link, NavLink } from "react-router";
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
-import { NavSecondary } from "#src/design-system/nav-secondary";
-import { NavUser } from "#src/design-system/nav-user";
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarHeader,
     SidebarMenu,
@@ -18,33 +13,12 @@ import {
 } from "#src/design-system/sidebar";
 import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
 import { RecentInvestigations } from "#src/investigation-roster/recent-investigations";
-import { LAB_NAME, LAB_SUBTITLE } from "#src/lab-shell/lab-shell.const";
+import { LAB_NAME, LAB_SETTINGS, LAB_SUBTITLE, LAB_VIEWS } from "#src/lab-layout/lab-layout.const";
 
-const data = {
-    user: {
-        name: "shadcn",
-        email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg"
-    },
-    navMain: [
-        {
-            title: "Investigations",
-            url: LabRoute.ROSTER,
-            icon: <MicroscopeIcon />
-        }
-    ],
-    navSecondary: [
-        {
-            title: "Settings",
-            url: LabRoute.SETTINGS,
-            icon: <Settings2Icon />
-        }
-    ]
-};
-
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+/** Everything the lab is reachable through: what it is, what to open, and what it holds. */
+export function LabSidebar() {
     return (
-        <Sidebar variant="inset" {...props}>
+        <Sidebar variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -62,30 +36,51 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
+
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <NewInvestigationDialog />
                         </SidebarMenuItem>
-                        {data.navMain.map((item) => (
-                            <SidebarMenuItem key={item.title}>
-                                <SidebarMenuButton asChild tooltip={item.title}>
-                                    <NavLink to={item.url} end>
-                                        {item.icon}
-                                        <span>{item.title}</span>
-                                    </NavLink>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
+                        {LAB_VIEWS.map((view) => (
+                            <LabEntry key={view.route} route={view.route} label={view.label}>
+                                <MicroscopeIcon />
+                            </LabEntry>
                         ))}
                     </SidebarMenu>
                 </SidebarGroup>
+
                 <RecentInvestigations />
-                <NavSecondary items={data.navSecondary} className="mt-auto" />
+
+                <SidebarGroup className="mt-auto">
+                    <SidebarMenu>
+                        <LabEntry route={LAB_SETTINGS.route} label={LAB_SETTINGS.label} size="sm">
+                            <Settings2Icon />
+                        </LabEntry>
+                    </SidebarMenu>
+                </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter>
-                <NavUser user={data.user} />
-            </SidebarFooter>
         </Sidebar>
+    );
+}
+
+interface LabEntryProps {
+    route: string;
+    label: string;
+    size?: "default" | "sm";
+    children: React.ReactNode;
+}
+
+function LabEntry({ route, label, size = "default", children }: LabEntryProps) {
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton asChild size={size} tooltip={label}>
+                <NavLink to={route} end>
+                    {children}
+                    <span>{label}</span>
+                </NavLink>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
     );
 }
