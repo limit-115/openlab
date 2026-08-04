@@ -1,8 +1,10 @@
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type * as React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "#src/design-system/button";
 import { cn } from "#src/design-system/class-names";
+import { DESIGN_SYSTEM_NAMESPACE } from "#src/design-system/design-system.i18n";
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
     return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -44,6 +46,7 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
     showCloseButton?: boolean;
 }) {
+    const { t } = useTranslation(DESIGN_SYSTEM_NAMESPACE);
     return (
         <DialogPortal>
             <DialogOverlay />
@@ -64,7 +67,7 @@ function DialogContent({
                             size="icon-sm"
                         >
                             <XIcon />
-                            <span className="sr-only">Close</span>
+                            <span className="sr-only">{t("close")}</span>
                         </Button>
                     </DialogPrimitive.Close>
                 )}
@@ -91,6 +94,8 @@ function DialogFooter({
 }: React.ComponentProps<"div"> & {
     showCloseButton?: boolean;
 }) {
+    const { t } = useTranslation(DESIGN_SYSTEM_NAMESPACE);
+
     return (
         <div
             data-slot="dialog-footer"
@@ -100,7 +105,7 @@ function DialogFooter({
             {children}
             {showCloseButton && (
                 <DialogPrimitive.Close asChild>
-                    <Button variant="outline">Close</Button>
+                    <Button variant="outline">{t("close")}</Button>
                 </DialogPrimitive.Close>
             )}
         </div>

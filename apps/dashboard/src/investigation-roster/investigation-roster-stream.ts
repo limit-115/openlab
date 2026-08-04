@@ -1,11 +1,13 @@
 import { InvestigationSummarySchema } from "@lab/protocol/investigation-status/investigation-summary.schema";
 import { useQueryClient } from "@tanstack/react-query";
+import i18next from "i18next";
 import { useEffect, useState } from "react";
 import {
     ROSTER_STREAM_URL,
     RosterStreamEvent
 } from "#src/investigation-roster/investigation-roster.const";
 import { investigationRosterQueryKey } from "#src/investigation-roster/investigation-roster-client";
+import { LIVE_STATUS_NAMESPACE } from "#src/live-status/live-status.i18n";
 import { StreamState } from "#src/live-status/status-stream.const";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
 
@@ -35,7 +37,10 @@ export function useLiveRoster(enabled = true): LiveStatus {
             } catch (error) {
                 setStatus((current) => ({
                     ...current,
-                    protocolError: error instanceof Error ? error.message : "Invalid roster update"
+                    protocolError:
+                        error instanceof Error
+                            ? error.message
+                            : i18next.t("invalidUpdate", { ns: LIVE_STATUS_NAMESPACE })
                 }));
             }
         });

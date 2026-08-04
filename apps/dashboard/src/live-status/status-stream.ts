@@ -3,8 +3,10 @@ import type { InvestigationEvent } from "@lab/protocol/investigation-events/inve
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { useQueryClient } from "@tanstack/react-query";
+import i18next from "i18next";
 import { useEffect, useState } from "react";
 import { investigationPath } from "#src/investigation-roster/investigation-address";
+import { LIVE_STATUS_NAMESPACE } from "#src/live-status/live-status.i18n";
 import { statusQueryKey } from "#src/live-status/status-client";
 import { StreamEventType, StreamState } from "#src/live-status/status-stream.const";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
@@ -37,7 +39,10 @@ export function useLiveStatus(investigationId: string, enabled = true): LiveStat
         const source = new EventSource(`${investigationPath(investigationId)}/events`);
 
         const markProtocolError = (error: unknown) => {
-            const message = error instanceof Error ? error.message : "Invalid live update";
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : i18next.t("invalidUpdate", { ns: LIVE_STATUS_NAMESPACE });
             setStatus((current) => ({ ...current, protocolError: message }));
         };
 

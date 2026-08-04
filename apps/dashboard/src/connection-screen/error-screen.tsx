@@ -1,10 +1,12 @@
 import { RefreshCwIcon, TerminalIcon, TriangleAlertIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
     CENTER_STATE,
     CENTER_STATE_MARK_ERROR,
     COMMAND_HINT,
     COMMAND_HINT_CODE
 } from "#src/connection-screen/connection-screen.const";
+import { CONNECTION_SCREEN_NAMESPACE } from "#src/connection-screen/connection-screen.i18n";
 import { Button } from "#src/design-system/button";
 import {
     Empty,
@@ -23,6 +25,8 @@ interface ErrorDashboardProps {
 }
 
 export function ErrorDashboard({ error, retry, retrying }: ErrorDashboardProps) {
+    const { t } = useTranslation(CONNECTION_SCREEN_NAMESPACE);
+
     return (
         <main className={CENTER_STATE} role="alert">
             <Empty>
@@ -30,7 +34,7 @@ export function ErrorDashboard({ error, retry, retrying }: ErrorDashboardProps) 
                     <EmptyMedia variant="icon" className={CENTER_STATE_MARK_ERROR}>
                         <TriangleAlertIcon />
                     </EmptyMedia>
-                    <EmptyTitle>Could not read investigation status</EmptyTitle>
+                    <EmptyTitle>{t("errorTitle")}</EmptyTitle>
                     <EmptyDescription>{error.message}</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
@@ -44,7 +48,7 @@ export function ErrorDashboard({ error, retry, retrying }: ErrorDashboardProps) 
                         ) : (
                             <RefreshCwIcon data-icon="inline-start" />
                         )}
-                        {retrying ? "Retrying…" : "Retry connection"}
+                        {retrying ? t("retrying") : t("retry")}
                     </Button>
                 </EmptyContent>
             </Empty>

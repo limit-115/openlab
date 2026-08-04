@@ -1,4 +1,7 @@
-"use client";
+import { useTranslation } from "react-i18next";
+import { DESIGN_SYSTEM_NAMESPACE } from "#src/design-system/design-system.i18n";
+
+("use client");
 
 import { XIcon } from "lucide-react";
 import { Dialog as SheetPrimitive } from "radix-ui";
@@ -48,6 +51,8 @@ function SheetContent({
     side?: "top" | "right" | "bottom" | "left";
     showCloseButton?: boolean;
 }) {
+    const { t } = useTranslation(DESIGN_SYSTEM_NAMESPACE);
+
     return (
         <SheetPortal>
             <SheetOverlay />
@@ -69,7 +74,7 @@ function SheetContent({
                             size="icon-sm"
                         >
                             <XIcon />
-                            <span className="sr-only">Close</span>
+                            <span className="sr-only">{t("close")}</span>
                         </Button>
                     </SheetPrimitive.Close>
                 )}

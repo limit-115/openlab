@@ -1,6 +1,8 @@
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import i18next from "i18next";
 import { investigationPath } from "#src/investigation-roster/investigation-address";
+import { LIVE_STATUS_NAMESPACE } from "#src/live-status/live-status.i18n";
 
 export function statusQueryKey(investigationId: string) {
     return ["investigation", investigationId, "status"] as const;
@@ -30,8 +32,8 @@ export async function fetchStatus(
     if (!response.ok) {
         throw new StatusRequestError(
             response.status === 404
-                ? "The lab is not holding this investigation any more."
-                : `Status endpoint returned ${response.status}.`,
+                ? i18next.t("missingInvestigation", { ns: LIVE_STATUS_NAMESPACE })
+                : i18next.t("answered", { ns: LIVE_STATUS_NAMESPACE, status: response.status }),
             response.status
         );
     }

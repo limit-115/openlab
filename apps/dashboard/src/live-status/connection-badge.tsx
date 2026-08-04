@@ -1,10 +1,8 @@
 import { RadioIcon, WifiOffIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "#src/design-system/badge";
-import {
-    CONNECTION_BADGE_LABEL,
-    CONNECTION_BADGE_TONE,
-    SIGNAL_PULSE
-} from "#src/live-status/connection-badge.const";
+import { CONNECTION_BADGE_TONE, SIGNAL_PULSE } from "#src/live-status/connection-badge.const";
+import { LIVE_STATUS_NAMESPACE } from "#src/live-status/live-status.i18n";
 import { StreamState } from "#src/live-status/status-stream.const";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
 
@@ -13,6 +11,8 @@ interface ConnectionBadgeProps {
 }
 
 export function ConnectionBadge({ stream }: ConnectionBadgeProps) {
+    const { t } = useTranslation(LIVE_STATUS_NAMESPACE);
+
     return (
         <Badge
             variant={CONNECTION_BADGE_TONE[stream.state]}
@@ -27,7 +27,7 @@ export function ConnectionBadge({ stream }: ConnectionBadgeProps) {
                     aria-hidden="true"
                 />
             )}
-            {CONNECTION_BADGE_LABEL[stream.state]}
+            {t(stream.state)}
         </Badge>
     );
 }

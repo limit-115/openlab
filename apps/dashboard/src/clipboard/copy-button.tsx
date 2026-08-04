@@ -1,6 +1,8 @@
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { COPIED_LABEL, COPY_FEEDBACK_DURATION_MS } from "#src/clipboard/copy-button.const";
+import { useTranslation } from "react-i18next";
+import { CLIPBOARD_NAMESPACE } from "#src/clipboard/clipboard.i18n";
+import { COPY_FEEDBACK_DURATION_MS } from "#src/clipboard/copy-button.const";
 import { Button } from "#src/design-system/button";
 import { cn } from "#src/design-system/class-names";
 import { Tooltip, TooltipContent, TooltipTrigger } from "#src/design-system/tooltip";
@@ -14,6 +16,7 @@ interface CopyButtonProps {
 }
 
 export function CopyButton({ value, label, className }: CopyButtonProps) {
+    const { t } = useTranslation(CLIPBOARD_NAMESPACE);
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
@@ -42,13 +45,13 @@ export function CopyButton({ value, label, className }: CopyButtonProps) {
                     variant="ghost"
                     size="icon-sm"
                     className={cn("text-muted-foreground", className)}
-                    aria-label={copied ? COPIED_LABEL : label}
+                    aria-label={copied ? t("copied") : label}
                     onClick={() => void copy()}
                 >
                     {copied ? <CheckIcon /> : <CopyIcon />}
                 </Button>
             </TooltipTrigger>
-            <TooltipContent>{copied ? COPIED_LABEL : label}</TooltipContent>
+            <TooltipContent>{copied ? t("copied") : label}</TooltipContent>
         </Tooltip>
     );
 }
