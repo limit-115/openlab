@@ -5,10 +5,8 @@ import {
     BotIcon,
     FlaskConicalIcon,
     FrameIcon,
-    LifeBuoyIcon,
     MapIcon,
     PieChartIcon,
-    SendIcon,
     Settings2Icon,
     TerminalSquareIcon
 } from "lucide-react";
@@ -125,14 +123,9 @@ const data = {
     ],
     navSecondary: [
         {
-            title: "Support",
-            url: "#",
-            icon: <LifeBuoyIcon />
-        },
-        {
-            title: "Feedback",
-            url: "#",
-            icon: <SendIcon />
+            title: "Settings",
+            url: LabRoute.SETTINGS,
+            icon: <Settings2Icon />
         }
     ],
     projects: [
