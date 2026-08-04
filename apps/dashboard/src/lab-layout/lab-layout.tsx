@@ -23,7 +23,7 @@ export function LabLayout() {
             <SidebarInset className={LAYOUT_INSET}>
                 <header className={LAYOUT_BAR}>
                     <div className={cn(LAYOUT_FRAME, LAYOUT_BAR_ROW)}>
-                        <SidebarTrigger className="-ml-1" />
+                        <SidebarTrigger />
                         <Separator orientation="vertical" className={LAYOUT_BAR_DIVIDER} />
                         <LabBreadcrumbs />
                     </div>
