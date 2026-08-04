@@ -102,6 +102,11 @@ import {
 } from "#src/subscription-allowance/subscription-allowance.i18n";
 import { TEAM_EN, TEAM_NAMESPACE, TEAM_RU } from "#src/team/team.i18n";
 import { THEME_EN, THEME_NAMESPACE, THEME_RU } from "#src/theme/theme.i18n";
+import {
+    VALUE_DISPLAY_EN,
+    VALUE_DISPLAY_NAMESPACE,
+    VALUE_DISPLAY_RU
+} from "#src/value-display/value-display.i18n";
 
 /**
  * Every feature keeps its own words beside the code that renders them, under a namespace named
@@ -132,7 +137,8 @@ export const EN_TRANSLATIONS = {
     [STATUS_TAG_NAMESPACE]: STATUS_TAG_EN,
     [SUBSCRIPTION_ALLOWANCE_NAMESPACE]: SUBSCRIPTION_ALLOWANCE_EN,
     [TEAM_NAMESPACE]: TEAM_EN,
-    [THEME_NAMESPACE]: THEME_EN
+    [THEME_NAMESPACE]: THEME_EN,
+    [VALUE_DISPLAY_NAMESPACE]: VALUE_DISPLAY_EN
 };
 
 /** Measured against the English source, so a namespace nobody translated fails the build. */
@@ -160,5 +166,6 @@ export const RU_TRANSLATIONS = {
     [STATUS_TAG_NAMESPACE]: STATUS_TAG_RU,
     [SUBSCRIPTION_ALLOWANCE_NAMESPACE]: SUBSCRIPTION_ALLOWANCE_RU,
     [TEAM_NAMESPACE]: TEAM_RU,
-    [THEME_NAMESPACE]: THEME_RU
+    [THEME_NAMESPACE]: THEME_RU,
+    [VALUE_DISPLAY_NAMESPACE]: VALUE_DISPLAY_RU
 } satisfies typeof EN_TRANSLATIONS;

@@ -1,8 +1,16 @@
-const SIZE_UNITS = ["bytes", "KB", "MB", "GB", "TB"] as const;
+import i18next from "i18next";
+import { localeFormatter } from "#src/value-display/locale-formatter";
+import { VALUE_DISPLAY_NAMESPACE } from "#src/value-display/value-display.i18n";
+
+const SIZE_UNITS = ["bytes", "kilobytes", "megabytes", "gigabytes", "terabytes"] as const;
 const UNIT_STEP = 1024;
 
-const wholeFormatter = new Intl.NumberFormat("en", { maximumFractionDigits: 0 });
-const preciseFormatter = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
+const wholeFormatter = localeFormatter(
+    (locale) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 })
+);
+const preciseFormatter = localeFormatter(
+    (locale) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
+);
 
 /**
  * A size an operator reads to decide whether to act on it. Bytes are shown whole because a fraction
@@ -15,6 +23,8 @@ export function formatByteSize(bytes: number): string {
         size /= UNIT_STEP;
         unit += 1;
     }
-    const formatter = unit === 0 ? wholeFormatter : preciseFormatter;
-    return `${formatter.format(size)} ${SIZE_UNITS[unit]}`;
+    const formatter = unit === 0 ? wholeFormatter() : preciseFormatter();
+    const named = SIZE_UNITS[unit] ?? SIZE_UNITS[0];
+
+    return `${formatter.format(size)} ${i18next.t(named, { ns: VALUE_DISPLAY_NAMESPACE })}`;
 }

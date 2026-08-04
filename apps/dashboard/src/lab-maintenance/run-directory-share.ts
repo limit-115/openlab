@@ -1,4 +1,5 @@
 import type { RunDirectoryUsage } from "@lab/protocol/lab-storage/lab-storage.types";
+import { localeFormatter } from "#src/value-display/locale-formatter";
 
 /** The scale every share is read on, and the one a meter drawing a share is set to. */
 export const WHOLE_SHARE = 100;
@@ -6,7 +7,9 @@ export const WHOLE_SHARE = 100;
 const SMALLEST_STATED_SHARE = 1;
 const SMALLER_SHARE_LABEL = "<1%";
 
-const shareFormatter = new Intl.NumberFormat("en", { maximumFractionDigits: 0 });
+const shareFormatter = localeFormatter(
+    (locale) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 })
+);
 
 export interface RunDirectoryShare {
     run: RunDirectoryUsage;
@@ -35,5 +38,5 @@ export function formatShare(percent: number): string {
     if (percent > 0 && percent < SMALLEST_STATED_SHARE) {
         return SMALLER_SHARE_LABEL;
     }
-    return `${shareFormatter.format(percent)}%`;
+    return `${shareFormatter().format(percent)}%`;
 }
