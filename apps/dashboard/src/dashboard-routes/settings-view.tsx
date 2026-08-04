@@ -8,6 +8,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#src/design-system/tabs";
 import { HarnessSettingsSection } from "#src/harness-settings/harness-settings-section";
 import { LabStorageSection } from "#src/lab-maintenance/lab-storage-section";
+import { NotificationSettingsSection } from "#src/operator-notifications/notification-settings-section";
 import { SubscriptionAllowanceSection } from "#src/subscription-allowance/subscription-allowance-section";
 
 /**
@@ -33,6 +34,9 @@ export function SettingsView() {
             </TabsContent>
             <TabsContent value={SettingsSection.SUBSCRIPTIONS}>
                 <SubscriptionAllowanceSection />
+            </TabsContent>
+            <TabsContent value={SettingsSection.NOTIFICATIONS}>
+                <NotificationSettingsSection />
             </TabsContent>
             <TabsContent value={SettingsSection.STORAGE}>
                 <LabStorageSection />
