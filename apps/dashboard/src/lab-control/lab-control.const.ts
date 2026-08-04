@@ -88,10 +88,11 @@ export const LAB_CONTROL_UNREACHABLE = "The lab daemon did not answer." as const
 /**
  * The controls float over the corner of the page instead of sitting in the header. Ending a run is
  * something the operator reaches for a few times a session, and it was crowding a header whose job
- * is to say where you are and how the lab is doing.
+ * is to say where you are and how the lab is doing. The island keeps the same short offset at every
+ * width: it belongs to the viewport corner, not to the column of text it happens to lie over.
  */
 export const LAB_CONTROL_DOCK =
-    "fixed right-4 bottom-4 z-30 flex flex-col items-end gap-1.5 sm:right-6 lg:right-12" as const;
+    "fixed right-4 bottom-4 z-30 flex flex-col items-end gap-1.5" as const;
 
 /** Chrome of its own, because the island lies over whatever the page happens to be showing. */
 export const LAB_CONTROL_GROUP =
