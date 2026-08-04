@@ -5,26 +5,28 @@ export const LabStorageEndpoint = {
 
 export const STORAGE_TITLE = "Storage" as const;
 export const STORAGE_DESCRIPTION =
-    "Where the lab keeps its run directories and what they take up." as const;
+    "Where the lab keeps every investigation's directory and what they take up." as const;
 
-export const STORAGE_PENDING_LABEL = "Measuring the run directories" as const;
+export const STORAGE_PENDING_LABEL = "Measuring the investigation directories" as const;
 export const NO_STORAGE_TITLE = "This runtime does not report its disk" as const;
 export const NO_STORAGE_DESCRIPTION =
     "A daemon started with a workspace root serves the reading here, and the purge with it." as const;
 export const EMPTY_LAB_TITLE = "The lab is holding nothing on disk" as const;
 export const EMPTY_LAB_DESCRIPTION =
-    "Run directories appear here as soon as an investigation writes one." as const;
+    "A directory appears here as soon as an investigation writes one." as const;
 
 export const TOTAL_SIZE_LABEL = "On disk" as const;
-/** Counted as directories, not as investigations: what is left behind is neither held by one nor
- * counted by the roster, and it is still on disk. */
-export const RUN_COUNT_LABEL = "Directories" as const;
+/**
+ * Directories, not investigations: one belongs to each investigation, but a directory left behind
+ * outlives the investigation that wrote it, so the count is of what is on disk.
+ */
+export const RUN_COUNT_LABEL = "Investigation directories" as const;
 export const TOTAL_FILE_COUNT_LABEL = "Files" as const;
 export const WORKSPACE_ROOT_COPY_LABEL = "Copy the workspace root path" as const;
 
-export const RUN_TABLE_LABEL = "Run directories" as const;
+export const RUN_TABLE_LABEL = "Investigation directories" as const;
 export const UNHELD_RUN_LABEL = "No investigation holds this directory" as const;
-export const RUN_DIRECTORY_COPY_LABEL = "Copy the run directory path" as const;
+export const RUN_DIRECTORY_COPY_LABEL = "Copy the investigation directory path" as const;
 export const DIRECTORY_COLUMN_LABEL = "Directory" as const;
 export const SHARE_COLUMN_LABEL = "Share of the lab" as const;
 export const SIZE_COLUMN_LABEL = "Size" as const;
@@ -35,7 +37,7 @@ export const PURGE_LABEL = "Purge the lab" as const;
 export const PURGING_LABEL = "Purging" as const;
 export const PURGE_TITLE = "Purge every investigation?" as const;
 export const PURGE_CONSEQUENCE =
-    "Every investigation stops, and its bets, findings, verdicts and run directory are deleted along with every directory left behind. This cannot be undone." as const;
+    "Every investigation stops, and its bets, findings, verdicts and directory are deleted along with every directory left behind. This cannot be undone." as const;
 export const PURGE_CONFIRM_LABEL = "Purge it all" as const;
 export const PURGE_CANCEL_LABEL = "Keep the lab" as const;
 export const PURGE_FAILURE_LABEL = "The lab could not be purged." as const;
@@ -69,7 +71,7 @@ export const STORAGE_STAT = "grid gap-1" as const;
 export const STORAGE_STAT_LABEL = "text-sm text-muted-foreground" as const;
 export const STORAGE_STAT_VALUE = "font-heading text-2xl font-medium" as const;
 
-/** The root is the one path every run directory hangs off, so it gets its own strip to sit in. */
+/** The root is the one path every investigation directory hangs off, so it gets its own strip. */
 export const STORAGE_ROOT_ROW =
     "col-span-2 flex items-center gap-2 rounded-xl bg-muted/40 py-1.5 pr-1.5 pl-3" as const;
 export const STORAGE_ROOT_ICON = "size-4 shrink-0 text-muted-foreground" as const;
