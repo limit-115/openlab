@@ -9,6 +9,7 @@
         "./lab-database/lab-schema-migration": "./src/lab-database/lab-schema-migration.ts",
         "./lab-database/postgres-test-container": "./src/lab-database/postgres-test-container.ts",
         "./investigations/investigation-repository": "./src/investigations/investigation-repository.ts",
+        "./lab-settings/lab-settings-repository": "./src/lab-settings/lab-settings-repository.ts",
         "./investigations/investigation-repository.types": "./src/investigations/investigation-repository.types.ts",
         "./runtime/incompatible-checkpoint": "./src/runtime/incompatible-checkpoint.ts",
         "./runtime/runtime-persistence": "./src/runtime/runtime-persistence.ts",

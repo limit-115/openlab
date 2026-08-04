@@ -9,6 +9,7 @@ import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
 import {
     bigint,
     boolean,
@@ -184,6 +185,16 @@ export const runtimeCheckpoints = pgTable(
     },
     (table) => [index("runtime_checkpoints_persisted_at_idx").on(table.persistedAt)]
 );
+
+/**
+ * What the operator set for the lab itself. One database is one lab, so this table holds one row;
+ * an absent row is a lab that has never been configured rather than a broken one.
+ */
+export const labSettings = pgTable("lab_settings", {
+    id: text("id").primaryKey(),
+    settings: jsonb("settings").$type<LabSettings>().notNull(),
+    ...timestamps
+});
 
 export const capabilityRequests = pgTable(
     "capability_requests",

@@ -8,6 +8,13 @@
             "when": 1785853642396,
             "tag": "0000_wide_payback",
             "breakpoints": true
+        },
+        {
+            "idx": 1,
+            "version": "7",
+            "when": 1785867570922,
+            "tag": "0001_old_moon_knight",
+            "breakpoints": true
         }
     ]
 }
