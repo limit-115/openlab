@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { transitionInvestigationState } from "@lab/core/investigation-lifecycle/investigation-state-transitions";
 import type { LifecycleContext } from "@lab/core/investigation-lifecycle/investigation-state-transitions.types";
