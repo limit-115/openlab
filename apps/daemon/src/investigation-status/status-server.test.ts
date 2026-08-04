@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
@@ -8,6 +8,7 @@ import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
+import { LabStorageSchema } from "@lab/protocol/lab-storage/lab-storage.schema";
 import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
@@ -304,6 +305,49 @@ describe("status server", () => {
         const lab = await createTestLab();
 
         const response = await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
+
+        expect(response.statusCode).toBe(404);
+        await lab.server.close();
+    });
+
+    it("reports what each investigation takes up under the workspace root", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Fill a run directory");
+        const server = createStatusServer(lab.registry, { workspaceRoot: lab.workspaceRoot });
+
+        const response = await server.inject({ method: "GET", url: "/api/storage" });
+
+        const storage = LabStorageSchema.parse(response.json());
+        const run = storage.runs.find(
+            ({ investigation_id }) => investigation_id === held.workspace.investigationId
+        );
+        expect(run?.goal).toBe("Fill a run directory");
+        expect(run?.path).toBe(held.workspace.runDirectory);
+        expect(run?.file_count).toBeGreaterThan(0);
+        expect(storage.bytes).toBeGreaterThan(0);
+        await server.close();
+        await lab.server.close();
+    });
+
+    it("empties the lab on a purge, directories and roster together", async () => {
+        const lab = await createTestLab();
+        await lab.open("Purge me");
+        await lab.open("Purge me too");
+        const server = createStatusServer(lab.registry, { workspaceRoot: lab.workspaceRoot });
+
+        const response = await server.inject({ method: "POST", url: "/api/storage/purge" });
+
+        expect(LabStorageSchema.parse(response.json()).runs).toEqual([]);
+        expect(lab.registry.list()).toEqual([]);
+        expect(await readdir(path.join(lab.workspaceRoot, "runs"))).toEqual([]);
+        await server.close();
+        await lab.server.close();
+    });
+
+    it("leaves the storage routes unserved when no workspace root was wired in", async () => {
+        const lab = await createTestLab();
+
+        const response = await lab.server.inject({ method: "GET", url: "/api/storage" });
 
         expect(response.statusCode).toBe(404);
         await lab.server.close();

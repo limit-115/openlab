@@ -24,6 +24,8 @@ import {
 } from "#src/investigation-status/status-server.const";
 import type { StatusServerOptions } from "#src/investigation-status/status-server.types";
 import { LAB_SETTINGS_ROUTE } from "#src/lab-settings/lab-settings.const";
+import { purgeLabStorage, readLabStorage } from "#src/lab-storage/lab-storage";
+import { LabStorageRoute } from "#src/lab-storage/lab-storage.const";
 import {
     FRESH_READING_PARAM,
     FRESH_READING_VALUE,
@@ -66,6 +68,17 @@ export function createStatusServer(
             }
             return settings.write(parsedSettings.data);
         });
+    }
+
+    /**
+     * What the lab takes up, and the one control that gives it back. A purge goes through the
+     * registry rather than behind it, so every investigation's agents are stopped before its
+     * history and its directory are deleted.
+     */
+    if (options.workspaceRoot !== undefined) {
+        const workspaceRoot = options.workspaceRoot;
+        app.get(LabStorageRoute.USAGE, async () => readLabStorage(workspaceRoot, registry));
+        app.post(LabStorageRoute.PURGE, async () => purgeLabStorage(workspaceRoot, registry));
     }
 
     if (options.subscriptions !== undefined) {

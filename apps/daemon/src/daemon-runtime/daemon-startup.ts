@@ -43,6 +43,7 @@ export async function startDaemon(
         app = createStatusServer(registry, {
             subscriptions,
             settings,
+            workspaceRoot: config.workspaceRoot,
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel
         });

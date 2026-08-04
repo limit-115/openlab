@@ -48,6 +48,8 @@
         "./lab-settings/lab-settings.const": "./src/lab-settings/lab-settings.const.ts",
         "./lab-settings/lab-settings.schema": "./src/lab-settings/lab-settings.schema.ts",
         "./lab-settings/lab-settings.types": "./src/lab-settings/lab-settings.types.ts",
+        "./lab-storage/lab-storage.schema": "./src/lab-storage/lab-storage.schema.ts",
+        "./lab-storage/lab-storage.types": "./src/lab-storage/lab-storage.types.ts",
         "./subscription-allowance/subscription-allowance.const": "./src/subscription-allowance/subscription-allowance.const.ts",
         "./subscription-allowance/subscription-allowance.schema": "./src/subscription-allowance/subscription-allowance.schema.ts",
         "./subscription-allowance/subscription-allowance.types": "./src/subscription-allowance/subscription-allowance.types.ts",

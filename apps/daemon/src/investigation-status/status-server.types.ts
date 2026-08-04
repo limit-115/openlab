@@ -7,6 +7,8 @@ export interface StatusServerOptions {
     subscriptions?: SubscriptionAllowanceReadings;
     /** What the operator set for the lab. Without it the lab answers on its shipped defaults. */
     settings?: LabSettingsStore;
+    /** Where the run directories live. Without it the lab does not report or purge its disk. */
+    workspaceRoot?: string;
     dashboardRoot?: string;
     logLevel?: DaemonLogLevel;
 }
