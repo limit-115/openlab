@@ -27,12 +27,10 @@ export const LAYOUT_BAR_ROW = "flex items-center gap-2 py-3" as const;
 /**
  * The divider runs the whole bar rather than the row inside it: it stretches to the row's content
  * and then pulls back the row's own padding, so it meets the top edge and the bar's bottom rule.
- *
- * A full-height rule reads as a column edge, so the trigger has to sit in the middle of the column
- * it closes. Its own margin carries the row's gap up to the frame's padding, which leaves the same
- * distance either side of the trigger and centres it against the edge of the bar.
+ * It keeps the row's own gap either side of it: a rule this tall reads as a divider when it sits
+ * close to what it divides, and as a column of its own once it is given room.
  */
-export const LAYOUT_BAR_DIVIDER = "-my-3 mx-2 sm:mx-4" as const;
+export const LAYOUT_BAR_DIVIDER = "-my-3" as const;
 
 /** The trail stays on one line: a long step is clipped rather than wrapped into a taller bar. */
 export const TRAIL_LIST = "min-w-0 flex-nowrap" as const;
