@@ -16,7 +16,9 @@ export const EMPTY_LAB_DESCRIPTION =
     "Run directories appear here as soon as an investigation writes one." as const;
 
 export const TOTAL_SIZE_LABEL = "On disk" as const;
-export const RUN_COUNT_LABEL = "Run directories" as const;
+/** Counted as directories, not as investigations: what is left behind is neither held by one nor
+ * counted by the roster, and it is still on disk. */
+export const RUN_COUNT_LABEL = "Directories" as const;
 export const TOTAL_FILE_COUNT_LABEL = "Files" as const;
 export const WORKSPACE_ROOT_COPY_LABEL = "Copy the workspace root path" as const;
 
