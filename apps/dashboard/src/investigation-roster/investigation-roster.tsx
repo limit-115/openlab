@@ -18,13 +18,12 @@ import {
     investigationRosterQueryKey
 } from "#src/investigation-roster/investigation-roster-client";
 import { useLiveRoster } from "#src/investigation-roster/investigation-roster-stream";
-import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
 import { StreamState } from "#src/live-status/status-stream.const";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
 /**
- * Everything the lab is investigating. The list is the lab's front door: one direction per card,
- * and the button that adds another.
+ * Everything the lab is investigating, one direction per card. Adding another is the sidebar's
+ * business, because it can be reached from any page rather than only from this one.
  */
 export function InvestigationRoster() {
     const queryClient = useQueryClient();
@@ -51,11 +50,8 @@ export function InvestigationRoster() {
     return (
         <div className={ROSTER_PAGE}>
             <header className={ROSTER_HEADER}>
-                <div className="grid gap-1">
-                    <h1 className={ROSTER_TITLE_TEXT}>{ROSTER_TITLE}</h1>
-                    <p className={ROSTER_DESCRIPTION_TEXT}>{ROSTER_DESCRIPTION}</p>
-                </div>
-                <NewInvestigationDialog />
+                <h1 className={ROSTER_TITLE_TEXT}>{ROSTER_TITLE}</h1>
+                <p className={ROSTER_DESCRIPTION_TEXT}>{ROSTER_DESCRIPTION}</p>
             </header>
 
             {investigations.length === 0 ? (

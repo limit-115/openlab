@@ -11,11 +11,13 @@ import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem
 } from "#src/design-system/sidebar";
+import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
 import { LAB_NAME, LAB_SUBTITLE } from "#src/lab-shell/lab-shell.const";
 
 const data = {
@@ -61,6 +63,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
+                <SidebarGroup>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <NewInvestigationDialog />
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarGroup>
                 <NavMain items={data.navMain} />
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>

@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { investigationView } from "#src/dashboard-routes/dashboard-routes.const";
-import { Button } from "#src/design-system/button";
 import {
     Dialog,
     DialogContent,
@@ -11,6 +11,7 @@ import {
     DialogTitle,
     DialogTrigger
 } from "#src/design-system/dialog";
+import { SidebarMenuButton } from "#src/design-system/sidebar";
 import {
     COMPOSER_DIALOG,
     NEW_INVESTIGATION_DESCRIPTION,
@@ -23,8 +24,9 @@ import {
 import { NewInvestigationForm } from "#src/investigation-roster/new-investigation-form";
 
 /**
- * The lab's way in. Composing a direction is a decision of its own, so it happens over the roster
- * rather than in it, and the operator lands on the investigation the lab just opened.
+ * The lab's way in. Composing a direction is a decision of its own, so it happens over the page
+ * rather than in it, and the operator lands on the investigation the lab just opened. It reads as
+ * the first entry of the sidebar because opening an investigation is what the lab is for.
  */
 export function NewInvestigationDialog() {
     const navigate = useNavigate();
@@ -50,7 +52,10 @@ export function NewInvestigationDialog() {
     return (
         <Dialog open={composing} onOpenChange={compose}>
             <DialogTrigger asChild>
-                <Button>{NEW_INVESTIGATION_LABEL}</Button>
+                <SidebarMenuButton>
+                    <PlusIcon />
+                    <span>{NEW_INVESTIGATION_LABEL}</span>
+                </SidebarMenuButton>
             </DialogTrigger>
             <DialogContent className={COMPOSER_DIALOG}>
                 <DialogHeader>

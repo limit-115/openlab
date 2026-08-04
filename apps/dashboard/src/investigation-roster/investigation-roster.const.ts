@@ -26,7 +26,7 @@ export const EMPTY_ROSTER_DESCRIPTION =
     "Nothing is being investigated yet. Give the lab a goal and it will start placing bets on where the answer is." as const;
 
 export const ROSTER_PAGE = "grid gap-6" as const;
-export const ROSTER_HEADER = "flex flex-wrap items-end justify-between gap-x-8 gap-y-3" as const;
+export const ROSTER_HEADER = "grid gap-1" as const;
 export const ROSTER_TITLE_TEXT = "text-xl font-semibold" as const;
 export const ROSTER_DESCRIPTION_TEXT = "text-sm text-muted-foreground" as const;
 export const ROSTER_LIST = "grid gap-4" as const;
