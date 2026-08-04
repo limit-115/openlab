@@ -1,17 +1,18 @@
 import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { useId } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#src/design-system/card";
 import { Checkbox } from "#src/design-system/checkbox";
+import { cn } from "#src/design-system/class-names";
 import {
+    ROSTER_CONTENT,
     ROSTER_HINT,
     ROSTER_LABEL,
-    ROSTER_LEGEND,
     ROSTER_OPTION,
-    ROSTER_OPTION_NAME,
+    ROSTER_OPTION_CHOSEN,
     ROSTER_OPTIONS,
     ROSTER_REQUIRED,
     SELECTABLE_HARNESSES,
-    SETTINGS_FIELD,
-    SETTINGS_HINT
+    SETTINGS_FAILURE
 } from "#src/harness-settings/harness-settings.const";
 
 interface HarnessRosterFieldProps {
@@ -19,28 +20,47 @@ interface HarnessRosterFieldProps {
     choose: (harness: AgentHarnessKind, chosen: boolean) => void;
 }
 
-/** The harnesses a new investigation starts on, and the order it will rotate through them in. */
+/**
+ * The harnesses a new investigation starts on, laid out in the order it will rotate through them.
+ * A whole card is the target rather than the box in it, so choosing one is a click anywhere on the
+ * harness rather than on a checkbox the size of a full stop.
+ */
 export function HarnessRosterField({ roster, choose }: HarnessRosterFieldProps) {
     const rosterId = useId();
 
     return (
-        <fieldset className={SETTINGS_FIELD}>
-            <legend className={ROSTER_LEGEND}>{ROSTER_LABEL}</legend>
-            <div className={ROSTER_OPTIONS}>
-                {SELECTABLE_HARNESSES.map((harness) => (
-                    <div key={harness} className={ROSTER_OPTION}>
-                        <Checkbox
-                            id={`${rosterId}-${harness}`}
-                            checked={roster.includes(harness)}
-                            onCheckedChange={(chosen) => choose(harness, chosen === true)}
-                        />
-                        <label className={ROSTER_OPTION_NAME} htmlFor={`${rosterId}-${harness}`}>
-                            {harness}
-                        </label>
-                    </div>
-                ))}
-            </div>
-            <p className={SETTINGS_HINT}>{roster.length === 0 ? ROSTER_REQUIRED : ROSTER_HINT}</p>
-        </fieldset>
+        <Card>
+            <CardHeader>
+                <CardTitle>{ROSTER_LABEL}</CardTitle>
+                <CardDescription>{ROSTER_HINT}</CardDescription>
+            </CardHeader>
+            <CardContent className={ROSTER_CONTENT}>
+                <ul className={ROSTER_OPTIONS}>
+                    {SELECTABLE_HARNESSES.map((harness) => (
+                        <li key={harness}>
+                            <label
+                                htmlFor={`${rosterId}-${harness}`}
+                                className={cn(
+                                    ROSTER_OPTION,
+                                    roster.includes(harness) && ROSTER_OPTION_CHOSEN
+                                )}
+                            >
+                                <Checkbox
+                                    id={`${rosterId}-${harness}`}
+                                    checked={roster.includes(harness)}
+                                    onCheckedChange={(chosen) => choose(harness, chosen === true)}
+                                />
+                                {harness}
+                            </label>
+                        </li>
+                    ))}
+                </ul>
+                {roster.length === 0 ? (
+                    <p role="alert" className={SETTINGS_FAILURE}>
+                        {ROSTER_REQUIRED}
+                    </p>
+                ) : null}
+            </CardContent>
+        </Card>
     );
 }

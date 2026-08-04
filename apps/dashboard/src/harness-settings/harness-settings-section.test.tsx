@@ -44,7 +44,7 @@ function savedSettings(request: ReturnType<typeof respond>): LabSettings {
 }
 
 async function roleField(role: string) {
-    return within(await screen.findByRole("listitem", { name: role }));
+    return within(await screen.findByRole("row", { name: role }));
 }
 
 describe("HarnessSettingsSection", () => {

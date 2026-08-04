@@ -1,6 +1,7 @@
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
 import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "#src/design-system/button";
 import { Spinner } from "#src/design-system/spinner";
@@ -8,20 +9,18 @@ import { HarnessRosterField } from "#src/harness-settings/harness-roster-field";
 import {
     HARNESS_SETTINGS_DESCRIPTION,
     HARNESS_SETTINGS_TITLE,
-    MODEL_HINT,
     NO_SETTINGS_DESCRIPTION,
     NO_SETTINGS_TITLE,
-    ROLE_LIST,
     SAVE_FAILURE_LABEL,
     SAVE_LABEL,
+    SAVED_LABEL,
     SAVING_LABEL,
-    SETTABLE_ROLES,
     SETTINGS_ACTIONS,
     SETTINGS_FAILURE,
     SETTINGS_FORM,
-    SETTINGS_HINT,
     SETTINGS_PENDING,
-    SETTINGS_PENDING_LABEL
+    SETTINGS_PENDING_LABEL,
+    SETTINGS_SAVED
 } from "#src/harness-settings/harness-settings.const";
 import type { LabSettingsDraft } from "#src/harness-settings/harness-settings.types";
 import {
@@ -32,11 +31,9 @@ import {
 import {
     chooseHarness,
     chooseRoleEffort,
-    chooseRoleModel,
-    roleExecution,
-    roleModel
+    chooseRoleModel
 } from "#src/harness-settings/harness-settings-draft";
-import { RoleExecutionField } from "#src/harness-settings/role-execution-field";
+import { RoleExecutionTable } from "#src/harness-settings/role-execution-table";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
@@ -83,6 +80,16 @@ export function HarnessSettingsSection() {
         );
     }
 
+    /**
+     * An edit puts the page ahead of the lab again, so the answer to the last save stops speaking
+     * for what is on screen: neither the refusal nor the confirmation outlives the settings it was
+     * given for.
+     */
+    function edit(edited: LabSettingsDraft) {
+        setDraft(edited);
+        save.reset();
+    }
+
     return (
         <Panel title={HARNESS_SETTINGS_TITLE} description={HARNESS_SETTINGS_DESCRIPTION}>
             <form
@@ -94,31 +101,27 @@ export function HarnessSettingsSection() {
             >
                 <HarnessRosterField
                     roster={draft.harness_roster}
-                    choose={(harness, chosen) => setDraft(chooseHarness(draft, harness, chosen))}
+                    choose={(harness, chosen) => edit(chooseHarness(draft, harness, chosen))}
                 />
 
-                <ul className={ROLE_LIST}>
-                    {SETTABLE_ROLES.map((role) => (
-                        <RoleExecutionField
-                            key={role}
-                            role={role}
-                            effort={roleExecution(draft, role).effort}
-                            modelOn={(harness) => roleModel(draft, role, harness)}
-                            chooseEffort={(effort) =>
-                                setDraft(chooseRoleEffort(draft, role, effort))
-                            }
-                            chooseModel={(harness, model) =>
-                                setDraft(chooseRoleModel(draft, role, harness, model))
-                            }
-                        />
-                    ))}
-                </ul>
-                <p className={SETTINGS_HINT}>{MODEL_HINT}</p>
+                <RoleExecutionTable
+                    settings={draft}
+                    chooseEffort={(role, effort) => edit(chooseRoleEffort(draft, role, effort))}
+                    chooseModel={(role, harness, model) =>
+                        edit(chooseRoleModel(draft, role, harness, model))
+                    }
+                />
 
                 <div className={SETTINGS_ACTIONS}>
                     {save.isError ? (
                         <p role="alert" className={SETTINGS_FAILURE}>
                             {SAVE_FAILURE_LABEL}
+                        </p>
+                    ) : null}
+                    {save.isSuccess ? (
+                        <p className={SETTINGS_SAVED}>
+                            <CheckIcon aria-hidden="true" />
+                            {SAVED_LABEL}
                         </p>
                     ) : null}
                     <Button
