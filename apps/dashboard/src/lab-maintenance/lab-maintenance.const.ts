@@ -83,7 +83,6 @@ export const RUN_TABLE =
 
 export const DIRECTORY_COLUMN = "w-full" as const;
 export const SHARE_COLUMN = "w-48" as const;
-export const NUMBER_COLUMN = "text-right" as const;
 export const ACTION_COLUMN = "w-12" as const;
 
 /**
@@ -105,10 +104,8 @@ export const SHARE_READING = "flex h-5 items-center gap-2" as const;
  */
 export const SHARE_METER =
     "h-1.5 min-w-0 flex-1 appearance-none overflow-hidden rounded-full bg-muted [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-foreground [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-foreground" as const;
-export const SHARE_PERCENT =
-    "w-10 shrink-0 text-right text-sm text-muted-foreground tabular-nums" as const;
+export const SHARE_PERCENT = "w-10 shrink-0 text-sm text-muted-foreground tabular-nums" as const;
 
-export const SIZE_CELL = "align-top text-right text-sm font-medium tabular-nums" as const;
-export const FILE_COUNT_CELL =
-    "align-top text-right text-sm text-muted-foreground tabular-nums" as const;
+export const SIZE_CELL = "align-top text-sm font-medium tabular-nums" as const;
+export const FILE_COUNT_CELL = "align-top text-sm text-muted-foreground tabular-nums" as const;
 export const ACTION_CELL = "align-top text-right" as const;

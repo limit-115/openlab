@@ -18,7 +18,6 @@ import {
     DIRECTORY_LINES,
     FILE_COUNT_CELL,
     FILE_COUNT_COLUMN_LABEL,
-    NUMBER_COLUMN,
     RUN_DIRECTORY_COPY_LABEL,
     RUN_GOAL,
     RUN_PATH,
@@ -61,8 +60,8 @@ export function RunDirectoryTable({ runs, totalBytes }: RunDirectoryTableProps) 
                 <TableRow>
                     <TableHead className={DIRECTORY_COLUMN}>{DIRECTORY_COLUMN_LABEL}</TableHead>
                     <TableHead className={SHARE_COLUMN}>{SHARE_COLUMN_LABEL}</TableHead>
-                    <TableHead className={NUMBER_COLUMN}>{SIZE_COLUMN_LABEL}</TableHead>
-                    <TableHead className={NUMBER_COLUMN}>{FILE_COUNT_COLUMN_LABEL}</TableHead>
+                    <TableHead>{SIZE_COLUMN_LABEL}</TableHead>
+                    <TableHead>{FILE_COUNT_COLUMN_LABEL}</TableHead>
                     <TableHead className={ACTION_COLUMN}>
                         <span className="sr-only">{COPY_COLUMN_LABEL}</span>
                     </TableHead>
