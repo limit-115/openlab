@@ -108,7 +108,7 @@ describe("InvestigationShell", () => {
         );
     });
 
-    it("wakes a hibernating investigation from the sidebar and settles on the state it reports", async () => {
+    it("wakes a hibernating investigation from its header and settles on the state it reports", async () => {
         const hibernating = {
             ...statusFixture,
             investigation: { ...statusFixture.investigation, state: InvestigationState.HIBERNATING }

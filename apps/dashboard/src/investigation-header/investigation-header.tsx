@@ -1,7 +1,11 @@
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import { INVESTIGATION_VIEWS } from "#src/dashboard-routes/dashboard-routes.const";
 import { TabsList, TabsTrigger } from "#src/design-system/tabs";
-import { INVESTIGATION_HEADER_ROW } from "#src/investigation-header/investigation-header.const";
+import { InvestigationControls } from "#src/investigation-control/investigation-controls";
+import {
+    INVESTIGATION_HEADER_ROW,
+    INVESTIGATION_HEADER_VIEWS
+} from "#src/investigation-header/investigation-header.const";
 import { RuntimeStrip } from "#src/investigation-header/runtime-strip";
 import type { LiveStatus } from "#src/live-status/status-stream.types";
 
@@ -10,17 +14,27 @@ interface InvestigationHeaderProps {
     stream: LiveStatus;
 }
 
-/** Which view of the investigation to read, and how the investigation itself is running. */
+/**
+ * Which view of the investigation to read, what can be done to the run behind it, and how the
+ * investigation itself is running.
+ */
 export function InvestigationHeader({ snapshot, stream }: InvestigationHeaderProps) {
     return (
         <header className={INVESTIGATION_HEADER_ROW}>
-            <TabsList>
-                {INVESTIGATION_VIEWS.map((view) => (
-                    <TabsTrigger key={view.view} value={view.view}>
-                        {view.label}
-                    </TabsTrigger>
-                ))}
-            </TabsList>
+            <div className={INVESTIGATION_HEADER_VIEWS}>
+                <TabsList>
+                    {INVESTIGATION_VIEWS.map((view) => (
+                        <TabsTrigger key={view.view} value={view.view}>
+                            {view.label}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+
+                <InvestigationControls
+                    investigationId={snapshot.investigation.id}
+                    state={snapshot.investigation.state}
+                />
+            </div>
 
             <RuntimeStrip snapshot={snapshot} stream={stream} />
         </header>

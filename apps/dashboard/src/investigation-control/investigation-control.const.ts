@@ -46,17 +46,6 @@ export const INVESTIGATION_CONTROL_ORIGIN_STATES: Record<
     ])
 };
 
-/**
- * How much weight a control carries where it stands. Only the one transition the investigation
- * cannot walk back is drawn apart from the rest, so the sidebar stays quiet until it matters.
- */
-export const InvestigationControlTone = {
-    ORDINARY: "ORDINARY",
-    DESTRUCTIVE: "DESTRUCTIVE"
-} as const;
-export type InvestigationControlTone =
-    (typeof InvestigationControlTone)[keyof typeof InvestigationControlTone];
-
 export const INVESTIGATION_CONTROL_PRESENTATION: Record<
     InvestigationControlAction,
     InvestigationControlPresentation
@@ -65,31 +54,31 @@ export const INVESTIGATION_CONTROL_PRESENTATION: Record<
         label: "Pause",
         pendingLabel: "Pausing",
         icon: PauseIcon,
-        tone: InvestigationControlTone.ORDINARY
+        tone: "outline"
     },
     [InvestigationControlAction.WAKE]: {
         label: "Wake",
         pendingLabel: "Waking",
         icon: PlayIcon,
-        tone: InvestigationControlTone.ORDINARY
+        tone: "default"
     },
     [InvestigationControlAction.RESUME]: {
         label: "Resume",
         pendingLabel: "Resuming",
         icon: PlayIcon,
-        tone: InvestigationControlTone.ORDINARY
+        tone: "default"
     },
     [InvestigationControlAction.START]: {
         label: "Start",
         pendingLabel: "Starting",
         icon: PlayIcon,
-        tone: InvestigationControlTone.ORDINARY
+        tone: "default"
     },
     [InvestigationControlAction.STOP]: {
         label: "Stop",
         pendingLabel: "Stopping",
         icon: CircleStopIcon,
-        tone: InvestigationControlTone.DESTRUCTIVE,
+        tone: "destructive",
         confirmation: {
             title: "Stop the run?",
             consequence:
@@ -105,17 +94,12 @@ export const KEEP_RUN_LABEL = "Keep running" as const;
 export const INVESTIGATION_CONTROL_UNREACHABLE = "The lab daemon did not answer." as const;
 
 /**
- * What the controls act on. They stand on the sidebar's shelf rather than over the page, so the
- * group says which run they end, and not the one the operator is only reading about.
+ * The controls stand beside the views of the investigation they act on, because the page that opens
+ * a run is the only place it can be steered from. A refusal stands under them rather than beside
+ * them, so the daemon's own words are never squeezed into what is left of the row.
  */
-export const INVESTIGATION_CONTROL_LABEL = "Run" as const;
+export const INVESTIGATION_CONTROL_GROUP = "flex flex-col gap-1.5" as const;
 
-/** The one control drawn apart, because a run the lab cannot reopen should not read as an errand. */
-export const INVESTIGATION_CONTROL_TONE: Record<InvestigationControlTone, string> = {
-    [InvestigationControlTone.ORDINARY]: "",
-    [InvestigationControlTone.DESTRUCTIVE]:
-        "text-destructive hover:bg-destructive/10 hover:text-destructive active:bg-destructive/10 active:text-destructive"
-};
+export const INVESTIGATION_CONTROL_ACTIONS = "flex flex-wrap items-center gap-2" as const;
 
-/** A refusal stands under the control it belongs to, and wraps rather than losing its own words. */
-export const INVESTIGATION_CONTROL_FAILURE = "mt-1 px-3 text-sm text-destructive" as const;
+export const INVESTIGATION_CONTROL_FAILURE = "text-sm text-destructive" as const;
