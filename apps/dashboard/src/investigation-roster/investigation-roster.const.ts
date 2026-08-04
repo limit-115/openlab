@@ -21,6 +21,12 @@ export const STARTING_INVESTIGATION_LABEL = "Starting" as const;
 export const CANCEL_LABEL = "Cancel" as const;
 export const DISCARD_INVESTIGATION_LABEL = "Discard" as const;
 
+export const RECENTS_LABEL = "Recents" as const;
+/** How many the sidebar lists before the roster itself is the better place to look. */
+export const RECENTS_SHOWN = 10 as const;
+/** A goal is a sentence, so the sidebar clips it and hands the whole one back on hover. */
+export const RECENT_GOAL = "truncate" as const;
+
 export const EMPTY_ROSTER_TITLE = "The lab is idle" as const;
 export const EMPTY_ROSTER_DESCRIPTION =
     "Nothing is being investigated yet. Give the lab a goal and it will start placing bets on where the answer is." as const;

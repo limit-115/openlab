@@ -17,6 +17,7 @@ import {
     SidebarMenuItem
 } from "#src/design-system/sidebar";
 import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
+import { RecentInvestigations } from "#src/investigation-roster/recent-investigations";
 import { LAB_NAME, LAB_SUBTITLE } from "#src/lab-shell/lab-shell.const";
 
 const data = {
@@ -79,6 +80,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         ))}
                     </SidebarMenu>
                 </SidebarGroup>
+                <RecentInvestigations />
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
