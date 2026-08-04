@@ -12,6 +12,7 @@ Local autonomous research runtime described in
 - `packages/core` — lab lifecycle rules;
 - `packages/db` — PostgreSQL persistence;
 - `packages/harness` — subscription-authenticated Codex and Claude CLI harnesses;
+- `packages/notifier` — the channels the lab reaches its operator through;
 - `packages/executor` — local experiment execution.
 
 One lab holds many investigations. Each investigation is one goal with its own agents, its own run
@@ -79,13 +80,15 @@ The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build i
 `pnpm --filter @lab/dashboard build` before starting the lab.
 
 It reads the lab live: every investigation the lab holds, what each one is doing, its team, its
-event stream and what it ended up as. The settings page holds three panels, and only the open one
+event stream and what it ended up as. The settings page holds four panels, and only the open one
 asks the daemon for anything:
 
 - **Harnesses** — the roster a new investigation starts on, and the model and reasoning effort
   behind each of the director, researcher and verifier roles;
 - **Subscriptions** — what each authenticated subscription has left and when the reading was taken,
   refreshed on its own and on demand;
+- **Notifications** — the channels the lab reaches the operator through when nobody is watching
+  this page, which moments each one reports and what language it writes in;
 - **Storage** — what each run directory takes up under `LAB_HOME`, including directories left behind
   by investigations the lab no longer holds, and a purge through the running daemon so every
   investigation's agents stop before its history and directory are deleted.
@@ -114,6 +117,25 @@ starts on, and the model and reasoning effort behind each role, are set on the d
 page and kept in the database. They apply to the next agent the lab dispatches, without a restart.
 An investigation that named its own roster keeps it, and a role that names no model is left to the
 harness default.
+
+## Notifications
+
+Research runs for hours, so the lab can tell an operator who is not watching the dashboard. It
+reports five moments, and nothing else: a finding survived verification, the lab needs something it
+cannot get itself, an investigation failed, an investigation went to sleep, or a harness is not
+ready to dispatch to. Each channel chooses which of those it wants and which language it is written
+in, so a message is never a stream to be tuned out.
+
+Telegram is the first channel. Create a bot with [@BotFather](https://t.me/BotFather), start a chat
+with it or add it to a group, then set the token and the chat on the dashboard's settings page. The
+token is stored in the database and never served back: the page is told one is held rather than
+what it is, and an update that names no token keeps the stored one. **Send a test message** writes
+through what the lab has stored, so a channel is proved rather than assumed.
+
+Reporting happens alongside the research rather than inside it. A channel that refuses a message is
+written to the daemon log and the research loop carries on. Adding another channel is a module in
+`packages/notifier`, a case in the daemon's channel roster and a card on the settings page; nothing
+about what the lab considers worth reporting changes with it.
 
 ## Verification
 
