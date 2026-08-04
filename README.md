@@ -64,15 +64,35 @@ pnpm lab rm <investigation-id>
 pnpm lab purge
 ```
 
-Every command above is about one investigation. With a single investigation the lab picks it; with
-several, name it with `-i/--investigation <id>`.
+`status`, `bets`, `inspect`, `capabilities`, `answer`, `wake`, `stop` and `export` are each about one
+investigation. With a single investigation the lab picks it; with several, name it with
+`-i/--investigation <id>`. `--json` prints any command machine-readably, and `--api-url` points the
+CLI at a daemon other than the local default.
 
 `rm` discards one investigation, its history and its run directory, and works while the lab is
 running. `purge` empties the lab instead: it refuses while a daemon is answering, and confirms
 before deleting.
 
+## Dashboard
+
 The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build it with
 `pnpm --filter @lab/dashboard build` before starting the lab.
+
+It reads the lab live: every investigation the lab holds, what each one is doing, its team, its
+event stream and what it ended up as. The settings page holds three panels, and only the open one
+asks the daemon for anything:
+
+- **Harnesses** — the roster a new investigation starts on, and the model and reasoning effort
+  behind each of the director, researcher and verifier roles;
+- **Subscriptions** — what each authenticated subscription has left and when the reading was taken,
+  refreshed on its own and on demand;
+- **Storage** — what each run directory takes up under `LAB_HOME`, including directories left behind
+  by investigations the lab no longer holds, and a purge through the running daemon so every
+  investigation's agents stop before its history and directory are deleted.
+
+The interface is written in English and Russian, and drawn in a light or dark palette. Both are
+chosen from the sidebar and kept in the browser rather than the database: they are how one operator
+reads the lab, not part of how it runs.
 
 ## Configuration
 
@@ -84,18 +104,16 @@ The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build i
 | `LAB_PORT` | `4318` | Local status server port |
 | `LAB_DASHBOARD_ROOT` | `apps/dashboard/dist` | Built dashboard directory |
 | `LAB_LOG_LEVEL` | `info` | Fastify log level |
+| `LAB_API_URL` | `http://127.0.0.1:4318` | Daemon the CLI talks to |
 
-Environment values are validated at startup. Empty values are treated as unset.
+Environment values are validated at startup. Empty values are treated as unset. Every variable above
+is read by the daemon except `LAB_API_URL`, which is how the CLI finds it.
 
 Where the lab runs is environment; what it runs with is not. The harness roster a new investigation
-starts on, and the model and reasoning effort behind each of the director, researcher and verifier
-roles, are set on the dashboard's settings page and kept in the database. They apply to the next
-agent the lab dispatches, without a restart. An investigation that named its own roster keeps it,
-and a role that names no model is left to the harness default.
-
-The settings page also reports what each run directory takes up under `LAB_HOME`, including
-directories left behind by investigations the lab no longer holds, and purges the lab through the
-running daemon so every investigation's agents stop before its history and directory are deleted.
+starts on, and the model and reasoning effort behind each role, are set on the dashboard's settings
+page and kept in the database. They apply to the next agent the lab dispatches, without a restart.
+An investigation that named its own roster keeps it, and a role that names no model is left to the
+harness default.
 
 ## Verification
 
