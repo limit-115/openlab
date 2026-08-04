@@ -12,6 +12,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem
 } from "#src/design-system/sidebar";
+import { OpenInvestigationControls } from "#src/investigation-control/open-investigation-controls";
 import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
 import { RecentInvestigations } from "#src/investigation-roster/recent-investigations";
 import { LAB_NAME, LAB_SETTINGS, LAB_SUBTITLE, LAB_VIEWS } from "#src/lab-layout/lab-layout.const";
@@ -61,6 +62,7 @@ export function LabSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
+                <OpenInvestigationControls />
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <ThemeEntry />

@@ -1,6 +1,5 @@
-import type { VariantProps } from "class-variance-authority";
 import type { LucideIcon } from "lucide-react";
-import type { buttonVariants } from "#src/design-system/button";
+import type { InvestigationControlTone } from "#src/investigation-control/investigation-control.const";
 
 /** What the operator is asked before a control that cannot be walked back runs. */
 export interface InvestigationControlConfirmation {
@@ -14,7 +13,7 @@ export interface InvestigationControlPresentation {
     /** Replaces the label while the daemon is applying the transition. */
     pendingLabel: string;
     icon: LucideIcon;
-    tone: VariantProps<typeof buttonVariants>["variant"];
+    tone: InvestigationControlTone;
     /** Carried only by a control that ends the run for good. */
     confirmation?: InvestigationControlConfirmation;
 }

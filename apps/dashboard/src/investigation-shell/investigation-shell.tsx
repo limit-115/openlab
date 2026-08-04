@@ -4,7 +4,6 @@ import { ErrorDashboard } from "#src/connection-screen/error-screen";
 import { LoadingDashboard } from "#src/connection-screen/loading-screen";
 import { InvestigationView } from "#src/dashboard-routes/dashboard-routes.const";
 import { Tabs, TabsContent } from "#src/design-system/tabs";
-import { InvestigationControls } from "#src/investigation-control/investigation-controls";
 import { InvestigationHeader } from "#src/investigation-header/investigation-header";
 import {
     INVESTIGATION_DASHBOARD,
@@ -62,10 +61,6 @@ export function InvestigationShell() {
             <TabsContent value={InvestigationView.TEAM} className={INVESTIGATION_DASHBOARD}>
                 <TeamView snapshot={snapshot} />
             </TabsContent>
-            <InvestigationControls
-                investigationId={snapshot.investigation.id}
-                state={snapshot.investigation.state}
-            />
         </Tabs>
     );
 }

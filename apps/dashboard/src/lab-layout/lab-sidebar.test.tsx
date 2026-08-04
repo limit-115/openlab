@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -83,6 +84,25 @@ describe("LabSidebar", () => {
 
         await waitFor(() => expect(entry("Settings")).toHaveAttribute("data-active", "true"));
         expect(entry("Investigations")).toHaveAttribute("data-active", "false");
+    });
+
+    it("offers the open investigation only the ways out its own state allows", async () => {
+        renderAt(investigationAddress(investigationId));
+
+        await within(sidebar()).findByRole("button", { name: "Stop" });
+        expect(within(sidebar()).queryByRole("button", { name: "Wake" })).toBeNull();
+    });
+
+    it("takes the run's controls away with the investigation the operator left", async () => {
+        const user = userEvent.setup();
+        renderAt(investigationAddress(investigationId));
+        await within(sidebar()).findByRole("button", { name: "Stop" });
+
+        await user.click(within(sidebar()).getByRole("link", { name: "Investigations" }));
+
+        await waitFor(() =>
+            expect(within(sidebar()).queryByRole("button", { name: "Stop" })).toBeNull()
+        );
     });
 
     it("marks the open investigation alone, and not the roster it was reached from", async () => {

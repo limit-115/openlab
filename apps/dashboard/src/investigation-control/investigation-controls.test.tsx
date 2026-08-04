@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { SidebarProvider } from "#src/design-system/sidebar";
 import { InvestigationControls } from "#src/investigation-control/investigation-controls";
 import { statusQueryKey } from "#src/live-status/status-client";
 import { statusFixture } from "#src/test-support/status-fixture";
@@ -22,7 +23,9 @@ function renderControls(state: InvestigationState) {
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     const view = render(
         <QueryClientProvider client={client}>
-            <InvestigationControls investigationId="investigation-alpha-2026" state={state} />
+            <SidebarProvider>
+                <InvestigationControls investigationId="investigation-alpha-2026" state={state} />
+            </SidebarProvider>
         </QueryClientProvider>
     );
     return { ...view, client };

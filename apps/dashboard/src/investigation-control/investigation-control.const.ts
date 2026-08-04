@@ -46,6 +46,17 @@ export const INVESTIGATION_CONTROL_ORIGIN_STATES: Record<
     ])
 };
 
+/**
+ * How much weight a control carries where it stands. Only the one transition the investigation
+ * cannot walk back is drawn apart from the rest, so the sidebar stays quiet until it matters.
+ */
+export const InvestigationControlTone = {
+    ORDINARY: "ORDINARY",
+    DESTRUCTIVE: "DESTRUCTIVE"
+} as const;
+export type InvestigationControlTone =
+    (typeof InvestigationControlTone)[keyof typeof InvestigationControlTone];
+
 export const INVESTIGATION_CONTROL_PRESENTATION: Record<
     InvestigationControlAction,
     InvestigationControlPresentation
@@ -54,31 +65,31 @@ export const INVESTIGATION_CONTROL_PRESENTATION: Record<
         label: "Pause",
         pendingLabel: "Pausing",
         icon: PauseIcon,
-        tone: "outline"
+        tone: InvestigationControlTone.ORDINARY
     },
     [InvestigationControlAction.WAKE]: {
         label: "Wake",
         pendingLabel: "Waking",
         icon: PlayIcon,
-        tone: "default"
+        tone: InvestigationControlTone.ORDINARY
     },
     [InvestigationControlAction.RESUME]: {
         label: "Resume",
         pendingLabel: "Resuming",
         icon: PlayIcon,
-        tone: "default"
+        tone: InvestigationControlTone.ORDINARY
     },
     [InvestigationControlAction.START]: {
         label: "Start",
         pendingLabel: "Starting",
         icon: PlayIcon,
-        tone: "default"
+        tone: InvestigationControlTone.ORDINARY
     },
     [InvestigationControlAction.STOP]: {
         label: "Stop",
         pendingLabel: "Stopping",
         icon: CircleStopIcon,
-        tone: "destructive",
+        tone: InvestigationControlTone.DESTRUCTIVE,
         confirmation: {
             title: "Stop the run?",
             consequence:
@@ -94,17 +105,17 @@ export const KEEP_RUN_LABEL = "Keep running" as const;
 export const INVESTIGATION_CONTROL_UNREACHABLE = "The lab daemon did not answer." as const;
 
 /**
- * The controls float over the corner of the page instead of sitting in the header. Ending a run is
- * something the operator reaches for a few times a session, and it was crowding a header whose job
- * is to say where you are and how the investigation is doing. The island keeps the same short offset at every
- * width: it belongs to the viewport corner, not to the column of text it happens to lie over.
+ * What the controls act on. They stand on the sidebar's shelf rather than over the page, so the
+ * group says which run they end, and not the one the operator is only reading about.
  */
-export const INVESTIGATION_CONTROL_DOCK =
-    "fixed right-4 bottom-4 z-30 flex flex-col items-end gap-1.5" as const;
+export const INVESTIGATION_CONTROL_LABEL = "Run" as const;
 
-/** Chrome of its own, because the island lies over whatever the page happens to be showing. */
-export const INVESTIGATION_CONTROL_GROUP =
-    "flex flex-wrap items-center justify-end gap-2 rounded-4xl border bg-background/85 p-1.5 shadow-lg backdrop-blur-lg" as const;
+/** The one control drawn apart, because a run the lab cannot reopen should not read as an errand. */
+export const INVESTIGATION_CONTROL_TONE: Record<InvestigationControlTone, string> = {
+    [InvestigationControlTone.ORDINARY]: "",
+    [InvestigationControlTone.DESTRUCTIVE]:
+        "text-destructive hover:bg-destructive/10 hover:text-destructive active:bg-destructive/10 active:text-destructive"
+};
 
-export const INVESTIGATION_CONTROL_FAILURE =
-    "rounded-2xl border bg-background/85 px-3 py-1.5 text-sm text-destructive shadow-lg backdrop-blur-lg" as const;
+/** A refusal stands under the control it belongs to, and wraps rather than losing its own words. */
+export const INVESTIGATION_CONTROL_FAILURE = "mt-1 px-3 text-sm text-destructive" as const;
