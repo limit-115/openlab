@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { cancel, confirm, intro, isCancel, isTTY, note, outro, text } from "@clack/prompts";
 import { DaemonLogLevel } from "@nightlab/daemon/daemon-runtime/daemon-config.const";
 import { planPurge, purgeRuns } from "@nightlab/daemon/run-purge/run-purge";
@@ -14,6 +14,15 @@ import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";
 import { resolveCliConfig } from "#src/config";
 import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
+import { installLab } from "#src/lab-installation/install-lab";
+import { reportInstallation } from "#src/lab-installation/installation-report";
+import { installedPaths } from "#src/lab-installation/installed-layout";
+import {
+    renderInstallationReport,
+    renderInstallOutcome,
+    renderUninstallOutcome
+} from "#src/lab-installation/render-installation";
+import { uninstallLab } from "#src/lab-installation/uninstall-lab";
 import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
 import {
@@ -35,6 +44,13 @@ interface StartOptions {
     open?: boolean;
     verbose?: boolean;
 }
+
+interface InstallOptions {
+    modifyPath?: boolean;
+}
+
+/** What this build of the lab is, which is both what `--version` answers and what installs itself. */
+const LAB_VERSION = "0.1.0";
 
 interface NewOptions {
     goal?: string;
@@ -127,7 +143,7 @@ async function daemonIsAnswering(command: Command): Promise<boolean> {
 const program = new Command()
     .name("nightlab")
     .description("Run and inspect NightLab, your local autonomous research lab")
-    .version("0.1.0")
+    .version(LAB_VERSION)
     .option("--api-url <url>", "local daemon URL", cliConfig.apiUrl)
     .option("-i, --investigation <id>", "which investigation the command is about")
     .option("--json", "print machine-readable JSON")
@@ -166,6 +182,42 @@ program
                 ? `Lab running at ${daemon.url}, opened in your browser`
                 : `Lab running at ${daemon.url}`
         );
+    });
+
+program
+    .command("install")
+    .description("install the release this executable came from, and put it on your PATH")
+    .option("--no-modify-path", "leave your shell startup files alone")
+    .action(async (options: InstallOptions) => {
+        const outcome = await installLab({
+            from: dirname(process.execPath),
+            version: LAB_VERSION,
+            paths: installedPaths(LAB_VERSION),
+            modifyPath: options.modifyPath !== false
+        });
+        process.stdout.write(`${renderInstallOutcome(outcome)}\n`);
+    });
+
+program
+    .command("uninstall")
+    .description("take the program back out, leaving your lab where it is")
+    .action(async () => {
+        const paths = installedPaths(LAB_VERSION);
+        const outcome = await uninstallLab(paths.home, resolvePurgeConfig().workspaceRoot);
+        process.stdout.write(`${renderUninstallOutcome(outcome)}\n`);
+    });
+
+program
+    .command("doctor")
+    .description("show what is installed, what answers, and what the lab still needs")
+    .action(async (_options, command: Command) => {
+        const version = LAB_VERSION;
+        const report = await reportInstallation(
+            version,
+            installedPaths(version),
+            resolvePurgeConfig().workspaceRoot
+        );
+        print(report, globals(command).json, () => renderInstallationReport(report));
     });
 
 program
