@@ -1,4 +1,5 @@
 import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import type { SpendCaps } from "@lab/protocol/spend-caps/spend-cap.types";
 import { SubscriptionAllowanceState } from "@lab/protocol/subscription-allowance/subscription-allowance.const";
 import type { SubscriptionAllowanceRoster } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
 import { render, screen } from "@testing-library/react";
@@ -37,9 +38,24 @@ const ROSTER: SubscriptionAllowanceRoster = [
     }
 ];
 
+const CLAUDE_SESSION_CAP = [
+    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+];
+
+function renderList(caps: SpendCaps = [], heldBy: SpendCaps = caps) {
+    return render(
+        <SubscriptionAllowanceList
+            allowances={ROSTER}
+            caps={caps}
+            heldBy={heldBy}
+            setCap={() => undefined}
+        />
+    );
+}
+
 describe("SubscriptionAllowanceList", () => {
     it("meters each window against what the vendor said is spent", () => {
-        render(<SubscriptionAllowanceList allowances={ROSTER} />);
+        renderList();
 
         const session = screen.getByLabelText<HTMLProgressElement>("5 hours window");
         const week = screen.getAllByLabelText<HTMLProgressElement>("7 days window");
@@ -49,18 +65,51 @@ describe("SubscriptionAllowanceList", () => {
     });
 
     it("marks the subscription the lab will pass over", () => {
-        render(<SubscriptionAllowanceList allowances={ROSTER} />);
+        renderList();
 
         expect(screen.getByText("No allowance left")).toBeInTheDocument();
         expect(screen.getByText("plus")).toBeInTheDocument();
     });
 
     it("gives the vendor's reason in full when a subscription could not be read", () => {
-        render(<SubscriptionAllowanceList allowances={ROSTER} />);
+        renderList();
 
         expect(
             screen.getByText("No ZCode login store at /Users/operator/.zcode/v2/config.json")
         ).toBeInTheDocument();
         expect(screen.queryByLabelText("30 days window")).not.toBeInTheDocument();
+    });
+
+    it("stands each limiter at the cap set on that window, and at the end of an uncapped one", () => {
+        renderList(CLAUDE_SESSION_CAP);
+
+        expect(
+            screen.getByRole("slider", { name: "5 hours spend cap" }).getAttribute("aria-valuenow")
+        ).toBe("40");
+        expect(
+            screen
+                .getAllByRole("slider", { name: "7 days spend cap" })[0]
+                ?.getAttribute("aria-valuenow")
+        ).toBe("100");
+    });
+
+    it("says which subscription the lab is holding back at the operator's own cap", () => {
+        renderList(CLAUDE_SESSION_CAP);
+
+        expect(screen.getByText("Held at your cap")).toBeInTheDocument();
+        expect(screen.getByText("stops at 40%")).toBeInTheDocument();
+    });
+
+    it("holds nothing back on a cap the operator has dragged but not yet handed over", () => {
+        renderList(CLAUDE_SESSION_CAP, []);
+
+        expect(screen.queryByText("Held at your cap")).not.toBeInTheDocument();
+    });
+
+    it("meters without a limiter where the caps are not the page's to move", () => {
+        render(<SubscriptionAllowanceList allowances={ROSTER} caps={[]} heldBy={[]} />);
+
+        expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+        expect(screen.getByLabelText("5 hours window")).toBeInTheDocument();
     });
 });

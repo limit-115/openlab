@@ -13,6 +13,9 @@ export const ALLOWANCE_CARD = "flex min-w-0 flex-col gap-3 rounded-2xl border p-
 /** A subscription the lab will pass over is worth spotting from across the page. */
 export const ALLOWANCE_CARD_SPENT = "border-destructive/40" as const;
 
+/** The share of a window a vendor stops serving at, which is also where a meter fills up. */
+export const SPENT_PERCENT = 100;
+
 export const ALLOWANCE_CARD_HEADER = "flex flex-wrap items-center gap-x-3 gap-y-2" as const;
 
 export const ALLOWANCE_SUBSCRIPTION_NAME = "text-base font-medium" as const;
