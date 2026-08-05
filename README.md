@@ -1,11 +1,11 @@
-# AI Research Lab
+# NightLab
 
 Local autonomous research runtime described in
-[`AI_Research_Lab_MVP_SPEC.md`](./AI_Research_Lab_MVP_SPEC.md).
+[`NightLab_MVP_SPEC.md`](./NightLab_MVP_SPEC.md).
 
 ## Repository layout
 
-- `apps/cli` — the `lab` command;
+- `apps/cli` — the `nightlab` command;
 - `apps/daemon` — orchestration process and local status API;
 - `apps/dashboard` — Vite + React observer UI;
 - `packages/protocol` — stable runtime contracts and JSON schemas;
@@ -18,7 +18,7 @@ Local autonomous research runtime described in
 One lab holds many investigations. Each investigation is one goal with its own agents, its own run
 directory and its own research loop, running alongside the others.
 
-Operational state belongs in the database, a single SQLite file at `lab.db` in `LAB_HOME`. Files in
+Operational state belongs in the database, a single SQLite file at `nightlab.db` in `NIGHTLAB_HOME`. Files in
 a run directory are durable artifacts and protocol snapshots that can be inspected or exported
 independently. A lab is therefore a directory: copy it to keep it, delete it to be rid of it.
 
@@ -33,7 +33,7 @@ Requirements:
 ```bash
 fnm use
 pnpm install --frozen-lockfile
-pnpm lab start
+pnpm nightlab start
 ```
 
 Nothing has to be installed for the database. It is opened through `node:sqlite`, which the pinned
@@ -42,8 +42,8 @@ Node already carries, and created on first start beside the runs it is about.
 The lab starts empty. Open the dashboard to add an investigation, or use the CLI:
 
 ```bash
-pnpm lab new --goal "Find and verify a faster implementation of a reference algorithm"
-pnpm lab new --file examples/investigation.example.json
+pnpm nightlab new --goal "Find and verify a faster implementation of a reference algorithm"
+pnpm nightlab new --file examples/investigation.example.json
 ```
 
 The daemon applies database migrations before it opens, and reopens every investigation it already
@@ -53,17 +53,17 @@ harnesses. API keys and usage-based model API fallbacks are intentionally unsupp
 ## Commands
 
 ```bash
-pnpm lab list
-pnpm lab status
-pnpm lab bets
-pnpm lab inspect <bet-finding-verdict-or-run-id>
-pnpm lab capabilities
-pnpm lab answer <request-id> <answer>
-pnpm lab wake
-pnpm lab stop
-pnpm lab export
-pnpm lab rm <investigation-id>
-pnpm lab purge
+pnpm nightlab list
+pnpm nightlab status
+pnpm nightlab bets
+pnpm nightlab inspect <bet-finding-verdict-or-run-id>
+pnpm nightlab capabilities
+pnpm nightlab answer <request-id> <answer>
+pnpm nightlab wake
+pnpm nightlab stop
+pnpm nightlab export
+pnpm nightlab rm <investigation-id>
+pnpm nightlab purge
 ```
 
 `status`, `bets`, `inspect`, `capabilities`, `answer`, `wake`, `stop` and `export` are each about one
@@ -78,7 +78,7 @@ before deleting.
 ## Dashboard
 
 The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build it with
-`pnpm --filter @lab/dashboard build` before starting the lab.
+`pnpm --filter @nightlab/dashboard build` before starting the lab.
 
 It reads the lab live: every investigation the lab holds, what each one is doing, its team, its
 event stream and what it ended up as. The settings page holds four panels, and only the open one
@@ -91,7 +91,7 @@ asks the daemon for anything:
   lab may spend;
 - **Notifications** — the channels the lab reaches the operator through when nobody is watching
   this page, which moments each one reports and what language it writes in;
-- **Storage** — what each run directory takes up under `LAB_HOME`, including directories left behind
+- **Storage** — what each run directory takes up under `NIGHTLAB_HOME`, including directories left behind
   by investigations the lab no longer holds, and a purge through the running daemon so every
   investigation's agents stop before its history and directory are deleted.
 
@@ -103,22 +103,22 @@ reads the lab, not part of how it runs.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `LAB_HOME` | `$XDG_DATA_HOME/lab` | The lab's database, run workspaces and durable artifacts |
-| `LAB_HOST` | `127.0.0.1` | Local status server host |
-| `LAB_PORT` | `4318` | Local status server port |
-| `LAB_DASHBOARD_ROOT` | `apps/dashboard/dist` | Built dashboard directory |
-| `LAB_LOG_LEVEL` | `warn` | Fastify log level, raised to `info` by `lab start --verbose` |
-| `LAB_API_URL` | `http://127.0.0.1:4318` | Daemon the CLI talks to |
+| `NIGHTLAB_HOME` | `$XDG_DATA_HOME/nightlab` | The lab's database, run workspaces and durable artifacts |
+| `NIGHTLAB_HOST` | `127.0.0.1` | Local status server host |
+| `NIGHTLAB_PORT` | `4318` | Local status server port |
+| `NIGHTLAB_DASHBOARD_ROOT` | `apps/dashboard/dist` | Built dashboard directory |
+| `NIGHTLAB_LOG_LEVEL` | `warn` | Fastify log level, raised to `info` by `nightlab start --verbose` |
+| `NIGHTLAB_API_URL` | `http://127.0.0.1:4318` | Daemon the CLI talks to |
 
 Environment values are validated at startup. Empty values are treated as unset. Every variable above
-is read by the daemon except `LAB_API_URL`, which is how the CLI finds it. The database is not among
-them: one home is one lab, so pointing `LAB_HOME` somewhere else moves the database with the runs it
+is read by the daemon except `NIGHTLAB_API_URL`, which is how the CLI finds it. The database is not among
+them: one home is one lab, so pointing `NIGHTLAB_HOME` somewhere else moves the database with the runs it
 belongs to.
 
-A lab belongs to whoever runs it, not to the directory it was started in, so `LAB_HOME` falls back to
+A lab belongs to whoever runs it, not to the directory it was started in, so `NIGHTLAB_HOME` falls back to
 the XDG data directory — `~/.local/share/lab` on a machine that leaves `XDG_DATA_HOME` unset, macOS
-included. A relative `XDG_DATA_HOME` is ignored as the specification asks; a relative `LAB_HOME` is
-an operator naming a home and resolves against the working directory, which is how `LAB_HOME=./.lab`
+included. A relative `XDG_DATA_HOME` is ignored as the specification asks; a relative `NIGHTLAB_HOME` is
+an operator naming a home and resolves against the working directory, which is how `NIGHTLAB_HOME=./.nightlab`
 gives a throwaway lab. Nothing expands a leading `~` inside a launch agent or a unit file, so the lab
 expands one itself.
 
