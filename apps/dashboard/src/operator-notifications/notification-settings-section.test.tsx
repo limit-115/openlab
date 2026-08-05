@@ -142,6 +142,7 @@ describe("NotificationSettingsSection", () => {
     it("sends the credentials an operator set up a channel with from nothing", async () => {
         const request = respond({ read: NOTHING_CONFIGURED });
         renderSection();
+        await openChannel();
 
         await userEvent.type(
             await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.botToken),
@@ -234,6 +235,7 @@ describe("NotificationSettingsSection", () => {
     it("refuses to send a channel with no bot to write to the chat as", async () => {
         respond({ read: NOTHING_CONFIGURED });
         renderSection();
+        await openChannel();
 
         await userEvent.type(
             await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId),

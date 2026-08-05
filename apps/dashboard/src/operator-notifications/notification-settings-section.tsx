@@ -1,4 +1,3 @@
-import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
 import type { NotificationSettingsView } from "@lab/protocol/operator-notifications/notification-settings.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
@@ -15,7 +14,6 @@ import {
 import {
     draftFromSettings,
     hasUnsavedEdits,
-    isConfigured,
     isSubmittable,
     settingsSubmission
 } from "#src/operator-notifications/notification-settings-draft";
@@ -124,13 +122,8 @@ export function NotificationSettingsSection() {
                     <p className={FIELD_HINT}>{t("channelsDescription")}</p>
                 </div>
 
-                {/* A channel nobody has set up yet is opened for them: there is nothing to fold away. */}
-                <Accordion
-                    type="multiple"
-                    defaultValue={
-                        isConfigured(draft.telegram) ? [] : [NotificationChannelKind.TELEGRAM]
-                    }
-                >
+                {/* Every channel starts folded away, so the page opens on one readable list of them. */}
+                <Accordion type="multiple">
                     <TelegramChannelItem draft={draft} change={change} unsaved={unsaved} />
                 </Accordion>
 
