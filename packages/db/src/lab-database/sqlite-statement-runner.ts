@@ -57,6 +57,17 @@ export class SqliteStatementRunner {
         }
     }
 
+    /**
+     * Closes the connection once it has finished answering, rather than out from under a write in
+     * flight: SQLite rolls an open transaction back when its connection goes, so a lab interrupted
+     * mid-commit would lose the cycle it had just finished.
+     */
+    async close(): Promise<void> {
+        await this.#queue(async () => {
+            this.#connection.close();
+        });
+    }
+
     #insideTransaction(): boolean {
         return this.#openTransaction.getStore() !== undefined;
     }
@@ -74,7 +85,7 @@ export class SqliteStatementRunner {
     async #answer(
         sql: string,
         params: readonly unknown[],
-        method: string
+        method: SqliteStatementMethod
     ): Promise<{ rows: StatementRow | StatementRow[] }> {
         const statement = this.#connection.prepare(sql);
         const values = params as SQLInputValue[];

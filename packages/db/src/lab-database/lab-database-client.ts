@@ -28,8 +28,6 @@ export function createDatabase(databasePath: string): DatabaseClient {
     return {
         db,
         transaction: (run) => runner.transaction(() => run(db)),
-        close: async () => {
-            connection.close();
-        }
+        close: () => runner.close()
     };
 }

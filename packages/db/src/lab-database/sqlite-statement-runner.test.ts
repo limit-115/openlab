@@ -18,7 +18,9 @@ describe("SqliteStatementRunner", () => {
     });
 
     afterEach(() => {
-        connection.close();
+        if (connection.isOpen) {
+            connection.close();
+        }
     });
 
     function written(): string[] {
@@ -69,6 +71,20 @@ describe("SqliteStatementRunner", () => {
         await runner.execute(INSERT, ["after"], SqliteStatementMethod.RUN);
 
         expect(written()).toEqual(["after"]);
+    });
+
+    it("closes the connection only once the write in flight has landed", async () => {
+        const finished: string[] = [];
+        const writing = runner
+            .transaction(async () => {
+                await runner.execute(INSERT, ["landed"], SqliteStatementMethod.RUN);
+            })
+            .then(() => finished.push("written"));
+
+        const closing = runner.close().then(() => finished.push("closed"));
+
+        await Promise.all([writing, closing]);
+        expect(finished).toEqual(["written", "closed"]);
     });
 
     it("refuses a transaction opened inside another one instead of waiting for itself", async () => {
