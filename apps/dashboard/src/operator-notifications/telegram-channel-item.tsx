@@ -5,8 +5,8 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from "#src/design-s
 import { Badge } from "#src/design-system/badge";
 import { Input } from "#src/design-system/input";
 import { Switch } from "#src/design-system/switch";
+import { ChannelSettingSource } from "#src/operator-notifications/channel-setting-source";
 import { ChannelTestControl } from "#src/operator-notifications/channel-test-control";
-import { FollowsLabSwitch } from "#src/operator-notifications/follows-lab-switch";
 import { MessageLanguageOptions } from "#src/operator-notifications/message-language-options";
 import { NotificationField } from "#src/operator-notifications/notification-field";
 import {
@@ -21,10 +21,13 @@ import {
 import {
     CHANNEL_CONTENT,
     CHANNEL_HEADING,
-    CHANNEL_STATUS,
+    CHANNEL_NAME,
+    CHANNEL_REPORTING,
+    CHANNEL_SETUP_TONE,
     CHANNEL_SWITCH,
     CHANNEL_TRIGGER,
     CHANNEL_TRIGGER_TEXT,
+    ChannelSetupState,
     CREDENTIAL_FIELDS,
     FIELD,
     FIELD_HINT,
@@ -52,6 +55,10 @@ interface TelegramChannelItemProps {
  * usually the lab's, so the whole of it folds away behind a line saying what the channel does; the
  * switch stays out on that line, because a channel that is set up and silent is a real state and
  * reaching it should not cost the operator the credentials they took the trouble to enter.
+ *
+ * That line is what the operator actually reads in a list of every place the lab can write, so it
+ * carries no words the row beside it would repeat: the tag says what the lab would do with the
+ * channel, and the switch is the one thing that changes it.
  */
 export function TelegramChannelItem({ draft, change, unsaved }: TelegramChannelItemProps) {
     const { t } = useTranslation(OPERATOR_NOTIFICATIONS_NAMESPACE);
@@ -60,31 +67,33 @@ export function TelegramChannelItem({ draft, change, unsaved }: TelegramChannelI
     const report = channelReport(draft);
     const followsMoments = telegram.events === undefined;
     const followsLanguage = telegram.language === undefined;
+    const setup = channelSetupState(telegram);
 
     return (
         <AccordionItem value={NotificationChannelKind.TELEGRAM}>
             <div className={CHANNEL_HEADING}>
                 <AccordionTrigger className={CHANNEL_TRIGGER}>
                     <span className={CHANNEL_TRIGGER_TEXT}>
-                        {t(NotificationChannelKind.TELEGRAM)}
-                        <span className={CHANNEL_STATUS}>{t(channelStatus(telegram))}</span>
-                        {followsMoments ? null : (
-                            <Badge variant="secondary">{t("ownMoments")}</Badge>
-                        )}
+                        <span className={CHANNEL_NAME}>{t(NotificationChannelKind.TELEGRAM)}</span>
+                        <Badge variant={CHANNEL_SETUP_TONE[setup]}>{t(setup)}</Badge>
+                        {followsMoments ? null : <Badge variant="outline">{t("ownMoments")}</Badge>}
                         {followsLanguage ? null : (
-                            <Badge variant="secondary">{t("ownLanguage")}</Badge>
+                            <Badge variant="outline">{t("ownLanguage")}</Badge>
                         )}
                     </span>
                 </AccordionTrigger>
 
-                <label htmlFor={`${fieldId}-enabled`} className={CHANNEL_SWITCH}>
-                    <Switch
-                        id={`${fieldId}-enabled`}
-                        checked={telegram.enabled}
-                        onCheckedChange={(enabled) => change(changeTelegram(draft, { enabled }))}
-                    />
-                    {t("enabled")}
-                </label>
+                {/*
+                 * The switch is named to a reader rather than on the row. Ten channels' worth of
+                 * the same sentence down the right edge is noise, and the tag beside the name
+                 * already reports what flipping it did.
+                 */}
+                <Switch
+                    aria-label={t("enabled")}
+                    className={CHANNEL_SWITCH}
+                    checked={telegram.enabled}
+                    onCheckedChange={(enabled) => change(changeTelegram(draft, { enabled }))}
+                />
             </div>
 
             <AccordionContent className={CHANNEL_CONTENT}>
@@ -128,45 +137,47 @@ export function TelegramChannelItem({ draft, change, unsaved }: TelegramChannelI
                     </div>
                 </div>
 
-                <NotificationField
-                    label={t("moments")}
-                    aside={
-                        <FollowsLabSwitch
-                            follows={followsMoments}
-                            choose={(follows) => change(followLabMoments(draft, follows))}
-                        />
-                    }
-                >
-                    {followsMoments ? (
-                        <FollowedMoments moments={report.events} />
-                    ) : (
-                        <ReportedMomentsOptions
-                            moments={report.events}
-                            choose={(moment, chosen) =>
-                                change(chooseChannelMoment(draft, moment, chosen))
-                            }
-                        />
-                    )}
-                </NotificationField>
+                <div className={CHANNEL_REPORTING}>
+                    <NotificationField
+                        label={t("moments")}
+                        aside={
+                            <ChannelSettingSource
+                                follows={followsMoments}
+                                choose={(follows) => change(followLabMoments(draft, follows))}
+                            />
+                        }
+                    >
+                        {followsMoments ? (
+                            <FollowedMoments moments={report.events} />
+                        ) : (
+                            <ReportedMomentsOptions
+                                moments={report.events}
+                                choose={(moment, chosen) =>
+                                    change(chooseChannelMoment(draft, moment, chosen))
+                                }
+                            />
+                        )}
+                    </NotificationField>
 
-                <NotificationField
-                    label={t("language")}
-                    aside={
-                        <FollowsLabSwitch
-                            follows={followsLanguage}
-                            choose={(follows) => change(followLabLanguage(draft, follows))}
-                        />
-                    }
-                >
-                    {followsLanguage ? (
-                        <p className={FOLLOWED_SETTING}>{t(report.language)}</p>
-                    ) : (
-                        <MessageLanguageOptions
-                            language={report.language}
-                            choose={(language) => change(changeTelegram(draft, { language }))}
-                        />
-                    )}
-                </NotificationField>
+                    <NotificationField
+                        label={t("language")}
+                        aside={
+                            <ChannelSettingSource
+                                follows={followsLanguage}
+                                choose={(follows) => change(followLabLanguage(draft, follows))}
+                            />
+                        }
+                    >
+                        {followsLanguage ? (
+                            <p className={FOLLOWED_SETTING}>{t(report.language)}</p>
+                        ) : (
+                            <MessageLanguageOptions
+                                language={report.language}
+                                choose={(language) => change(changeTelegram(draft, { language }))}
+                            />
+                        )}
+                    </NotificationField>
+                </div>
 
                 <ChannelTestControl
                     kind={NotificationChannelKind.TELEGRAM}
@@ -179,11 +190,9 @@ export function TelegramChannelItem({ draft, change, unsaved }: TelegramChannelI
 }
 
 /** What the lab would actually do with this channel as it currently stands. */
-function channelStatus(
-    telegram: TelegramChannelDraft
-): "notConfigured" | "configuredOn" | "configuredOff" {
+function channelSetupState(telegram: TelegramChannelDraft): ChannelSetupState {
     if (!isConfigured(telegram)) {
-        return "notConfigured";
+        return ChannelSetupState.NOT_CONFIGURED;
     }
-    return telegram.enabled ? "configuredOn" : "configuredOff";
+    return telegram.enabled ? ChannelSetupState.CONFIGURED_ON : ChannelSetupState.CONFIGURED_OFF;
 }

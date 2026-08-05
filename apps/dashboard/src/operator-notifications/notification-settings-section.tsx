@@ -122,8 +122,12 @@ export function NotificationSettingsSection() {
                     <p className={FIELD_HINT}>{t("channelsDescription")}</p>
                 </div>
 
-                {/* Every channel starts folded away, so the page opens on one readable list of them. */}
-                <Accordion type="multiple">
+                {/*
+                 * Every channel starts folded away and only one is ever open, so the page stays a
+                 * list however many places the lab can write to: the operator sets one up and the
+                 * rest are still on screen rather than a scroll away.
+                 */}
+                <Accordion type="single" collapsible>
                     <TelegramChannelItem draft={draft} change={change} unsaved={unsaved} />
                 </Accordion>
 

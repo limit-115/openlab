@@ -32,8 +32,13 @@ function AccordionTrigger({
     children,
     ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
+    /**
+     * The heading takes the whole of its row rather than the width of its own words. An item that
+     * puts a control beside the trigger lays the two out in one flex row, and a heading sized to
+     * its text would leave the rest of that row dead to the click that opens the item.
+     */
     return (
-        <AccordionPrimitive.Header className="flex">
+        <AccordionPrimitive.Header className="flex flex-1">
             <AccordionPrimitive.Trigger
                 data-slot="accordion-trigger"
                 className={cn(

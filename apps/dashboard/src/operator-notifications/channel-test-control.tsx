@@ -46,7 +46,12 @@ export function ChannelTestControl({ kind, ready, unsaved }: ChannelTestControlP
                 {attempt.isPending ? t("testing") : t("test")}
             </Button>
 
-            {unsaved && ready ? <p className={FIELD_HINT}>{t("testNeedsSaving")}</p> : null}
+            {/*
+             * A control the operator cannot use says which of the two things is missing. Sitting
+             * there greyed and silent, it reads as broken rather than as waiting.
+             */}
+            {ready ? null : <p className={FIELD_HINT}>{t("testNeedsSetup")}</p>}
+            {ready && unsaved ? <p className={FIELD_HINT}>{t("testNeedsSaving")}</p> : null}
 
             {attempt.isError ? (
                 <p role="alert" className={NOTIFICATIONS_FAILURE}>

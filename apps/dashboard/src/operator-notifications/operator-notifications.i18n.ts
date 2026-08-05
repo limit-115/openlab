@@ -20,6 +20,8 @@ export const OPERATOR_NOTIFICATIONS_EN = {
     channelsDescription: "Where the lab sends what it decided to report. Open one to set it up.",
 
     followsLab: "As the lab reports",
+    setForChannel: "Set for this channel",
+    followLab: "Follow the lab",
     ownMoments: "Own moments",
     ownLanguage: "Own language",
 
@@ -60,6 +62,7 @@ export const OPERATOR_NOTIFICATIONS_EN = {
     testRefused: "Telegram refused it:",
     testFailed: "The lab could not try the channel.",
     testNeedsSaving: "Save the settings first: a test goes through what the lab has stored.",
+    testNeedsSetup: "A test needs a bot to write as, a chat to write to, and something to report.",
 
     save: "Save notifications",
     saving: "Saving",
@@ -85,6 +88,8 @@ export const OPERATOR_NOTIFICATIONS_RU = {
         "Куда лаборатория отправляет то, о чём решила сообщить. Раскройте канал, чтобы настроить его.",
 
     followsLab: "Как у лаборатории",
+    setForChannel: "Задать для этого канала",
+    followLab: "Вернуть как у лаборатории",
     ownMoments: "Свои поводы",
     ownLanguage: "Свой язык",
 
@@ -126,6 +131,8 @@ export const OPERATOR_NOTIFICATIONS_RU = {
     testRefused: "Telegram отклонил его:",
     testFailed: "Лаборатории не удалось проверить канал.",
     testNeedsSaving: "Сначала сохраните настройки: проверка идёт через то, что хранит лаборатория.",
+    testNeedsSetup:
+        "Для проверки нужны бот, от имени которого писать, чат, куда писать, и хотя бы один повод.",
 
     save: "Сохранить уведомления",
     saving: "Сохранение",

@@ -219,7 +219,7 @@ describe("NotificationSettingsSection", () => {
 
         const language = await channelField(OPERATOR_NOTIFICATIONS_EN.language);
         await userEvent.click(
-            language.getByRole("switch", { name: OPERATOR_NOTIFICATIONS_EN.followsLab })
+            language.getByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.setForChannel })
         );
         await userEvent.click(
             language.getByRole("radio", {
@@ -270,6 +270,24 @@ describe("NotificationSettingsSection", () => {
 
         expect(await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId)).toHaveValue("");
         expect(screen.getByText(OPERATOR_NOTIFICATIONS_EN.notConfigured)).toBeInTheDocument();
+    });
+
+    /** Greyed and silent, the control reads as broken rather than as waiting on the operator. */
+    it("says what a channel with nothing in it is still missing before it can be tried", async () => {
+        respond({ read: NOTHING_CONFIGURED });
+        renderSection();
+        await openChannel();
+
+        expect(
+            await screen.findByText(OPERATOR_NOTIFICATIONS_EN.testNeedsSetup)
+        ).toBeInTheDocument();
+
+        await userEvent.type(screen.getByLabelText(OPERATOR_NOTIFICATIONS_EN.botToken), "5678:new");
+        await userEvent.type(screen.getByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "-1002");
+
+        expect(
+            screen.queryByText(OPERATOR_NOTIFICATIONS_EN.testNeedsSetup)
+        ).not.toBeInTheDocument();
     });
 
     /** A test that passed on credentials the lab was never given would prove nothing. */

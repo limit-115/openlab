@@ -1,12 +1,10 @@
 import type { NotifiableEventType } from "@lab/protocol/operator-notifications/notifiable-event.const";
-import { CheckIcon } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "#src/design-system/checkbox";
 import { cn } from "#src/design-system/class-names";
 import {
-    FOLLOWED_MOMENT,
-    FOLLOWED_SETTING,
+    FOLLOWED_MOMENTS,
     MOMENT_OPTION,
     MOMENT_OPTION_CHOSEN,
     MOMENT_OPTIONS,
@@ -62,18 +60,16 @@ export function ReportedMomentsOptions({ moments, choose }: ReportedMomentsOptio
 /**
  * The moments a channel is being told about by the lab rather than by itself. They are listed in
  * full rather than counted: the operator is reading them to decide whether to disagree, and a
- * channel that would go quiet about something has to be able to say so before it does.
+ * channel that would go quiet about something has to be able to say so before it does. It reads as
+ * a list rather than as ticks, because a tick is what the control it replaces uses.
  */
 export function FollowedMoments({ moments }: { moments: readonly NotifiableEventType[] }) {
     const { t } = useTranslation(OPERATOR_NOTIFICATIONS_NAMESPACE);
 
     return (
-        <ul className={FOLLOWED_SETTING}>
+        <ul className={FOLLOWED_MOMENTS}>
             {moments.map((moment) => (
-                <li key={moment} className={FOLLOWED_MOMENT}>
-                    <CheckIcon aria-hidden="true" />
-                    {t(moment)}
-                </li>
+                <li key={moment}>{t(moment)}</li>
             ))}
         </ul>
     );
