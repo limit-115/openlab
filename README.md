@@ -22,7 +22,58 @@ Operational state belongs in the database, a single SQLite file at `nightlab.db`
 a run directory are durable artifacts and protocol snapshots that can be inspected or exported
 independently. A lab is therefore a directory: copy it to keep it, delete it to be rid of it.
 
-## Local setup
+## Install
+
+macOS and Linux:
+
+```bash
+curl -fsSL https://get.nightlab.dev/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://get.nightlab.dev/install.ps1 | iex
+```
+
+Windows command prompt:
+
+```bat
+curl -fsSL https://get.nightlab.dev/install.cmd -o install.cmd && install.cmd && del install.cmd
+```
+
+Then:
+
+```bash
+nightlab doctor
+nightlab start
+```
+
+The one thing NightLab cannot install for you is an agent to think with. It dispatches every agent
+to a locally authenticated `codex`, `claude` or `glm` CLI running on your own product subscription,
+and `nightlab doctor` says which of them it can find.
+
+Nothing else is needed. Node, pnpm and a toolchain are not requirements: a release is one executable
+with its runtime inside it, and the dashboard and migrations installed beside it.
+
+The installer needs no administrator rights and touches two places — `~/.nightlab` for the program
+and one line in a shell startup file so that `nightlab` is on your `PATH`. Set `NIGHTLAB_INSTALL_DIR`
+to put the command somewhere else, or pass `--no-modify-path` to be left alone entirely. Your lab's
+own data lives elsewhere again, under `NIGHTLAB_HOME`, and no install or uninstall ever touches it.
+
+```bash
+nightlab uninstall   # takes the program back out, leaves your lab where it is
+```
+
+Every archive is verified against a digest published in the release manifest before anything is
+unpacked, and a mismatch stops the install rather than warning about it. Releases are built by
+GitHub Actions and attested, so what you downloaded can be traced back to the workflow that built it:
+
+```bash
+gh attestation verify nightlab-<version>-<platform>.tar.gz --repo <owner>/nightlab
+```
+
+## Running from the sources
 
 Requirements:
 
@@ -36,8 +87,18 @@ pnpm install --frozen-lockfile
 pnpm nightlab start
 ```
 
-Nothing has to be installed for the database. It is opened through `node:sqlite`, which the pinned
-Node already carries, and created on first start beside the runs it is about.
+There is no build step: Node runs the TypeScript in this repository as it is. The database needs
+nothing installed either — it is opened through the SQLite the runtime already carries, and created
+on first start beside the runs it is about.
+
+A release is built with Bun, which compiles the sources and its own runtime into one executable per
+platform. Both runtimes carry a SQLite of their own and neither can see the other's, so the lab
+opens its database through a driver chosen at startup. That seam is the only place the two differ.
+
+```bash
+pnpm release                 # every platform, into release/dist
+pnpm release darwin-arm64    # just one
+```
 
 The lab starts empty. Open the dashboard to add an investigation, or use the CLI:
 
@@ -172,3 +233,17 @@ pnpm check
 
 A suite that touches the database opens a migrated one of its own in a temporary directory and
 takes it away afterwards, so the tests need nothing installed and never share state.
+
+## License
+
+NightLab is released under the [Apache License 2.0](./LICENSE). Run it, change it, ship it inside
+something else, commercially or not; the license asks only that the notice travels with it and that
+changed files say they were changed.
+
+Two things it settles that a shorter license leaves open. Section 3 grants a patent license
+alongside the copyright one, so an operator running the lab inside a company is not resting on an
+implied grant. Section 6 grants nothing over the NightLab name or the marks in `brand`, which stay
+with the copyright holder and are stated in [`NOTICE`](./NOTICE).
+
+Contributing needs no separate agreement. Section 5 already places anything deliberately submitted
+under these same terms, so a pull request is the entire formality.
