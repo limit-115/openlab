@@ -9,6 +9,10 @@ import { INVESTIGATION_ROSTER_EN } from "#src/investigation-roster/investigation
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { rosterFixture } from "#src/test-support/roster-fixture";
 import { ThemeProvider } from "#src/theme/theme-provider";
+import { rememberIntroduction } from "#src/welcome/welcome-introduction";
+
+/** These pages belong to an operator who has already been shown what the lab is. */
+beforeEach(rememberIntroduction);
 
 function wrapper() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
