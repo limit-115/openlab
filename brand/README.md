@@ -1,10 +1,10 @@
-# NightLab — brand pack
+# OpenLab — brand pack
 
 The mark is a boundary drawn as four crop marks with a flask standing inside it: the lab is a
 directory you own, and the work happens within it.
 
-The name is written **NightLab** wherever a person reads it: the wordmark, prose, the site. It is
-written `nightlab` wherever a machine reads it: the npm package, the CLI, and the file names in this
+The name is written **OpenLab** wherever a person reads it: the wordmark, prose, the site. It is
+written `openlab` wherever a machine reads it: the npm package, the CLI, and the file names in this
 pack. npm has no other option, and mixed case in paths breaks across filesystems. Keep the split.
 
 Everything here is generated from one geometry, so no file can drift from another. The mark is
@@ -15,18 +15,18 @@ holds at any size.
 
 | You need | Use |
 | --- | --- |
-| A mark on a page that has light and dark themes | `svg/nightlab-mark.svg` — switches itself |
-| A mark on a known light background | `svg/nightlab-mark-dark.svg` |
-| A mark on a known dark background | `svg/nightlab-mark-light.svg` |
-| A mark that should carry the brand colour | `svg/nightlab-mark-accent.svg` |
-| A mark at 20px or smaller | `svg/nightlab-mark-dense.svg` — same form, heavier stroke |
-| The mark with the name, in a wide space | `svg/nightlab-lockup.svg` |
-| The mark with the name, in a square space | `svg/nightlab-lockup-stacked.svg` |
+| A mark on a page that has light and dark themes | `svg/openlab-mark.svg` — switches itself |
+| A mark on a known light background | `svg/openlab-mark-dark.svg` |
+| A mark on a known dark background | `svg/openlab-mark-light.svg` |
+| A mark that should carry the brand colour | `svg/openlab-mark-accent.svg` |
+| A mark at 20px or smaller | `svg/openlab-mark-dense.svg` — same form, heavier stroke |
+| The mark with the name, in a wide space | `svg/openlab-lockup.svg` |
+| The mark with the name, in a square space | `svg/openlab-lockup-stacked.svg` |
 | A browser tab | `favicon/favicon.svg`, with the PNGs beside it as fallback |
-| A GitHub or npm avatar (SVG is not accepted) | `png/nightlab-mark-512.png` |
+| A GitHub or npm avatar (SVG is not accepted) | `png/openlab-mark-512.png` |
 | A GitHub social preview | `png/social-preview-1280x640.png` |
 | An iOS home screen icon | `png/apple-touch-icon-180.png` |
-| The dashboard | `react/nightlab-mark.tsx` |
+| The dashboard | `react/openlab-mark.tsx` |
 
 Open `preview.html` to see all of it at once.
 
@@ -62,7 +62,7 @@ The word is Inter Variable at weight 640. Proportions, as a share of the mark's 
 Those are ink measurements, which is what the eye reads. If you are laying it out in CSS, the mark's
 box carries 11.7% of trailing padding inside it and the word carries its own left side bearing, so
 the CSS `gap` that reproduces the rule is **`0.116` of the mark's height** — about 6px when the mark is
-48px. `react/nightlab-lockup.tsx` already has those numbers in it.
+48px. `react/openlab-lockup.tsx` already has those numbers in it.
 
 There is no separate wordmark file, and that is on purpose: the word is live text in the product's
 own typeface, so it stays crisp at any size and never falls out of step when the typeface updates.

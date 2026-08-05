@@ -1,4 +1,4 @@
-type NightLabMarkProps = {
+type OpenLabMarkProps = {
     className?: string;
 };
 
@@ -10,9 +10,9 @@ type NightLabMarkProps = {
  * The flask is Lucide's `flask-conical` glyph, inlined rather than imported so the frame and the
  * flask stay one indivisible mark. Do not swap it for `<FlaskConicalIcon />`.
  */
-export function NightLabMark({ className }: NightLabMarkProps) {
+export function OpenLabMark({ className }: OpenLabMarkProps) {
     return (
-        <svg viewBox="0 0 64 64" fill="none" role="img" aria-label="NightLab" className={className}>
+        <svg viewBox="0 0 64 64" fill="none" role="img" aria-label="OpenLab" className={className}>
             <g stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 20V9H20" />
                 <path d="M44 9H55V20" />

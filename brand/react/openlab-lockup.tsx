@@ -1,6 +1,6 @@
-import { NightLabMark } from "#src/brand/nightlab-mark";
+import { OpenLabMark } from "#src/brand/openlab-mark";
 
-type NightLabLockupProps = {
+type OpenLabLockupProps = {
     className?: string;
 };
 
@@ -12,12 +12,12 @@ type NightLabLockupProps = {
  * This is the 48px size. To draw it larger, scale all three numbers together rather than any one of
  * them: `size-12` -> `size-16`, `text-[33px]` -> `text-[44px]`, `gap-[6px]` -> `gap-[8px]`.
  */
-export function NightLabLockup({ className }: NightLabLockupProps) {
+export function OpenLabLockup({ className }: OpenLabLockupProps) {
     return (
         <span className={className}>
             <span className="flex items-center gap-[6px]">
-                <NightLabMark className="size-12 shrink-0" />
-                <span className="font-[640] text-[33px] leading-none">NightLab</span>
+                <OpenLabMark className="size-12 shrink-0" />
+                <span className="font-[640] text-[33px] leading-none">OpenLab</span>
             </span>
         </span>
     );

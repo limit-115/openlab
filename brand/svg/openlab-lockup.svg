@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 204 119" width="204" height="119" role="img" aria-label="NightLab">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 271 64" width="271" height="64" role="img" aria-label="OpenLab">
     <!-- Flask glyph: flask-conical from Lucide (lucide.dev), ISC. See ATTRIBUTION.md. -->
+    <!-- Wordmark: Inter Variable 640. The font is embedded below, so this file stands alone. -->
     <style>
         @font-face {
             font-family: "InterVar";
@@ -9,7 +10,6 @@
         }
         .word { font-family: "InterVar", system-ui, sans-serif; font-weight: 640; font-size: 44.16px; fill: #09090B; }
     </style>
-    <g transform="translate(70.00 0)">
     <g fill="none" stroke="#09090B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 20V9H20" />
         <path d="M44 9H55V20" />
@@ -21,6 +21,5 @@
         <path d="M6.453 15h11.094" />
         <path d="M8.5 2h7" />
     </g>
-    </g>
-    <text class="word" x="4.24" y="102.41">NightLab</text>
+    <text class="word" x="72.40" y="43.78">OpenLab</text>
 </svg>
