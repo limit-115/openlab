@@ -3,12 +3,17 @@ import type {
     DeliveredNotification,
     NotificationMessage
 } from "@lab/notifier/notification-message.types";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
-import type { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
+import type {
+    NotificationChannelKind,
+    NotificationLanguage
+} from "@lab/protocol/operator-notifications/notification-channel.const";
 import { channelReporting } from "@lab/protocol/operator-notifications/notification-channel-reporting";
 import type { NotificationChannel as ConfiguredChannel } from "@lab/protocol/operator-notifications/notification-settings.types";
 import type { NotificationTestResult } from "@lab/protocol/operator-notifications/notification-test.types";
+import type { AskedCapability } from "#src/operator-answers/operator-answers.types";
 import { openNotificationChannel } from "#src/operator-notifications/notification-channel-roster";
 import type {
     NotificationDispatchOptions,
@@ -18,6 +23,7 @@ import {
     notificationMessage,
     notificationTestMessage
 } from "#src/operator-notifications/notification-phrasing";
+import { NotificationPayloadField } from "#src/operator-notifications/notification-phrasing.const";
 import type {
     NotificationSettingsReader,
     OpenNotificationChannel
@@ -36,12 +42,14 @@ export class NotificationDispatch {
     readonly #labUrl: () => string;
     readonly #open: OpenNotificationChannel;
     readonly #onFailure: (error: unknown) => void;
+    readonly #onAsked: ((asked: AskedCapability) => void) | undefined;
 
     constructor(options: NotificationDispatchOptions) {
         this.#settings = options.settings;
         this.#labUrl = options.labUrl;
         this.#open = options.open ?? openNotificationChannel;
         this.#onFailure = options.onFailure ?? (() => undefined);
+        this.#onAsked = options.onAsked;
     }
 
     /**
@@ -53,9 +61,55 @@ export class NotificationDispatch {
         for (const { configured, language } of this.#reporting(event.type)) {
             const message = notificationMessage(event, snapshot, language, this.#labUrl());
             if (message !== undefined) {
-                void this.#deliver(configured, message).catch(this.#onFailure);
+                void this.#deliver(configured, message)
+                    .then((delivered) => this.#asked(event, snapshot, delivered))
+                    .catch(this.#onFailure);
             }
         }
+    }
+
+    /**
+     * Says what message a question went out in, so an answer to it can be tied back. Only the lab
+     * knows both, and it knows the pair for exactly as long as this call: a delivery that named no
+     * message is one nobody can reply to, and there is nothing to remember about it.
+     */
+    #asked(
+        event: InvestigationEvent,
+        snapshot: StatusSnapshot,
+        delivered: DeliveredNotification
+    ): void {
+        const capabilityId = event.payload[NotificationPayloadField.REQUEST_ID];
+        if (
+            this.#onAsked === undefined ||
+            event.type !== EventType.CAPABILITY_REQUESTED ||
+            typeof capabilityId !== "string" ||
+            delivered.reference === undefined
+        ) {
+            return;
+        }
+        this.#onAsked({
+            investigationId: snapshot.investigation.id,
+            capabilityId,
+            reference: delivered.reference
+        });
+    }
+
+    /**
+     * Says one thing through one channel, in the language that channel is read in. This is the lab
+     * answering rather than reporting: nothing happened, the operator spoke to it, and it is saying
+     * what it did with that. A channel nobody configured has nowhere to say it and says nothing.
+     */
+    async tell(
+        kind: NotificationChannelKind,
+        write: (language: NotificationLanguage) => NotificationMessage
+    ): Promise<void> {
+        const { defaults, channels } = this.#settings.read();
+        const configured = channels.find((channel) => channel.kind === kind);
+        if (configured === undefined) {
+            return;
+        }
+        const { language } = channelReporting(configured, defaults);
+        await this.#deliver(configured, write(language));
     }
 
     /**

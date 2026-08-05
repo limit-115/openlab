@@ -1,5 +1,6 @@
 import type { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
 import type { NotificationChannel as ConfiguredChannel } from "@lab/protocol/operator-notifications/notification-settings.types";
+import type { AskedCapability } from "#src/operator-answers/operator-answers.types";
 import type {
     NotificationSettingsReader,
     OpenNotificationChannel
@@ -28,4 +29,9 @@ export interface NotificationDispatchOptions {
      * research to get back to, and a vendor that is down is not a reason to stop doing it.
      */
     readonly onFailure?: (error: unknown) => void;
+    /**
+     * Where a question the lab put to the operator is reported, beside what the channel called the
+     * message carrying it. Only this knows both, and it is the pairing an answer is recognised by.
+     */
+    readonly onAsked?: (asked: AskedCapability) => void;
 }

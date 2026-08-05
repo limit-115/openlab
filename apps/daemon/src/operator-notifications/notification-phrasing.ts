@@ -41,7 +41,50 @@ export function notificationMessage(
         link: {
             label: phrases.openInTheLab,
             url: investigationAddress(labUrl, snapshot.investigation.id)
-        }
+        },
+        /**
+         * The one moment the lab reports that it is also held up by. A channel that can carry an
+         * answer offers to take one here, so the operator unblocks the lab where they read it.
+         */
+        ...(event.type === EventType.CAPABILITY_REQUESTED ? { awaitsAnswer: true } : {})
+    };
+}
+
+/**
+ * The receipt for something the operator said back. An answer that reached the agent that asked
+ * and an answer that went nowhere look identical from a chat, and the operator has already put the
+ * phone down, so the lab says which of the two it was.
+ */
+export function capabilityAnsweredMessage(
+    language: NotificationLanguage,
+    capability: { readonly need: string }
+): NotificationMessage {
+    const phrases = NOTIFICATION_PHRASES[language];
+    return {
+        title: phrases.answerTakenTitle,
+        body: phrases.answerTakenBody,
+        facts: [{ label: phrases.why, value: capability.need }]
+    };
+}
+
+export function nothingAskedMessage(language: NotificationLanguage): NotificationMessage {
+    const phrases = NOTIFICATION_PHRASES[language];
+    return { title: phrases.nothingAskedTitle, body: phrases.nothingAskedBody, facts: [] };
+}
+
+/**
+ * Names what the lab is holding, so the operator can point at one. Guessing between them would put
+ * a credential meant for one agent into another's hands without anybody seeing it happen.
+ */
+export function severalAskedMessage(
+    language: NotificationLanguage,
+    open: readonly { readonly need: string }[]
+): NotificationMessage {
+    const phrases = NOTIFICATION_PHRASES[language];
+    return {
+        title: phrases.severalAskedTitle,
+        body: phrases.severalAskedBody,
+        facts: open.map(({ need }) => ({ label: phrases.waitingOn, value: need }))
     };
 }
 

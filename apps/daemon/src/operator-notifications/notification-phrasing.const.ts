@@ -20,6 +20,18 @@ export interface NotificationPhrases {
     readonly nothingRecorded: string;
     readonly testTitle: string;
     readonly testBody: string;
+    /**
+     * What the lab says back in a chat it is being answered through. An answer that reached the
+     * agent that asked and one that went nowhere look identical from a chat, and the operator has
+     * already put the phone down, so the lab says which of the two it was.
+     */
+    readonly answerTakenTitle: string;
+    readonly answerTakenBody: string;
+    readonly nothingAskedTitle: string;
+    readonly nothingAskedBody: string;
+    readonly severalAskedTitle: string;
+    readonly severalAskedBody: string;
+    readonly waitingOn: string;
 }
 
 const EN: NotificationPhrases = {
@@ -36,7 +48,16 @@ const EN: NotificationPhrases = {
     openInTheLab: "Open in the lab",
     nothingRecorded: "The lab recorded nothing further about it.",
     testTitle: "Notifications are working",
-    testBody: "This is the lab checking it can reach you. Nothing has happened."
+    testBody: "This is the lab checking it can reach you. Nothing has happened.",
+    answerTakenTitle: "The lab has your answer",
+    answerTakenBody: "It is going back to work on this.",
+    nothingAskedTitle: "The lab is not waiting on anything",
+    nothingAskedBody:
+        "Nothing was asked, so nothing was done with this. The lab reads a message here only as an answer to something it asked.",
+    severalAskedTitle: "The lab is waiting on more than one thing",
+    severalAskedBody:
+        "Reply to the message you are answering, so the answer reaches the agent that asked rather than whichever asked first.",
+    waitingOn: "Waiting on"
 };
 
 const RU: NotificationPhrases = {
@@ -53,7 +74,16 @@ const RU: NotificationPhrases = {
     openInTheLab: "Открыть в лаборатории",
     nothingRecorded: "Больше лаборатория ничего об этом не записала.",
     testTitle: "Уведомления работают",
-    testBody: "Лаборатория проверяет, что может до вас достучаться. Ничего не произошло."
+    testBody: "Лаборатория проверяет, что может до вас достучаться. Ничего не произошло.",
+    answerTakenTitle: "Ответ у лаборатории",
+    answerTakenBody: "Она возвращается к работе над этим.",
+    nothingAskedTitle: "Лаборатория ничего не ждёт",
+    nothingAskedBody:
+        "Вопроса не было, поэтому с этим ничего не сделано. Сообщение здесь лаборатория читает только как ответ на то, о чём спросила сама.",
+    severalAskedTitle: "Лаборатория ждёт сразу несколько ответов",
+    severalAskedBody:
+        "Ответьте на то сообщение, которое отвечаете, — тогда ответ дойдёт до агента, который спрашивал, а не до того, кто спросил первым.",
+    waitingOn: "Ждёт"
 };
 
 export const NOTIFICATION_PHRASES: Record<NotificationLanguage, NotificationPhrases> = {
@@ -63,6 +93,7 @@ export const NOTIFICATION_PHRASES: Record<NotificationLanguage, NotificationPhra
 
 /** The fields a lab moment carries its own prose in, which differ by the moment. */
 export const NotificationPayloadField = {
+    REQUEST_ID: "request_id",
     NEED: "need",
     REASON: "reason",
     ERROR: "error",

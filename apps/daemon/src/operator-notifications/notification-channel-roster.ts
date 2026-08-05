@@ -13,7 +13,8 @@ export function openNotificationChannel(configured: ConfiguredChannel): Notifica
         case NotificationChannelKind.TELEGRAM:
             return new TelegramBotChannel({
                 botToken: configured.bot_token,
-                chatId: configured.chat_id
+                chatId: configured.chat_id,
+                answersBack: configured.answers_back
             });
     }
 }

@@ -1,5 +1,7 @@
 import { stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
+import { TelegramBotConversation } from "@lab/notifier/telegram-bot-conversation";
+import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
 import type { FastifyInstance } from "fastify";
 import { resolveDaemonConfig } from "#src/daemon-runtime/daemon-config";
 import type { DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
@@ -9,6 +11,8 @@ import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daem
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { createStatusServer } from "#src/investigation-status/status-server";
 import { LabSettingsStore } from "#src/lab-settings/lab-settings-store";
+import { investigationsAnswering } from "#src/operator-answers/answering-investigations";
+import { OperatorAnswers } from "#src/operator-answers/operator-answers";
 import { NotificationDispatch } from "#src/operator-notifications/notification-dispatch";
 import { NotificationSettingsStore } from "#src/operator-notifications/notification-settings-store";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
@@ -38,10 +42,18 @@ export async function startDaemon(
          * on until it is listening, so its address is read at the moment a message is written.
          */
         let labUrl = `http://${config.host}:${config.port}`;
+        /**
+         * The lab both reports to the operator and is answered by them, so the two are wired to
+         * each other: what goes out remembers the message it went out in, and what comes back is
+         * recognised by it. Neither exists until the registry does, so the answers are built first
+         * and given the investigations once there are any.
+         */
+        let answers: OperatorAnswers | undefined;
         const dispatch = new NotificationDispatch({
             settings: notificationSettings,
             labUrl: () => labUrl,
             onFailure: (error) => app?.log.error({ err: error }, "Failed to notify the operator"),
+            onAsked: (asked) => answers?.remember(asked),
             ...(dependencies.openNotificationChannel === undefined
                 ? {}
                 : { open: dependencies.openNotificationChannel })
@@ -73,9 +85,27 @@ export async function startDaemon(
          * told about a run that fails the moment the lab picks it back up.
          */
         registry.subscribeToEvents((event, snapshot) => dispatch.record(event, snapshot));
+        /**
+         * The lab starts listening before it reopens anything, so a run that asks for something the
+         * moment it is picked back up can be answered where the operator reads about it.
+         */
+        answers = new OperatorAnswers({
+            settings: notificationSettings,
+            investigations: investigationsAnswering(registry),
+            say: (write) => dispatch.tell(NotificationChannelKind.TELEGRAM, write),
+            openConversation: (chat, listeningSince) =>
+                new TelegramBotConversation({ ...chat, listeningSince }),
+            onFailure: (error) =>
+                app?.log.error({ err: error }, "Failed to read the operator chat"),
+            ...(dependencies.openOperatorConversation === undefined
+                ? {}
+                : { openConversation: dependencies.openOperatorConversation })
+        });
+        answers.start();
         await registry.restore();
         const runningApp = app;
         const runningRegistry = registry;
+        const listening = answers;
         let closing: Promise<void> | undefined;
 
         return {
@@ -83,7 +113,7 @@ export async function startDaemon(
             registry: runningRegistry,
             url,
             close: () => {
-                closing ??= closeDaemonResources(runningRegistry, runningApp, database);
+                closing ??= closeDaemonResources(listening, runningRegistry, runningApp, database);
                 return closing;
             }
         };
@@ -100,10 +130,12 @@ export async function startDaemon(
 }
 
 async function closeDaemonResources(
+    answers: OperatorAnswers,
     registry: InvestigationRegistry,
     app: FastifyInstance,
     database: DaemonDatabase
 ): Promise<void> {
+    await answers.close();
     await registry.close();
     const results = await Promise.allSettled([app.close(), database.close()]);
     const errors = rejectedReasons(results);
