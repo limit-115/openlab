@@ -12,6 +12,7 @@ import type {
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
+import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import {
     CODEX_BINARY,
     CodexColorModes,
@@ -44,6 +45,7 @@ export class CodexHarness extends SubscriptionCliHarness {
         if (result.failed || !statusOutput.includes(CodexLoginMarkers.CHATGPT)) {
             throw new HarnessCapabilityError(
                 this.kind,
+                HarnessCapabilityGaps.SUBSCRIPTION,
                 "Codex CLI is not authenticated through ChatGPT",
                 {
                     need: "Codex CLI logged in through an active ChatGPT subscription",

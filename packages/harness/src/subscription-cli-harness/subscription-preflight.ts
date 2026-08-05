@@ -6,7 +6,10 @@ import {
     HarnessCapabilityError,
     HarnessTimeoutError
 } from "#src/cli-execution/harness-error";
-import { HarnessTimeoutPhases } from "#src/cli-execution/harness-error.const";
+import {
+    HarnessCapabilityGaps,
+    HarnessTimeoutPhases
+} from "#src/cli-execution/harness-error.const";
 import { createWatchdogSignal } from "#src/subscription-cli-harness/harness-run-watchdog";
 import type { WatchdogSignal } from "#src/subscription-cli-harness/harness-run-watchdog.types";
 import type { SubscriptionPreflightRequest } from "#src/subscription-cli-harness/subscription-preflight.types";
@@ -95,9 +98,15 @@ function throwIfPreflightStopped(
     throwIfAborted(request.kind, signal, result);
 }
 
+/**
+ * The version command is what decides whether the CLI is there at all, so everything that goes wrong
+ * before the authentication check is answered is a missing installation. Whether the login behind it
+ * is the right one is the authentication check's to say, and it says so with its own gap.
+ */
 function unavailableCapability(kind: HarnessKind, cause: unknown): HarnessCapabilityError {
     return new HarnessCapabilityError(
         kind,
+        HarnessCapabilityGaps.INSTALLATION,
         `${kind} CLI is unavailable or cannot report subscription authentication`,
         {
             need: `${kind} CLI with an active product subscription login`,

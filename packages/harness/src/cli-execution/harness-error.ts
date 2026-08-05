@@ -1,5 +1,6 @@
 import type { HarnessKind } from "#src/agent-harness/agent-harness.const";
 import {
+    type HarnessCapabilityGap,
     type HarnessErrorCode,
     HarnessErrorCodes,
     type HarnessTimeoutPhase
@@ -29,16 +30,20 @@ export class HarnessError extends Error {
 }
 
 export class HarnessCapabilityError extends HarnessError {
+    /** Which of the three things a harness needs was the one it turned out not to have. */
+    readonly gap: HarnessCapabilityGap;
     readonly capabilityRequest: HarnessCapabilityRequest;
 
     constructor(
         harness: HarnessKind,
+        gap: HarnessCapabilityGap,
         message: string,
         capabilityRequest: HarnessCapabilityRequest,
         options?: ErrorOptions
     ) {
         super(harness, HarnessErrorCodes.SUBSCRIPTION_AUTH_REQUIRED, message, options);
         this.name = "HarnessCapabilityError";
+        this.gap = gap;
         this.capabilityRequest = capabilityRequest;
     }
 }

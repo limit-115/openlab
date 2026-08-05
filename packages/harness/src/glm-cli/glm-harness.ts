@@ -14,6 +14,7 @@ import {
 } from "#src/claude-cli/claude-run-arguments";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
+import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { ForbiddenEnvironmentVariable } from "#src/cli-execution/subscription-environment.const";
 import {
     ClaudeReportedAuthMethods,
@@ -107,6 +108,7 @@ export class GlmHarness extends SubscriptionCliHarness {
     #missingCodingPlan(cause: unknown): HarnessCapabilityError {
         return new HarnessCapabilityError(
             this.kind,
+            HarnessCapabilityGaps.SUBSCRIPTION,
             "Claude CLI is not running on a Z.ai GLM Coding Plan subscription",
             {
                 need: "A local ZCode sign-in carrying an active GLM Coding Plan",

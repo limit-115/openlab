@@ -18,6 +18,7 @@ import {
 } from "#src/claude-cli/claude-run-arguments";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
+import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
 import type {
     HarnessCommand,
@@ -55,6 +56,7 @@ export class ClaudeHarness extends SubscriptionCliHarness {
         } catch (error) {
             throw new HarnessCapabilityError(
                 this.kind,
+                HarnessCapabilityGaps.SUBSCRIPTION,
                 "Claude CLI is not authenticated through a claude.ai subscription",
                 {
                     need: "Claude CLI logged in through an active claude.ai subscription",

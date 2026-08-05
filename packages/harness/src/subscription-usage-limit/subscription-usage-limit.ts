@@ -2,6 +2,7 @@ import type { HarnessKind } from "#src/agent-harness/agent-harness.const";
 import { HarnessDiagnosticLevels, HarnessEventTypes } from "#src/agent-harness/harness-event.const";
 import type { ParsedHarnessEvent } from "#src/agent-harness/harness-event-parser.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
+import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { SUBSCRIPTION_USAGE_LIMIT_PATTERNS } from "#src/subscription-usage-limit/subscription-usage-limit.const";
 
 export function isSubscriptionUsageLimit(message: string): boolean {
@@ -29,6 +30,7 @@ export function subscriptionUsageLimitError(
 ): HarnessCapabilityError {
     return new HarnessCapabilityError(
         harness,
+        HarnessCapabilityGaps.ALLOWANCE,
         `${harness} subscription usage limit reached: ${vendorMessage}`,
         {
             need: `Remaining allowance on the ${harness} product subscription`,

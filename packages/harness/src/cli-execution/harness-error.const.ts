@@ -8,6 +8,20 @@ export const HarnessErrorCodes = {
 
 export type HarnessErrorCode = (typeof HarnessErrorCodes)[keyof typeof HarnessErrorCodes];
 
+/**
+ * What a harness turned out not to have. The three are different jobs for whoever has to fix it —
+ * install the CLI, sign it in, or wait for the allowance — and only the code that found the gap can
+ * tell them apart, so it says so here rather than leaving a reader to guess from a message.
+ */
+export const HarnessCapabilityGaps = {
+    INSTALLATION: "installation",
+    SUBSCRIPTION: "subscription",
+    ALLOWANCE: "allowance"
+} as const;
+
+export type HarnessCapabilityGap =
+    (typeof HarnessCapabilityGaps)[keyof typeof HarnessCapabilityGaps];
+
 export const HarnessTimeoutPhases = {
     PREFLIGHT: "preflight",
     RUN: "run"
