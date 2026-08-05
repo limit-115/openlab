@@ -7,16 +7,29 @@ import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OPERATOR_NOTIFICATIONS_EN } from "#src/operator-notifications/operator-notifications.i18n";
 import { NotificationSetupStep } from "#src/welcome/notification-setup-step";
+import { WELCOME_EN } from "#src/welcome/welcome.i18n";
 
-const NOBODY = {
-    defaults: { events: [...DEFAULT_NOTIFIED_EVENTS], language: "en" },
-    channels: []
+const REPORTING = { events: [...DEFAULT_NOTIFIED_EVENTS], language: "en" };
+
+const NOBODY = { defaults: REPORTING, channels: [] };
+
+/** A lab that already has somewhere to write, which is what a save leaves behind. */
+const A_CHAT = {
+    defaults: REPORTING,
+    channels: [
+        {
+            kind: NotificationChannelKind.TELEGRAM,
+            enabled: true,
+            chat_id: "-1001234",
+            answers_back: true,
+            bot_token_set: true
+        }
+    ]
 };
 
-function openStep() {
-    /** The lab is reporting to nobody, and answers a save with what it now holds. */
+function openStep(stored: unknown = NOBODY) {
     const answered = vi.fn((_url: string, _request?: RequestInit) =>
-        Promise.resolve(new Response(JSON.stringify(NOBODY), { status: 200 }))
+        Promise.resolve(new Response(JSON.stringify(stored), { status: 200 }))
     );
     vi.stubGlobal("fetch", answered);
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -67,5 +80,28 @@ describe("NotificationSetupStep", () => {
                 bot_token: "123456789:AA"
             }
         ]);
+    });
+
+    /**
+     * This is the one step of the introduction that can be left undone without consequence, and the
+     * button says which of the two it is doing. A "Continue" that quietly left the lab unable to
+     * reach anybody would be the setup claiming work it did not do.
+     */
+    it("offers to skip while the lab still has nowhere to write", async () => {
+        openStep();
+
+        expect(
+            await screen.findByRole("button", { name: WELCOME_EN.skipStep })
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: WELCOME_EN.continue })).not.toBeInTheDocument();
+    });
+
+    it("goes on rather than skips once the lab is holding a channel", async () => {
+        openStep(A_CHAT);
+
+        expect(
+            await screen.findByRole("button", { name: WELCOME_EN.continue })
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: WELCOME_EN.skipStep })).not.toBeInTheDocument();
     });
 });

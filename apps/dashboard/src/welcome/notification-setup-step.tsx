@@ -96,7 +96,7 @@ export function NotificationSetupStep() {
                         description={channel("unsupportedDescription")}
                     />
                 )}
-                <WelcomeNavigation />
+                <WelcomeNavigation continueLabel={t("skipStep")} />
             </>
         );
     }
@@ -104,6 +104,8 @@ export function NotificationSetupStep() {
     const { draft, saved } = edited;
     const unsaved = hasUnsavedEdits(draft, saved);
     const { telegram } = draft;
+    /** What the lab is actually holding, which is the only thing a save has changed about it. */
+    const holdsChannel = saved.channels.length > 0;
 
     function change(next: NotificationSettingsDraft) {
         setEdited({ saved, draft: next });
@@ -195,7 +197,13 @@ export function NotificationSetupStep() {
 
             <p className={WELCOME_ROLE_WORK}>{t("notificationsOptional")}</p>
 
-            <WelcomeNavigation>
+            {/*
+             * Going on is only continuing once the lab has somewhere to write. Until then the
+             * button is a skip and says so: this step is the one thing in the introduction that can
+             * be left undone without consequence, and a "Continue" that quietly leaves it undone
+             * would be the setup claiming work it did not do.
+             */}
+            <WelcomeNavigation {...(holdsChannel ? {} : { continueLabel: t("skipStep") })}>
                 {unsaved ? <p className={FIELD_HINT}>{t("notificationsUnsaved")}</p> : null}
             </WelcomeNavigation>
         </>

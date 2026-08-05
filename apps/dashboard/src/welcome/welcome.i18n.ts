@@ -28,6 +28,7 @@ export const WELCOME_EN = {
     notificationsOptional:
         "Skipping this costs nothing but your attention: the lab still works, you just have to come and look.",
     notificationsUnsaved: "Not saved. Until you save it, the lab has nowhere to write.",
+    skipStep: "Skip this step",
 
     goalTitle: "Give it something to find out",
     goalLead:
@@ -70,6 +71,7 @@ export const WELCOME_RU = {
     notificationsOptional:
         "Пропустить можно: лаборатория всё равно работает, просто заходить смотреть придётся самому.",
     notificationsUnsaved: "Не сохранено. Пока не сохранишь, писать лаборатории некуда.",
+    skipStep: "Пропустить шаг",
 
     goalTitle: "Дай ей, что выяснить",
     goalLead:
