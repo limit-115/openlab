@@ -11,6 +11,14 @@ export const REPORTABLE_MOMENTS = NOTIFIABLE_EVENT_TYPES;
 
 export const MESSAGE_LANGUAGES = Object.values(NotificationLanguage);
 
+/**
+ * What a stored credential looks like on a page that was never given it. It stands in the empty box
+ * rather than in it: an empty box is how the operator says "keep the one you hold", so anything the
+ * field actually held would be saved over the credential it is standing for. A run of characters
+ * rather than the stored length, which is a fact about the secret and not ours to publish.
+ */
+export const STORED_TOKEN_MASK = "**********" as const;
+
 /** What the lab would do with a channel as it currently stands, which is what its row reports. */
 export const ChannelSetupState = {
     NOT_CONFIGURED: "notConfigured",

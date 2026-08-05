@@ -32,7 +32,8 @@ import {
     FIELD,
     FIELD_HINT,
     FIELD_LABEL,
-    FOLLOWED_SETTING
+    FOLLOWED_SETTING,
+    STORED_TOKEN_MASK
 } from "#src/operator-notifications/operator-notifications.const";
 import { OPERATOR_NOTIFICATIONS_NAMESPACE } from "#src/operator-notifications/operator-notifications.i18n";
 import type {
@@ -107,7 +108,11 @@ export function TelegramChannelItem({ draft, change, unsaved }: TelegramChannelI
                         <Input
                             id={`${fieldId}-token`}
                             value={telegram.botToken}
-                            placeholder={t("botTokenPlaceholder")}
+                            placeholder={
+                                telegram.botTokenStored
+                                    ? STORED_TOKEN_MASK
+                                    : t("botTokenPlaceholder")
+                            }
                             autoComplete="off"
                             spellCheck={false}
                             onChange={(event) =>

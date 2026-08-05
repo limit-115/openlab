@@ -10,7 +10,10 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { NotificationSettingsSection } from "#src/operator-notifications/notification-settings-section";
-import { NotificationEndpoint } from "#src/operator-notifications/operator-notifications.const";
+import {
+    NotificationEndpoint,
+    STORED_TOKEN_MASK
+} from "#src/operator-notifications/operator-notifications.const";
 import { OPERATOR_NOTIFICATIONS_EN } from "#src/operator-notifications/operator-notifications.i18n";
 
 const CONFIGURED = NotificationSettingsViewSchema.parse({
@@ -114,6 +117,11 @@ async function channelField(label: string) {
 }
 
 describe("NotificationSettingsSection", () => {
+    /**
+     * The box stands empty because the lab never hands the token back, and an empty box reads as a
+     * channel with no bot behind it. The mask has to stand in the box rather than in it: whatever
+     * the field held would be saved over the very credential it was standing for.
+     */
     it("says a token is stored rather than putting it back on the page", async () => {
         respond();
         renderSection();
@@ -123,7 +131,17 @@ describe("NotificationSettingsSection", () => {
             OPERATOR_NOTIFICATIONS_EN.botToken
         );
         expect(token).toHaveValue("");
+        expect(token).toHaveAttribute("placeholder", STORED_TOKEN_MASK);
         expect(screen.getByText(OPERATOR_NOTIFICATIONS_EN.botTokenStored)).toBeInTheDocument();
+    });
+
+    it("asks for a token in the shape of one when the lab is holding none", async () => {
+        respond({ read: NOTHING_CONFIGURED });
+        renderSection();
+        await openChannel();
+
+        const token = await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.botToken);
+        expect(token).toHaveAttribute("placeholder", OPERATOR_NOTIFICATIONS_EN.botTokenPlaceholder);
     });
 
     it("names no token when the operator retyped none, so the lab keeps the one it holds", async () => {
