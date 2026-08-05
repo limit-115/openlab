@@ -13,6 +13,7 @@ import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";
 import { resolveCliConfig } from "#src/config";
 import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
+import { openDashboard } from "#src/lab-start/open-dashboard";
 import {
     renderAssumptions,
     renderCapabilities,
@@ -29,6 +30,7 @@ interface GlobalOptions {
 
 interface StartOptions {
     port?: number;
+    open?: boolean;
 }
 
 interface NewOptions {
@@ -133,6 +135,7 @@ program
     .command("start")
     .description("bring the lab up: the daemon, its dashboard and every investigation it holds")
     .option("-p, --port <port>", "status API port", parsePort)
+    .option("--no-open", "leave the browser alone")
     .action(async (options: StartOptions) => {
         intro("AI Research Lab");
         const daemon = await startDaemon({
@@ -149,8 +152,12 @@ program
                 await daemon.close();
             });
         }
+        const shown = options.open === false ? false : await openDashboard(daemon.url);
+        const held = `${daemon.registry.list().length} investigation(s)`;
         outro(
-            `Lab running at ${daemon.url} with ${daemon.registry.list().length} investigation(s)`
+            shown
+                ? `Lab running at ${daemon.url} with ${held}, opened in your browser`
+                : `Lab running at ${daemon.url} with ${held}`
         );
     });
 
