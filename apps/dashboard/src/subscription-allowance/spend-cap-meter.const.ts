@@ -1,8 +1,8 @@
 /** The smallest cap the page will set. A window nobody may spend at all is a harness left off the roster. */
 export const SPEND_CAP_MIN_PERCENT = 5;
 
-/** Caps are read off a bar, so they move in steps that are legible on one rather than to the point. */
-export const SPEND_CAP_STEP_PERCENT = 5;
+/** Caps land on whole percent, which is the finest a percentage reading has, so the handle follows the drag. */
+export const SPEND_CAP_STEP_PERCENT = 1;
 
 /** The reading and the limiter that rides on it share one row: the limiter is a mark on the reading. */
 export const CAP_METER_ROW = "relative flex h-5 w-full items-center" as const;

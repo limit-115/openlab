@@ -172,7 +172,7 @@ describe("SubscriptionAllowanceSection", () => {
         );
 
         expect(savedCaps(request)).toEqual([
-            { harness: AgentHarnessKind.GLM, window_minutes: 300, max_used_percent: 90 }
+            { harness: AgentHarnessKind.GLM, window_minutes: 300, max_used_percent: 98 }
         ]);
     });
 
