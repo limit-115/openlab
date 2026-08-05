@@ -23,12 +23,12 @@ describe("shippedDirectory", () => {
 
     /** Stands an executable inside a directory laid out the way a release is installed. */
     async function releaseHolding(...directories: readonly string[]): Promise<void> {
-        const root = await mkdtemp(path.join(tmpdir(), "nightlab-release-"));
+        const root = await mkdtemp(path.join(tmpdir(), "openlab-release-"));
         laidOut = root;
         for (const directory of directories) {
             await mkdir(path.join(root, directory));
         }
-        const executable = path.join(root, "nightlab");
+        const executable = path.join(root, "openlab");
         await writeFile(executable, "");
         Object.defineProperty(process, "execPath", { value: executable, configurable: true });
     }

@@ -59,12 +59,12 @@ export function resolveBinDirectory(environment = process.env): string {
 
 /** What the operator types, which on Windows has to say that it is a program. */
 export function launcherName(platform = process.platform): string {
-    return platform === "win32" ? "nightlab.cmd" : "nightlab";
+    return platform === "win32" ? "openlab.cmd" : "openlab";
 }
 
 /** The executable inside a release, which on Windows carries the suffix Windows requires. */
 export function executableName(platform = process.platform): string {
-    return platform === "win32" ? "nightlab.exe" : "nightlab";
+    return platform === "win32" ? "openlab.exe" : "openlab";
 }
 
 /** An empty variable is an operator who set nothing, not an operator who asked for the empty path. */

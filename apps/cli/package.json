@@ -15,7 +15,7 @@
         }
     },
     "bin": {
-        "nightlab": "./bin/nightlab.js"
+        "openlab": "./bin/openlab.js"
     },
     "engines": {
         "node": ">=24.18.1"

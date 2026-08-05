@@ -40,7 +40,7 @@ export function ErrorDashboard({ error, retry, retrying }: ErrorDashboardProps) 
                 <EmptyContent>
                     <span className={COMMAND_HINT}>
                         <TerminalIcon className="size-4 flex-none" aria-hidden="true" />
-                        <code className={COMMAND_HINT_CODE}>nightlab start task.json</code>
+                        <code className={COMMAND_HINT_CODE}>openlab start task.json</code>
                     </span>
                     <Button type="button" onClick={retry} disabled={retrying}>
                         {retrying ? (

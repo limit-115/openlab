@@ -55,15 +55,15 @@ jobs:
             - name: Attest what was built
               uses: actions/attest-build-provenance@v4
               with:
-                  subject-path: release/dist/nightlab-*
+                  subject-path: release/dist/openlab-*
 
             - name: Check the release installs and runs
               run: |
                   mkdir -p /tmp/release-check
-                  tar -xzf release/dist/nightlab-*-linux-x64.tar.gz -C /tmp/release-check
-                  test "$(/tmp/release-check/nightlab --version)" = "$(jq -r .version release/dist/manifest.json)"
-                  HOME=/tmp/release-home /tmp/release-check/nightlab install --no-modify-path
-                  HOME=/tmp/release-home /tmp/release-check/nightlab doctor
+                  tar -xzf release/dist/openlab-*-linux-x64.tar.gz -C /tmp/release-check
+                  test "$(/tmp/release-check/openlab --version)" = "$(jq -r .version release/dist/manifest.json)"
+                  HOME=/tmp/release-home /tmp/release-check/openlab install --no-modify-path
+                  HOME=/tmp/release-home /tmp/release-check/openlab doctor
 
             - name: Publish
               if: startsWith(github.ref, 'refs/tags/v')
@@ -73,7 +73,7 @@ jobs:
                   gh release create "${GITHUB_REF_NAME}" \
                       --title "${GITHUB_REF_NAME}" \
                       --generate-notes \
-                      release/dist/nightlab-* \
+                      release/dist/openlab-* \
                       release/dist/manifest.json \
                       release/install.sh \
                       release/install.ps1 \

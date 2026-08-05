@@ -65,8 +65,8 @@ Nothing was installed. This is worth reporting rather than retrying."
     mkdir -p "$unpacked"
     tar -xzf "$archive" -C "$unpacked"
 
-    executable="$unpacked/nightlab"
-    [ -f "$executable" ] || fail "The archive holds no nightlab executable."
+    executable="$unpacked/openlab"
+    [ -f "$executable" ] || fail "The archive holds no openlab executable."
     chmod +x "$executable"
 
     if [ "$modify_path" -eq 1 ]; then

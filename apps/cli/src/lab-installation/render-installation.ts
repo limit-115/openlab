@@ -16,7 +16,7 @@ export function renderInstallOutcome(outcome: InstallOutcome): string {
     ];
 
     if (outcome.alreadyOnPath) {
-        lines.push("", "Run it with: nightlab start");
+        lines.push("", "Run it with: openlab start");
         return lines.join("\n");
     }
 
@@ -24,7 +24,7 @@ export function renderInstallOutcome(outcome: InstallOutcome): string {
         lines.push(
             "",
             `Put on PATH in ${outcome.pathFiles.join(", ")}.`,
-            "Open a new terminal, then run: nightlab start"
+            "Open a new terminal, then run: openlab start"
         );
         return lines.join("\n");
     }

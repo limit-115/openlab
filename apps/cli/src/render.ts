@@ -14,7 +14,7 @@ function lines(items: string[]): string {
 /** The roster: what the lab is chasing, and where each investigation stands. */
 export function renderInvestigations(roster: readonly InvestigationSummary[]): string {
     if (roster.length === 0) {
-        return 'The lab holds no investigations. Start one with "nightlab new".';
+        return 'The lab holds no investigations. Start one with "openlab new".';
     }
     const table = new Table({
         head: ["ID", "State", "Goal", "Bets", "Findings", "Agents"],

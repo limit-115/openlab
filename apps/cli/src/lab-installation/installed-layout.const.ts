@@ -7,7 +7,7 @@
  */
 export const InstalledLayout = {
     /** The program's home, holding every version ever installed. */
-    HOME_DIRECTORY: ".nightlab",
+    HOME_DIRECTORY: ".openlab",
     /** One directory per version, each a whole release: the executable and what it reads. */
     VERSIONS_DIRECTORY: "versions",
     /** What was installed, where it was put, and what was changed to make it reachable. */

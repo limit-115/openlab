@@ -32,7 +32,7 @@ interface CapabilityCardProps {
 
 export function CapabilityCard({ investigationId, request }: CapabilityCardProps) {
     const { t } = useTranslation(CAPABILITIES_NAMESPACE);
-    const command = `nightlab answer ${request.id} <answer>`;
+    const command = `openlab answer ${request.id} <answer>`;
     const open = request.status === CapabilityStatus.OPEN;
 
     return (

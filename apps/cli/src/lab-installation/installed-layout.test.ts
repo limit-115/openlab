@@ -80,12 +80,12 @@ describe("installedPaths", () => {
 
 describe("what the operator types and what answers it", () => {
     it("names a Windows launcher something Windows will run", () => {
-        expect(launcherName("win32")).toBe("nightlab.cmd");
-        expect(executableName("win32")).toBe("nightlab.exe");
+        expect(launcherName("win32")).toBe("openlab.cmd");
+        expect(executableName("win32")).toBe("openlab.exe");
     });
 
     it("names them plainly everywhere else", () => {
-        expect(launcherName("darwin")).toBe("nightlab");
-        expect(executableName("linux")).toBe("nightlab");
+        expect(launcherName("darwin")).toBe("openlab");
+        expect(executableName("linux")).toBe("openlab");
     });
 });

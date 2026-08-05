@@ -27,4 +27,4 @@ export const ShellStartupFile = {
 export type ShellStartupFile = (typeof ShellStartupFile)[keyof typeof ShellStartupFile];
 
 /** Fish keeps its startup fragments in a directory of their own rather than in one file. */
-export const FISH_CONFIGURATION_FILE = ".config/fish/conf.d/nightlab.fish";
+export const FISH_CONFIGURATION_FILE = ".config/fish/conf.d/openlab.fish";

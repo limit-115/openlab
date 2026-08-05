@@ -24,7 +24,7 @@ function expandLeadingTilde(value: string): string {
 
 /**
  * Where this machine's lab lives. A lab belongs to an operator, not to whichever directory the
- * daemon was started in, so `nightlab start` from another repository has to reach the same runs.
+ * daemon was started in, so `openlab start` from another repository has to reach the same runs.
  *
  * `NIGHTLAB_HOME` decides it, then the XDG data directory, then that directory's own default — which is
  * the usual case, since almost nothing sets `XDG_DATA_HOME`. A relative `XDG_DATA_HOME` is ignored

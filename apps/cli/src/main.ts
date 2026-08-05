@@ -113,7 +113,7 @@ async function selectInvestigation(command: Command): Promise<string> {
     const only = roster[0];
     if (only === undefined) {
         throw new LabApiError(
-            'The lab holds no investigations. Start one with "nightlab new".',
+            'The lab holds no investigations. Start one with "openlab new".',
             0,
             undefined
         );
@@ -141,7 +141,7 @@ async function daemonIsAnswering(command: Command): Promise<boolean> {
 }
 
 const program = new Command()
-    .name("nightlab")
+    .name("openlab")
     .description("Run and inspect NightLab, your local autonomous research lab")
     .version(LAB_VERSION)
     .option("--api-url <url>", "local daemon URL", cliConfig.apiUrl)
@@ -337,7 +337,7 @@ program
         }
         if (await daemonIsAnswering(command)) {
             consola.error(
-                `A lab daemon is answering at ${globals(command).apiUrl}. Stop it first, or discard a single investigation with "nightlab rm".`
+                `A lab daemon is answering at ${globals(command).apiUrl}. Stop it first, or discard a single investigation with "openlab rm".`
             );
             process.exitCode = 1;
             return;

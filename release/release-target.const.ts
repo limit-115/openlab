@@ -27,4 +27,4 @@ export const BunCompileTarget = {
 export const WINDOWS_TARGETS: readonly ReleaseTarget[] = [ReleaseTarget.WINDOWS_X64];
 
 /** What the lab is called on disk once it is installed. */
-export const EXECUTABLE_NAME = "nightlab";
+export const EXECUTABLE_NAME = "openlab";

@@ -9,14 +9,14 @@ import {
     ShellStartupFile
 } from "#src/lab-installation/path-entry.const";
 
-const BIN = "/opt/nightlab/bin";
+const BIN = "/opt/openlab/bin";
 const ELSEWHERE = { PATH: "/usr/bin:/bin" };
 
 describe("putting the launcher's directory on PATH", () => {
     let home: string;
 
     beforeEach(async () => {
-        home = await mkdtemp(path.join(tmpdir(), "nightlab-home-"));
+        home = await mkdtemp(path.join(tmpdir(), "openlab-home-"));
     });
 
     afterEach(async () => {
@@ -79,7 +79,7 @@ describe("taking the launcher's directory back off PATH", () => {
     let home: string;
 
     beforeEach(async () => {
-        home = await mkdtemp(path.join(tmpdir(), "nightlab-home-"));
+        home = await mkdtemp(path.join(tmpdir(), "openlab-home-"));
     });
 
     afterEach(async () => {

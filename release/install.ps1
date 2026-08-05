@@ -95,7 +95,7 @@ if ($artifact.sha256 -notmatch '^[0-9a-f]{64}$') {
     Stop-Install "The manifest states no usable digest for $platform, and nothing unverified is installed."
 }
 
-$workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("nightlab-" + [System.Guid]::NewGuid().ToString('N'))
+$workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("openlab-" + [System.Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $workspace -Force | Out-Null
 
 try {
@@ -116,9 +116,9 @@ Nothing was installed. This is worth reporting rather than retrying.
     $unpacked = Join-Path $workspace 'release'
     Expand-Archive -Path $archive -DestinationPath $unpacked -Force
 
-    $executable = Join-Path $unpacked 'nightlab.exe'
+    $executable = Join-Path $unpacked 'openlab.exe'
     if (-not (Test-Path $executable)) {
-        Stop-Install 'The archive holds no nightlab.exe.'
+        Stop-Install 'The archive holds no openlab.exe.'
     }
 
     if ($NoModifyPath) {
