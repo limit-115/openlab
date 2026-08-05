@@ -19,6 +19,8 @@ import {
     isSendable
 } from "#src/operator-notifications/notification-settings-draft";
 import {
+    CHANNEL_ANSWERS,
+    CHANNEL_ANSWERS_SWITCH,
     CHANNEL_CONTENT,
     CHANNEL_HEADING,
     CHANNEL_NAME,
@@ -81,6 +83,9 @@ export function TelegramChannelItem({ draft, change, unsaved }: TelegramChannelI
                         {followsLanguage ? null : (
                             <Badge variant="outline">{t("ownLanguage")}</Badge>
                         )}
+                        {telegram.answersBack ? (
+                            <Badge variant="outline">{t("answersBackTag")}</Badge>
+                        ) : null}
                     </span>
                 </AccordionTrigger>
 
@@ -140,6 +145,24 @@ export function TelegramChannelItem({ draft, change, unsaved }: TelegramChannelI
                         />
                         <p className={FIELD_HINT}>{t("chatIdHint")}</p>
                     </div>
+                </div>
+
+                {/*
+                 * The way in sits with the chat rather than with what the channel reports: it is
+                 * the same question the two fields above it answer — who can reach the lab.
+                 */}
+                <div className={CHANNEL_ANSWERS}>
+                    <label htmlFor={`${fieldId}-answers`} className={CHANNEL_ANSWERS_SWITCH}>
+                        <Switch
+                            id={`${fieldId}-answers`}
+                            checked={telegram.answersBack}
+                            onCheckedChange={(answersBack) =>
+                                change(changeTelegram(draft, { answersBack }))
+                            }
+                        />
+                        {t("answersBack")}
+                    </label>
+                    <p className={FIELD_HINT}>{t("answersBackHint")}</p>
                 </div>
 
                 <div className={CHANNEL_REPORTING}>

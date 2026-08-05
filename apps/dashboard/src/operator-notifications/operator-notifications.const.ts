@@ -85,6 +85,14 @@ export const CHANNEL_SWITCH = "ml-auto shrink-0" as const;
 export const CHANNEL_CONTENT = "grid gap-6 pt-1 pl-7" as const;
 
 /**
+ * The way in sits with the chat it is a way into rather than with what the channel reports: it is
+ * a fact about who can reach the lab, which is the same question the credentials above it answer.
+ */
+export const CHANNEL_ANSWERS = "grid max-w-3xl gap-2" as const;
+export const CHANNEL_ANSWERS_SWITCH =
+    "flex w-fit cursor-pointer items-center gap-3 text-sm font-medium" as const;
+
+/**
  * What the channel reports stands apart from what it is: the credentials are entered once and the
  * settings under this rule are the ones an operator comes back to.
  */

@@ -68,8 +68,9 @@ function renderSection() {
     });
 }
 
+/** The last document handed over, so a test that saves twice reads the save it just made. */
 function sentSettings(request: ReturnType<typeof respond>): Record<string, unknown> {
-    const write = request.mock.calls.find(([, init]) => init?.method === "PUT");
+    const write = request.mock.calls.findLast(([, init]) => init?.method === "PUT");
     if (write === undefined) {
         throw new Error("The section never wrote the settings");
     }
@@ -174,6 +175,27 @@ describe("NotificationSettingsSection", () => {
             bot_token: "5678:new",
             chat_id: "-1002"
         });
+    });
+
+    /**
+     * Whoever can write in that chat is answering for the operator, and what they write reaches an
+     * agent word for word. The lab is told to listen only when the operator said so on this page.
+     */
+    it("opens the chat to answering only once the operator has asked for it", async () => {
+        const request = respond();
+        renderSection();
+        await openChannel();
+
+        await userEvent.type(await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "234");
+        await save();
+        expect(sentChannel(request)).toMatchObject({ answers_back: false });
+
+        await userEvent.click(
+            screen.getByRole("switch", { name: OPERATOR_NOTIFICATIONS_EN.answersBack })
+        );
+        await save();
+
+        expect(sentChannel(request)).toMatchObject({ answers_back: true });
     });
 
     it("drops a moment the operator unticked out of what the lab reports", async () => {

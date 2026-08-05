@@ -30,6 +30,10 @@ export const OPERATOR_NOTIFICATIONS_EN = {
         "A bot of your own writes to one chat. Create it with @BotFather, then start a chat with it or add it to a group before the lab can write there.",
 
     enabled: "Send through this channel",
+    answersBack: "Let a reply in this chat answer the lab",
+    answersBackHint:
+        "When the lab needs something it cannot get itself, it asks here and goes back to work on your reply. Whoever can write in this chat is answering for you, and what they write reaches an agent word for word.",
+    answersBackTag: "Answers back",
     configuredOff: "Configured, sending nothing",
     configuredOn: "Sending",
     notConfigured: "Not set up",
@@ -98,6 +102,10 @@ export const OPERATOR_NOTIFICATIONS_RU = {
         "Ваш собственный бот пишет в один чат. Создайте его через @BotFather, а затем напишите ему или добавьте его в группу — иначе лаборатории будет некуда писать.",
 
     enabled: "Отправлять через этот канал",
+    answersBack: "Разрешить отвечать лаборатории из этого чата",
+    answersBackHint:
+        "Когда лаборатории нужно то, чего она не достанет сама, она спросит здесь и вернётся к работе с вашим ответом. Отвечает за вас любой, кто может писать в этот чат, и написанное дойдёт до агента слово в слово.",
+    answersBackTag: "Отвечает",
     configuredOff: "Настроен, ничего не отправляет",
     configuredOn: "Отправляет",
     notConfigured: "Не настроен",
