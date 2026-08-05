@@ -2,6 +2,7 @@
     "name": "nightlab",
     "version": "0.0.0",
     "private": true,
+    "license": "Apache-2.0",
     "description": "Local autonomous AI research runtime",
     "type": "module",
     "packageManager": "pnpm@11.18.0",
@@ -23,7 +24,6 @@
         "check": "biome check . && pnpm typecheck && pnpm test && pnpm build",
         "clean": "pnpm -r --if-present clean"
     },
-    "license": "UNLICENSED",
     "devDependencies": {
         "@biomejs/biome": "2.5.6",
         "@types/node": "24.13.3",
