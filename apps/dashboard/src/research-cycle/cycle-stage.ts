@@ -1,7 +1,7 @@
-import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import type { AgentRun } from "@nightlab/protocol/agent-runs/agent-run.types";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
 import { CYCLE_STAGES, CycleStageState } from "#src/research-cycle/cycle-stage.const";
-import type { CycleStage, StageCounts } from "#src/research-cycle/cycle-stage.types";
+import type { CycleStage } from "#src/research-cycle/cycle-stage.types";
 
 /**
  * Reads the cycle off the runs themselves. Nothing in the snapshot names a stage, but the roles run

@@ -1,6 +1,6 @@
-import type { HarnessEvent } from "@lab/harness/harness-event.types";
-import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
-import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import type { HarnessEvent } from "@nightlab/harness/harness-event.types";
+import type { AgentActivity } from "@nightlab/protocol/agent-activity/agent-activity.types";
+import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
 
 export type AgentActivityListener = (frame: AgentActivityFrame, activity: AgentActivity) => void;
 

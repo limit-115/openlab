@@ -1,7 +1,7 @@
-import type { NotificationChannel } from "@lab/notifier/notification-channel.types";
-import { TelegramBotChannel } from "@lab/notifier/telegram-bot-channel";
-import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
-import type { NotificationChannel as ConfiguredChannel } from "@lab/protocol/operator-notifications/notification-settings.types";
+import type { NotificationChannel } from "@nightlab/notifier/notification-channel.types";
+import { TelegramBotChannel } from "@nightlab/notifier/telegram-bot-channel";
+import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import type { NotificationChannel as ConfiguredChannel } from "@nightlab/protocol/operator-notifications/notification-settings.types";
 
 /**
  * A channel the operator configured, opened as one that can carry a message. This is the whole of

@@ -1,4 +1,4 @@
-import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
+import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
 import type { LabSettingsRecords } from "#src/lab-settings/lab-settings.types";
 
 /** The settings row as far as the store is concerned: one document, written whole or absent. */

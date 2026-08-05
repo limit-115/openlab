@@ -1,16 +1,16 @@
-import type { HarnessKind } from "@lab/harness/agent-harness.const";
-import { subscriptionUsageLimitError } from "@lab/harness/subscription-usage-limit";
-import { windowSpendCap, withheldWindows } from "@lab/protocol/spend-caps/spend-cap";
-import type { SpendCaps } from "@lab/protocol/spend-caps/spend-cap.types";
+import type { HarnessKind } from "@nightlab/harness/agent-harness.const";
+import { subscriptionUsageLimitError } from "@nightlab/harness/subscription-usage-limit";
+import { windowSpendCap, withheldWindows } from "@nightlab/protocol/spend-caps/spend-cap";
+import type { SpendCaps } from "@nightlab/protocol/spend-caps/spend-cap.types";
 import {
     ALLOWANCE_EXHAUSTED_PERCENT,
     SubscriptionAllowanceState
-} from "@lab/protocol/subscription-allowance/subscription-allowance.const";
+} from "@nightlab/protocol/subscription-allowance/subscription-allowance.const";
 import type {
     AllowanceWindow,
     SubscriptionAllowance
-} from "@lab/protocol/subscription-allowance/subscription-allowance.types";
-import { latestWindowReset } from "@lab/protocol/subscription-allowance/window-reset";
+} from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
+import { latestWindowReset } from "@nightlab/protocol/subscription-allowance/window-reset";
 import { SubscriptionBlockKind } from "#src/subscription-allowance/subscription-block.const";
 import type {
     SubscriptionBlock,

@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import type { Finding } from "@lab/protocol/findings/finding.types";
-import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import type { Verdict } from "@lab/protocol/verdicts/verdict.types";
+import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
+import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import type { Finding } from "@nightlab/protocol/findings/finding.types";
+import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import type { Verdict } from "@nightlab/protocol/verdicts/verdict.types";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { requiredById } from "#src/investigation-workspace/snapshot-entities";
 import type { AssumptionCandidate } from "#src/research-contract/research-contract";

@@ -1,15 +1,15 @@
-import { type HarnessRunStatus, HarnessRunStatuses } from "@lab/harness/agent-harness.const";
+import { type HarnessRunStatus, HarnessRunStatuses } from "@nightlab/harness/agent-harness.const";
 import {
     type HarnessDiagnosticLevel,
     HarnessDiagnosticLevels,
     type HarnessToolPhase,
     HarnessToolPhases
-} from "@lab/harness/harness-event.const";
+} from "@nightlab/harness/harness-event.const";
 import {
     AgentDiagnosticLevel,
     AgentToolPhase
-} from "@lab/protocol/agent-activity/agent-activity-frame.const";
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+} from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
 
 /**
  * The harness package owns its own finite domains and never depends on the wire protocol, so a

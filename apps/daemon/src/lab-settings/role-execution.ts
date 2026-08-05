@@ -1,7 +1,7 @@
-import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { DEFAULT_ROLE_EFFORT } from "@lab/protocol/lab-settings/lab-settings.const";
-import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
+import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import { DEFAULT_ROLE_EFFORT } from "@nightlab/protocol/lab-settings/lab-settings.const";
+import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
 import type { RoleExecution } from "#src/lab-settings/lab-settings.types";
 
 /**

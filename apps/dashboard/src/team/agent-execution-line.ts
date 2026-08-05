@@ -1,4 +1,4 @@
-import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
+import type { AgentExecution } from "@nightlab/protocol/agents/agent-execution.types";
 import type { TFunction } from "i18next";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import type { TEAM_NAMESPACE } from "#src/team/team.i18n";

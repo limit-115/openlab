@@ -1,9 +1,9 @@
-import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
+import type { AgentActivity } from "@nightlab/protocol/agent-activity/agent-activity.types";
 import type {
     AgentActivityFrameKind,
     AgentDiagnosticLevel,
     AgentToolPhase
-} from "@lab/protocol/agent-activity/agent-activity-frame.const";
+} from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
 
 /** A turn of the agent's own words, growing while it writes and fixed once the turn is sealed. */
 export interface TranscriptTurn {

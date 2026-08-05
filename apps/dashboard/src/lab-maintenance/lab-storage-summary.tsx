@@ -1,4 +1,7 @@
-import type { LabStorage, RunDirectoryUsage } from "@lab/protocol/lab-storage/lab-storage.types";
+import type {
+    LabStorage,
+    RunDirectoryUsage
+} from "@nightlab/protocol/lab-storage/lab-storage.types";
 import { HardDriveIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";

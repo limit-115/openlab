@@ -1,5 +1,5 @@
-import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
-import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
+import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
+import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";

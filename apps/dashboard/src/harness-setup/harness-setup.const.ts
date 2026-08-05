@@ -1,4 +1,4 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
 
 /**
  * How often the lab is asked to run the CLIs again while the setup page is open. An operator on this

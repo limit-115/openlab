@@ -1,9 +1,9 @@
-import { withKeptChannelSecrets } from "@lab/protocol/operator-notifications/notification-channel-secrets";
-import { NotificationSettingsSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
+import { withKeptChannelSecrets } from "@nightlab/protocol/operator-notifications/notification-channel-secrets";
+import { NotificationSettingsSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
 import type {
     NotificationSettings,
     NotificationSettingsUpdate
-} from "@lab/protocol/operator-notifications/notification-settings.types";
+} from "@nightlab/protocol/operator-notifications/notification-settings.types";
 import type {
     NotificationSettingsReader,
     NotificationSettingsRecords

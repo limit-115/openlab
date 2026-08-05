@@ -1,4 +1,4 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
 
 /**
  * What a harness is called wherever the page names one. A vendor names its own harness, so this is

@@ -1,12 +1,12 @@
 import { open } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
-import type { HarnessEvent } from "@lab/harness/harness-event.types";
-import { HarnessArtifactFiles } from "@lab/harness/harness-run-artifacts.const";
-import { readFinishedRunOutcome } from "@lab/harness/harness-run-outcome";
-import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
-import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
-import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import type { HarnessEvent } from "@nightlab/harness/harness-event.types";
+import { HarnessArtifactFiles } from "@nightlab/harness/harness-run-artifacts.const";
+import { readFinishedRunOutcome } from "@nightlab/harness/harness-run-outcome";
+import type { AgentActivity } from "@nightlab/protocol/agent-activity/agent-activity.types";
+import { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
 import { ActivityRunStatus } from "#src/agent-activity/agent-activity.const";
 import { HarnessEventTranslator } from "#src/agent-activity/harness-event-translation";
 import type { AgentTextFrameKind } from "#src/agent-activity/harness-event-translation.types";

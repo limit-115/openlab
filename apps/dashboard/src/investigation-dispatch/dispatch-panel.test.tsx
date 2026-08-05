@@ -1,6 +1,6 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { InvestigationDispatchSchema } from "@lab/protocol/investigation-input/investigation-dispatch.schema";
-import type { InvestigationDispatch } from "@lab/protocol/investigation-input/investigation-dispatch.types";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { InvestigationDispatchSchema } from "@nightlab/protocol/investigation-input/investigation-dispatch.schema";
+import type { InvestigationDispatch } from "@nightlab/protocol/investigation-input/investigation-dispatch.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

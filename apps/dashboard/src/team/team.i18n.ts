@@ -1,6 +1,6 @@
-import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
-import { AgentEffortLevel } from "@lab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AgentActivityPhase } from "@nightlab/protocol/agent-activity/agent-activity.const";
+import { AgentEffortLevel } from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 
 export const TEAM_NAMESPACE = "team" as const;

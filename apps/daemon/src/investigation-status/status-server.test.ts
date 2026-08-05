@@ -1,16 +1,19 @@
 import { mkdir, mkdtemp, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { HarnessReadinessRosterSchema } from "@lab/protocol/harness-readiness/harness-readiness.schema";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
-import { LabStorageSchema } from "@lab/protocol/lab-storage/lab-storage.schema";
-import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
+import {
+    AgentEffortLevel,
+    AgentHarnessKind
+} from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
+import { HarnessReadinessRosterSchema } from "@nightlab/protocol/harness-readiness/harness-readiness.schema";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
+import { LabStorageSchema } from "@nightlab/protocol/lab-storage/lab-storage.schema";
+import { SubscriptionAllowanceRosterSchema } from "@nightlab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { harnessNotInstalled } from "#src/agent-harness/agent-harness.fixture";
 import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";

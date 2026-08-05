@@ -1,11 +1,11 @@
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
 import {
     NotificationChannelKind,
     NotificationLanguage
-} from "@lab/protocol/operator-notifications/notification-channel.const";
-import { DEFAULT_NOTIFIED_EVENTS } from "@lab/protocol/operator-notifications/notification-settings.const";
-import { NotificationSettingsViewSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
-import type { NotificationSettingsView } from "@lab/protocol/operator-notifications/notification-settings.types";
+} from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import { DEFAULT_NOTIFIED_EVENTS } from "@nightlab/protocol/operator-notifications/notification-settings.const";
+import { NotificationSettingsViewSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
+import type { NotificationSettingsView } from "@nightlab/protocol/operator-notifications/notification-settings.types";
 import { describe, expect, it } from "vitest";
 import {
     changeDefaults,

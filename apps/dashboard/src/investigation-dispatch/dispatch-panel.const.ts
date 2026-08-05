@@ -1,4 +1,4 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
 
 /** Every harness the lab can run, in the order a rotation follows when they are all chosen. */
 export const DISPATCHABLE_HARNESSES = Object.values(AgentHarnessKind);

@@ -1,6 +1,6 @@
-import type { InvestigationRepository } from "@lab/db/investigations/investigation-repository";
-import type { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
-import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
+import type { InvestigationRepository } from "@nightlab/db/investigations/investigation-repository";
+import type { RuntimePersistence } from "@nightlab/db/runtime/runtime-persistence";
+import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";

@@ -1,5 +1,5 @@
-import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
-import type { NotificationSettingsView } from "@lab/protocol/operator-notifications/notification-settings.types";
+import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import type { NotificationSettingsView } from "@nightlab/protocol/operator-notifications/notification-settings.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useId, useState } from "react";

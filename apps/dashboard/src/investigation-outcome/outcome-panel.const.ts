@@ -1,4 +1,4 @@
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 
 export const OUTCOME_CARD = "rounded-2xl border p-6" as const;
 

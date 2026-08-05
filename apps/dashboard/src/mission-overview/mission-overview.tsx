@@ -1,5 +1,5 @@
-import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 import { useTranslation } from "react-i18next";
 import {
     GOAL_REASON,

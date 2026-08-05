@@ -1,4 +1,4 @@
-import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 import type { CycleStageState } from "#src/research-cycle/cycle-stage.const";
 
 /** What the agents on one stage are doing, counted rather than guessed at. */

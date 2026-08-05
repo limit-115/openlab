@@ -1,5 +1,5 @@
-import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
-import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentActivityPhase } from "@nightlab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
 import type { AgentLatestLine } from "#src/team/agent-latest-line.types";
 import type { TranscriptEntry, WatchedAgent } from "#src/team/agent-transcript.types";
 

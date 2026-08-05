@@ -1,6 +1,6 @@
-import type { AgentHarness } from "@lab/harness/agent-harness.types";
-import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import type { HarnessReadiness } from "@lab/protocol/harness-readiness/harness-readiness.types";
+import type { AgentHarness } from "@nightlab/harness/agent-harness.types";
+import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import type { HarnessReadiness } from "@nightlab/protocol/harness-readiness/harness-readiness.types";
 import { createHarness, EVERY_HARNESS_KIND } from "#src/agent-harness/harness-factory";
 import { readyHarness, unreadyHarness } from "#src/harness-readiness/harness-readiness";
 import type { HarnessReadinessOptions } from "#src/harness-readiness/harness-readiness-checks.types";

@@ -1,6 +1,6 @@
-import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 
 export interface PersistedInvestigationEvent extends InvestigationEvent {
     readonly sequence: number;

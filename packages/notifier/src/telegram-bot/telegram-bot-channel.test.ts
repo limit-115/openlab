@@ -1,4 +1,4 @@
-import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
+import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import { describe, expect, it, vi } from "vitest";
 import { NotificationDeliveryError } from "#src/notification-channel/notification-delivery-error";
 import { NotificationDeliveryFailure } from "#src/notification-channel/notification-delivery-error.const";

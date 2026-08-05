@@ -1,15 +1,15 @@
 import type {
     NotificationFact,
     NotificationMessage
-} from "@lab/notifier/notification-message.types";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+} from "@nightlab/notifier/notification-message.types";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 import {
     isNotifiableEvent,
     type NotifiableEventType
-} from "@lab/protocol/operator-notifications/notifiable-event.const";
-import type { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
+} from "@nightlab/protocol/operator-notifications/notifiable-event.const";
+import type { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import {
     NOTIFICATION_PHRASES,
     NotificationPayloadField,

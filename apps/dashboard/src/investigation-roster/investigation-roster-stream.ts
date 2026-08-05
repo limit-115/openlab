@@ -1,4 +1,4 @@
-import { InvestigationSummarySchema } from "@lab/protocol/investigation-status/investigation-summary.schema";
+import { InvestigationSummarySchema } from "@nightlab/protocol/investigation-status/investigation-summary.schema";
 import { useQueryClient } from "@tanstack/react-query";
 import i18next from "i18next";
 import { useEffect, useState } from "react";

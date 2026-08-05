@@ -1,7 +1,7 @@
 import {
     InvestigationState,
     type InvestigationState as InvestigationStateValue
-} from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+} from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 
 /**
  * A breakthrough pauses the investigation rather than ending it: the team reads the confirmed finding and

@@ -1,8 +1,8 @@
-import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
-import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import type { InvestigationRequest } from "@lab/protocol/investigation-input/investigation-input.types";
-import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
+import type { CapabilityRequest } from "@nightlab/protocol/capabilities/capability-request.types";
+import type { InvestigationRequest } from "@nightlab/protocol/investigation-input/investigation-input.types";
+import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 
 export class LabApiError extends Error {
     readonly status: number;

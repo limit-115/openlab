@@ -1,5 +1,8 @@
-import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import {
+    AgentEffortLevel,
+    AgentHarnessKind
+} from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 
 /** Every harness the lab can run, in the order the rotation follows when they are all chosen. */
 export const SELECTABLE_HARNESSES = Object.values(AgentHarnessKind);

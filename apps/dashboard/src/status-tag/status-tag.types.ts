@@ -1,7 +1,7 @@
-import type { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import type { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import type { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import type { FindingStatus } from "@lab/protocol/findings/finding-status.const";
+import type { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import type { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import type { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
+import type { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
 import type { VariantProps } from "class-variance-authority";
 import type { badgeVariants } from "#src/design-system/badge";
 

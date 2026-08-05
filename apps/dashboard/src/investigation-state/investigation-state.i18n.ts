@@ -1,4 +1,4 @@
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 
 export const INVESTIGATION_STATE_NAMESPACE = "investigation-state" as const;

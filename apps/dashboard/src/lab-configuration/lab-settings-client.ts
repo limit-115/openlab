@@ -1,5 +1,5 @@
-import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
-import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
+import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
+import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
 
 /** The one address the whole settings document is read from and written back to. */
 const LAB_SETTINGS_ENDPOINT = "/api/settings";

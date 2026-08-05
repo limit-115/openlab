@@ -1,9 +1,9 @@
-import type { NotifiableEventType } from "@lab/protocol/operator-notifications/notifiable-event.const";
-import type { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
+import type { NotifiableEventType } from "@nightlab/protocol/operator-notifications/notifiable-event.const";
+import type { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import type {
     NotificationSettingsUpdate,
     NotificationSettingsView
-} from "@lab/protocol/operator-notifications/notification-settings.types";
+} from "@nightlab/protocol/operator-notifications/notification-settings.types";
 
 /**
  * What the lab reports, and in what language, wherever a channel did not answer for itself. These

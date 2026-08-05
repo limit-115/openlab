@@ -1,12 +1,12 @@
-import { HarnessRunStatuses } from "@lab/harness/agent-harness.const";
+import { HarnessRunStatuses } from "@nightlab/harness/agent-harness.const";
 import type {
     AgentHarness,
     HarnessRunRequest,
     HarnessRunResult
-} from "@lab/harness/agent-harness.types";
-import { HarnessAbortedError, HarnessCapabilityError } from "@lab/harness/harness-error";
-import { HarnessEventTypes } from "@lab/harness/harness-event.const";
-import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
+} from "@nightlab/harness/agent-harness.types";
+import { HarnessAbortedError, HarnessCapabilityError } from "@nightlab/harness/harness-error";
+import { HarnessEventTypes } from "@nightlab/harness/harness-event.const";
+import type { AgentExecution } from "@nightlab/protocol/agents/agent-execution.types";
 import { requiredById } from "#src/investigation-workspace/snapshot-entities";
 import {
     SnapshotEffortLevel,

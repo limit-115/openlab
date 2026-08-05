@@ -1,7 +1,7 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
-import { SubscriptionAllowanceState } from "@lab/protocol/subscription-allowance/subscription-allowance.const";
-import type { SubscriptionAllowanceRoster } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
+import { SubscriptionAllowanceState } from "@nightlab/protocol/subscription-allowance/subscription-allowance.const";
+import type { SubscriptionAllowanceRoster } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

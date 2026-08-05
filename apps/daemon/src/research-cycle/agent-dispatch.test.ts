@@ -5,20 +5,23 @@ import {
     HarnessEffortLevels,
     type HarnessKind,
     HarnessKinds
-} from "@lab/harness/agent-harness.const";
+} from "@nightlab/harness/agent-harness.const";
 import type {
     AgentHarness,
     HarnessPreflight,
     HarnessRunRequest
-} from "@lab/harness/agent-harness.types";
-import { HarnessEventTypes } from "@lab/harness/harness-event.const";
-import type { SubscriptionAllowance as HarnessAllowance } from "@lab/harness/subscription-allowance.types";
-import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
-import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
+} from "@nightlab/harness/agent-harness.types";
+import { HarnessEventTypes } from "@nightlab/harness/harness-event.const";
+import type { SubscriptionAllowance as HarnessAllowance } from "@nightlab/harness/subscription-allowance.types";
+import {
+    AgentEffortLevel,
+    AgentHarnessKind
+} from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
+import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
 import { describe, expect, it } from "vitest";
 import { harnessEvents, harnessRunResult } from "#src/agent-activity/agent-activity.fixture";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";

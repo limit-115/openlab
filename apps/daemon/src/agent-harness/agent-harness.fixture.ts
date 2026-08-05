@@ -1,14 +1,14 @@
-import { HarnessAuthenticationMethods } from "@lab/harness/agent-harness.const";
+import { HarnessAuthenticationMethods } from "@nightlab/harness/agent-harness.const";
 import type {
     AgentHarness,
     HarnessPreflight,
     HarnessRunRequest,
     HarnessSession
-} from "@lab/harness/agent-harness.types";
-import { HarnessCapabilityError } from "@lab/harness/harness-error";
-import { HarnessCapabilityGaps } from "@lab/harness/harness-error.const";
-import type { HarnessEvent } from "@lab/harness/harness-event.types";
-import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+} from "@nightlab/harness/agent-harness.types";
+import { HarnessCapabilityError } from "@nightlab/harness/harness-error";
+import { HarnessCapabilityGaps } from "@nightlab/harness/harness-error.const";
+import type { HarnessEvent } from "@nightlab/harness/harness-event.types";
+import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
 
 /**
  * A harness that answers a preflight without a CLI behind it, and counts how many times it was

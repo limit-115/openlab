@@ -1,4 +1,4 @@
-import type { SubscriptionAllowanceRoster } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
+import type { SubscriptionAllowanceRoster } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
 
 /**
  * When the numbers on the page were read. The daemon holds each vendor separately and stands by the

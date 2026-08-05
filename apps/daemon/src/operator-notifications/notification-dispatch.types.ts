@@ -1,5 +1,5 @@
-import type { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
-import type { NotificationChannel as ConfiguredChannel } from "@lab/protocol/operator-notifications/notification-settings.types";
+import type { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import type { NotificationChannel as ConfiguredChannel } from "@nightlab/protocol/operator-notifications/notification-settings.types";
 import type { AskedCapability } from "#src/operator-answers/operator-answers.types";
 import type {
     NotificationSettingsReader,

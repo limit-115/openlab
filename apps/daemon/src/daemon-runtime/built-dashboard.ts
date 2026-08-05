@@ -10,6 +10,6 @@ import { BUILT_DASHBOARD_DIRECTORY } from "#src/daemon-runtime/built-dashboard.c
  * as a dependency, the dashboard is wherever the installer put it, and only the resolver knows.
  */
 export function builtDashboardRoot(): string {
-    const manifest = fileURLToPath(import.meta.resolve("@lab/dashboard/package.json"));
+    const manifest = fileURLToPath(import.meta.resolve("@nightlab/dashboard/package.json"));
     return path.join(path.dirname(manifest), BUILT_DASHBOARD_DIRECTORY);
 }

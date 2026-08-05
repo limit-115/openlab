@@ -1,16 +1,19 @@
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import { domainValues } from "@lab/protocol/finite-domain/finite-domain-values";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
-import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
-import type { NotificationSettings } from "@lab/protocol/operator-notifications/notification-settings.types";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import {
+    AgentEffortLevel,
+    AgentHarnessKind
+} from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
+import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
+import { domainValues } from "@nightlab/protocol/finite-domain/finite-domain-values";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
+import type { NotificationSettings } from "@nightlab/protocol/operator-notifications/notification-settings.types";
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 

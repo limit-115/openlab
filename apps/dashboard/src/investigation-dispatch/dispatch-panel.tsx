@@ -1,5 +1,5 @@
-import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import type { InvestigationDispatch } from "@lab/protocol/investigation-input/investigation-dispatch.types";
+import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import type { InvestigationDispatch } from "@nightlab/protocol/investigation-input/investigation-dispatch.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useId, useState } from "react";

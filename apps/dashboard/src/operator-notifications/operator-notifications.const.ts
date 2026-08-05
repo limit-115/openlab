@@ -1,5 +1,5 @@
-import { NOTIFIABLE_EVENT_TYPES } from "@lab/protocol/operator-notifications/notifiable-event.const";
-import { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
+import { NOTIFIABLE_EVENT_TYPES } from "@nightlab/protocol/operator-notifications/notifiable-event.const";
+import { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 
 export const NotificationEndpoint = {
     SETTINGS: "/api/notifications",

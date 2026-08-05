@@ -1,5 +1,8 @@
-import type { NotificationMessage, OperatorReply } from "@lab/notifier/notification-message.types";
-import type { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
+import type {
+    NotificationMessage,
+    OperatorReply
+} from "@nightlab/notifier/notification-message.types";
+import type { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import type { NotificationSettingsReader } from "#src/operator-notifications/operator-notifications.types";
 
 /**

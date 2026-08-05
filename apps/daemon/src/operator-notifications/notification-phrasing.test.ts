@@ -1,10 +1,10 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
-import { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import { StatusSnapshotSchema } from "@nightlab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import { describe, expect, it } from "vitest";
 import { notificationMessage } from "#src/operator-notifications/notification-phrasing";
 import { NOTIFICATION_PHRASES } from "#src/operator-notifications/notification-phrasing.const";

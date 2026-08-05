@@ -1,4 +1,4 @@
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import type {
     AnsweringInvestigations,

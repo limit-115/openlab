@@ -1,6 +1,6 @@
-import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
-import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
+import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
+import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
+import { StatusSnapshotSchema } from "@nightlab/protocol/investigation-status/status-snapshot.schema";
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import type { TransactionalDatabase } from "#src/lab-database/lab-database-client";
 import { events, investigations, runtimeCheckpoints } from "#src/lab-database/lab-schema";

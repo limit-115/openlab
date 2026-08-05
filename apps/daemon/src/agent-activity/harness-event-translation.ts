@@ -1,8 +1,8 @@
-import { HarnessEventTypes } from "@lab/harness/harness-event.const";
-import type { HarnessEvent, HarnessTextEvent } from "@lab/harness/harness-event.types";
-import type { AgentRunIdentity } from "@lab/protocol/agent-activity/agent-activity.types";
-import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
-import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { HarnessEventTypes } from "@nightlab/harness/harness-event.const";
+import type { HarnessEvent, HarnessTextEvent } from "@nightlab/harness/harness-event.types";
+import type { AgentRunIdentity } from "@nightlab/protocol/agent-activity/agent-activity.types";
+import { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
 import {
     ActivityDiagnosticLevel,
     ActivityRunStatus,

@@ -1,6 +1,6 @@
-import type { LabSettingsRepository } from "@lab/db/lab-settings/lab-settings-repository";
-import type { AgentEffortLevel } from "@lab/protocol/agents/agent-execution.const";
-import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
+import type { LabSettingsRepository } from "@nightlab/db/lab-settings/lab-settings-repository";
+import type { AgentEffortLevel } from "@nightlab/protocol/agents/agent-execution.const";
+import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
 
 export type LabSettingsRecords = Pick<LabSettingsRepository, "read" | "write">;
 

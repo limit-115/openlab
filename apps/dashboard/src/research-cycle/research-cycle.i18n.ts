@@ -1,4 +1,4 @@
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 
 export const RESEARCH_CYCLE_NAMESPACE = "research-cycle" as const;

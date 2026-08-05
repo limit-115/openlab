@@ -1,11 +1,11 @@
-import { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@nightlab/protocol/agent-activity/agent-activity.const";
 import {
     AgentActivityFrameKind,
     AgentToolPhase
-} from "@lab/protocol/agent-activity/agent-activity-frame.const";
-import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+} from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentRun } from "@nightlab/protocol/agent-runs/agent-run.types";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";

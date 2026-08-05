@@ -1,7 +1,7 @@
 import { mkdir, stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
-import { TelegramBotConversation } from "@lab/notifier/telegram-bot-conversation";
-import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
+import { TelegramBotConversation } from "@nightlab/notifier/telegram-bot-conversation";
+import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import type { FastifyInstance } from "fastify";
 import { resolveDaemonConfig } from "#src/daemon-runtime/daemon-config";
 import type { DaemonOptions } from "#src/daemon-runtime/daemon-config.types";

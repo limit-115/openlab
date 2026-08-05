@@ -1,4 +1,4 @@
-import type { RunDirectoryUsage } from "@lab/protocol/lab-storage/lab-storage.types";
+import type { RunDirectoryUsage } from "@nightlab/protocol/lab-storage/lab-storage.types";
 import { localeFormatter } from "#src/value-display/locale-formatter";
 
 /** The scale every share is read on, and the one a meter drawing a share is set to. */

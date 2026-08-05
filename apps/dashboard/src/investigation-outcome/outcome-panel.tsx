@@ -1,5 +1,5 @@
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 import { FileTextIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "#src/design-system/class-names";

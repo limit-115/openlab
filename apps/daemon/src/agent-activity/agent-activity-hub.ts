@@ -1,15 +1,15 @@
-import type { HarnessEvent } from "@lab/harness/harness-event.types";
+import type { HarnessEvent } from "@nightlab/harness/harness-event.types";
 import {
     AgentActivityPhase,
     AgentActivityPhaseByFrameKind
-} from "@lab/protocol/agent-activity/agent-activity.const";
+} from "@nightlab/protocol/agent-activity/agent-activity.const";
 import type {
     AgentActivity,
     AgentRunIdentity
-} from "@lab/protocol/agent-activity/agent-activity.types";
-import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
-import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+} from "@nightlab/protocol/agent-activity/agent-activity.types";
+import { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
 import { ACTIVITY_RETAINED_RUNS } from "#src/agent-activity/agent-activity.const";
 import type {
     AgentActivityListener,

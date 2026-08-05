@@ -1,6 +1,6 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { HarnessReadinessState } from "@lab/protocol/harness-readiness/harness-readiness.const";
-import type { HarnessReadiness } from "@lab/protocol/harness-readiness/harness-readiness.types";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { HarnessReadinessState } from "@nightlab/protocol/harness-readiness/harness-readiness.const";
+import type { HarnessReadiness } from "@nightlab/protocol/harness-readiness/harness-readiness.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";

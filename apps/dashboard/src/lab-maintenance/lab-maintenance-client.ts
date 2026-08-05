@@ -1,5 +1,5 @@
-import { LabStorageSchema } from "@lab/protocol/lab-storage/lab-storage.schema";
-import type { LabStorage } from "@lab/protocol/lab-storage/lab-storage.types";
+import { LabStorageSchema } from "@nightlab/protocol/lab-storage/lab-storage.schema";
+import type { LabStorage } from "@nightlab/protocol/lab-storage/lab-storage.types";
 import { LabStorageEndpoint } from "#src/lab-maintenance/lab-maintenance.const";
 
 export const labStorageQueryKey = ["lab", "storage"] as const;

@@ -1,5 +1,5 @@
-import { AgentEffortLevel } from "@lab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import { AgentEffortLevel } from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 
 export const HARNESS_SETTINGS_NAMESPACE = "harness-settings" as const;

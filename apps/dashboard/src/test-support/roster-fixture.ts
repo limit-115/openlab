@@ -1,6 +1,6 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
 
 export const rosterFixture: InvestigationSummary[] = [
     {

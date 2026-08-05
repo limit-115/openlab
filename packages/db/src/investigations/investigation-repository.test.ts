@@ -1,4 +1,4 @@
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { InvestigationRepository } from "#src/investigations/investigation-repository";
 import {

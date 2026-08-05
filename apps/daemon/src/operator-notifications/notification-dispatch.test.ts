@@ -1,16 +1,16 @@
-import type { NotificationChannel } from "@lab/notifier/notification-channel.types";
-import { NotificationDeliveryError } from "@lab/notifier/notification-delivery-error";
-import { NotificationDeliveryFailure } from "@lab/notifier/notification-delivery-error.const";
-import type { NotificationMessage } from "@lab/notifier/notification-message.types";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
+import type { NotificationChannel } from "@nightlab/notifier/notification-channel.types";
+import { NotificationDeliveryError } from "@nightlab/notifier/notification-delivery-error";
+import { NotificationDeliveryFailure } from "@nightlab/notifier/notification-delivery-error.const";
+import type { NotificationMessage } from "@nightlab/notifier/notification-message.types";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import { StatusSnapshotSchema } from "@nightlab/protocol/investigation-status/status-snapshot.schema";
 import {
     NotificationChannelKind,
     NotificationLanguage
-} from "@lab/protocol/operator-notifications/notification-channel.const";
-import { NotificationSettingsSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
+} from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
 import { describe, expect, it, vi } from "vitest";
 import { NotificationDispatch } from "#src/operator-notifications/notification-dispatch";
 import { NOTIFICATION_PHRASES } from "#src/operator-notifications/notification-phrasing.const";

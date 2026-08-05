@@ -1,7 +1,7 @@
 import {
     InvestigationState,
     type InvestigationState as InvestigationStateValue
-} from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+} from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 import { legalInvestigationStateTransitions } from "#src/investigation-lifecycle/investigation-state-transitions.const";
 import type {
     LifecycleContext,

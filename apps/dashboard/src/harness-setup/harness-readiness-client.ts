@@ -1,5 +1,5 @@
-import { HarnessReadinessRosterSchema } from "@lab/protocol/harness-readiness/harness-readiness.schema";
-import type { HarnessReadinessRoster } from "@lab/protocol/harness-readiness/harness-readiness.types";
+import { HarnessReadinessRosterSchema } from "@nightlab/protocol/harness-readiness/harness-readiness.schema";
+import type { HarnessReadinessRoster } from "@nightlab/protocol/harness-readiness/harness-readiness.types";
 
 const HARNESS_READINESS_ENDPOINT = "/api/harnesses";
 

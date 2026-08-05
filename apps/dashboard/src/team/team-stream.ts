@@ -1,6 +1,6 @@
-import { AgentActivityStreamEvent } from "@lab/protocol/agent-activity/agent-activity.const";
-import { AgentActivityRosterSchema } from "@lab/protocol/agent-activity/agent-activity.schema";
-import { AgentActivityFrameSchema } from "@lab/protocol/agent-activity/agent-activity-frame.schema";
+import { AgentActivityStreamEvent } from "@nightlab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityRosterSchema } from "@nightlab/protocol/agent-activity/agent-activity.schema";
+import { AgentActivityFrameSchema } from "@nightlab/protocol/agent-activity/agent-activity-frame.schema";
 import { useEffect, useMemo } from "react";
 import { useStore } from "zustand/react";
 import { useShallow } from "zustand/react/shallow";

@@ -1,5 +1,5 @@
-import { InvestigationEventSchema } from "@lab/protocol/investigation-events/investigation-event.schema";
-import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import { InvestigationEventSchema } from "@nightlab/protocol/investigation-events/investigation-event.schema";
+import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { events } from "#src/lab-database/lab-schema";
 import { parseTimestamp } from "#src/runtime/runtime-metadata-validation";

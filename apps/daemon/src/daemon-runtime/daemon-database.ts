@@ -1,9 +1,9 @@
-import { InvestigationRepository } from "@lab/db/investigations/investigation-repository";
-import { createDatabase, type DatabaseClient } from "@lab/db/lab-database/lab-database-client";
-import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
-import { LabSettingsRepository } from "@lab/db/lab-settings/lab-settings-repository";
-import { NotificationSettingsRepository } from "@lab/db/operator-notifications/notification-settings-repository";
-import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
+import { InvestigationRepository } from "@nightlab/db/investigations/investigation-repository";
+import { createDatabase, type DatabaseClient } from "@nightlab/db/lab-database/lab-database-client";
+import { migrateDatabase } from "@nightlab/db/lab-database/lab-schema-migration";
+import { LabSettingsRepository } from "@nightlab/db/lab-settings/lab-settings-repository";
+import { NotificationSettingsRepository } from "@nightlab/db/operator-notifications/notification-settings-repository";
+import { RuntimePersistence } from "@nightlab/db/runtime/runtime-persistence";
 import type {
     InvestigationRecords,
     RegistryPersistence

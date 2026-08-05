@@ -1,4 +1,4 @@
-import type { NotificationSettings } from "@lab/protocol/operator-notifications/notification-settings.types";
+import type { NotificationSettings } from "@nightlab/protocol/operator-notifications/notification-settings.types";
 import type { NotificationSettingsRecords } from "#src/operator-notifications/operator-notifications.types";
 
 /** The notification row as far as the store is concerned: one document, written whole or absent. */

@@ -1,4 +1,4 @@
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

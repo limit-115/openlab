@@ -1,5 +1,5 @@
-import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import { StatusSnapshotSchema } from "@nightlab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 import i18next from "i18next";
 import {
     INVESTIGATION_CONTROL_TRANSITION,

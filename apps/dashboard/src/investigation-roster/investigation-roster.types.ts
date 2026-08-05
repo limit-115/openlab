@@ -1,4 +1,4 @@
-import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
 
 /** What the operator fills in to start an investigation. Everything but the goal is optional. */
 export interface NewInvestigation {

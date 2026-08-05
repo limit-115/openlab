@@ -1,17 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
 import {
     CapabilityRequestType,
     CapabilityStatus
-} from "@lab/protocol/capabilities/capability-request.const";
-import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
-import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
-import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+} from "@nightlab/protocol/capabilities/capability-request.const";
+import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
+import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import { DEFAULT_HARNESS_KINDS } from "@nightlab/protocol/investigation-input/investigation-input.const";
+import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 
 const testRunId = randomUUID();
 

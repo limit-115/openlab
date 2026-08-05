@@ -3,13 +3,13 @@ import {
     HarnessEffortLevels,
     type HarnessKind,
     HarnessKinds
-} from "@lab/harness/agent-harness.const";
+} from "@nightlab/harness/agent-harness.const";
 import {
     type AgentEffortLevel,
     AgentEffortLevel as AgentEffortLevels,
     type AgentHarnessKind,
     AgentHarnessKind as AgentHarnessKinds
-} from "@lab/protocol/agents/agent-execution.const";
+} from "@nightlab/protocol/agents/agent-execution.const";
 
 /**
  * The harness package owns its own finite domains and never depends on the wire protocol, so a

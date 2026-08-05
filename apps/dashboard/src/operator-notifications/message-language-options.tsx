@@ -1,4 +1,4 @@
-import { NotificationLanguage } from "@lab/protocol/operator-notifications/notification-channel.const";
+import { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import { useTranslation } from "react-i18next";
 import {
     Select,

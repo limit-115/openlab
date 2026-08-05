@@ -1,9 +1,9 @@
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
 import {
     NotificationChannelKind,
     NotificationLanguage
-} from "@lab/protocol/operator-notifications/notification-channel.const";
-import { NotificationSettingsViewSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
+} from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsViewSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

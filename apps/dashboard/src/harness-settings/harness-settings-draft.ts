@@ -1,10 +1,10 @@
 import {
     AgentEffortLevel,
     type AgentHarnessKind
-} from "@lab/protocol/agents/agent-execution.const";
-import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import { DEFAULT_ROLE_EFFORT } from "@lab/protocol/lab-settings/lab-settings.const";
-import type { RoleExecution } from "@lab/protocol/lab-settings/lab-settings.types";
+} from "@nightlab/protocol/agents/agent-execution.const";
+import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import { DEFAULT_ROLE_EFFORT } from "@nightlab/protocol/lab-settings/lab-settings.const";
+import type { RoleExecution } from "@nightlab/protocol/lab-settings/lab-settings.types";
 import { SELECTABLE_HARNESSES, SETTABLE_ROLES } from "#src/harness-settings/harness-settings.const";
 import type { LabSettingsDraft } from "#src/harness-settings/harness-settings.types";
 

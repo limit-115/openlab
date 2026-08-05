@@ -1,8 +1,8 @@
-import type { AgentHarness } from "@lab/harness/agent-harness.types";
-import { ClaudeHarness } from "@lab/harness/claude-harness";
-import { CodexHarness } from "@lab/harness/codex-harness";
-import { GlmHarness } from "@lab/harness/glm-harness";
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+import type { AgentHarness } from "@nightlab/harness/agent-harness.types";
+import { ClaudeHarness } from "@nightlab/harness/claude-harness";
+import { CodexHarness } from "@nightlab/harness/codex-harness";
+import { GlmHarness } from "@nightlab/harness/glm-harness";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
 
 const HARNESS_FACTORY: Record<AgentHarnessKind, () => AgentHarness> = {
     [AgentHarnessKind.CODEX]: () => new CodexHarness(),

@@ -1,7 +1,7 @@
 import { rm } from "node:fs/promises";
-import type { InvestigationRequest } from "@lab/protocol/investigation-input/investigation-input.types";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
+import type { InvestigationRequest } from "@nightlab/protocol/investigation-input/investigation-input.types";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { createHarnesses } from "#src/agent-harness/harness-factory";
 import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";

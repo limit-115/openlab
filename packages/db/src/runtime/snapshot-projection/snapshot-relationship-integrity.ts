@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 import { idsOf } from "#src/runtime/snapshot-projection/projected-entity-record";
 
 export function assertProjectionRelationships(snapshot: StatusSnapshot): void {

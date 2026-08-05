@@ -1,7 +1,7 @@
-import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import type { Finding } from "@lab/protocol/findings/finding.types";
-import type { Verdict } from "@lab/protocol/verdicts/verdict.types";
+import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
+import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import type { Finding } from "@nightlab/protocol/findings/finding.types";
+import type { Verdict } from "@nightlab/protocol/verdicts/verdict.types";
 import {
     ASSUMPTION_CARD,
     ASSUMPTION_CARD_CONFIRMED,

@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 import { inArray } from "drizzle-orm";
 import {
     agentRuns,

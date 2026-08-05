@@ -1,4 +1,4 @@
-import type { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     INVESTIGATION_CONTROL_ACTIONS,

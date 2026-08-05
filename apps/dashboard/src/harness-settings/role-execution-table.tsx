@@ -1,8 +1,8 @@
 import type {
     AgentEffortLevel,
     AgentHarnessKind
-} from "@lab/protocol/agents/agent-execution.const";
-import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
+} from "@nightlab/protocol/agents/agent-execution.const";
+import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";

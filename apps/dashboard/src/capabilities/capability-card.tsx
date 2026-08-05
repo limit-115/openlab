@@ -1,5 +1,5 @@
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
+import type { CapabilityRequest } from "@nightlab/protocol/capabilities/capability-request.types";
 import { useTranslation } from "react-i18next";
 import { CAPABILITIES_NAMESPACE } from "#src/capabilities/capabilities.i18n";
 import { CapabilityAnswerForm } from "#src/capabilities/capability-answer-form";

@@ -1,4 +1,4 @@
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 import { CircleStopIcon, PauseIcon, PlayIcon } from "lucide-react";
 import type { InvestigationControlPresentation } from "#src/investigation-control/investigation-control.types";
 

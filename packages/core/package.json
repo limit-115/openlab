@@ -1,5 +1,5 @@
 {
-    "name": "@lab/core",
+    "name": "@nightlab/core",
     "version": "0.1.0",
     "private": true,
     "type": "module",
@@ -34,6 +34,6 @@
         "format": "biome format --write ."
     },
     "dependencies": {
-        "@lab/protocol": "workspace:*"
+        "@nightlab/protocol": "workspace:*"
     }
 }

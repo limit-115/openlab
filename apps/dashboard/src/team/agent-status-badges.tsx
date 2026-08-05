@@ -1,5 +1,5 @@
-import type { AgentActivityPhase } from "@lab/protocol/agent-activity/agent-activity.const";
-import type { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import type { AgentActivityPhase } from "@nightlab/protocol/agent-activity/agent-activity.const";
+import type { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
 import { useTranslation } from "react-i18next";
 import { Badge } from "#src/design-system/badge";
 import { STATUS_TAG_NAMESPACE } from "#src/status-tag/status-tag.i18n";

@@ -1,6 +1,6 @@
-import { isCapped } from "@lab/protocol/spend-caps/spend-cap";
-import { NO_SPEND_CAP_PERCENT } from "@lab/protocol/spend-caps/spend-cap.const";
-import type { AllowanceWindow } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
+import { isCapped } from "@nightlab/protocol/spend-caps/spend-cap";
+import { NO_SPEND_CAP_PERCENT } from "@nightlab/protocol/spend-caps/spend-cap.const";
+import type { AllowanceWindow } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
 import { Slider as SliderPrimitive } from "radix-ui";
 import { useTranslation } from "react-i18next";
 import { cn } from "#src/design-system/class-names";

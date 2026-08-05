@@ -1,6 +1,6 @@
-import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import type { AgentRun } from "@nightlab/protocol/agent-runs/agent-run.types";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 import { describe, expect, it } from "vitest";
 import { cycleStages } from "#src/research-cycle/cycle-stage";
 import { CycleStageState } from "#src/research-cycle/cycle-stage.const";

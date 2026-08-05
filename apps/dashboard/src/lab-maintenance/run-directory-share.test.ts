@@ -1,4 +1,4 @@
-import type { RunDirectoryUsage } from "@lab/protocol/lab-storage/lab-storage.types";
+import type { RunDirectoryUsage } from "@nightlab/protocol/lab-storage/lab-storage.types";
 import { describe, expect, it } from "vitest";
 import { formatShare, runDirectoryShares } from "#src/lab-maintenance/run-directory-share";
 

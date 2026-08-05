@@ -1,5 +1,5 @@
-import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
-import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import type { AgentActivity } from "@nightlab/protocol/agent-activity/agent-activity.types";
+import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
 import type { StreamState } from "#src/live-status/status-stream.const";
 import type { LiveAgents } from "#src/team/team-stream.types";
 

@@ -1,4 +1,4 @@
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 import { describe, expect, it } from "vitest";
 import { assessLifecycleTransition } from "#src/investigation-lifecycle/investigation-state-transitions";
 import { WakeTrigger } from "#src/investigation-lifecycle/wake-trigger.const";

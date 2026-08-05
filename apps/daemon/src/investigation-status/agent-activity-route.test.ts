@@ -2,11 +2,11 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { HarnessEventTypes, HarnessToolPhases } from "@lab/harness/harness-event.const";
-import { HarnessArtifactFiles } from "@lab/harness/harness-run-artifacts.const";
-import { AgentActivityStreamEvent } from "@lab/protocol/agent-activity/agent-activity.const";
-import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
-import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
+import { HarnessEventTypes, HarnessToolPhases } from "@nightlab/harness/harness-event.const";
+import { HarnessArtifactFiles } from "@nightlab/harness/harness-run-artifacts.const";
+import { AgentActivityStreamEvent } from "@nightlab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
+import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
 import type { FastifyInstance } from "fastify";
 import { describe, expect, it } from "vitest";
 import {

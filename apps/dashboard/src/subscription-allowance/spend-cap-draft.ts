@@ -1,6 +1,6 @@
-import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { isCapped } from "@lab/protocol/spend-caps/spend-cap";
-import type { SpendCaps } from "@lab/protocol/spend-caps/spend-cap.types";
+import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { isCapped } from "@nightlab/protocol/spend-caps/spend-cap";
+import type { SpendCaps } from "@nightlab/protocol/spend-caps/spend-cap.types";
 
 /**
  * Moves the cap on one window. Handing back the whole window drops the entry rather than writing it

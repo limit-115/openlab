@@ -1,4 +1,4 @@
-import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
+import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
 import { matchPath } from "react-router";
 import { INVESTIGATION_ROUTE, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import { LAB_SETTINGS, LAB_VIEWS, type LabPlace } from "#src/lab-layout/lab-layout.const";

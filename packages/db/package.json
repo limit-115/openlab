@@ -1,5 +1,5 @@
 {
-    "name": "@lab/db",
+    "name": "@nightlab/db",
     "version": "0.1.0",
     "private": true,
     "type": "module",
@@ -51,8 +51,8 @@
         "format": "biome format --write ."
     },
     "dependencies": {
-        "@lab/core": "workspace:*",
-        "@lab/protocol": "workspace:*",
+        "@nightlab/core": "workspace:*",
+        "@nightlab/protocol": "workspace:*",
         "drizzle-orm": "0.45.2"
     },
     "devDependencies": {

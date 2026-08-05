@@ -1,11 +1,11 @@
 import { setTimeout as delay } from "node:timers/promises";
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
-import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
+import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { DEFAULT_HARNESS_KINDS } from "@nightlab/protocol/investigation-input/investigation-input.const";
+import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { createHarnesses } from "#src/agent-harness/harness-factory";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";

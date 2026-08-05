@@ -1,5 +1,5 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-import { windowSpendCap } from "@lab/protocol/spend-caps/spend-cap";
+import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { windowSpendCap } from "@nightlab/protocol/spend-caps/spend-cap";
 import { describe, expect, it } from "vitest";
 import { hasCapEdits, withWindowCap } from "#src/subscription-allowance/spend-cap-draft";
 

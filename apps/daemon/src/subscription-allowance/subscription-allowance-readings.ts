@@ -1,6 +1,6 @@
-import { type HarnessKind, HarnessKinds } from "@lab/harness/agent-harness.const";
-import { readSubscriptionAllowance } from "@lab/harness/subscription-allowance";
-import type { SubscriptionAllowance } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
+import { type HarnessKind, HarnessKinds } from "@nightlab/harness/agent-harness.const";
+import { readSubscriptionAllowance } from "@nightlab/harness/subscription-allowance";
+import type { SubscriptionAllowance } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
 import {
     allowanceFromReading,
     unreadableAllowance

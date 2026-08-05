@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
 import { and, eq, notInArray } from "drizzle-orm";
 import { agentRuns } from "#src/lab-database/lab-schema";
 import { assertUpserted } from "#src/runtime/snapshot-projection/projected-entity-record";

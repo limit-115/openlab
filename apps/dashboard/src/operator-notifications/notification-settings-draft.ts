@@ -1,10 +1,10 @@
-import type { NotifiableEventType } from "@lab/protocol/operator-notifications/notifiable-event.const";
-import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
+import type { NotifiableEventType } from "@nightlab/protocol/operator-notifications/notifiable-event.const";
+import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import {
     type ChannelReport,
     channelReporting
-} from "@lab/protocol/operator-notifications/notification-channel-reporting";
-import type { NotificationSettingsView } from "@lab/protocol/operator-notifications/notification-settings.types";
+} from "@nightlab/protocol/operator-notifications/notification-channel-reporting";
+import type { NotificationSettingsView } from "@nightlab/protocol/operator-notifications/notification-settings.types";
 import { REPORTABLE_MOMENTS } from "#src/operator-notifications/operator-notifications.const";
 import type {
     NotificationDefaultsDraft,

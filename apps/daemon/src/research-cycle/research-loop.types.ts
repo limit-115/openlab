@@ -1,10 +1,10 @@
-import type { HarnessExecutionProfile } from "@lab/harness/agent-harness.const";
-import type { AgentHarness, HarnessPreflight } from "@lab/harness/agent-harness.types";
-import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
-import type { Assumption } from "@lab/protocol/assumptions/assumption.types";
-import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
-import type { Finding } from "@lab/protocol/findings/finding.types";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+import type { HarnessExecutionProfile } from "@nightlab/harness/agent-harness.const";
+import type { AgentHarness, HarnessPreflight } from "@nightlab/harness/agent-harness.types";
+import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
+import type { CapabilityRequest } from "@nightlab/protocol/capabilities/capability-request.types";
+import type { Finding } from "@nightlab/protocol/findings/finding.types";
+import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
 import type { z } from "zod";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";

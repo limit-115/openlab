@@ -1,7 +1,7 @@
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AssumptionStatus } from "@lab/protocol/assumptions/assumption-status.const";
-import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
-import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
+import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 import type { TaggedStatus } from "#src/status-tag/status-tag.types";
 

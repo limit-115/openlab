@@ -1,5 +1,5 @@
-import type { Finding } from "@lab/protocol/findings/finding.types";
-import type { Verdict } from "@lab/protocol/verdicts/verdict.types";
+import type { Finding } from "@nightlab/protocol/findings/finding.types";
+import type { Verdict } from "@nightlab/protocol/verdicts/verdict.types";
 import { ChevronRightIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {

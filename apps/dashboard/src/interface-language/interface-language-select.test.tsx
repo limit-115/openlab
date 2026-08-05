@@ -1,4 +1,4 @@
-import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
+import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";

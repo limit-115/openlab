@@ -1,5 +1,5 @@
-import type { AgentUsage } from "@lab/protocol/agent-activity/agent-activity.types";
-import type { AgentRun } from "@lab/protocol/agent-runs/agent-run.types";
+import type { AgentUsage } from "@nightlab/protocol/agent-activity/agent-activity.types";
+import type { AgentRun } from "@nightlab/protocol/agent-runs/agent-run.types";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Separator } from "#src/design-system/separator";

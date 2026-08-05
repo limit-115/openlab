@@ -1,4 +1,4 @@
-import { AgentActivityFrameKind } from "@lab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
 import { ChevronRightIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStickToBottom } from "use-stick-to-bottom";

@@ -5,8 +5,8 @@ import type {
     PersistedInvestigationEvent,
     PersistedRuntime,
     RuntimeCheckpoint
-} from "@lab/db/runtime/runtime-persistence.types";
-import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
+} from "@nightlab/db/runtime/runtime-persistence.types";
+import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
 
 interface HeldRuntime {
     task: InvestigationInput;

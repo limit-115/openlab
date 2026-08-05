@@ -1,4 +1,4 @@
-import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
+import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
 
 export interface AgentWorkspace {
     readonly id: string;

@@ -1,7 +1,7 @@
 import type { ServerResponse } from "node:http";
-import { AgentActivityStreamEvent } from "@lab/protocol/agent-activity/agent-activity.const";
-import type { AgentActivity } from "@lab/protocol/agent-activity/agent-activity.types";
-import type { AgentActivityFrame } from "@lab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentActivityStreamEvent } from "@nightlab/protocol/agent-activity/agent-activity.const";
+import type { AgentActivity } from "@nightlab/protocol/agent-activity/agent-activity.types";
+import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
 import type { FastifyInstance } from "fastify";
 import { replayAgentActivity } from "#src/agent-activity/agent-activity-replay";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";

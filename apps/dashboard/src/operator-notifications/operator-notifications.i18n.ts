@@ -1,8 +1,8 @@
-import { EventType } from "@lab/protocol/investigation-events/event-type.const";
+import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
 import {
     NotificationChannelKind,
     NotificationLanguage
-} from "@lab/protocol/operator-notifications/notification-channel.const";
+} from "@nightlab/protocol/operator-notifications/notification-channel.const";
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 
 export const OPERATOR_NOTIFICATIONS_NAMESPACE = "operator-notifications" as const;
