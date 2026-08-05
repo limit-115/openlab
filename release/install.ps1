@@ -52,12 +52,19 @@ function Get-Platform {
     }
 }
 
+# A response whose type PowerShell does not recognise as text arrives as raw bytes rather than a
+# string, which is what `latest` does, so both shapes are read here and every caller gets text.
 function Get-Text([string]$Url) {
     try {
-        return (Invoke-WebRequest -Uri $Url -UseBasicParsing).Content
+        $content = (Invoke-WebRequest -Uri $Url -UseBasicParsing).Content
     } catch {
         Stop-Install "Could not reach $Url"
     }
+
+    if ($content -is [byte[]]) {
+        return [System.Text.Encoding]::UTF8.GetString($content)
+    }
+    return [string]$content
 }
 
 function Save-File([string]$Url, [string]$Destination) {
