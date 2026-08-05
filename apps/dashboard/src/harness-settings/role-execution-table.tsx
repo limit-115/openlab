@@ -11,6 +11,7 @@ import { Input } from "#src/design-system/input";
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -97,11 +98,13 @@ export function RoleExecutionTable({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {EFFORT_LEVELS.map((level) => (
-                                                <SelectItem key={level} value={level}>
-                                                    {t(level)}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectGroup>
+                                                {EFFORT_LEVELS.map((level) => (
+                                                    <SelectItem key={level} value={level}>
+                                                        {t(level)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </TableCell>
