@@ -27,19 +27,19 @@ independently. A lab is therefore a directory: copy it to keep it, delete it to 
 macOS and Linux:
 
 ```bash
-curl -fsSL https://get.nightlab.dev/install.sh | sh
+curl -fsSL https://get.openlab.dev/install.sh | sh
 ```
 
 Windows PowerShell:
 
 ```powershell
-irm https://get.nightlab.dev/install.ps1 | iex
+irm https://get.openlab.dev/install.ps1 | iex
 ```
 
 Windows command prompt:
 
 ```bat
-curl -fsSL https://get.nightlab.dev/install.cmd -o install.cmd && install.cmd && del install.cmd
+curl -fsSL https://get.openlab.dev/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```
 
 Then:
