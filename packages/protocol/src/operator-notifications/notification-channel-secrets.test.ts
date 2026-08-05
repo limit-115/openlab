@@ -37,7 +37,7 @@ describe("withoutChannelSecrets", () => {
             enabled: true,
             language: NotificationLanguage.EN,
             chat_id: "-1001",
-            answers_back: false,
+            answers_back: true,
             bot_token_set: true
         });
         expect(JSON.stringify(served)).not.toContain("1234:secret");

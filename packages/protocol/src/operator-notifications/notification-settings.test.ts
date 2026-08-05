@@ -62,12 +62,21 @@ describe("NotificationSettingsSchema", () => {
     });
 
     /**
-     * Whoever can write in the chat answers for the operator, and what they write is carried to an
-     * agent verbatim. A lab configured before the lab could listen must not start listening because
-     * it was upgraded, so the settings it already had have to read as a chat that may not answer.
+     * A bot of one's own writing to one chat is a conversation. An operator who set one up to hear
+     * that the lab is stuck wants to say what it should do about it, and being sent to find the lab
+     * instead is the thing the chat was for.
      */
-    it("takes no answer from a chat until the operator opens it to one", () => {
+    it("reads a chat the lab writes to as one the operator can answer in", () => {
         const [channel] = NotificationSettingsSchema.parse({ channels: [TELEGRAM] }).channels;
+
+        expect(channel).toMatchObject({ answers_back: true });
+    });
+
+    /** What a bot sitting in a group is for: everybody in it would be answering for the operator. */
+    it("keeps a chat shut to answering where the operator shut it", () => {
+        const [channel] = NotificationSettingsSchema.parse({
+            channels: [{ ...TELEGRAM, answers_back: false }]
+        }).channels;
 
         expect(channel).toMatchObject({ answers_back: false });
     });

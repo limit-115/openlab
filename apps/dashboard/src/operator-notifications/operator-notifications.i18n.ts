@@ -34,8 +34,8 @@ export const OPERATOR_NOTIFICATIONS_EN = {
     answersBackHint:
         "When the lab needs something it cannot get itself, it asks here and goes back to work on your reply. Whoever can write in this chat is answering for you, and what they write reaches an agent word for word.",
     answersBackTag: "Answers back",
-    configuredOff: "Configured, sending nothing",
-    configuredOn: "Sending",
+    configuredOff: "Switched off",
+    configuredOn: "Switched on",
     notConfigured: "Not set up",
 
     botToken: "Bot token",
@@ -106,8 +106,8 @@ export const OPERATOR_NOTIFICATIONS_RU = {
     answersBackHint:
         "Когда лаборатории нужно то, чего она не достанет сама, она спросит здесь и вернётся к работе с вашим ответом. Отвечает за вас любой, кто может писать в этот чат, и написанное дойдёт до агента слово в слово.",
     answersBackTag: "Отвечает",
-    configuredOff: "Настроен, ничего не отправляет",
-    configuredOn: "Отправляет",
+    configuredOff: "Выключен",
+    configuredOn: "Включён",
     notConfigured: "Не настроен",
 
     botToken: "Токен бота",

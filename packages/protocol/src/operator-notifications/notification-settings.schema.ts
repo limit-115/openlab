@@ -51,16 +51,19 @@ const NOTIFICATION_CHANNEL_FIELDS = {
  * One Telegram bot writing to one chat. The token authenticates as the bot itself rather than for
  * one message, so it is the channel's secret and never leaves the lab once it is stored.
  *
- * The chat may also answer back, which is off until the operator says otherwise. What comes back is
- * carried to an agent as the operator's own words, so whoever can write in that chat is answering
- * for the operator — and a bot added to a group is being read by everybody in it.
+ * The chat answers back unless the operator says otherwise. A bot of one's own writing to one chat
+ * is a conversation, and an operator who set one up to hear that the lab is stuck wants to say what
+ * it should do about it — being told to go and find the lab instead is the thing the chat was for.
+ *
+ * Switching it off is what a bot sitting in a group is for: what comes back is carried to an agent
+ * as the operator's own words, so everybody who can write in that chat is answering for them.
  */
 export const TelegramChannelSchema = z.object({
     kind: z.literal(NotificationChannelKind.TELEGRAM),
     ...NOTIFICATION_CHANNEL_FIELDS,
     bot_token: z.string().trim().min(1),
     chat_id: z.string().trim().min(1),
-    answers_back: z.boolean().default(false)
+    answers_back: z.boolean().default(true)
 });
 
 /** The secret a channel authenticates with, which is the one field never served back. */

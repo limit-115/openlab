@@ -13,7 +13,10 @@ import type {
     TelegramChannelDraft
 } from "#src/operator-notifications/operator-notifications.types";
 
-/** A channel nobody has set up yet disagrees with the lab about nothing. */
+/**
+ * A channel nobody has set up yet disagrees with the lab about nothing, and is a conversation from
+ * the start: an operator setting one up to hear that the lab is stuck means to answer it there.
+ */
 const UNCONFIGURED_TELEGRAM: TelegramChannelDraft = {
     enabled: false,
     events: undefined,
@@ -21,7 +24,7 @@ const UNCONFIGURED_TELEGRAM: TelegramChannelDraft = {
     botToken: "",
     botTokenStored: false,
     chatId: "",
-    answersBack: false
+    answersBack: true
 };
 
 /**

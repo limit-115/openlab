@@ -178,24 +178,25 @@ describe("NotificationSettingsSection", () => {
     });
 
     /**
-     * Whoever can write in that chat is answering for the operator, and what they write reaches an
-     * agent word for word. The lab is told to listen only when the operator said so on this page.
+     * A chat the lab writes to is one the operator answers in, so it starts open. Shutting it is
+     * what a bot sitting in a group is for: everybody in it would be answering for the operator,
+     * and what they write reaches an agent word for word.
      */
-    it("opens the chat to answering only once the operator has asked for it", async () => {
+    it("shuts the chat to answering when the operator switches it off", async () => {
         const request = respond();
         renderSection();
         await openChannel();
 
         await userEvent.type(await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "234");
         await save();
-        expect(sentChannel(request)).toMatchObject({ answers_back: false });
+        expect(sentChannel(request)).toMatchObject({ answers_back: true });
 
         await userEvent.click(
             screen.getByRole("switch", { name: OPERATOR_NOTIFICATIONS_EN.answersBack })
         );
         await save();
 
-        expect(sentChannel(request)).toMatchObject({ answers_back: true });
+        expect(sentChannel(request)).toMatchObject({ answers_back: false });
     });
 
     it("drops a moment the operator unticked out of what the lab reports", async () => {
