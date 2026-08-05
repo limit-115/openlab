@@ -11,8 +11,18 @@ describe("InvestigationRequestSchema", () => {
         expect(InvestigationRequestSchema.parse({ goal: "Find a faster algorithm" })).toEqual({
             goal: "Find a faster algorithm",
             context: [],
-            success_criteria: []
+            success_criteria: [],
+            spend_past_caps: false
         });
+    });
+
+    it("holds a new investigation to the lab's spend caps until the operator lifts them", () => {
+        expect(
+            InvestigationRequestSchema.parse({
+                goal: "Find a faster algorithm",
+                spend_past_caps: true
+            }).spend_past_caps
+        ).toBe(true);
     });
 
     it("keeps the roster the operator asked for, in the order they asked for it", () => {
@@ -41,7 +51,8 @@ describe("InvestigationInputSchema", () => {
             goal: "Find a faster algorithm",
             context: [],
             success_criteria: [],
-            harness_kinds: [...DEFAULT_HARNESS_KINDS]
+            harness_kinds: [...DEFAULT_HARNESS_KINDS],
+            spend_past_caps: false
         });
     });
 });

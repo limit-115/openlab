@@ -16,21 +16,25 @@ import type { SubscriptionAllowance as HarnessAllowance } from "@lab/harness/sub
 import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
 import { describe, expect, it } from "vitest";
 import { harnessEvents, harnessRunResult } from "#src/agent-activity/agent-activity.fixture";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
+import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { DirectorPlanSchema } from "#src/research-contract/research-contract";
-import {
-    HarnessCapabilityBlockedError,
-    runAgentWithFallback
-} from "#src/research-cycle/agent-dispatch";
+import { DispatchBlockedError, runAgentWithFallback } from "#src/research-cycle/agent-dispatch";
 import type { AgentWorkspace } from "#src/research-cycle/agent-workspace.types";
 import type { AvailableHarness } from "#src/research-cycle/research-loop.types";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
+import { SubscriptionBlockKind } from "#src/subscription-allowance/subscription-block.const";
+
+/** The window every subscription in these tests is metered on, and the cap set against it. */
+const WEEKLY_WINDOW_MINUTES = 10_080;
+const WEEKLY_CAP_PERCENT = 60;
 
 /** A harness the gate must never reach: every way of using it fails the test out loud. */
 function unusedHarness(kind: HarnessKind): AvailableHarness {
@@ -101,11 +105,42 @@ function readings(spent: readonly HarnessKind[]): SubscriptionAllowanceReadings 
     });
 }
 
-async function testWorkspace(name: string): Promise<InvestigationWorkspace> {
+/** Every subscription part-spent, so only a cap the operator set can stop the lab reaching one. */
+function partlySpentReadings(usedPercent: number): SubscriptionAllowanceReadings {
+    return new SubscriptionAllowanceReadings({
+        read: async (kind): Promise<HarnessAllowance> => ({
+            kind,
+            plan: "max",
+            windows: [
+                {
+                    durationMinutes: WEEKLY_WINDOW_MINUTES,
+                    usedPercent,
+                    resetsAt: "2026-08-09T13:50:53.000Z"
+                }
+            ]
+        })
+    });
+}
+
+function cappedSettings(...harnesses: readonly AgentHarnessKind[]): LabSettingsReader {
+    const settings = LabSettingsSchema.parse({
+        spend_caps: harnesses.map((harness) => ({
+            harness,
+            window_minutes: WEEKLY_WINDOW_MINUTES,
+            max_used_percent: WEEKLY_CAP_PERCENT
+        }))
+    });
+    return { read: () => settings };
+}
+
+async function testWorkspace(
+    name: string,
+    input: Record<string, unknown> = {}
+): Promise<InvestigationWorkspace> {
     const directory = await mkdtemp(path.join(tmpdir(), `lab-${name}-`));
     return InvestigationWorkspace.create(
         directory,
-        InvestigationInputSchema.parse({ goal: "Spend the allowance wisely" })
+        InvestigationInputSchema.parse({ goal: "Spend the allowance wisely", ...input })
     );
 }
 
@@ -131,7 +166,7 @@ describe("runAgentWithFallback", () => {
             schema: DirectorPlanSchema
         });
 
-        await expect(dispatch).rejects.toBeInstanceOf(HarnessCapabilityBlockedError);
+        await expect(dispatch).rejects.toBeInstanceOf(DispatchBlockedError);
         expect(workspacesCreated).toBe(0);
         expect(
             workspace
@@ -186,6 +221,114 @@ describe("runAgentWithFallback", () => {
         });
 
         await expect(dispatch).rejects.toBe(reached);
+    });
+
+    it("passes over the subscription that reached its cap and reaches for one that has not", async () => {
+        const workspace = await testWorkspace("dispatch-capped");
+        const dispatched: HarnessKind[] = [];
+        const requests: HarnessRunRequest[] = [];
+
+        await runAgentWithFallback({
+            workspace,
+            activity: new AgentActivityHub(),
+            available: [
+                unusedHarness(HarnessKinds.CODEX),
+                answeringHarness(HarnessKinds.CLAUDE, requests)
+            ],
+            subscriptions: partlySpentReadings(WEEKLY_CAP_PERCENT + 4),
+            settings: cappedSettings(AgentHarnessKind.CODEX),
+            preferredIndex: 0,
+            role: AgentRole.DIRECTOR,
+            objective: "Find where this goal might be reachable",
+            createAgentWorkspace: async (role) => {
+                dispatched.push(HarnessKinds.CLAUDE);
+                return agentWorkspace(role);
+            },
+            prompt: "Plan the cycle",
+            schema: DirectorPlanSchema
+        });
+
+        expect(dispatched).toEqual([HarnessKinds.CLAUDE]);
+        expect(
+            workspace
+                .getSnapshot()
+                .recent_events.filter(({ type }) => type === EventType.HARNESS_WITHHELD)
+                .map(({ payload }) => payload.harness)
+        ).toEqual([HarnessKinds.CODEX]);
+    });
+
+    it("asks the operator for nothing when its own caps are what held every subscription", async () => {
+        const workspace = await testWorkspace("dispatch-all-capped");
+
+        const dispatch = runAgentWithFallback({
+            workspace,
+            activity: new AgentActivityHub(),
+            available: [unusedHarness(HarnessKinds.CODEX), unusedHarness(HarnessKinds.CLAUDE)],
+            subscriptions: partlySpentReadings(WEEKLY_CAP_PERCENT),
+            settings: cappedSettings(AgentHarnessKind.CODEX, AgentHarnessKind.CLAUDE),
+            preferredIndex: 0,
+            role: AgentRole.DIRECTOR,
+            objective: "Find where this goal might be reachable",
+            createAgentWorkspace: async () => {
+                throw new Error("a run was prepared for a subscription at its cap");
+            },
+            prompt: "Plan the cycle",
+            schema: DirectorPlanSchema
+        });
+
+        await expect(dispatch).rejects.toMatchObject({
+            blocks: [
+                { harness: HarnessKinds.CODEX, kind: SubscriptionBlockKind.WITHHELD },
+                { harness: HarnessKinds.CLAUDE, kind: SubscriptionBlockKind.WITHHELD }
+            ]
+        });
+        expect(workspace.getSnapshot().capability_requests).toHaveLength(0);
+    });
+
+    it("spends past the caps for the investigation the operator told to", async () => {
+        const workspace = await testWorkspace("dispatch-uncapped", { spend_past_caps: true });
+        const requests: HarnessRunRequest[] = [];
+
+        const run = await runAgentWithFallback({
+            workspace,
+            activity: new AgentActivityHub(),
+            available: [answeringHarness(HarnessKinds.CODEX, requests)],
+            subscriptions: partlySpentReadings(WEEKLY_CAP_PERCENT + 30),
+            settings: cappedSettings(AgentHarnessKind.CODEX),
+            preferredIndex: 0,
+            role: AgentRole.DIRECTOR,
+            objective: "Find where this goal might be reachable",
+            createAgentWorkspace: agentWorkspace,
+            prompt: "Plan the cycle",
+            schema: DirectorPlanSchema
+        });
+
+        expect(run.harness.kind).toBe(HarnessKinds.CODEX);
+    });
+
+    it("stops an exempted investigation at the vendor's own ceiling, which no override buys past", async () => {
+        const workspace = await testWorkspace("dispatch-uncapped-spent", { spend_past_caps: true });
+
+        const dispatch = runAgentWithFallback({
+            workspace,
+            activity: new AgentActivityHub(),
+            available: [unusedHarness(HarnessKinds.CODEX)],
+            subscriptions: readings([HarnessKinds.CODEX]),
+            settings: cappedSettings(AgentHarnessKind.CODEX),
+            preferredIndex: 0,
+            role: AgentRole.DIRECTOR,
+            objective: "Find where this goal might be reachable",
+            createAgentWorkspace: async () => {
+                throw new Error("a run was prepared for a spent subscription");
+            },
+            prompt: "Plan the cycle",
+            schema: DirectorPlanSchema
+        });
+
+        await expect(dispatch).rejects.toMatchObject({
+            blocks: [{ harness: HarnessKinds.CODEX, kind: SubscriptionBlockKind.EXHAUSTED }]
+        });
+        expect(workspace.getSnapshot().capability_requests).not.toHaveLength(0);
     });
 
     it("runs the role on the model and effort the lab settings put it on", async () => {

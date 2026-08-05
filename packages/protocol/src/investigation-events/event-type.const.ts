@@ -8,6 +8,8 @@ export const EventType = {
     INVESTIGATION_FAILED: "investigation.failed",
     HARNESS_PREFLIGHT_SUCCEEDED: "harness.preflight_succeeded",
     HARNESS_PREFLIGHT_FAILED: "harness.preflight_failed",
+    /** A subscription the lab passed over because it reached the spend cap set on it. */
+    HARNESS_WITHHELD: "harness.withheld",
     ASSUMPTIONS_PROPOSED: "assumptions.proposed",
     ASSUMPTION_RESEARCH_STARTED: "assumption.research_started",
     ASSUMPTION_EXHAUSTED: "assumption.exhausted",

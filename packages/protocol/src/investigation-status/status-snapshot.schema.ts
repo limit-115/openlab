@@ -17,7 +17,13 @@ export const StatusSnapshotSchema = z.object({
         started_at: z.iso.datetime(),
         updated_at: z.iso.datetime(),
         uptime_ms: z.number().nonnegative(),
-        reason: z.string().optional()
+        reason: z.string().optional(),
+        /**
+         * When the lab will put this investigation back to work by itself. It is set only where the
+         * wait has a stated end — a subscription window that resets — so an investigation an
+         * operator paused carries none and stays paused until they say otherwise.
+         */
+        resume_at: z.iso.datetime().optional()
     }),
     assumptions: z.array(AssumptionSchema).default([]),
     runs: z.array(AgentRunSchema).default([]),

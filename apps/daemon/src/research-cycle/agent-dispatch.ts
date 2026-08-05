@@ -3,6 +3,7 @@ import type { HarnessCapabilityRequest } from "@lab/harness/harness-error";
 import { HarnessAbortedError, HarnessCapabilityError } from "@lab/harness/harness-error";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
 import type { CapabilityRequest } from "@lab/protocol/capabilities/capability-request.types";
+import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { resolveRoleExecution } from "#src/lab-settings/role-execution";
 import type { CapabilityRequestCandidate } from "#src/research-contract/research-contract";
@@ -24,12 +25,25 @@ import {
     runStructuredAgent,
     StructuredAgentRunError
 } from "#src/research-cycle/structured-agent-run";
-import { spentAllowanceError } from "#src/subscription-allowance/spent-allowance";
+import {
+    subscriptionBlock,
+    unavailableBlock
+} from "#src/subscription-allowance/subscription-block";
+import type { SubscriptionBlock } from "#src/subscription-allowance/subscription-block.types";
 
-export class HarnessCapabilityBlockedError extends Error {
-    constructor(role: string) {
-        super(`All subscription CLI harnesses lost required capabilities during ${role} work`);
-        this.name = "HarnessCapabilityBlockedError";
+/**
+ * Nothing this investigation may dispatch to would take the work. What stopped each subscription is
+ * carried through rather than summarised away, because the investigation hibernates on it and the
+ * operator reads it: a lab held by the caps it was given and one that lost its logins are different
+ * problems, and only one of them is waiting on a person.
+ */
+export class DispatchBlockedError extends Error {
+    readonly blocks: readonly SubscriptionBlock[];
+
+    constructor(role: string, blocks: readonly SubscriptionBlock[]) {
+        super(`No subscription could take the ${role} work`);
+        this.name = "DispatchBlockedError";
+        this.blocks = blocks;
     }
 }
 
@@ -38,26 +52,34 @@ export class HarnessCapabilityBlockedError extends Error {
  * attempt is journalled as its own run: a second harness taking over is a second agent doing the
  * work, and an operator reading the history should see both.
  *
- * A subscription with nothing left is passed over before any run is prepared, which is the same
- * outcome the vendor's refusal produced mid-run, reached without spending a run to find out.
+ * A subscription that has nothing left, or that has reached the cap the operator set on it, is
+ * passed over before any run is prepared: the same outcome, reached without spending a run to find
+ * out.
  */
 export async function runAgentWithFallback<Output extends AgentCapabilityOutput>(
     input: AgentDispatchInput<Output>
 ): Promise<AgentRunOutput<Output>> {
     let lastError: unknown;
-    let capabilityFailures = 0;
+    const blocks: SubscriptionBlock[] = [];
     for (let offset = 0; offset < input.available.length; offset += 1) {
         throwIfAborted(input.signal);
         const harness = selectHarness(input.available, input.preferredIndex + offset).harness;
-        const spent = await spentAllowanceError(input.subscriptions, harness.kind, input.signal);
-        if (spent !== undefined) {
-            lastError = spent;
-            capabilityFailures += 1;
-            await requestSubscriptionCapability(input.workspace, spent.capabilityRequest);
+        const settings = input.settings.read();
+        const block = await subscriptionBlock({
+            ...(input.subscriptions === undefined ? {} : { readings: input.subscriptions }),
+            caps: settings.spend_caps,
+            kind: harness.kind,
+            spendPastCaps: input.workspace.input.spend_past_caps,
+            ...(input.signal === undefined ? {} : { signal: input.signal })
+        });
+        if (block !== undefined) {
+            lastError = block.capabilityError ?? new Error(block.reason);
+            blocks.push(block);
+            await recordSubscriptionBlock(input.workspace, block);
             continue;
         }
 
-        const execution = resolveRoleExecution(input.settings.read(), input.role, harness.kind);
+        const execution = resolveRoleExecution(settings, input.role, harness.kind);
         const agentWorkspace = await input.createAgentWorkspace(input.role);
         const runId = newAgentRunId(input.role);
         await startAgentRun(input.workspace, {
@@ -108,15 +130,35 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
                 throw error;
             }
             if (error instanceof HarnessCapabilityError) {
-                capabilityFailures += 1;
+                blocks.push(unavailableBlock(harness.kind, error.message));
                 await requestSubscriptionCapability(input.workspace, error.capabilityRequest);
             }
         }
     }
-    if (capabilityFailures === input.available.length) {
-        throw new HarnessCapabilityBlockedError(input.role);
+    if (blocks.length === input.available.length) {
+        throw new DispatchBlockedError(input.role, blocks);
     }
     throw lastError ?? new Error("All subscription CLI harness attempts failed");
+}
+
+/**
+ * Writes down that a subscription was passed over. A vendor that has stopped serving is asked
+ * about, because only the operator can bring it back; a cap is the operator's own instruction, so
+ * it is journalled and nothing is asked of them.
+ */
+async function recordSubscriptionBlock(
+    workspace: InvestigationWorkspace,
+    block: SubscriptionBlock
+): Promise<void> {
+    if (block.capabilityError !== undefined) {
+        await requestSubscriptionCapability(workspace, block.capabilityError.capabilityRequest);
+        return;
+    }
+    await workspace.appendEvent(EventType.HARNESS_WITHHELD, {
+        harness: block.harness,
+        reason: block.reason,
+        ...(block.returnsAt === undefined ? {} : { returns_at: block.returnsAt })
+    });
 }
 
 function failureStatus(

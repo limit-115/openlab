@@ -10,10 +10,7 @@ import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { type DirectorPlan, DirectorPlanSchema } from "#src/research-contract/research-contract";
-import {
-    HarnessCapabilityBlockedError,
-    runAgentWithFallback
-} from "#src/research-cycle/agent-dispatch";
+import { DispatchBlockedError, runAgentWithFallback } from "#src/research-cycle/agent-dispatch";
 import { RunDirectoryWorkspaceFactory } from "#src/research-cycle/agent-workspace";
 import type { AgentWorkspaceFactory } from "#src/research-cycle/agent-workspace.types";
 import { researchAssumption } from "#src/research-cycle/assumption-research";
@@ -24,6 +21,7 @@ import {
     DEFAULT_CYCLE_BACKOFF_MS,
     HibernationReason,
     PromiseSettlement,
+    RESUME_MARGIN_MS,
     ResearchLoopOutcomeStatus
 } from "#src/research-cycle/research-loop.const";
 import type {
@@ -36,6 +34,8 @@ import type {
 } from "#src/research-cycle/research-loop.types";
 import { cancelActiveWork } from "#src/research-cycle/research-work-recovery";
 import { directorPrompt } from "#src/research-prompts/research-prompts";
+import { SubscriptionBlockKind } from "#src/subscription-allowance/subscription-block.const";
+import type { SubscriptionBlock } from "#src/subscription-allowance/subscription-block.types";
 
 export async function runResearchLoop(
     workspace: InvestigationWorkspace,
@@ -59,11 +59,7 @@ export async function runResearchLoop(
         const available = await preflightHarnesses(workspace, harnesses, signal);
         throwIfAborted(signal);
         if (available.length === 0) {
-            await blockOnUnavailableHarnesses(workspace);
-            return {
-                status: ResearchLoopOutcomeStatus.HIBERNATING,
-                reason: HibernationReason.NO_HARNESS
-            };
+            return await hibernateOnBlockedDispatch(workspace, []);
         }
 
         const task = workspace.input;
@@ -98,12 +94,8 @@ export async function runResearchLoop(
             return { status: ResearchLoopOutcomeStatus.CANCELLED };
         }
 
-        if (error instanceof HarnessCapabilityBlockedError) {
-            await blockOnUnavailableHarnesses(workspace);
-            return {
-                status: ResearchLoopOutcomeStatus.HIBERNATING,
-                reason: HibernationReason.NO_HARNESS
-            };
+        if (error instanceof DispatchBlockedError) {
+            return await hibernateOnBlockedDispatch(workspace, error.blocks);
         }
 
         if (error instanceof DirectorExhaustedError) {
@@ -133,7 +125,19 @@ class DirectorExhaustedError extends Error {
     }
 }
 
-async function blockOnUnavailableHarnesses(workspace: InvestigationWorkspace): Promise<void> {
+/**
+ * Puts the investigation down on whatever stopped it, and says when it comes back. The difference
+ * between the answers is the whole of what an operator has to act on: a vendor that stopped serving
+ * is a capability only they can restore, while a cap they set themselves needs nothing from them and
+ * is only waited out — so nobody is asked for anything an investigation held by its own caps.
+ *
+ * Either way the wait has a stated end wherever the vendors named one, and the investigation takes
+ * itself back up then rather than sitting parked until somebody notices.
+ */
+async function hibernateOnBlockedDispatch(
+    workspace: InvestigationWorkspace,
+    blocks: readonly SubscriptionBlock[]
+): Promise<ResearchLoopOutcome> {
     await workspace.update((draft) => {
         for (const run of draft.runs) {
             if (run.status === AgentRunStatus.RUNNING) {
@@ -142,16 +146,54 @@ async function blockOnUnavailableHarnesses(workspace: InvestigationWorkspace): P
             }
         }
     });
-    if (workspace.getSnapshot().capability_requests.length === 0) {
+    const reason = blockedDispatchReason(blocks);
+    if (!heldBySpendCaps(blocks) && workspace.getSnapshot().capability_requests.length === 0) {
         await workspace.requestCapability({
             need: "A responsive Codex, Claude or GLM CLI with an active product subscription",
-            reason: HibernationReason.NO_HARNESS,
+            reason,
             provisioningHint:
                 "Restore a local product-subscription CLI session and retry; API billing is forbidden",
             blocking: true
         });
     }
-    await workspace.hibernate(HibernationReason.NO_HARNESS);
+    const resumeAt = dispatchResumesAt(blocks);
+    await workspace.hibernate(reason, resumeAt);
+    return { status: ResearchLoopOutcomeStatus.HIBERNATING, reason };
+}
+
+/** Nothing but the operator's own caps stopped the work, so there is nothing to ask them for. */
+function heldBySpendCaps(blocks: readonly SubscriptionBlock[]): boolean {
+    return blocks.length > 0 && blocks.every(({ kind }) => kind === SubscriptionBlockKind.WITHHELD);
+}
+
+/**
+ * What every subscription answered, under the one sentence that says what it amounts to. A preflight
+ * that found nothing carries no answers at all, which is the older and blunter way to be stopped.
+ */
+function blockedDispatchReason(blocks: readonly SubscriptionBlock[]): string {
+    if (blocks.length === 0) {
+        return HibernationReason.NO_HARNESS;
+    }
+    const headline = heldBySpendCaps(blocks)
+        ? HibernationReason.SPEND_CAP
+        : HibernationReason.NO_HARNESS;
+    const answers = blocks.map(({ harness, reason }) => `${harness} — ${reason}`).join("; ");
+    return `${headline}: ${answers}`;
+}
+
+/**
+ * When the first of the blocked subscriptions is worth asking again. One of them coming back is
+ * enough to research on, so the earliest wins, and the margin keeps the investigation from waking
+ * onto a reading taken before the reset it is waiting for.
+ */
+function dispatchResumesAt(blocks: readonly SubscriptionBlock[]): string | undefined {
+    const returns = blocks
+        .flatMap(({ returnsAt }) => (returnsAt === undefined ? [] : [Date.parse(returnsAt)]))
+        .filter((instant) => !Number.isNaN(instant));
+    if (returns.length === 0) {
+        return undefined;
+    }
+    return new Date(Math.max(Math.min(...returns), Date.now()) + RESUME_MARGIN_MS).toISOString();
 }
 
 async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycleResult> {
@@ -232,7 +274,7 @@ async function directorPlan(
         });
         return run.value;
     } catch (error) {
-        if (error instanceof HarnessCapabilityBlockedError || input.signal?.aborted === true) {
+        if (error instanceof DispatchBlockedError || input.signal?.aborted === true) {
             throw error;
         }
         throw new DirectorExhaustedError({ cause: error });

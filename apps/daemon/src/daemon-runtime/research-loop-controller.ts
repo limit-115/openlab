@@ -1,7 +1,10 @@
+import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
 import type { AgentHarness } from "@lab/harness/agent-harness.types";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import { RESUME_REASON, RESUME_STEP_MS } from "#src/daemon-runtime/research-loop-controller.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import type {
@@ -24,6 +27,7 @@ export class ResearchLoopController {
     #running: Promise<ResearchLoopOutcome> | undefined;
     #restartRequested = false;
     #unsubscribe: (() => void) | undefined;
+    #resumeTimer: ReturnType<typeof setTimeout> | undefined;
 
     constructor(
         workspace: InvestigationWorkspace,
@@ -43,14 +47,19 @@ export class ResearchLoopController {
         this.#settings = settings;
         this.#subscriptions = subscriptions;
         this.#unsubscribe = workspace.subscribe((event, snapshot) => {
+            if (event.type !== EventType.INVESTIGATION_STATE_CHANGED) {
+                return;
+            }
             if (
-                event.type === EventType.INVESTIGATION_STATE_CHANGED &&
                 event.payload.state === InvestigationState.RUNNING &&
                 snapshot.investigation.state === InvestigationState.RUNNING
             ) {
                 this.start();
             }
+            this.#armResume(snapshot);
         });
+        /** A daemon that went down while an investigation slept still owes it the wake-up. */
+        this.#armResume(workspace.getSnapshot());
     }
 
     start(): void {
@@ -101,6 +110,44 @@ export class ResearchLoopController {
     async close(reason: Error): Promise<void> {
         this.#unsubscribe?.();
         this.#unsubscribe = undefined;
+        this.#clearResume();
         await this.cancel(reason);
+    }
+
+    /**
+     * Holds the investigation to the moment it said it would be back. Only a sleep with a stated end
+     * carries one — a subscription window that resets — so an investigation an operator paused is
+     * left alone, and one that was woken, stopped or finished in the meantime drops its timer here
+     * rather than reviving itself out of the state the operator left it in.
+     */
+    #armResume(snapshot: StatusSnapshot): void {
+        this.#clearResume();
+        const resumeAt = snapshot.investigation.resume_at;
+        if (
+            snapshot.investigation.state !== InvestigationState.HIBERNATING ||
+            resumeAt === undefined
+        ) {
+            return;
+        }
+
+        const waitMs = Date.parse(resumeAt) - Date.now();
+        if (Number.isNaN(waitMs)) {
+            return;
+        }
+        if (waitMs <= 0) {
+            void this.#workspace.wakeIfHibernating(RESUME_REASON, WakeTrigger.ALLOWANCE);
+            return;
+        }
+        this.#resumeTimer = setTimeout(
+            () => this.#armResume(this.#workspace.getSnapshot()),
+            Math.min(waitMs, RESUME_STEP_MS)
+        );
+    }
+
+    #clearResume(): void {
+        if (this.#resumeTimer !== undefined) {
+            clearTimeout(this.#resumeTimer);
+            this.#resumeTimer = undefined;
+        }
     }
 }

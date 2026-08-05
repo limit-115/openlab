@@ -193,6 +193,27 @@ describe("InvestigationWorkspace", () => {
         expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
     });
 
+    it("dates a sleep the lab will end by itself, and drops the date once it has", async () => {
+        const workspace = await createWorkspace();
+        const resumeAt = "2026-08-09T13:55:53.000Z";
+
+        await workspace.hibernate("Every subscription is at its cap", resumeAt);
+        expect(workspace.getSnapshot().investigation.resume_at).toBe(resumeAt);
+
+        await workspace.wakeIfHibernating("The subscriptions are back", WakeTrigger.ALLOWANCE);
+
+        expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
+        expect(workspace.getSnapshot().investigation.resume_at).toBeUndefined();
+    });
+
+    it("leaves a sleep nobody can date waiting for a person", async () => {
+        const workspace = await createWorkspace();
+
+        await workspace.hibernate("The director has nowhere else to look");
+
+        expect(workspace.getSnapshot().investigation.resume_at).toBeUndefined();
+    });
+
     it("wakes a hibernating investigation on the operator answer", async () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({

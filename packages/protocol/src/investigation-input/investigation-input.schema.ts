@@ -12,7 +12,13 @@ export const InvestigationRequestSchema = z.object({
     context: z.array(z.string()).default([]),
     success_criteria: z.array(z.string()).default([]),
     /** The harnesses this investigation may dispatch to, rotated in the order they are given. */
-    harness_kinds: z.array(z.enum(AgentHarnessKind)).nonempty().optional()
+    harness_kinds: z.array(z.enum(AgentHarnessKind)).nonempty().optional(),
+    /**
+     * Spends the subscriptions as far as their vendors will serve them, past the caps the lab is
+     * held to everywhere else. It is the operator's override for one investigation that matters
+     * more than the allowance it is spending, so it is off until they say otherwise.
+     */
+    spend_past_caps: z.boolean().default(false)
 });
 
 /**

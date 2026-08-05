@@ -260,6 +260,7 @@ export class InvestigationWorkspace {
             (draft) => {
                 transitionInvestigationState(draft.investigation.state, state, context);
                 draft.investigation.state = state;
+                delete draft.investigation.resume_at;
                 if (reason === undefined) {
                     delete draft.investigation.reason;
                 } else {
@@ -273,8 +274,12 @@ export class InvestigationWorkspace {
         return mutation.snapshot;
     }
 
-    /** Puts the investigation to sleep once its bets are spent, or once nothing can run it. */
-    async hibernate(reason: string): Promise<StatusSnapshot> {
+    /**
+     * Puts the investigation to sleep once its bets are spent, or once nothing can run it. A wait
+     * that has a stated end — a subscription window that resets — carries the moment it comes back,
+     * and the investigation takes itself up again then; a sleep nobody can date waits for a person.
+     */
+    async hibernate(reason: string, resumeAt?: string): Promise<StatusSnapshot> {
         const reportPath = path.join(this.runDirectory, WorkspaceFile.REPORT);
         await writeFileAtomic(
             reportPath,
@@ -282,7 +287,11 @@ export class InvestigationWorkspace {
         );
         const mutation = await this.mutateWithEvent(
             EventType.INVESTIGATION_STATE_CHANGED,
-            { state: InvestigationState.HIBERNATING, reason },
+            {
+                state: InvestigationState.HIBERNATING,
+                reason,
+                ...(resumeAt === undefined ? {} : { resume_at: resumeAt })
+            },
             (draft) => {
                 transitionInvestigationState(
                     draft.investigation.state,
@@ -290,6 +299,11 @@ export class InvestigationWorkspace {
                 );
                 draft.investigation.state = InvestigationState.HIBERNATING;
                 draft.investigation.reason = reason;
+                if (resumeAt === undefined) {
+                    delete draft.investigation.resume_at;
+                } else {
+                    draft.investigation.resume_at = resumeAt;
+                }
                 draft.result = { summary: reason, report_path: reportPath, limitations: [] };
             }
         );
@@ -297,7 +311,10 @@ export class InvestigationWorkspace {
             throw new Error("Investigation hibernation was unexpectedly skipped");
         }
         await this.appendEvent(EventType.REPORT_GENERATED, { report_path: reportPath });
-        await this.appendEvent(EventType.INVESTIGATION_HIBERNATED, { reason });
+        await this.appendEvent(EventType.INVESTIGATION_HIBERNATED, {
+            reason,
+            ...(resumeAt === undefined ? {} : { resume_at: resumeAt })
+        });
         return mutation.snapshot;
     }
 
@@ -416,7 +433,13 @@ export class InvestigationWorkspace {
         return accepted;
     }
 
-    private async wakeIfHibernating(reason: string, wakeTrigger: WakeTrigger): Promise<void> {
+    /**
+     * Puts a sleeping investigation back to work, and does nothing to one that is awake, stopped or
+     * finished. Whatever revived it — an answered capability, a subscription window that reset —
+     * arrives asynchronously and may well arrive after the operator has moved the run somewhere
+     * else, so the state is checked inside the mutation rather than before it.
+     */
+    async wakeIfHibernating(reason: string, wakeTrigger: WakeTrigger): Promise<void> {
         await this.mutateWithEvent(
             EventType.INVESTIGATION_STATE_CHANGED,
             { state: InvestigationState.RUNNING, reason, wake_trigger: wakeTrigger },
@@ -431,6 +454,7 @@ export class InvestigationWorkspace {
                 );
                 draft.investigation.state = InvestigationState.RUNNING;
                 draft.investigation.reason = reason;
+                delete draft.investigation.resume_at;
                 return WorkspaceMutationAction.COMMIT;
             }
         );
