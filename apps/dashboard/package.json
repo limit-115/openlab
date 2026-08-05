@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "license": "Apache-2.0",
-    "description": "Local observer dashboard for NightLab",
+    "description": "Local observer dashboard for OpenLab",
     "type": "module",
     "files": [
         "dist"

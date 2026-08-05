@@ -6,8 +6,8 @@
  * nothing an operator put there themselves.
  */
 export const PathEntryMarker = {
-    OPENS: "# >>> NightLab installer >>>",
-    CLOSES: "# <<< NightLab installer <<<"
+    OPENS: "# >>> OpenLab installer >>>",
+    CLOSES: "# <<< OpenLab installer <<<"
 } as const;
 
 /**

@@ -33,7 +33,7 @@ async function buildRelease(): Promise<void> {
     await rm(OUTPUT, { recursive: true, force: true });
     await mkdir(OUTPUT, { recursive: true });
 
-    report(`NightLab ${version}, ${targets.length} target(s)`);
+    report(`OpenLab ${version}, ${targets.length} target(s)`);
     await buildDashboard();
 
     const artifacts: Partial<Record<ReleaseTarget, ReleaseArtifact>> = {};

@@ -1,7 +1,7 @@
 @echo off
-:: NightLab installer for Windows, for a plain command prompt.
+:: OpenLab installer for Windows, for a plain command prompt.
 ::
-::     curl -fsSL https://get.nightlab.dev/install.cmd -o install.cmd && install.cmd && del install.cmd
+::     curl -fsSL https://get.openlab.dev/install.cmd -o install.cmd && install.cmd && del install.cmd
 ::
 :: A command prompt has no way to verify a download or read a manifest, and writing one here would
 :: mean a second installer to keep honest. So this hands straight over to install.ps1, which is the
@@ -9,7 +9,7 @@
 :: make this possible.
 setlocal
 
-if "%OPENLAB_BASE_URL%"=="" set "OPENLAB_BASE_URL=https://get.nightlab.dev"
+if "%OPENLAB_BASE_URL%"=="" set "OPENLAB_BASE_URL=https://get.openlab.dev"
 
 where powershell >nul 2>&1
 if errorlevel 1 (

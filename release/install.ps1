@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Installs NightLab, a local autonomous research lab.
+    Installs OpenLab, a local autonomous research lab.
 
 .DESCRIPTION
     Run it the way it is meant to be run:
 
-        irm https://get.nightlab.dev/install.ps1 | iex
+        irm https://get.openlab.dev/install.ps1 | iex
 
     The script works out the platform, reads the release manifest, verifies what it downloaded
     against the digest the manifest states, and hands over to the lab's own `install`. Where a
@@ -29,7 +29,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$BaseUrl = if ($env:OPENLAB_BASE_URL) { $env:OPENLAB_BASE_URL } else { 'https://get.nightlab.dev' }
+$BaseUrl = if ($env:OPENLAB_BASE_URL) { $env:OPENLAB_BASE_URL } else { 'https://get.openlab.dev' }
 
 function Write-Step([string]$Message) {
     Write-Host $Message
@@ -48,7 +48,7 @@ function Get-Platform {
     switch ($architecture) {
         'X64' { return 'windows-x64' }
         'Arm64' { return 'windows-x64' }
-        default { Stop-Install "NightLab has no Windows build for $architecture." }
+        default { Stop-Install "OpenLab has no Windows build for $architecture." }
     }
 }
 
@@ -84,7 +84,7 @@ if (-not $Version) {
     }
 }
 
-Write-Step "NightLab $Version for $platform"
+Write-Step "OpenLab $Version for $platform"
 
 $manifest = Get-Text "$BaseUrl/$Version/manifest.json" | ConvertFrom-Json
 $artifact = $manifest.artifacts.$platform

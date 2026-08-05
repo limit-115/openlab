@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { NightLabMark } from "#src/brand/nightlab-mark";
+import { OpenLabMark } from "#src/brand/openlab-mark";
 import { CENTER_STATE, CENTER_STATE_MARK } from "#src/connection-screen/connection-screen.const";
 import { CONNECTION_SCREEN_NAMESPACE } from "#src/connection-screen/connection-screen.i18n";
 import {
@@ -20,7 +20,7 @@ export function LoadingDashboard() {
             <Empty>
                 <EmptyHeader>
                     <EmptyMedia>
-                        <NightLabMark className={CENTER_STATE_MARK} />
+                        <OpenLabMark className={CENTER_STATE_MARK} />
                     </EmptyMedia>
                     <EmptyTitle>{t("loadingTitle")}</EmptyTitle>
                     <EmptyDescription>{t("loadingDescription")}</EmptyDescription>

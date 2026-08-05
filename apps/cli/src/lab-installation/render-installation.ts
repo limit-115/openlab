@@ -10,7 +10,7 @@ import type { UninstallOutcome } from "#src/lab-installation/uninstall-lab";
  */
 export function renderInstallOutcome(outcome: InstallOutcome): string {
     const lines = [
-        `NightLab ${outcome.version} installed`,
+        `OpenLab ${outcome.version} installed`,
         `  program   ${outcome.versionDirectory}`,
         `  command   ${outcome.launcher}`
     ];
@@ -74,11 +74,11 @@ export function renderInstallationReport(report: InstallationReport): string {
 /** What an uninstall took, and the one thing it deliberately did not. */
 export function renderUninstallOutcome(outcome: UninstallOutcome): string {
     if (!outcome.wasInstalled) {
-        return "Nothing to uninstall: no NightLab installation was recorded here.";
+        return "Nothing to uninstall: no OpenLab installation was recorded here.";
     }
 
     const lines = [
-        "NightLab uninstalled",
+        "OpenLab uninstalled",
         ...outcome.removed.map((entry) => `  removed   ${entry}`)
     ];
     for (const file of outcome.pathFilesCleared) {

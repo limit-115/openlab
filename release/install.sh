@@ -1,7 +1,7 @@
 #!/bin/sh
-# NightLab installer for macOS and Linux.
+# OpenLab installer for macOS and Linux.
 #
-#   curl -fsSL https://get.nightlab.dev/install.sh | sh
+#   curl -fsSL https://get.openlab.dev/install.sh | sh
 #
 # This script does four things and then gets out of the way: work out the platform, read the
 # release manifest, verify what it downloaded against the digest the manifest states, and hand over
@@ -13,7 +13,7 @@
 
 set -eu
 
-OPENLAB_BASE_URL="${OPENLAB_BASE_URL:-https://get.nightlab.dev}"
+OPENLAB_BASE_URL="${OPENLAB_BASE_URL:-https://get.openlab.dev}"
 
 main() {
     version="${OPENLAB_VERSION:-}"
@@ -36,7 +36,7 @@ main() {
         [ -n "$version" ] || fail "Could not read the current version from $OPENLAB_BASE_URL/latest"
     fi
 
-    say "NightLab $version for $platform"
+    say "OpenLab $version for $platform"
 
     manifest="$(fetch "$OPENLAB_BASE_URL/$version/manifest.json")"
     archive_name="$(manifest_field "$manifest" "$platform" file)"
@@ -78,9 +78,9 @@ Nothing was installed. This is worth reporting rather than retrying."
 
 usage() {
     cat <<'USAGE'
-Install NightLab, a local autonomous research lab.
+Install OpenLab, a local autonomous research lab.
 
-    curl -fsSL https://get.nightlab.dev/install.sh | sh
+    curl -fsSL https://get.openlab.dev/install.sh | sh
 
 Options:
     --version <version>   install a named version instead of the current one
@@ -102,13 +102,13 @@ detect_platform() {
     case "$os" in
         Darwin) os="darwin" ;;
         Linux) os="linux" ;;
-        *) fail "NightLab has no build for $os. It runs on macOS and Linux; on Windows use install.ps1." ;;
+        *) fail "OpenLab has no build for $os. It runs on macOS and Linux; on Windows use install.ps1." ;;
     esac
 
     case "$arch" in
         x86_64|amd64) arch="x64" ;;
         arm64|aarch64) arch="arm64" ;;
-        *) fail "NightLab has no build for $arch." ;;
+        *) fail "OpenLab has no build for $arch." ;;
     esac
 
     # An Intel binary running under Rosetta reports x86_64 on a machine that would rather have the

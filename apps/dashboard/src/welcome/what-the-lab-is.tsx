@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { NightLabLockup } from "#src/brand/nightlab-lockup";
+import { OpenLabLockup } from "#src/brand/openlab-lockup";
 import {
     WELCOME_CYCLE,
     WELCOME_HEADING,
@@ -24,7 +24,7 @@ export function WhatTheLabIs() {
     return (
         <>
             <div className={WELCOME_HEADING}>
-                <NightLabLockup />
+                <OpenLabLockup />
                 <h1 className={WELCOME_TITLE}>{t("title")}</h1>
             </div>
             <p className={WELCOME_LEAD}>{t("lead")}</p>

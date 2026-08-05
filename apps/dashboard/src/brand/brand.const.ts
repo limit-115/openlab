@@ -1,9 +1,9 @@
 /**
  * The lab is called this in every language, the way a piece of software is called what it is. It is
- * written this way wherever a person reads it; the machine-readable spelling is `nightlab`, and it
+ * written this way wherever a person reads it; the machine-readable spelling is `openlab`, and it
  * belongs to the package name and the command, not to anything drawn on a screen.
  */
-export const LAB_NAME = "NightLab" as const;
+export const LAB_NAME = "OpenLab" as const;
 
 /**
  * The mark beside the name, at the one size the dashboard shows it. The brand pack states the

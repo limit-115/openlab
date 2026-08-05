@@ -3,7 +3,7 @@ import type * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, useMatch } from "react-router";
 import { LAB_NAME } from "#src/brand/brand.const";
-import { NightLabMark } from "#src/brand/nightlab-mark";
+import { OpenLabMark } from "#src/brand/openlab-mark";
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import {
     Sidebar,
@@ -37,7 +37,7 @@ export function LabSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link to={LabRoute.ROSTER}>
-                                <NightLabMark className={SIDEBAR_MARK} decorative />
+                                <OpenLabMark className={SIDEBAR_MARK} decorative />
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="font-medium">{LAB_NAME}</span>
                                     <span className="text-sm">{t("subtitle")}</span>

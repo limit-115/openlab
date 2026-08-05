@@ -4,7 +4,7 @@ import {
     BRAND_LOCKUP_WORD,
     LAB_NAME
 } from "#src/brand/brand.const";
-import { NightLabMark } from "#src/brand/nightlab-mark";
+import { OpenLabMark } from "#src/brand/openlab-mark";
 
 /**
  * The mark beside the name, built from the mark and live text rather than from the pack's lockup
@@ -15,10 +15,10 @@ import { NightLabMark } from "#src/brand/nightlab-mark";
  * Both halves are one colour, which is how the pack draws it: the lockup takes `currentColor` from
  * whatever it stands in.
  */
-export function NightLabLockup() {
+export function OpenLabLockup() {
     return (
         <span className={BRAND_LOCKUP}>
-            <NightLabMark className={BRAND_LOCKUP_MARK} decorative />
+            <OpenLabMark className={BRAND_LOCKUP_MARK} decorative />
             <span className={BRAND_LOCKUP_WORD}>{LAB_NAME}</span>
         </span>
     );

@@ -1,6 +1,6 @@
 import { LAB_NAME } from "#src/brand/brand.const";
 
-interface NightLabMarkProps {
+interface OpenLabMarkProps {
     className?: string;
     /**
      * Set where the name already stands beside the mark as text. The two are one thing to the eye
@@ -18,7 +18,7 @@ interface NightLabMarkProps {
  * flask stay one indivisible mark. Do not swap it for `<FlaskConicalIcon />`: the icon's stroke is
  * scaled here to sit with the frame, and the imported component's is not.
  */
-export function NightLabMark({ className, decorative = false }: NightLabMarkProps) {
+export function OpenLabMark({ className, decorative = false }: OpenLabMarkProps) {
     return (
         <svg
             viewBox="0 0 64 64"
