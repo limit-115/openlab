@@ -57,9 +57,10 @@ function AccordionTrigger({
 }
 
 /**
- * The panel an item opens onto. The registry pins this to the height Radix measured as it opened,
- * which quietly clips whatever the panel grows by afterwards; an open panel here holds controls that
- * reveal further controls, so it is left to size itself and only the closed state is a height of 0.
+ * The panel an item opens onto. Two things the registry does to it are dropped here: it pinned the
+ * panel to the height Radix measured as it opened, which clips whatever the panel grows by
+ * afterwards, and it spaced descendant paragraphs by margin, which a panel laid out with gap counts
+ * twice. Both assume the panel holds prose; these ones hold controls that reveal further controls.
  */
 function AccordionContent({
     className,
@@ -74,7 +75,7 @@ function AccordionContent({
         >
             <div
                 className={cn(
-                    "pt-0 pb-4 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+                    "pt-0 pb-4 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground",
                     className
                 )}
             >
