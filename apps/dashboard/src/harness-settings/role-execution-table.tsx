@@ -60,11 +60,11 @@ export function RoleExecutionTable({
     return (
         <Card className={ROLE_CARD}>
             <CardHeader>
-                <CardTitle>{t("roles")}</CardTitle>
+                <CardTitle>{t("models")}</CardTitle>
                 <CardDescription>{t("modelHint")}</CardDescription>
             </CardHeader>
             <CardContent className={ROLE_TABLE_CONTENT}>
-                <Table className={ROLE_TABLE} aria-label={t("roles")}>
+                <Table className={ROLE_TABLE} aria-label={t("models")}>
                     <TableHeader>
                         <TableRow>
                             <TableHead>{t("roleColumn")}</TableHead>

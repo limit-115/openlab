@@ -13,7 +13,7 @@ export const HARNESS_SETTINGS_EN = {
         "What a new investigation starts on. It rotates through them in this order, and an investigation that named its own roster keeps it.",
     rosterRequired: "Choose at least one harness to dispatch to.",
 
-    roles: "Roles",
+    models: "Models",
     roleColumn: "Role",
     [AgentRole.DIRECTOR]: "Director",
     [AgentRole.RESEARCHER]: "Researcher",
@@ -50,7 +50,7 @@ export const HARNESS_SETTINGS_RU = {
         "На чём стартует новое исследование. Оно перебирает оболочки в этом порядке, а исследование, назвавшее свой состав, сохраняет его.",
     rosterRequired: "Выберите хотя бы одну оболочку для запуска.",
 
-    roles: "Роли",
+    models: "Модели",
     roleColumn: "Роль",
     [AgentRole.DIRECTOR]: "Директор",
     [AgentRole.RESEARCHER]: "Исследователь",
