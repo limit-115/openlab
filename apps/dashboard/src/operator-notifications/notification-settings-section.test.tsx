@@ -1,8 +1,11 @@
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
-import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
+import {
+    NotificationChannelKind,
+    NotificationLanguage
+} from "@lab/protocol/operator-notifications/notification-channel.const";
 import { NotificationSettingsViewSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -78,14 +81,43 @@ function sentChannel(request: ReturnType<typeof respond>): Record<string, unknow
     return channel;
 }
 
+function saveButton(): HTMLElement {
+    return screen.getByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.save });
+}
+
 async function save() {
-    await userEvent.click(screen.getByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.save }));
+    await userEvent.click(saveButton());
+}
+
+/** The channel folds away, so anything set on it is reached by opening it first. */
+async function openChannel() {
+    await userEvent.click(
+        await screen.findByRole("button", {
+            name: new RegExp(OPERATOR_NOTIFICATIONS_EN[NotificationChannelKind.TELEGRAM])
+        })
+    );
+}
+
+/**
+ * One of the two fields carrying this label. The lab's own settings open the page and a channel's
+ * own sit inside it, and both offer exactly the same choices — that is what disagreeing means — so
+ * a query that did not say which of them it meant would answer with either.
+ */
+async function labField(label: string) {
+    const [lab] = await screen.findAllByRole("group", { name: label });
+    return within(lab as HTMLElement);
+}
+
+async function channelField(label: string) {
+    const fields = await screen.findAllByRole("group", { name: label });
+    return within(fields[fields.length - 1] as HTMLElement);
 }
 
 describe("NotificationSettingsSection", () => {
     it("says a token is stored rather than putting it back on the page", async () => {
         respond();
         renderSection();
+        await openChannel();
 
         const token = await screen.findByLabelText<HTMLInputElement>(
             OPERATOR_NOTIFICATIONS_EN.botToken
@@ -97,6 +129,7 @@ describe("NotificationSettingsSection", () => {
     it("names no token when the operator retyped none, so the lab keeps the one it holds", async () => {
         const request = respond();
         renderSection();
+        await openChannel();
 
         await userEvent.type(await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "234");
         await save();
@@ -124,19 +157,78 @@ describe("NotificationSettingsSection", () => {
         });
     });
 
-    it("drops a moment the operator unticked out of what it sends", async () => {
+    it("drops a moment the operator unticked out of what the lab reports", async () => {
         const request = respond();
         renderSection();
 
+        const moments = await labField(OPERATOR_NOTIFICATIONS_EN.moments);
         await userEvent.click(
-            await screen.findByRole("checkbox", {
+            moments.getByRole("checkbox", {
                 name: OPERATOR_NOTIFICATIONS_EN[EventType.INVESTIGATION_HIBERNATED]
             })
         );
         await save();
 
-        expect(sentChannel(request).events).not.toContain(EventType.INVESTIGATION_HIBERNATED);
-        expect(sentChannel(request).events).toContain(EventType.BREAKTHROUGH_RECORDED);
+        const { events } = sentSettings(request).defaults as { events: string[] };
+        expect(events).not.toContain(EventType.INVESTIGATION_HIBERNATED);
+        expect(events).toContain(EventType.BREAKTHROUGH_RECORDED);
+    });
+
+    /** A channel with nothing of its own is the ordinary one, and it must stay that way on save. */
+    it("names neither the moments nor the language of a channel that follows the lab", async () => {
+        const request = respond();
+        renderSection();
+        await openChannel();
+
+        await userEvent.type(await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "234");
+        await save();
+
+        expect(sentChannel(request)).not.toHaveProperty("events");
+        expect(sentChannel(request)).not.toHaveProperty("language");
+    });
+
+    it("shows what the lab reports for a channel that has not disagreed, rather than a control", async () => {
+        respond({
+            read: NotificationSettingsViewSchema.parse({
+                defaults: { events: [EventType.BREAKTHROUGH_RECORDED] },
+                channels: [
+                    {
+                        kind: NotificationChannelKind.TELEGRAM,
+                        enabled: true,
+                        chat_id: "-1001",
+                        bot_token_set: true
+                    }
+                ]
+            })
+        });
+        renderSection();
+        await openChannel();
+
+        const moments = await channelField(OPERATOR_NOTIFICATIONS_EN.moments);
+        expect(
+            moments.getByText(OPERATOR_NOTIFICATIONS_EN[EventType.BREAKTHROUGH_RECORDED])
+        ).toBeInTheDocument();
+        expect(moments.queryAllByRole("checkbox")).toEqual([]);
+    });
+
+    it("sends only the question a channel took over, on the answer the operator gave it", async () => {
+        const request = respond();
+        renderSection();
+        await openChannel();
+
+        const language = await channelField(OPERATOR_NOTIFICATIONS_EN.language);
+        await userEvent.click(
+            language.getByRole("switch", { name: OPERATOR_NOTIFICATIONS_EN.followsLab })
+        );
+        await userEvent.click(
+            language.getByRole("radio", {
+                name: OPERATOR_NOTIFICATIONS_EN[NotificationLanguage.RU]
+            })
+        );
+        await save();
+
+        expect(sentChannel(request)).toMatchObject({ language: NotificationLanguage.RU });
+        expect(sentChannel(request)).not.toHaveProperty("events");
     });
 
     it("refuses to send a channel with no bot to write to the chat as", async () => {
@@ -148,23 +240,28 @@ describe("NotificationSettingsSection", () => {
             "-1002"
         );
 
-        expect(screen.getByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.save })).toBeDisabled();
+        expect(saveButton()).toBeDisabled();
     });
 
-    it("offers no save while the page holds exactly what the lab is reporting by", async () => {
+    /** A control that vanishes once the settings are in leaves the operator hunting for it. */
+    it("keeps the save on the page while there is nothing to save, and disables it", async () => {
         respond();
         renderSection();
+        await openChannel();
 
         await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId);
 
-        expect(
-            screen.queryByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.save })
-        ).not.toBeInTheDocument();
+        expect(saveButton()).toBeDisabled();
+
+        await userEvent.type(screen.getByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "234");
+
+        expect(saveButton()).toBeEnabled();
     });
 
     it("shows what the lab stored rather than what was typed into the page", async () => {
         respond({ read: CONFIGURED, written: NOTHING_CONFIGURED });
         renderSection();
+        await openChannel();
 
         await userEvent.type(await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "234");
         await save();
@@ -177,6 +274,7 @@ describe("NotificationSettingsSection", () => {
     it("holds the test back while the page is ahead of the lab, and says why", async () => {
         respond();
         renderSection();
+        await openChannel();
 
         await userEvent.type(await screen.findByLabelText(OPERATOR_NOTIFICATIONS_EN.chatId), "234");
 
@@ -193,6 +291,7 @@ describe("NotificationSettingsSection", () => {
             }
         });
         renderSection();
+        await openChannel();
 
         await userEvent.click(
             await screen.findByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.test })
@@ -204,6 +303,7 @@ describe("NotificationSettingsSection", () => {
     it("says the lab reached the operator when it did", async () => {
         respond({ test: { kind: NotificationChannelKind.TELEGRAM, delivered: true } });
         renderSection();
+        await openChannel();
 
         await userEvent.click(
             await screen.findByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.test })

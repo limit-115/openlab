@@ -6,21 +6,35 @@ import type {
 } from "@lab/protocol/operator-notifications/notification-settings.types";
 
 /**
+ * What the lab reports, and in what language, wherever a channel did not answer for itself. These
+ * are the settings the operator meets first, because setting up a second recipient is usually about
+ * where a message goes rather than about disagreeing over what is worth sending.
+ */
+export interface NotificationDefaultsDraft {
+    readonly events: readonly NotifiableEventType[];
+    readonly language: NotificationLanguage;
+}
+
+/**
  * One Telegram channel while the operator is still filling it in. Every field is allowed to be
  * empty here and nowhere else: an emptied chat is a step on the way to another one, and only saving
  * asks the lab to accept it. The token is what the operator has typed now rather than what the lab
  * holds, so an empty one means "keep the stored one" exactly as it does on the wire.
+ *
+ * An undefined moment list or language is the channel following the lab rather than a channel with
+ * nothing to say, which is why neither is filled in with today's answer while it is being edited.
  */
 export interface TelegramChannelDraft {
     readonly enabled: boolean;
-    readonly events: readonly NotifiableEventType[];
-    readonly language: NotificationLanguage;
+    readonly events: readonly NotifiableEventType[] | undefined;
+    readonly language: NotificationLanguage | undefined;
     readonly botToken: string;
     readonly botTokenStored: boolean;
     readonly chatId: string;
 }
 
 export interface NotificationSettingsDraft {
+    readonly defaults: NotificationDefaultsDraft;
     readonly telegram: TelegramChannelDraft;
 }
 

@@ -1,8 +1,10 @@
+import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
 import type { NotificationSettingsView } from "@lab/protocol/operator-notifications/notification-settings.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Accordion } from "#src/design-system/accordion";
 import { Button } from "#src/design-system/button";
 import { Spinner } from "#src/design-system/spinner";
 import {
@@ -11,14 +13,16 @@ import {
     saveNotificationSettings
 } from "#src/operator-notifications/notification-settings-client";
 import {
-    changeTelegram,
-    chooseMoment,
     draftFromSettings,
     hasUnsavedEdits,
+    isConfigured,
     isSubmittable,
     settingsSubmission
 } from "#src/operator-notifications/notification-settings-draft";
 import {
+    CHANNELS_HEADING,
+    CHANNELS_TITLE,
+    FIELD_HINT,
     NOTIFICATIONS_ACTIONS,
     NOTIFICATIONS_FAILURE,
     NOTIFICATIONS_FORM,
@@ -30,7 +34,8 @@ import type {
     NotificationSettingsDraft,
     NotificationSettingsEdit
 } from "#src/operator-notifications/operator-notifications.types";
-import { TelegramChannelCard } from "#src/operator-notifications/telegram-channel-card";
+import { SharedReportSettings } from "#src/operator-notifications/shared-report-settings";
+import { TelegramChannelItem } from "#src/operator-notifications/telegram-channel-item";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 
@@ -112,33 +117,50 @@ export function NotificationSettingsSection() {
                     save.mutate(draft);
                 }}
             >
-                <TelegramChannelCard
-                    telegram={draft.telegram}
-                    unsaved={unsaved}
-                    change={(next) => change(changeTelegram(draft, next))}
-                    chooseMoment={(moment, chosen) => change(chooseMoment(draft, moment, chosen))}
-                />
+                <SharedReportSettings draft={draft} change={change} />
 
-                {unsaved ? (
-                    <div className={NOTIFICATIONS_ACTIONS}>
-                        {save.isError ? (
-                            <p role="alert" className={NOTIFICATIONS_FAILURE}>
-                                {t("saveFailure")}
-                            </p>
-                        ) : null}
-                        <Button type="submit" disabled={save.isPending || !isSubmittable(draft)}>
-                            {save.isPending ? <Spinner aria-hidden="true" /> : null}
-                            {save.isPending ? t("saving") : t("save")}
-                        </Button>
-                    </div>
-                ) : null}
+                <div className={CHANNELS_HEADING}>
+                    <h3 className={CHANNELS_TITLE}>{t("channelsTitle")}</h3>
+                    <p className={FIELD_HINT}>{t("channelsDescription")}</p>
+                </div>
 
-                {save.isSuccess ? (
-                    <p className={NOTIFICATIONS_SAVED}>
-                        <CheckIcon aria-hidden="true" />
-                        {t("saved")}
-                    </p>
-                ) : null}
+                {/* A channel nobody has set up yet is opened for them: there is nothing to fold away. */}
+                <Accordion
+                    type="multiple"
+                    defaultValue={
+                        isConfigured(draft.telegram) ? [] : [NotificationChannelKind.TELEGRAM]
+                    }
+                >
+                    <TelegramChannelItem draft={draft} change={change} unsaved={unsaved} />
+                </Accordion>
+
+                {/*
+                 * The control is on the page whether or not it can be used. It is the answer to
+                 * "have my changes gone in", and a control that disappears once they have leaves
+                 * the operator hunting for something that was never missing.
+                 */}
+                <div className={NOTIFICATIONS_ACTIONS}>
+                    {save.isError ? (
+                        <p role="alert" className={NOTIFICATIONS_FAILURE}>
+                            {t("saveFailure")}
+                        </p>
+                    ) : null}
+
+                    {save.isSuccess ? (
+                        <p className={NOTIFICATIONS_SAVED}>
+                            <CheckIcon aria-hidden="true" />
+                            {t("saved")}
+                        </p>
+                    ) : null}
+
+                    <Button
+                        type="submit"
+                        disabled={!unsaved || save.isPending || !isSubmittable(draft)}
+                    >
+                        {save.isPending ? <Spinner aria-hidden="true" /> : null}
+                        {save.isPending ? t("saving") : t("save")}
+                    </Button>
+                </div>
             </form>
         </Panel>
     );

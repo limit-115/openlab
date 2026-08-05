@@ -12,6 +12,17 @@ export const OPERATOR_NOTIFICATIONS_EN = {
     description:
         "Who the lab tells when something needs you. Research runs for hours, so the moments listed here are the ones worth leaving this page for.",
 
+    sharedTitle: "What the lab reports",
+    sharedDescription:
+        "Every channel below reports this, unless it says otherwise for itself. Change it here and each channel that never disagreed follows.",
+
+    channelsTitle: "Channels",
+    channelsDescription: "Where the lab sends what it decided to report. Open one to set it up.",
+
+    followsLab: "As the lab reports",
+    ownMoments: "Own moments",
+    ownLanguage: "Own language",
+
     [NotificationChannelKind.TELEGRAM]: "Telegram",
     telegramDescription:
         "A bot of your own writes to one chat. Create it with @BotFather, then start a chat with it or add it to a group before the lab can write there.",
@@ -64,6 +75,18 @@ export const OPERATOR_NOTIFICATIONS_RU = {
     title: "Уведомления",
     description:
         "Кому лаборатория сообщает, когда вы ей нужны. Исследование идёт часами, поэтому здесь перечислено только то, ради чего стоит уйти с этой страницы.",
+
+    sharedTitle: "О чём сообщает лаборатория",
+    sharedDescription:
+        "Так сообщает каждый канал ниже, если он не решил иначе. Измените это здесь — и за вами последует каждый канал, который не возражал.",
+
+    channelsTitle: "Каналы",
+    channelsDescription:
+        "Куда лаборатория отправляет то, о чём решила сообщить. Раскройте канал, чтобы настроить его.",
+
+    followsLab: "Как у лаборатории",
+    ownMoments: "Свои поводы",
+    ownLanguage: "Свой язык",
 
     [NotificationChannelKind.TELEGRAM]: "Telegram",
     telegramDescription:

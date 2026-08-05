@@ -1,11 +1,12 @@
 import type { NotifiableEventType } from "@lab/protocol/operator-notifications/notifiable-event.const";
+import { CheckIcon } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "#src/design-system/checkbox";
 import { cn } from "#src/design-system/class-names";
 import {
-    FIELD,
-    FIELD_LABEL,
+    FOLLOWED_MOMENT,
+    FOLLOWED_SETTING,
     MOMENT_OPTION,
     MOMENT_OPTION_CHOSEN,
     MOMENT_OPTIONS,
@@ -14,22 +15,21 @@ import {
 } from "#src/operator-notifications/operator-notifications.const";
 import { OPERATOR_NOTIFICATIONS_NAMESPACE } from "#src/operator-notifications/operator-notifications.i18n";
 
-interface ReportedMomentsFieldProps {
+interface ReportedMomentsOptionsProps {
     moments: readonly NotifiableEventType[];
     choose: (moment: NotifiableEventType, chosen: boolean) => void;
 }
 
 /**
- * Which of the lab's moments this channel is told about. The whole row is the target rather than
- * the box in it, so a moment is chosen by clicking the sentence that describes it.
+ * Which of the lab's moments are reported. The whole row is the target rather than the box in it,
+ * so a moment is chosen by clicking the sentence that describes it.
  */
-export function ReportedMomentsField({ moments, choose }: ReportedMomentsFieldProps) {
+export function ReportedMomentsOptions({ moments, choose }: ReportedMomentsOptionsProps) {
     const { t } = useTranslation(OPERATOR_NOTIFICATIONS_NAMESPACE);
     const fieldId = useId();
 
     return (
-        <fieldset className={FIELD}>
-            <legend className={FIELD_LABEL}>{t("moments")}</legend>
+        <>
             <ul className={MOMENT_OPTIONS}>
                 {REPORTABLE_MOMENTS.map((moment) => (
                     <li key={moment}>
@@ -55,6 +55,26 @@ export function ReportedMomentsField({ moments, choose }: ReportedMomentsFieldPr
                     {t("momentsRequired")}
                 </p>
             ) : null}
-        </fieldset>
+        </>
+    );
+}
+
+/**
+ * The moments a channel is being told about by the lab rather than by itself. They are listed in
+ * full rather than counted: the operator is reading them to decide whether to disagree, and a
+ * channel that would go quiet about something has to be able to say so before it does.
+ */
+export function FollowedMoments({ moments }: { moments: readonly NotifiableEventType[] }) {
+    const { t } = useTranslation(OPERATOR_NOTIFICATIONS_NAMESPACE);
+
+    return (
+        <ul className={FOLLOWED_SETTING}>
+            {moments.map((moment) => (
+                <li key={moment} className={FOLLOWED_MOMENT}>
+                    <CheckIcon aria-hidden="true" />
+                    {t(moment)}
+                </li>
+            ))}
+        </ul>
     );
 }
