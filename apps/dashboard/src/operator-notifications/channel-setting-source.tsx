@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "#src/design-system/button";
 import {
     SETTING_SOURCE,
+    SETTING_SOURCE_ACTION,
     SETTING_SOURCE_STATE
 } from "#src/operator-notifications/operator-notifications.const";
 import { OPERATOR_NOTIFICATIONS_NAMESPACE } from "#src/operator-notifications/operator-notifications.i18n";
@@ -26,7 +27,13 @@ export function ChannelSettingSource({ follows, choose }: ChannelSettingSourcePr
     return (
         <span className={SETTING_SOURCE}>
             {follows ? <span className={SETTING_SOURCE_STATE}>{t("followsLab")}</span> : null}
-            <Button type="button" variant="link" size="xs" onClick={() => choose(!follows)}>
+            <Button
+                type="button"
+                variant="link"
+                size="xs"
+                className={SETTING_SOURCE_ACTION}
+                onClick={() => choose(!follows)}
+            >
                 {t(follows ? "setForChannel" : "followLab")}
             </Button>
         </span>

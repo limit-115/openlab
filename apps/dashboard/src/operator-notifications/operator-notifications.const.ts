@@ -125,8 +125,16 @@ export const FIELD_HINT = "max-w-3xl text-sm text-muted-foreground" as const;
  * named by what it does, because two channels' worth of identical switches say nothing about which
  * question either of them answers.
  */
-export const SETTING_SOURCE = "flex flex-wrap items-center gap-x-1 gap-y-1" as const;
+export const SETTING_SOURCE = "flex flex-wrap items-center gap-x-3 gap-y-1" as const;
 export const SETTING_SOURCE_STATE = "text-sm font-normal text-muted-foreground" as const;
+
+/**
+ * The move away is a word in the label's line rather than a control parked on it, so it is given the
+ * line's own height and none of a button's padding. A button box standing taller than the words it
+ * sits among is invisible and still spends the room: it sets the height of the whole heading, which
+ * pushes the label off the spacing every other field on the page keeps to its own control.
+ */
+export const SETTING_SOURCE_ACTION = "h-5 px-0" as const;
 
 /**
  * What the lab is answering on the channel's behalf, shown in full rather than counted: the
