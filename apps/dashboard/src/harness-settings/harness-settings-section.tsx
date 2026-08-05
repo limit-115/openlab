@@ -20,17 +20,17 @@ import type {
     LabSettingsEdit
 } from "#src/harness-settings/harness-settings.types";
 import {
-    fetchLabSettings,
-    labSettingsQueryKey,
-    saveLabSettings
-} from "#src/harness-settings/harness-settings-client";
-import {
     chooseHarness,
     chooseRoleEffort,
     chooseRoleModel,
     hasUnsavedEdits
 } from "#src/harness-settings/harness-settings-draft";
 import { RoleExecutionTable } from "#src/harness-settings/role-execution-table";
+import {
+    fetchLabSettings,
+    labSettingsQueryKey,
+    saveLabSettings
+} from "#src/lab-configuration/lab-settings-client";
 import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 

@@ -8,10 +8,6 @@ import { Checkbox } from "#src/design-system/checkbox";
 import { Spinner } from "#src/design-system/spinner";
 import { Textarea } from "#src/design-system/textarea";
 import {
-    fetchLabSettings,
-    labSettingsQueryKey
-} from "#src/harness-settings/harness-settings-client";
-import {
     FORM,
     FORM_FAILURE,
     FORM_FIELD,
@@ -26,6 +22,7 @@ import {
 } from "#src/investigation-roster/investigation-roster.const";
 import { INVESTIGATION_ROSTER_NAMESPACE } from "#src/investigation-roster/investigation-roster.i18n";
 import type { NewInvestigation } from "#src/investigation-roster/investigation-roster.types";
+import { fetchLabSettings, labSettingsQueryKey } from "#src/lab-configuration/lab-settings-client";
 
 interface NewInvestigationFormProps {
     start: (investigation: NewInvestigation) => void;

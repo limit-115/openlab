@@ -1,6 +1,8 @@
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
 import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
-import { LAB_SETTINGS_ENDPOINT } from "#src/harness-settings/harness-settings.const";
+
+/** The one address the whole settings document is read from and written back to. */
+const LAB_SETTINGS_ENDPOINT = "/api/settings";
 
 export const labSettingsQueryKey = ["lab", "settings"] as const;
 

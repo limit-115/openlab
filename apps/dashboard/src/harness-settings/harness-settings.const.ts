@@ -1,8 +1,6 @@
 import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 
-export const LAB_SETTINGS_ENDPOINT = "/api/settings";
-
 /** Every harness the lab can run, in the order the rotation follows when they are all chosen. */
 export const SELECTABLE_HARNESSES = Object.values(AgentHarnessKind);
 
