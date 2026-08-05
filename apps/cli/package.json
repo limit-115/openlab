@@ -3,6 +3,16 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "files": [
+        "dist",
+        "bin"
+    ],
+    "publishConfig": {
+        "imports": {
+            "#bin/*": "./bin/*",
+            "#src/*": "./dist/*.js"
+        }
+    },
     "bin": {
         "lab": "./bin/lab.js"
     },
@@ -14,6 +24,7 @@
         "#src/*": "./src/*.ts"
     },
     "scripts": {
+        "build": "tsc -p tsconfig.build.json",
         "start": "node src/main.ts",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run --passWithNoTests",

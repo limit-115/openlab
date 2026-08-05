@@ -3,6 +3,24 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "exports": {
+            "./notification-channel.types": "./dist/notification-channel/notification-channel.types.js",
+            "./notification-delivery-error": "./dist/notification-channel/notification-delivery-error.js",
+            "./notification-delivery-error.const": "./dist/notification-channel/notification-delivery-error.const.js",
+            "./notification-message.types": "./dist/notification-channel/notification-message.types.js",
+            "./telegram-bot-channel": "./dist/telegram-bot/telegram-bot-channel.js",
+            "./telegram-bot-channel.const": "./dist/telegram-bot/telegram-bot-channel.const.js",
+            "./telegram-bot-channel.types": "./dist/telegram-bot/telegram-bot-channel.types.js",
+            "./telegram-bot-conversation": "./dist/telegram-bot/telegram-bot-conversation.js"
+        },
+        "imports": {
+            "#src/*": "./dist/*.js"
+        }
+    },
     "exports": {
         "./notification-channel.types": "./src/notification-channel/notification-channel.types.ts",
         "./notification-delivery-error": "./src/notification-channel/notification-delivery-error.ts",
@@ -17,6 +35,7 @@
         "#src/*": "./src/*.ts"
     },
     "scripts": {
+        "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",
         "lint": "biome lint .",

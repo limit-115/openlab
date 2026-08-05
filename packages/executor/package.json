@@ -3,6 +3,20 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "exports": {
+            "./constants": "./dist/constants.js",
+            "./errors": "./dist/errors.js",
+            "./run": "./dist/run.js",
+            "./types": "./dist/types.js"
+        },
+        "imports": {
+            "#src/*": "./dist/*.js"
+        }
+    },
     "exports": {
         "./constants": "./src/constants.ts",
         "./errors": "./src/errors.ts",
@@ -13,6 +27,7 @@
         "#src/*": "./src/*.ts"
     },
     "scripts": {
+        "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",
         "lint": "biome lint .",

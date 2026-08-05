@@ -3,6 +3,28 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "files": [
+        "dist",
+        "migrations"
+    ],
+    "publishConfig": {
+        "exports": {
+            "./lab-database/lab-database-client": "./dist/lab-database/lab-database-client.js",
+            "./lab-database/lab-schema": "./dist/lab-database/lab-schema.js",
+            "./lab-database/lab-schema-migration": "./dist/lab-database/lab-schema-migration.js",
+            "./investigations/investigation-repository": "./dist/investigations/investigation-repository.js",
+            "./lab-settings/lab-settings-repository": "./dist/lab-settings/lab-settings-repository.js",
+            "./operator-notifications/notification-settings-repository": "./dist/operator-notifications/notification-settings-repository.js",
+            "./investigations/investigation-repository.types": "./dist/investigations/investigation-repository.types.js",
+            "./runtime/incompatible-checkpoint": "./dist/runtime/incompatible-checkpoint.js",
+            "./runtime/runtime-persistence": "./dist/runtime/runtime-persistence.js",
+            "./runtime/runtime-persistence.types": "./dist/runtime/runtime-persistence.types.js",
+            "./runtime/runtime-revision-conflict": "./dist/runtime/runtime-revision-conflict.js"
+        },
+        "imports": {
+            "#src/*": "./dist/*.js"
+        }
+    },
     "exports": {
         "./lab-database/lab-database-client": "./src/lab-database/lab-database-client.ts",
         "./lab-database/lab-schema": "./src/lab-database/lab-schema.ts",
@@ -21,6 +43,7 @@
         "#src/*": "./src/*.ts"
     },
     "scripts": {
+        "build": "tsc -p tsconfig.build.json",
         "db:generate": "drizzle-kit generate",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",

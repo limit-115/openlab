@@ -1,0 +1,19 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": false,
+        "declaration": true,
+        "outDir": "dist",
+        "rootDir": "src",
+        "allowImportingTsExtensions": false,
+        "rewriteRelativeImportExtensions": false
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.fixture.ts",
+        "**/test-support/**",
+        "src/lab-database/test-database.ts"
+    ]
+}

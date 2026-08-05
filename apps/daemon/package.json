@@ -3,6 +3,21 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "exports": {
+            "./lab-home/lab-home": "./dist/lab-home/lab-home.js",
+            "./lab-home/lab-home.types": "./dist/lab-home/lab-home.types.js",
+            "./run-purge/run-purge": "./dist/run-purge/run-purge.js",
+            "./run-purge/run-purge.types": "./dist/run-purge/run-purge.types.js",
+            "./server": "./dist/daemon-runtime/daemon-startup.js"
+        },
+        "imports": {
+            "#src/*": "./dist/*.js"
+        }
+    },
     "exports": {
         "./lab-home/lab-home": "./src/lab-home/lab-home.ts",
         "./lab-home/lab-home.types": "./src/lab-home/lab-home.types.ts",
@@ -14,6 +29,7 @@
         "#src/*": "./src/*.ts"
     },
     "scripts": {
+        "build": "tsc -p tsconfig.build.json",
         "start": "node src/main.ts",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run --passWithNoTests",

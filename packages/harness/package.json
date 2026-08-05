@@ -3,6 +3,43 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "exports": {
+            "./agent-harness.const": "./dist/agent-harness/agent-harness.const.js",
+            "./agent-harness.types": "./dist/agent-harness/agent-harness.types.js",
+            "./claude-cli.const": "./dist/claude-cli/claude-cli.const.js",
+            "./claude-harness": "./dist/claude-cli/claude-harness.js",
+            "./cli-process-runner": "./dist/cli-execution/cli-process-runner.js",
+            "./cli-process-runner.types": "./dist/cli-execution/cli-process-runner.types.js",
+            "./codex-cli.const": "./dist/codex-cli/codex-cli.const.js",
+            "./codex-harness": "./dist/codex-cli/codex-harness.js",
+            "./glm-cli.const": "./dist/glm-cli/glm-cli.const.js",
+            "./glm-harness": "./dist/glm-cli/glm-harness.js",
+            "./glm-harness.types": "./dist/glm-cli/glm-harness.types.js",
+            "./harness-error": "./dist/cli-execution/harness-error.js",
+            "./harness-error.const": "./dist/cli-execution/harness-error.const.js",
+            "./harness-event-parser.types": "./dist/agent-harness/harness-event-parser.types.js",
+            "./harness-run-artifacts.const": "./dist/subscription-cli-harness/harness-run-artifacts.const.js",
+            "./harness-run-outcome": "./dist/subscription-cli-harness/harness-run-outcome.js",
+            "./harness-run-outcome.types": "./dist/subscription-cli-harness/harness-run-outcome.types.js",
+            "./harness-event.const": "./dist/agent-harness/harness-event.const.js",
+            "./harness-event.types": "./dist/agent-harness/harness-event.types.js",
+            "./response-schema": "./dist/subscription-cli-harness/response-schema.js",
+            "./subscription-cli-harness": "./dist/subscription-cli-harness/subscription-cli-harness.js",
+            "./subscription-cli-harness.types": "./dist/subscription-cli-harness/subscription-cli-harness.types.js",
+            "./subscription-allowance": "./dist/subscription-allowance/subscription-allowance.js",
+            "./subscription-allowance.types": "./dist/subscription-allowance/subscription-allowance.types.js",
+            "./subscription-environment": "./dist/cli-execution/subscription-environment.js",
+            "./subscription-usage-limit": "./dist/subscription-usage-limit/subscription-usage-limit.js",
+            "./subscription-usage-limit.const": "./dist/subscription-usage-limit/subscription-usage-limit.const.js"
+        },
+        "imports": {
+            "#src/*": "./dist/*.js"
+        }
+    },
     "exports": {
         "./agent-harness.const": "./src/agent-harness/agent-harness.const.ts",
         "./agent-harness.types": "./src/agent-harness/agent-harness.types.ts",
@@ -36,6 +73,7 @@
         "#src/*": "./src/*.ts"
     },
     "scripts": {
+        "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",
         "lint": "biome lint .",

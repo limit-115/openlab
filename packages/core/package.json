@@ -3,6 +3,20 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "exports": {
+            "./investigation-lifecycle/investigation-state-transitions": "./dist/investigation-lifecycle/investigation-state-transitions.js",
+            "./investigation-lifecycle/investigation-state-transitions.const": "./dist/investigation-lifecycle/investigation-state-transitions.const.js",
+            "./investigation-lifecycle/investigation-state-transitions.types": "./dist/investigation-lifecycle/investigation-state-transitions.types.js",
+            "./investigation-lifecycle/wake-trigger.const": "./dist/investigation-lifecycle/wake-trigger.const.js"
+        },
+        "imports": {
+            "#src/*": "./dist/*.js"
+        }
+    },
     "exports": {
         "./investigation-lifecycle/investigation-state-transitions": "./src/investigation-lifecycle/investigation-state-transitions.ts",
         "./investigation-lifecycle/investigation-state-transitions.const": "./src/investigation-lifecycle/investigation-state-transitions.const.ts",
@@ -13,6 +27,7 @@
         "#src/*": "./src/*.ts"
     },
     "scripts": {
+        "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",
         "lint": "biome lint .",
