@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NightLab — brand pack</title>
+<style>
+    :root { color-scheme: light dark; --bg: #f4f4f7; --ink: #09090b; --muted: #63646f; --rule: #d8d8e0; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0f0f13; --ink: #fafafa; --muted: #9899a6; --rule: #2e2f3a; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 48px 24px 80px; background: var(--bg); color: var(--ink);
+        font: 16px/1.55 system-ui, sans-serif; }
+    main { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px; }
+    section { display: flex; flex-direction: column; gap: 14px; }
+    h1 { font-size: 40px; margin: 0; }
+    h2 { font-size: 21px; margin: 0; border-top: 2px solid var(--ink); padding-top: 14px; }
+    p { color: var(--muted); max-width: 68ch; margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px;
+        background: var(--rule); border: 1px solid var(--rule); }
+    .grid.c1 { grid-template-columns: 1fr; }
+    .grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 760px) { .grid, .grid.c4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    /* Every asset sits on the ground it was made for, never on the page's own theme. */
+    .tile { margin: 0; padding: 24px 18px 16px; display: flex; flex-direction: column;
+        align-items: center; justify-content: space-between; gap: 16px; background: #fff; color: #52525b; }
+    .tile.ink { background: #09090b; color: #a1a1ac; }
+    /* The self-switching files follow the reader's theme, so their tile must too. */
+    .tile.auto { background: #fff; color: #52525b; }
+    @media (prefers-color-scheme: dark) { .tile.auto { background: #09090b; color: #a1a1ac; } }
+    .tile.brand { background: #1447e6; color: #cfd8ff; }
+    .tile img { max-width: 100%; height: auto; }
+    .tile.sq img { width: 92px; height: 92px; }
+    .tile.true img { image-rendering: pixelated; }
+    figcaption { font-size: 13px; text-align: center; word-break: break-all; display: flex;
+        flex-direction: column; gap: 3px; }
+    .note { font-size: 12px; opacity: 0.75; word-break: normal; }
+    .wide { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<main>
+    <header>
+        <h1>NightLab</h1>
+        <p>Everything in this pack, at a glance. Generated from one geometry — see README.md.</p>
+    </header>
+
+    <section>
+        <h2>Mark</h2>
+        <p>Each file below sits on the ground it was made for, whatever theme you are reading this in.
+           The dark ground leads here on purpose: the product is called NightLab, and that is the ground
+           it will be seen on most.</p>
+        <div class="grid">
+        <figure class="tile sq auto"><img src="svg/nightlab-mark.svg" alt="nightlab-mark.svg" /><figcaption>nightlab-mark.svg<span class="note">switches itself</span></figcaption></figure>
+        <figure class="tile sq"><img src="svg/nightlab-mark-dark.svg" alt="nightlab-mark-dark.svg" /><figcaption>nightlab-mark-dark.svg<span class="note">for light grounds</span></figcaption></figure>
+        <figure class="tile sq ink"><img src="svg/nightlab-mark-light.svg" alt="nightlab-mark-light.svg" /><figcaption>nightlab-mark-light.svg<span class="note">for dark grounds</span></figcaption></figure>
+        <figure class="tile sq"><img src="svg/nightlab-mark-accent.svg" alt="nightlab-mark-accent.svg" /><figcaption>nightlab-mark-accent.svg<span class="note">brand colour</span></figcaption></figure>
+        <figure class="tile sq brand"><img src="svg/nightlab-mark-light.svg" alt="nightlab-mark-light.svg" /><figcaption>nightlab-mark-light.svg<span class="note">knocked out of the accent</span></figcaption></figure>
+        <figure class="tile sq auto"><img src="svg/nightlab-mark-dense.svg" alt="nightlab-mark-dense.svg" /><figcaption>nightlab-mark-dense.svg<span class="note">20px and below</span></figcaption></figure>
+        </div>
+    </section>
+
+    <section>
+        <h2>Lockups</h2>
+        <div class="grid c1">
+        <figure class="tile wide"><img src="svg/nightlab-lockup.svg" alt="nightlab-lockup.svg" /><figcaption>nightlab-lockup.svg<span class="note">271&times;64</span></figcaption></figure>
+        <figure class="tile ink wide"><img src="svg/nightlab-lockup-light.svg" alt="nightlab-lockup-light.svg" /><figcaption>nightlab-lockup-light.svg<span class="note">same lockup, for dark grounds</span></figcaption></figure>
+        <figure class="tile wide"><img src="svg/nightlab-lockup-stacked.svg" alt="nightlab-lockup-stacked.svg" /><figcaption>nightlab-lockup-stacked.svg<span class="note">204&times;119, for square spaces</span></figcaption></figure>
+        </div>
+    </section>
+
+    <section>
+        <h2>At true size</h2>
+        <p>Shown at the pixel sizes they ship at, not scaled up. The three favicons are the dense contour; the 64px one is the regular.</p>
+        <div class="grid c4">
+        <figure class="tile true"><img src="favicon/favicon-16.png" alt="favicon-16.png" /><figcaption>favicon-16.png<span class="note">dense</span></figcaption></figure>
+        <figure class="tile true"><img src="favicon/favicon-32.png" alt="favicon-32.png" /><figcaption>favicon-32.png<span class="note">dense</span></figcaption></figure>
+        <figure class="tile true"><img src="favicon/favicon-48.png" alt="favicon-48.png" /><figcaption>favicon-48.png<span class="note">dense</span></figcaption></figure>
+        <figure class="tile true"><img src="png/nightlab-mark-64.png" alt="nightlab-mark-64.png" /><figcaption>nightlab-mark-64.png<span class="note">regular</span></figcaption></figure>
+        </div>
+    </section>
+
+    <section>
+        <h2>Raster</h2>
+        <div class="grid c4">
+        <figure class="tile sq"><img src="png/nightlab-mark-512.png" alt="nightlab-mark-512.png" /><figcaption>nightlab-mark-512.png<span class="note">avatars, wherever SVG is refused</span></figcaption></figure>
+        <figure class="tile sq ink"><img src="png/nightlab-mark-light-512.png" alt="nightlab-mark-light-512.png" /><figcaption>nightlab-mark-light-512.png<span class="note">for dark grounds</span></figcaption></figure>
+        <figure class="tile sq"><img src="png/nightlab-mark-accent-512.png" alt="nightlab-mark-accent-512.png" /><figcaption>nightlab-mark-accent-512.png<span class="note">brand colour</span></figcaption></figure>
+        <figure class="tile sq"><img src="png/apple-touch-icon-180.png" alt="apple-touch-icon-180.png" /><figcaption>apple-touch-icon-180.png<span class="note">iOS home screen</span></figcaption></figure>
+        <figure class="tile wide"><img src="png/social-preview-1280x640.png" alt="social-preview-1280x640.png" /><figcaption>social-preview-1280x640.png<span class="note">GitHub social preview</span></figcaption></figure>
+        </div>
+    </section>
+</main>
+</body>
+</html>
