@@ -91,7 +91,7 @@ describe("InvestigationShell", () => {
 
         await user.click(screen.getByRole("button", { name: "Copy the provisioning command" }));
         expect(writeText).toHaveBeenLastCalledWith(
-            `lab answer ${statusFixture.capability_requests[0]?.id} <answer>`
+            `nightlab answer ${statusFixture.capability_requests[0]?.id} <answer>`
         );
     });
 
