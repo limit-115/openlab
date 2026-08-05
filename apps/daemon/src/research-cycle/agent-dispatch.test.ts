@@ -90,7 +90,7 @@ async function agentWorkspace(role: AgentRole): Promise<AgentWorkspace> {
         id: `${role}-000`,
         role,
         cwd,
-        artifactDirectory: path.join(cwd, ".nightlab-artifacts")
+        artifactDirectory: path.join(cwd, ".openlab-artifacts")
     };
 }
 

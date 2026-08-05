@@ -9,7 +9,7 @@
 :: make this possible.
 setlocal
 
-if "%NIGHTLAB_BASE_URL%"=="" set "NIGHTLAB_BASE_URL=https://get.nightlab.dev"
+if "%OPENLAB_BASE_URL%"=="" set "OPENLAB_BASE_URL=https://get.nightlab.dev"
 
 where powershell >nul 2>&1
 if errorlevel 1 (
@@ -22,6 +22,6 @@ if errorlevel 1 (
 :: Bypass for this one process only, which is what lets the script run on a default Windows without
 :: changing a machine-wide setting on the operator's behalf.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$ErrorActionPreference='Stop'; iex (irm '%NIGHTLAB_BASE_URL%/install.ps1')" %*
+    "$ErrorActionPreference='Stop'; iex (irm '%OPENLAB_BASE_URL%/install.ps1')" %*
 
 exit /b %ERRORLEVEL%

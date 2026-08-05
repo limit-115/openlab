@@ -137,7 +137,7 @@ describe("InvestigationWorkspace", () => {
         ).toEqual(workspace.input);
     });
 
-    it("refuses to reopen a run directory outside NIGHTLAB_HOME", async () => {
+    it("refuses to reopen a run directory outside OPENLAB_HOME", async () => {
         const workspace = await createWorkspace("Escape the home");
         const workspaceRoot = workspaceRootOf(workspace);
         const escaped = {
@@ -147,7 +147,7 @@ describe("InvestigationWorkspace", () => {
 
         await expect(
             InvestigationWorkspace.open(workspaceRoot, escaped, readOnlyPersistence())
-        ).rejects.toThrow("escapes NIGHTLAB_HOME");
+        ).rejects.toThrow("escapes OPENLAB_HOME");
     });
 
     it("deduplicates open capability requests", async () => {

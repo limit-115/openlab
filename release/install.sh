@@ -13,10 +13,10 @@
 
 set -eu
 
-NIGHTLAB_BASE_URL="${NIGHTLAB_BASE_URL:-https://get.nightlab.dev}"
+OPENLAB_BASE_URL="${OPENLAB_BASE_URL:-https://get.nightlab.dev}"
 
 main() {
-    version="${NIGHTLAB_VERSION:-}"
+    version="${OPENLAB_VERSION:-}"
     modify_path=1
 
     while [ $# -gt 0 ]; do
@@ -32,13 +32,13 @@ main() {
     platform="$(detect_platform)"
 
     if [ -z "$version" ]; then
-        version="$(fetch "$NIGHTLAB_BASE_URL/latest" | tr -d '[:space:]')"
-        [ -n "$version" ] || fail "Could not read the current version from $NIGHTLAB_BASE_URL/latest"
+        version="$(fetch "$OPENLAB_BASE_URL/latest" | tr -d '[:space:]')"
+        [ -n "$version" ] || fail "Could not read the current version from $OPENLAB_BASE_URL/latest"
     fi
 
     say "NightLab $version for $platform"
 
-    manifest="$(fetch "$NIGHTLAB_BASE_URL/$version/manifest.json")"
+    manifest="$(fetch "$OPENLAB_BASE_URL/$version/manifest.json")"
     archive_name="$(manifest_field "$manifest" "$platform" file)"
     expected="$(manifest_field "$manifest" "$platform" sha256)"
 
@@ -53,7 +53,7 @@ main() {
 
     archive="$workspace/$archive_name"
     say "downloading $archive_name"
-    download "$NIGHTLAB_BASE_URL/$version/$archive_name" "$archive"
+    download "$OPENLAB_BASE_URL/$version/$archive_name" "$archive"
 
     actual="$(digest_of "$archive")"
     [ "$actual" = "$expected" ] || fail "Checksum mismatch for $archive_name.
@@ -88,9 +88,9 @@ Options:
     -h, --help            show this
 
 Environment:
-    NIGHTLAB_VERSION      same as --version
-    NIGHTLAB_INSTALL_DIR  where the launcher goes; defaults to ~/.local/bin
-    NIGHTLAB_BASE_URL     where releases are fetched from
+    OPENLAB_VERSION      same as --version
+    OPENLAB_INSTALL_DIR  where the launcher goes; defaults to ~/.local/bin
+    OPENLAB_BASE_URL     where releases are fetched from
 USAGE
 }
 

@@ -26,12 +26,12 @@ function expandLeadingTilde(value: string): string {
  * Where this machine's lab lives. A lab belongs to an operator, not to whichever directory the
  * daemon was started in, so `openlab start` from another repository has to reach the same runs.
  *
- * `NIGHTLAB_HOME` decides it, then the XDG data directory, then that directory's own default — which is
+ * `OPENLAB_HOME` decides it, then the XDG data directory, then that directory's own default — which is
  * the usual case, since almost nothing sets `XDG_DATA_HOME`. A relative `XDG_DATA_HOME` is ignored
  * as the specification demands, and ignoring it is what keeps a lab from being per-directory again.
  */
 export function resolveLabHome(environment: LabHomeEnvironment): string {
-    const labHome = environment.NIGHTLAB_HOME;
+    const labHome = environment.OPENLAB_HOME;
     if (labHome !== undefined) {
         return path.resolve(expandLeadingTilde(labHome));
     }

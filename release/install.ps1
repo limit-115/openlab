@@ -22,14 +22,14 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = $env:NIGHTLAB_VERSION,
+    [string]$Version = $env:OPENLAB_VERSION,
     [switch]$NoModifyPath
 )
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$BaseUrl = if ($env:NIGHTLAB_BASE_URL) { $env:NIGHTLAB_BASE_URL } else { 'https://get.nightlab.dev' }
+$BaseUrl = if ($env:OPENLAB_BASE_URL) { $env:OPENLAB_BASE_URL } else { 'https://get.nightlab.dev' }
 
 function Write-Step([string]$Message) {
     Write-Host $Message

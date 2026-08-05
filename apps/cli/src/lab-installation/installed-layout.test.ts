@@ -71,7 +71,7 @@ describe("installedPaths", () => {
 
     /** A lab is a directory an operator can copy or delete, which the program must stay out of. */
     it("keeps the program out of the lab's own home", () => {
-        const paths = installedPaths("0.1.0", { NIGHTLAB_HOME: "/data/my-lab" });
+        const paths = installedPaths("0.1.0", { OPENLAB_HOME: "/data/my-lab" });
 
         expect(paths.home.startsWith("/data/my-lab")).toBe(false);
         expect(paths.version.startsWith("/data/my-lab")).toBe(false);

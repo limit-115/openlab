@@ -7,9 +7,9 @@ describe("startupLine", () => {
         expect(
             startupLine({
                 step: DaemonStartupStep.HOME,
-                detail: "/home/operator/.local/share/nightlab"
+                detail: "/home/operator/.local/share/openlab"
             })
-        ).toContain("/home/operator/.local/share/nightlab");
+        ).toContain("/home/operator/.local/share/openlab");
     });
 
     it("names where a missing dashboard was looked for, and that the lab runs anyway", () => {

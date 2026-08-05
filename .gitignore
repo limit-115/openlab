@@ -6,7 +6,7 @@ coverage/
 .env.*
 !.env.example
 *.log
-.nightlab/
+.openlab/
 artifacts/
 release/staging/
 

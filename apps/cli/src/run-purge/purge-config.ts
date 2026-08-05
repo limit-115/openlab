@@ -10,7 +10,7 @@ export interface PurgeConfig {
 export function resolvePurgeConfig(): PurgeConfig {
     const environment = createEnv({
         server: {
-            NIGHTLAB_HOME: z.string().min(1).optional(),
+            OPENLAB_HOME: z.string().min(1).optional(),
             XDG_DATA_HOME: z.string().min(1).optional()
         },
         runtimeEnv: process.env,
