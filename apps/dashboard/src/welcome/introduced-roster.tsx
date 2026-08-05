@@ -1,7 +1,7 @@
 import { Navigate } from "react-router";
 import { InvestigationRoster } from "#src/investigation-roster/investigation-roster";
-import { WELCOME_ROUTE } from "#src/welcome/welcome.const";
 import { hasBeenIntroduced } from "#src/welcome/welcome-introduction";
+import { WELCOME_ROUTE } from "#src/welcome/welcome-steps.const";
 
 /**
  * What opening the lab shows: its investigations to somebody who knows what they are, and the
