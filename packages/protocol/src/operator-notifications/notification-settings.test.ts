@@ -22,10 +22,37 @@ describe("NotificationSettingsSchema", () => {
     });
 
     it("reports every notifiable moment, in the lab's own language, until narrowed", () => {
+        const { defaults } = NotificationSettingsSchema.parse({});
+
+        expect(defaults.events).toEqual(DEFAULT_NOTIFIED_EVENTS);
+        expect(defaults.language).toBe(DEFAULT_NOTIFICATION_LANGUAGE);
+    });
+
+    /**
+     * A channel that answered neither question has to stay unanswered rather than be filled in with
+     * today's defaults, or narrowing what the lab reports would never reach a channel again.
+     */
+    it("leaves a channel that answered neither question following the lab", () => {
         const [channel] = NotificationSettingsSchema.parse({ channels: [TELEGRAM] }).channels;
 
-        expect(channel?.events).toEqual(DEFAULT_NOTIFIED_EVENTS);
-        expect(channel?.language).toBe(DEFAULT_NOTIFICATION_LANGUAGE);
+        expect(channel?.events).toBeUndefined();
+        expect(channel?.language).toBeUndefined();
+    });
+
+    it("keeps the moments and the language the operator narrowed the lab itself to", () => {
+        const { defaults } = NotificationSettingsSchema.parse({
+            defaults: {
+                events: [EventType.BREAKTHROUGH_RECORDED],
+                language: NotificationLanguage.RU
+            }
+        });
+
+        expect(defaults.events).toEqual([EventType.BREAKTHROUGH_RECORDED]);
+        expect(defaults.language).toBe(NotificationLanguage.RU);
+    });
+
+    it("refuses a lab told to report nothing at all, which is a switch dressed as a subscription", () => {
+        expect(() => NotificationSettingsSchema.parse({ defaults: { events: [] } })).toThrow();
     });
 
     it("holds a configured channel silent until it is switched on", () => {
@@ -34,7 +61,7 @@ describe("NotificationSettingsSchema", () => {
         expect(channel?.enabled).toBe(false);
     });
 
-    it("keeps the moments and the language the operator chose for a channel", () => {
+    it("keeps the moments and the language the operator chose for one channel", () => {
         const [channel] = NotificationSettingsSchema.parse({
             channels: [
                 {

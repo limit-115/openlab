@@ -23,7 +23,10 @@ export function withoutChannelSecret(channel: NotificationChannel): Notification
 }
 
 export function withoutChannelSecrets(settings: NotificationSettings): NotificationSettingsView {
-    return { channels: settings.channels.map(withoutChannelSecret) };
+    return {
+        defaults: settings.defaults,
+        channels: settings.channels.map(withoutChannelSecret)
+    };
 }
 
 /**
@@ -36,6 +39,7 @@ export function withKeptChannelSecrets(
     stored: NotificationSettings
 ): NotificationSettings {
     return {
+        defaults: update.defaults,
         channels: update.channels.flatMap((channel) => {
             const held = stored.channels.find(({ kind }) => kind === channel.kind);
             const kept = keptChannel(channel, held);

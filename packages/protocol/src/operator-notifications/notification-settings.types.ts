@@ -3,11 +3,15 @@ import type {
     NotificationChannelSchema,
     NotificationChannelUpdateSchema,
     NotificationChannelViewSchema,
+    NotificationDefaultsSchema,
     NotificationSettingsSchema,
     NotificationSettingsUpdateSchema,
     NotificationSettingsViewSchema,
     TelegramChannelSchema
 } from "#src/operator-notifications/notification-settings.schema";
+
+/** What the lab reports, for every channel that did not answer the question for itself. */
+export type NotificationDefaults = z.infer<typeof NotificationDefaultsSchema>;
 
 export type TelegramChannel = z.infer<typeof TelegramChannelSchema>;
 

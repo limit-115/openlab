@@ -14,20 +14,37 @@ function distinct(values: readonly string[]): boolean {
     return new Set(values).size === values.length;
 }
 
+/** A choice among the moments the lab offers, which is never the empty one. */
+function reportedEvents(emptied: string) {
+    return z
+        .array(z.enum(NOTIFIABLE_EVENT_TYPES))
+        .nonempty(emptied)
+        .refine(distinct, NotificationSettingsRefusal.DUPLICATE_EVENT);
+}
+
 /**
- * What every channel is set with, whichever vendor carries the message. A channel decides for
- * itself which moments it reports and which language it reports them in, because two recipients of
- * the same lab are not the same person: one may want only the breakthroughs, in Russian.
+ * What the lab reports and the language it writes in, for every channel that does not answer for
+ * itself. One recipient is the ordinary case, so these are set once here rather than copied into
+ * each channel: narrowing what the lab reports then reaches every channel that never disagreed.
+ */
+export const NotificationDefaultsSchema = z.object({
+    events: reportedEvents(NotificationSettingsRefusal.NO_DEFAULT_EVENTS).default([
+        ...DEFAULT_NOTIFIED_EVENTS
+    ]),
+    language: z.enum(NotificationLanguage).default(DEFAULT_NOTIFICATION_LANGUAGE)
+});
+
+/**
+ * What every channel is set with, whichever vendor carries the message. A channel may answer either
+ * question for itself, because two recipients of the same lab are not the same person: one may want
+ * only the breakthroughs, in Russian. Leaving one unanswered is not silence about it — it is the
+ * channel taking the lab's own answer, and going on taking it as that answer changes.
  */
 const NOTIFICATION_CHANNEL_FIELDS = {
     /** Configured and silent is a real answer, so a channel is switched rather than deleted. */
     enabled: z.boolean().default(false),
-    events: z
-        .array(z.enum(NOTIFIABLE_EVENT_TYPES))
-        .nonempty(NotificationSettingsRefusal.NO_EVENTS)
-        .refine(distinct, NotificationSettingsRefusal.DUPLICATE_EVENT)
-        .default([...DEFAULT_NOTIFIED_EVENTS]),
-    language: z.enum(NotificationLanguage).default(DEFAULT_NOTIFICATION_LANGUAGE)
+    events: reportedEvents(NotificationSettingsRefusal.NO_EVENTS).optional(),
+    language: z.enum(NotificationLanguage).optional()
 };
 
 /**
@@ -66,6 +83,8 @@ function channelDocument<Channel extends z.ZodType<{ kind: NotificationChannelKi
     channel: Channel
 ) {
     return z.object({
+        /** What the channels below report, except where one of them says otherwise for itself. */
+        defaults: NotificationDefaultsSchema.prefault({}),
         /**
          * Only the channels the operator has actually configured. A vendor the lab could talk to
          * and one it has been given credentials for are different things, and the difference is

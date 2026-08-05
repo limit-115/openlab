@@ -14,5 +14,6 @@ export const DEFAULT_NOTIFICATION_LANGUAGE = NotificationLanguage.EN;
 export const NotificationSettingsRefusal = {
     DUPLICATE_CHANNEL: "A channel is configured once",
     DUPLICATE_EVENT: "An event is reported once per channel",
-    NO_EVENTS: "A channel reports at least one event"
+    NO_DEFAULT_EVENTS: "The lab reports at least one event",
+    NO_EVENTS: "A channel answering for itself reports at least one event"
 } as const;

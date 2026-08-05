@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "#src/investigation-events/event-type.const";
-import { NotificationChannelKind } from "#src/operator-notifications/notification-channel.const";
+import {
+    NotificationChannelKind,
+    NotificationLanguage
+} from "#src/operator-notifications/notification-channel.const";
 import {
     withKeptChannelSecrets,
     withoutChannelSecrets
@@ -10,13 +13,17 @@ import {
     NotificationSettingsUpdateSchema
 } from "#src/operator-notifications/notification-settings.schema";
 
+const NOTHING_STORED = NotificationSettingsSchema.parse({});
+
 const STORED = NotificationSettingsSchema.parse({
+    defaults: { language: NotificationLanguage.RU },
     channels: [
         {
             kind: NotificationChannelKind.TELEGRAM,
             enabled: true,
             bot_token: "1234:secret",
-            chat_id: "-1001"
+            chat_id: "-1001",
+            language: NotificationLanguage.EN
         }
     ]
 });
@@ -28,12 +35,16 @@ describe("withoutChannelSecrets", () => {
         expect(served).toEqual({
             kind: NotificationChannelKind.TELEGRAM,
             enabled: true,
-            events: STORED.channels[0]?.events,
-            language: STORED.channels[0]?.language,
+            language: NotificationLanguage.EN,
             chat_id: "-1001",
             bot_token_set: true
         });
         expect(JSON.stringify(served)).not.toContain("1234:secret");
+    });
+
+    /** Without these the page could not say what a channel following the lab actually reports. */
+    it("serves what the lab reports for the channels that answer no such question", () => {
+        expect(withoutChannelSecrets(STORED).defaults).toEqual(STORED.defaults);
     });
 });
 
@@ -81,12 +92,28 @@ describe("withKeptChannelSecrets", () => {
             channels: [{ kind: NotificationChannelKind.TELEGRAM, enabled: true, chat_id: "-1003" }]
         });
 
-        expect(withKeptChannelSecrets(update, { channels: [] }).channels).toEqual([]);
+        expect(withKeptChannelSecrets(update, NOTHING_STORED).channels).toEqual([]);
     });
 
     it("forgets a channel the operator removed, token and all", () => {
         const update = NotificationSettingsUpdateSchema.parse({ channels: [] });
 
         expect(withKeptChannelSecrets(update, STORED).channels).toEqual([]);
+    });
+
+    /** The secrets are the only thing the page was not shown, so they are the only thing kept. */
+    it("takes what the operator narrowed the lab itself to over what it was reporting", () => {
+        const update = NotificationSettingsUpdateSchema.parse({
+            defaults: {
+                events: [EventType.BREAKTHROUGH_RECORDED],
+                language: NotificationLanguage.EN
+            },
+            channels: []
+        });
+
+        expect(withKeptChannelSecrets(update, STORED).defaults).toEqual({
+            events: [EventType.BREAKTHROUGH_RECORDED],
+            language: NotificationLanguage.EN
+        });
     });
 });
