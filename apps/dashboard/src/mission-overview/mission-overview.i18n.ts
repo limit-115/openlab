@@ -9,7 +9,9 @@ export const MISSION_OVERVIEW_NAMESPACE = "mission-overview" as const;
 export const MISSION_OVERVIEW_EN = {
     betsLive_one: "{{live}} of {{count}} bet still live",
     betsLive_other: "{{live}} of {{count}} bets still live",
-    updated: "Updated {{at}}"
+    updated: "Updated {{at}}",
+    /** Only a sleep the lab set itself a date for carries one, so it is a promise rather than a guess. */
+    resumes: "Back at work {{at}}"
 };
 
 export const MISSION_OVERVIEW_RU = {
@@ -17,5 +19,6 @@ export const MISSION_OVERVIEW_RU = {
     betsLive_few: "{{live}} из {{count}} ставок ещё в игре",
     betsLive_many: "{{live}} из {{count}} ставок ещё в игре",
     betsLive_other: "{{live}} из {{count}} ставок ещё в игре",
-    updated: "Обновлено {{at}}"
+    updated: "Обновлено {{at}}",
+    resumes: "Вернётся к работе {{at}}"
 } satisfies Translated<typeof MISSION_OVERVIEW_EN>;

@@ -43,6 +43,11 @@ export function MissionOverview({ snapshot }: MissionOverviewProps) {
                     <span>
                         {t("updated", { at: formatDate(snapshot.investigation.updated_at) })}
                     </span>
+                    {snapshot.investigation.resume_at === undefined ? null : (
+                        <span>
+                            {t("resumes", { at: formatDate(snapshot.investigation.resume_at) })}
+                        </span>
+                    )}
                 </p>
             </div>
 
