@@ -4,7 +4,11 @@ import {
     fetchHarnessReadiness,
     harnessReadinessQueryKey
 } from "#src/harness-setup/harness-readiness-client";
-import { HarnessReadinessList, hasReadyHarness } from "#src/harness-setup/harness-readiness-list";
+import {
+    everyHarnessReady,
+    HarnessReadinessList,
+    hasReadyHarness
+} from "#src/harness-setup/harness-readiness-list";
 import {
     HARNESS_CHECK_INTERVAL_MS,
     HARNESS_SETUP_NOTE,
@@ -28,7 +32,9 @@ export function HarnessSetupStep() {
         queryKey: harnessReadinessQueryKey,
         queryFn: ({ signal }) => fetchHarnessReadiness(signal),
         retry: false,
-        refetchInterval: HARNESS_CHECK_INTERVAL_MS,
+        /** A check launches every CLI on the machine, so it stops once no card can still turn over. */
+        refetchInterval: ({ state }) =>
+            everyHarnessReady(state.data) ? false : HARNESS_CHECK_INTERVAL_MS,
         refetchOnWindowFocus: true
     });
     const ready = hasReadyHarness(harnesses.data);

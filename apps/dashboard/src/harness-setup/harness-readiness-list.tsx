@@ -15,6 +15,16 @@ export function hasReadyHarness(roster: HarnessReadinessRoster | undefined): boo
     return roster?.some(({ state }) => state === HarnessReadinessState.READY) ?? false;
 }
 
+/**
+ * Whether there is anything left to watch for. Each check launches every CLI on the machine, which
+ * is worth doing while a card might still turn over and worth nothing once none of them can.
+ */
+export function everyHarnessReady(roster: HarnessReadinessRoster | undefined): boolean {
+    return (
+        roster !== undefined && roster.every(({ state }) => state === HarnessReadinessState.READY)
+    );
+}
+
 interface HarnessReadinessListProps {
     /** Absent while the CLIs have not answered yet, which is a state of its own and not an empty list. */
     harnesses: HarnessReadinessRoster | undefined;
