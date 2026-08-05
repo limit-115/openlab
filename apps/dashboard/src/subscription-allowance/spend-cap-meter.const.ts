@@ -1,5 +1,9 @@
-/** The smallest cap the page will set. A window nobody may spend at all is a harness left off the roster. */
-export const SPEND_CAP_MIN_PERCENT = 5;
+/**
+ * The smallest cap the page will set. At nothing at all the window is already past its cap however
+ * little is spent, so the limiter dragged to the floor holds the subscription outright: an operator
+ * takes a harness off the roster on the same meter they trim it on.
+ */
+export const SPEND_CAP_MIN_PERCENT = 0;
 
 /** Caps land on whole percent, which is the finest a percentage reading has, so the handle follows the drag. */
 export const SPEND_CAP_STEP_PERCENT = 1;
