@@ -221,8 +221,10 @@ describe("NotificationSettingsSection", () => {
         await userEvent.click(
             language.getByRole("button", { name: OPERATOR_NOTIFICATIONS_EN.setForChannel })
         );
+        /** The list opens in a portal, so only the box it opens from belongs to the field. */
+        await userEvent.click(language.getByRole("combobox"));
         await userEvent.click(
-            language.getByRole("radio", {
+            await screen.findByRole("option", {
                 name: OPERATOR_NOTIFICATIONS_EN[NotificationLanguage.RU]
             })
         );

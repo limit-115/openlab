@@ -132,8 +132,11 @@ export const MOMENT_OPTION =
     "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors hover:bg-muted/50" as const;
 export const MOMENT_OPTION_CHOSEN = "border-primary/50 bg-primary/10 hover:bg-primary/15" as const;
 
-export const LANGUAGE_OPTION =
-    "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground" as const;
+/**
+ * Wide enough that the box does not resize under the name it is showing. A control that shrinks as
+ * the operator sets it reads as the page having second thoughts about the setting.
+ */
+export const LANGUAGE_TRIGGER = "min-w-44" as const;
 
 /** The test stands apart from the fields it exercises, under the rule that closes the card. */
 export const TEST_CONTROL = "flex flex-wrap items-center gap-3 border-t pt-5" as const;
