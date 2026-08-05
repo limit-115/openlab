@@ -119,15 +119,28 @@ export class ResearchLoopController {
      * of directions, stays where the operator left it.
      */
     async redispatch(reason: Error): Promise<void> {
-        const investigation = this.#workspace.getSnapshot().investigation;
-        if (investigation.state === InvestigationState.HIBERNATING) {
-            if (investigation.resume_at !== undefined) {
-                await this.#workspace.wakeIfHibernating(reason.message, WakeTrigger.USER);
-            }
+        if (this.#workspace.getSnapshot().investigation.state === InvestigationState.HIBERNATING) {
+            await this.wakeIfWaitingOnSubscriptions(reason);
             return;
         }
         await this.cancel(reason);
         this.start();
+    }
+
+    /**
+     * Gives an investigation the lab parked on its subscriptions another go at them, now rather than
+     * at the reset it was holding out for. Only a sleep the lab dated is one it took on itself: an
+     * investigation the operator paused, and one that ran out of directions, are left where they are.
+     */
+    async wakeIfWaitingOnSubscriptions(reason: Error): Promise<void> {
+        const investigation = this.#workspace.getSnapshot().investigation;
+        if (
+            investigation.state !== InvestigationState.HIBERNATING ||
+            investigation.resume_at === undefined
+        ) {
+            return;
+        }
+        await this.#workspace.wakeIfHibernating(reason.message, WakeTrigger.USER);
     }
 
     async close(reason: Error): Promise<void> {

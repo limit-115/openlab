@@ -37,6 +37,9 @@ export const InvestigationRoute = {
 /** Why the loop was given up, written where the operator reads the investigation's history. */
 export const DISPATCH_CHANGED_REASON = "The operator changed what this investigation dispatches to";
 
+/** Why an investigation is awake again, written where the operator reads its history. */
+export const SPEND_CAPS_RAISED_REASON = "The operator raised the spend caps the lab is held to";
+
 /** The named server-sent events one investigation's stream carries. */
 export const StreamEvent = {
     SNAPSHOT: "snapshot",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AgentHarnessKind } from "#src/agents/agent-execution.const";
-import { windowSpendCap, withheldWindows } from "#src/spend-caps/spend-cap";
+import { isSpendCapLoosened, windowSpendCap, withheldWindows } from "#src/spend-caps/spend-cap";
 import { SpendCapsSchema } from "#src/spend-caps/spend-cap.schema";
 import { SubscriptionAllowanceState } from "#src/subscription-allowance/subscription-allowance.const";
 import type {
@@ -87,6 +87,28 @@ describe("withheldWindows", () => {
         };
 
         expect(withheldWindows(codex, CAPS)).toEqual([]);
+    });
+});
+
+describe("isSpendCapLoosened", () => {
+    const raised = SpendCapsSchema.parse([
+        { harness: AgentHarnessKind.CLAUDE, window_minutes: FIVE_HOURS, max_used_percent: 95 },
+        { harness: AgentHarnessKind.CLAUDE, window_minutes: SEVEN_DAYS, max_used_percent: 60 }
+    ]);
+
+    it("sees a cap raised, and one handed back to the vendor's own ceiling", () => {
+        expect(isSpendCapLoosened(CAPS, raised)).toBe(true);
+        expect(isSpendCapLoosened(CAPS, [])).toBe(true);
+    });
+
+    it("leaves a tightened or unchanged cap alone, which frees nothing that was held", () => {
+        expect(isSpendCapLoosened(raised, CAPS)).toBe(false);
+        expect(isSpendCapLoosened(CAPS, CAPS)).toBe(false);
+        expect(isSpendCapLoosened([], [])).toBe(false);
+    });
+
+    it("reads a newly capped window as tighter, however far off the cap stands", () => {
+        expect(isSpendCapLoosened([], CAPS)).toBe(false);
     });
 });
 

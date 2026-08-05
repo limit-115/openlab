@@ -470,6 +470,63 @@ describe("status server", () => {
         await lab.server.close();
     });
 
+    it("puts a run sleeping on its subscriptions back to work when the caps are raised", async () => {
+        const store = new LabSettingsStore(new InMemoryLabSettings());
+        await store.write(
+            LabSettingsSchema.parse({
+                spend_caps: [
+                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+                ]
+            })
+        );
+        const lab = await createTestLab({ settings: store });
+        const held = await lab.open("Waiting on a cap");
+        const paused = await lab.open("Paused on purpose");
+        await held.workspace.hibernate(
+            "Every subscription is at its cap",
+            new Date(Date.now() + 3_600_000).toISOString()
+        );
+        await paused.workspace.hibernate("The director has nowhere else to look");
+
+        await lab.server.inject({
+            method: "PUT",
+            url: "/api/settings",
+            payload: LabSettingsSchema.parse({})
+        });
+
+        expect(held.workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
+        expect(paused.workspace.getSnapshot().investigation.state).toBe(
+            InvestigationState.HIBERNATING
+        );
+        await lab.server.close();
+    });
+
+    it("leaves a sleeping run where it is when the caps are only tightened", async () => {
+        const lab = await createTestLab({
+            settings: new LabSettingsStore(new InMemoryLabSettings())
+        });
+        const held = await lab.open("Waiting on a cap");
+        await held.workspace.hibernate(
+            "Every subscription is at its cap",
+            new Date(Date.now() + 3_600_000).toISOString()
+        );
+
+        await lab.server.inject({
+            method: "PUT",
+            url: "/api/settings",
+            payload: LabSettingsSchema.parse({
+                spend_caps: [
+                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+                ]
+            })
+        });
+
+        expect(held.workspace.getSnapshot().investigation.state).toBe(
+            InvestigationState.HIBERNATING
+        );
+        await lab.server.close();
+    });
+
     it("refuses settings the lab cannot run and keeps the ones it had", async () => {
         const lab = await createTestLab({
             settings: new LabSettingsStore(new InMemoryLabSettings())

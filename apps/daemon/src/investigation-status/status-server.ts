@@ -12,6 +12,7 @@ import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schem
 import { withoutChannelSecrets } from "@lab/protocol/operator-notifications/notification-channel-secrets";
 import { NotificationSettingsUpdateSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
 import { NotificationTestRequestSchema } from "@lab/protocol/operator-notifications/notification-test.schema";
+import { isSpendCapLoosened } from "@lab/protocol/spend-caps/spend-cap";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
@@ -23,6 +24,7 @@ import {
     InvestigationRoute,
     LabRoute,
     RosterStreamEvent,
+    SPEND_CAPS_RAISED_REASON,
     STREAM_HEADERS,
     STREAM_HEARTBEAT_MS,
     StatusServerError,
@@ -76,7 +78,17 @@ export function createStatusServer(
             if (!parsedSettings.success) {
                 return reply.code(400).send({ error: StatusServerError.INVALID_SETTINGS });
             }
-            return settings.write(parsedSettings.data);
+            const held = settings.read().spend_caps;
+            const stored = await settings.write(parsedSettings.data);
+            /**
+             * Raising a cap is the operator answering the wait of everything the old one parked, so
+             * those investigations go back to work now rather than at the reset they were holding
+             * out for. Every other settings change is read by the next dispatch anyway.
+             */
+            if (isSpendCapLoosened(held, stored.spend_caps)) {
+                await registry.wakeInvestigationsWaitingOnSubscriptions(SPEND_CAPS_RAISED_REASON);
+            }
+            return stored;
         });
     }
 

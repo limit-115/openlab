@@ -123,6 +123,19 @@ export class InvestigationRegistry {
         return true;
     }
 
+    /**
+     * Gives every investigation the lab put to sleep on its subscriptions another go at them. The
+     * caps are the lab's, so raising one answers the wait of every run held by it at once, and each
+     * investigation decides for itself whether it was that wait it was sleeping on.
+     */
+    async wakeInvestigationsWaitingOnSubscriptions(reason: string): Promise<void> {
+        await Promise.all(
+            [...this.#held.values()].map((held) =>
+                held.controller.wakeIfWaitingOnSubscriptions(new Error(reason))
+            )
+        );
+    }
+
     /** The roster, whenever any investigation in it moves. */
     subscribe(listener: RegistryListener): () => void {
         this.#listeners.add(listener);

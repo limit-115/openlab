@@ -24,6 +24,19 @@ export function isCapped(cap: number): boolean {
 }
 
 /**
+ * Whether the caps now let the lab spend somewhere the old ones stopped it. Raising a cap is the
+ * operator answering the wait of everything parked on it, so it is worth acting on; tightening one
+ * changes nothing for work that is already held and is left to the next dispatch to notice.
+ */
+export function isSpendCapLoosened(before: SpendCaps, after: SpendCaps): boolean {
+    return [...before, ...after].some(
+        ({ harness, window_minutes }) =>
+            windowSpendCap(after, harness, window_minutes) >
+            windowSpendCap(before, harness, window_minutes)
+    );
+}
+
+/**
  * The windows that have reached the cap set on them. One of them withholds the whole subscription,
  * however much the others have left: the lab spends a subscription rather than a window, and the
  * vendor stops serving on whichever window runs out first anyway.
