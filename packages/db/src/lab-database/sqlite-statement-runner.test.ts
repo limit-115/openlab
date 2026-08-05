@@ -1,6 +1,6 @@
-import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openSqliteConnection } from "#src/lab-database/sqlite-connection";
+import type { LabSqliteConnection } from "#src/lab-database/sqlite-driver/sqlite-driver.types";
 import { SqliteStatementRunner } from "#src/lab-database/sqlite-statement-runner";
 import { SqliteStatementMethod } from "#src/lab-database/sqlite-statement-runner.const";
 
@@ -8,26 +8,29 @@ const INSERT = "insert into written (value) values (?)";
 const SELECT = "select value from written order by id";
 
 describe("SqliteStatementRunner", () => {
-    let connection: DatabaseSync;
+    let connection: LabSqliteConnection;
     let runner: SqliteStatementRunner;
+    let closedByCase: boolean;
 
     beforeEach(() => {
         connection = openSqliteConnection(":memory:");
         connection.exec("create table written (id integer primary key autoincrement, value text)");
         runner = new SqliteStatementRunner(connection);
+        closedByCase = false;
     });
 
     afterEach(() => {
-        if (connection.isOpen) {
+        if (!closedByCase) {
             connection.close();
         }
     });
 
+    /** A lab reads a row by position, so what was written is read back out of the first column. */
     function written(): string[] {
         return connection
             .prepare(SELECT)
             .all()
-            .map((row) => String(row.value));
+            .map((row) => String(row[0]));
     }
 
     it("keeps a statement issued while a transaction is open out of what that transaction rolls back", async () => {
@@ -74,6 +77,7 @@ describe("SqliteStatementRunner", () => {
     });
 
     it("closes the connection only once the write in flight has landed", async () => {
+        closedByCase = true;
         const finished: string[] = [];
         const writing = runner
             .transaction(async () => {

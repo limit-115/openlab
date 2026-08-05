@@ -1,29 +1,30 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { DatabaseSync, SQLInputValue, SQLOutputValue, StatementSync } from "node:sqlite";
 import type { RemoteCallback } from "drizzle-orm/sqlite-proxy";
+import type {
+    LabSqliteConnection,
+    SqliteRow,
+    SqliteValue
+} from "#src/lab-database/sqlite-driver/sqlite-driver.types";
 import {
     SqliteStatementMethod,
     SqliteTransactionStatement
 } from "#src/lab-database/sqlite-statement-runner.const";
 
-/** One row as Drizzle reads it: the selected values in the order they were asked for. */
-type StatementRow = SQLOutputValue[];
-
 /**
  * One connection answering one statement at a time.
  *
- * node:sqlite is synchronous and a lab holds a single connection, so a transaction that awaited
+ * A lab's SQLite is synchronous and a lab holds a single connection, so a transaction that awaited
  * between its own statements would have another caller's write land inside it and disappear with
  * its rollback. Every statement therefore queues behind whatever is already running, and a
  * transaction holds that place from `BEGIN` to `COMMIT`. The statements it issues in between skip
  * the queue rather than deadlock behind it, recognised by the async context they were started in.
  */
 export class SqliteStatementRunner {
-    readonly #connection: DatabaseSync;
+    readonly #connection: LabSqliteConnection;
     readonly #openTransaction = new AsyncLocalStorage<true>();
     #queued: Promise<unknown> = Promise.resolve();
 
-    constructor(connection: DatabaseSync) {
+    constructor(connection: LabSqliteConnection) {
         this.#connection = connection;
     }
 
@@ -86,30 +87,21 @@ export class SqliteStatementRunner {
         sql: string,
         params: readonly unknown[],
         method: SqliteStatementMethod
-    ): Promise<{ rows: StatementRow | StatementRow[] }> {
+    ): Promise<{ rows: SqliteRow | SqliteRow[] }> {
         const statement = this.#connection.prepare(sql);
-        const values = params as SQLInputValue[];
+        const values = params as SqliteValue[];
         if (method === SqliteStatementMethod.RUN) {
             statement.run(...values);
             return { rows: [] };
         }
-        statement.setReturnArrays(true);
         if (method === SqliteStatementMethod.GET) {
             return { rows: readRow(statement.get(...values)) };
         }
-        return { rows: readRows(statement.all(...values)) };
+        return { rows: statement.all(...values) };
     }
 }
 
-/**
- * `setReturnArrays` is what Drizzle's proxy contract asks for and what the statement was told to
- * do, but the node:sqlite typings only describe the keyed row it returns by default.
- */
-function readRows(rows: ReturnType<StatementSync["all"]>): StatementRow[] {
-    return rows as unknown as StatementRow[];
-}
-
 /** A read that matched nothing hands back no row at all, which is how Drizzle reads it too. */
-function readRow(row: ReturnType<StatementSync["get"]>): StatementRow {
-    return row as unknown as StatementRow;
+function readRow(row: SqliteRow | undefined): SqliteRow {
+    return row as SqliteRow;
 }
