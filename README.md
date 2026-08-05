@@ -10,7 +10,7 @@ Local autonomous research runtime described in
 - `apps/dashboard` — Vite + React observer UI;
 - `packages/protocol` — stable runtime contracts and JSON schemas;
 - `packages/core` — lab lifecycle rules;
-- `packages/db` — PostgreSQL persistence;
+- `packages/db` — the lab's SQLite database;
 - `packages/harness` — subscription-authenticated Codex and Claude CLI harnesses;
 - `packages/notifier` — the channels the lab reaches its operator through;
 - `packages/executor` — local experiment execution.
@@ -18,8 +18,9 @@ Local autonomous research runtime described in
 One lab holds many investigations. Each investigation is one goal with its own agents, its own run
 directory and its own research loop, running alongside the others.
 
-Operational state belongs in PostgreSQL. Files in a run directory are durable artifacts and
-protocol snapshots that can be inspected or exported independently.
+Operational state belongs in the database, a single SQLite file at `lab.db` in `LAB_HOME`. Files in
+a run directory are durable artifacts and protocol snapshots that can be inspected or exported
+independently. A lab is therefore a directory: copy it to keep it, delete it to be rid of it.
 
 ## Local setup
 
@@ -27,16 +28,16 @@ Requirements:
 
 - Node.js `24.18.1` through `fnm`;
 - pnpm `11.18.0`;
-- PostgreSQL 18;
-- Docker for the integration test suites;
 - a locally authenticated Codex CLI or Claude CLI product subscription.
 
 ```bash
 fnm use
 pnpm install --frozen-lockfile
-export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/ai_research_lab
 pnpm lab start
 ```
+
+Nothing has to be installed for the database. It is opened through `node:sqlite`, which the pinned
+Node already carries, and created on first start beside the runs it is about.
 
 The lab starts empty. Open the dashboard to add an investigation, or use the CLI:
 
@@ -102,8 +103,7 @@ reads the lab, not part of how it runs.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | required | PostgreSQL connection URL |
-| `LAB_HOME` | `.lab` | Run workspaces and durable artifacts |
+| `LAB_HOME` | `.lab` | The lab's database, run workspaces and durable artifacts |
 | `LAB_HOST` | `127.0.0.1` | Local status server host |
 | `LAB_PORT` | `4318` | Local status server port |
 | `LAB_DASHBOARD_ROOT` | `apps/dashboard/dist` | Built dashboard directory |
@@ -111,7 +111,9 @@ reads the lab, not part of how it runs.
 | `LAB_API_URL` | `http://127.0.0.1:4318` | Daemon the CLI talks to |
 
 Environment values are validated at startup. Empty values are treated as unset. Every variable above
-is read by the daemon except `LAB_API_URL`, which is how the CLI finds it.
+is read by the daemon except `LAB_API_URL`, which is how the CLI finds it. The database is not among
+them: one home is one lab, so pointing `LAB_HOME` somewhere else moves the database with the runs it
+belongs to.
 
 Where the lab runs is environment; what it runs with is not. The harness roster a new investigation
 starts on, and the model and reasoning effort behind each role, are set on the dashboard's settings
@@ -161,5 +163,5 @@ about what the lab considers worth reporting changes with it.
 pnpm check
 ```
 
-Database integration suites create disposable PostgreSQL 18 instances with Testcontainers and
-remove them after the test run.
+A suite that touches the database opens a migrated one of its own in a temporary directory and
+takes it away afterwards, so the tests need nothing installed and never share state.
