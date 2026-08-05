@@ -59,6 +59,7 @@ async function createTestLab(stored = CONFIGURED, refusal?: string) {
                         refusal
                     );
                 }
+                return {};
             }
         })
     );

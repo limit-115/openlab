@@ -235,6 +235,7 @@ describe("daemon startup", () => {
                     kind: NotificationChannelKind.TELEGRAM,
                     deliver: async (message) => {
                         sent.push(message);
+                        return {};
                     }
                 })
             }

@@ -66,6 +66,7 @@ function watching(refusal?: string) {
                     );
                 }
                 sent.push(message);
+                return {};
             }
         })
     );

@@ -10,7 +10,8 @@
         "./notification-message.types": "./src/notification-channel/notification-message.types.ts",
         "./telegram-bot-channel": "./src/telegram-bot/telegram-bot-channel.ts",
         "./telegram-bot-channel.const": "./src/telegram-bot/telegram-bot-channel.const.ts",
-        "./telegram-bot-channel.types": "./src/telegram-bot/telegram-bot-channel.types.ts"
+        "./telegram-bot-channel.types": "./src/telegram-bot/telegram-bot-channel.types.ts",
+        "./telegram-bot-conversation": "./src/telegram-bot/telegram-bot-conversation.ts"
     },
     "imports": {
         "#src/*": "./src/*.ts"

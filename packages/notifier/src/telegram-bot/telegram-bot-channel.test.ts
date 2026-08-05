@@ -47,6 +47,39 @@ describe("TelegramBotChannel", () => {
         });
     });
 
+    /** Without it there is nothing for a reply to be recognised as a reply to. */
+    it("says what Telegram named the message, so an answer to it can be tied back", async () => {
+        const request = answering({ ok: true, result: { message_id: 7 } });
+
+        expect(await channel(request).deliver(MESSAGE)).toEqual({ reference: "7" });
+    });
+
+    it("opens the reply box on a question, so the operator answers where they read it", async () => {
+        const request = answering({ ok: true, result: { message_id: 7 } });
+        const listening = new TelegramBotChannel({
+            botToken: BOT_TOKEN,
+            chatId: "-1001",
+            answersBack: true,
+            request
+        });
+
+        await listening.deliver({ ...MESSAGE, awaitsAnswer: true });
+
+        expect(JSON.parse(sentTo(request).body).reply_markup).toEqual({ force_reply: true });
+    });
+
+    /**
+     * A reply box on a chat nobody is reading is worse than none: the operator answers, watches the
+     * message send, and goes back to work believing the lab has been unblocked.
+     */
+    it("offers to take no answer through a chat the lab is not listening to", async () => {
+        const request = answering({ ok: true, result: { message_id: 7 } });
+
+        await channel(request).deliver({ ...MESSAGE, awaitsAnswer: true });
+
+        expect(JSON.parse(sentTo(request).body)).not.toHaveProperty("reply_markup");
+    });
+
     it("hands Telegram's own words back, which name the field the operator has to fix", async () => {
         const request = answering(
             { ok: false, error_code: 400, description: "Bad Request: chat not found" },

@@ -1,5 +1,8 @@
 import { NotificationDeliveryError } from "@lab/notifier/notification-delivery-error";
-import type { NotificationMessage } from "@lab/notifier/notification-message.types";
+import type {
+    DeliveredNotification,
+    NotificationMessage
+} from "@lab/notifier/notification-message.types";
 import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import type { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
@@ -92,7 +95,10 @@ export class NotificationDispatch {
         });
     }
 
-    #deliver(configured: ConfiguredChannel, message: NotificationMessage): Promise<void> {
+    #deliver(
+        configured: ConfiguredChannel,
+        message: NotificationMessage
+    ): Promise<DeliveredNotification> {
         return this.#open(configured).deliver(message);
     }
 }

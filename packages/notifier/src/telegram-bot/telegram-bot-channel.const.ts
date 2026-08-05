@@ -5,8 +5,20 @@
 export const TELEGRAM_API_ORIGIN = "https://api.telegram.org" as const;
 
 export const TelegramMethod = {
-    SEND_MESSAGE: "sendMessage"
+    SEND_MESSAGE: "sendMessage",
+    GET_UPDATES: "getUpdates"
 } as const;
+
+/**
+ * Telegram holds a read open until something is said or the wait runs out, so the lab asks once and
+ * waits rather than asking over and over. The request has to outlast the wait it asked Telegram for,
+ * or the lab hangs up on its own question every time nobody says anything.
+ */
+export const TELEGRAM_POLL_SECONDS = 25;
+export const TELEGRAM_POLL_TIMEOUT_MS = 30_000;
+
+/** Only what somebody wrote. The lab has no use for edits, reactions, or who joined the chat. */
+export const TELEGRAM_LISTENED_UPDATES = ["message"] as const;
 
 /**
  * HTML rather than MarkdownV2. Both mark up the same few things, but MarkdownV2 makes eighteen

@@ -23,4 +23,31 @@ export interface NotificationMessage {
     readonly facts: readonly NotificationFact[];
     /** Where to read the whole story. Absent for a message that is the whole story. */
     readonly link?: NotificationLink;
+    /**
+     * Whether the lab is held up until somebody answers this. It is a fact about the moment rather
+     * than about any channel, so a channel that cannot carry an answer back reads the same message
+     * and simply says it; one that can offers to take the answer where it is read.
+     */
+    readonly awaitsAnswer?: boolean;
+}
+
+/**
+ * What a delivery became at the vendor, so far as anything can be said back to it later. A message
+ * nobody can reply to leaves this empty, which is every channel that only writes.
+ */
+export interface DeliveredNotification {
+    /** What a reply to this message quotes, in whatever way that vendor names its messages. */
+    readonly reference?: string;
+}
+
+/**
+ * Something the operator said back through a channel that carries both ways. The lab reads no
+ * meaning into the words: they are carried to the agent that asked, exactly as they were written.
+ */
+export interface OperatorReply {
+    readonly text: string;
+    /** The message it was written as a reply to, where it was written as a reply to one. */
+    readonly answers?: string;
+    /** When the vendor says it was sent, so a backlog is never mistaken for an answer to now. */
+    readonly sentAt: Date;
 }
