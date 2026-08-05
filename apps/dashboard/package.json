@@ -13,8 +13,6 @@
         "preview": "vite preview",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",
-        "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
-        "test:integration": "vitest run '**/*.integration.test.ts' --passWithNoTests",
         "lint": "biome lint .",
         "format": "biome format --write ."
     },
