@@ -1,0 +1,80 @@
+name: Release
+
+# A release is cut by pushing a tag. Everything below runs on one machine, because Bun
+# cross-compiles every platform the lab is built for, including Windows.
+on:
+    push:
+        tags:
+            - "v*"
+    workflow_dispatch:
+        inputs:
+            dry_run:
+                description: Build every artifact but publish nothing
+                type: boolean
+                default: true
+
+permissions:
+    contents: read
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            # What signs the provenance attestation binding these artifacts to this workflow.
+            id-token: write
+            attestations: write
+        steps:
+            - uses: actions/checkout@v6
+
+            # pnpm comes first because the Node cache below is keyed on its lockfile, and the
+            # version it installs is the one `packageManager` pins rather than one named here.
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .node-version
+                  cache: pnpm
+
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
+
+            - run: pnpm install --frozen-lockfile
+
+            # A release that fails its own suite is not a release. This is the same command a
+            # developer runs, so nothing is verified here that is not verified before a commit.
+            - name: Verify
+              run: pnpm check
+
+            - name: Build every platform
+              run: pnpm release
+
+            # The archives are built from sources this workflow checked out, and the attestation is
+            # what lets anyone confirm that afterwards with `gh attestation verify`.
+            - name: Attest what was built
+              uses: actions/attest-build-provenance@v4
+              with:
+                  subject-path: release/dist/nightlab-*
+
+            - name: Check the release installs and runs
+              run: |
+                  mkdir -p /tmp/release-check
+                  tar -xzf release/dist/nightlab-*-linux-x64.tar.gz -C /tmp/release-check
+                  test "$(/tmp/release-check/nightlab --version)" = "$(jq -r .version release/dist/manifest.json)"
+                  HOME=/tmp/release-home /tmp/release-check/nightlab install --no-modify-path
+                  HOME=/tmp/release-home /tmp/release-check/nightlab doctor
+
+            - name: Publish
+              if: startsWith(github.ref, 'refs/tags/v')
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  gh release create "${GITHUB_REF_NAME}" \
+                      --title "${GITHUB_REF_NAME}" \
+                      --generate-notes \
+                      release/dist/nightlab-* \
+                      release/dist/manifest.json \
+                      release/install.sh \
+                      release/install.ps1 \
+                      release/install.cmd
