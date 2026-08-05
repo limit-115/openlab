@@ -31,6 +31,8 @@ export interface TelegramChannelDraft {
     readonly botToken: string;
     readonly botTokenStored: boolean;
     readonly chatId: string;
+    /** Whether a reply in that chat answers the lab, which is the operator opening a way in. */
+    readonly answersBack: boolean;
 }
 
 export interface NotificationSettingsDraft {

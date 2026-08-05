@@ -20,7 +20,8 @@ const UNCONFIGURED_TELEGRAM: TelegramChannelDraft = {
     language: undefined,
     botToken: "",
     botTokenStored: false,
-    chatId: ""
+    chatId: "",
+    answersBack: false
 };
 
 /**
@@ -46,7 +47,8 @@ export function draftFromSettings(settings: NotificationSettingsView): Notificat
             language: stored.language,
             botToken: "",
             botTokenStored: stored.bot_token_set,
-            chatId: stored.chat_id
+            chatId: stored.chat_id,
+            answersBack: stored.answers_back
         }
     };
 }
@@ -75,6 +77,7 @@ export function settingsSubmission(
                 kind: NotificationChannelKind.TELEGRAM,
                 enabled: telegram.enabled,
                 chat_id: telegram.chatId.trim(),
+                answers_back: telegram.answersBack,
                 ...(telegram.events === undefined ? {} : { events: [...telegram.events] }),
                 ...(telegram.language === undefined ? {} : { language: telegram.language }),
                 ...(typed.length === 0 ? {} : { bot_token: typed })
@@ -186,6 +189,7 @@ export function hasUnsavedEdits(
         draft.defaults.language !== stored.defaults.language ||
         momentsDiffer(draft.defaults.events, stored.defaults.events) ||
         draft.telegram.enabled !== stored.telegram.enabled ||
+        draft.telegram.answersBack !== stored.telegram.answersBack ||
         draft.telegram.language !== stored.telegram.language ||
         draft.telegram.chatId.trim() !== stored.telegram.chatId.trim() ||
         momentsDiffer(draft.telegram.events, stored.telegram.events)

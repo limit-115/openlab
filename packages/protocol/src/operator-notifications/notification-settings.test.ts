@@ -61,6 +61,17 @@ describe("NotificationSettingsSchema", () => {
         expect(channel?.enabled).toBe(false);
     });
 
+    /**
+     * Whoever can write in the chat answers for the operator, and what they write is carried to an
+     * agent verbatim. A lab configured before the lab could listen must not start listening because
+     * it was upgraded, so the settings it already had have to read as a chat that may not answer.
+     */
+    it("takes no answer from a chat until the operator opens it to one", () => {
+        const [channel] = NotificationSettingsSchema.parse({ channels: [TELEGRAM] }).channels;
+
+        expect(channel).toMatchObject({ answers_back: false });
+    });
+
     it("keeps the moments and the language the operator chose for one channel", () => {
         const [channel] = NotificationSettingsSchema.parse({
             channels: [
