@@ -8,10 +8,7 @@ import type { DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
 import { type DaemonDatabase, openDaemonDatabase } from "#src/daemon-runtime/daemon-database";
 import { PromiseSettlementStatus } from "#src/daemon-runtime/daemon-startup.const";
 import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
-import {
-    DaemonStartupOutcome,
-    DaemonStartupStep
-} from "#src/daemon-runtime/daemon-startup-progress.const";
+import { DaemonStartupStep } from "#src/daemon-runtime/daemon-startup-progress.const";
 import type { DaemonStartupProgress } from "#src/daemon-runtime/daemon-startup-progress.types";
 import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
@@ -36,9 +33,9 @@ export async function startDaemon(
     const report = dependencies.reportStartup ?? (() => undefined);
     /** The database is created inside the lab home, so the home has to exist before it is opened. */
     await mkdir(config.workspaceRoot, { recursive: true });
-    report(ready(DaemonStartupStep.HOME, config.workspaceRoot));
+    report(at(DaemonStartupStep.HOME, config.workspaceRoot));
     const database = await (dependencies.openDatabase ?? openDaemonDatabase)(config.databasePath);
-    report(ready(DaemonStartupStep.DATABASE, config.databasePath));
+    report(at(DaemonStartupStep.DATABASE, config.databasePath));
     let app: FastifyInstance | undefined;
     let registry: InvestigationRegistry | undefined;
 
@@ -46,12 +43,8 @@ export async function startDaemon(
         const dashboardRoot = await existingDirectory(config.dashboardRoot);
         report(
             dashboardRoot === undefined
-                ? {
-                      step: DaemonStartupStep.DASHBOARD,
-                      outcome: DaemonStartupOutcome.MISSING,
-                      detail: config.dashboardRoot
-                  }
-                : ready(DaemonStartupStep.DASHBOARD, dashboardRoot)
+                ? at(DaemonStartupStep.DASHBOARD_MISSING, config.dashboardRoot)
+                : at(DaemonStartupStep.DASHBOARD, dashboardRoot)
         );
         const subscriptions = new SubscriptionAllowanceReadings();
         const harnesses = new HarnessReadinessChecks();
@@ -125,7 +118,7 @@ export async function startDaemon(
         });
         answers.start();
         await registry.restore();
-        report(ready(DaemonStartupStep.INVESTIGATIONS, String(registry.list().length)));
+        report(at(DaemonStartupStep.INVESTIGATIONS, String(registry.list().length)));
         const runningApp = app;
         const runningRegistry = registry;
         const listening = answers;
@@ -152,8 +145,8 @@ export async function startDaemon(
     }
 }
 
-function ready(step: DaemonStartupStep, detail: string): DaemonStartupProgress {
-    return { step, outcome: DaemonStartupOutcome.READY, detail };
+function at(step: DaemonStartupStep, detail: string): DaemonStartupProgress {
+    return { step, detail };
 }
 
 async function closeDaemonResources(

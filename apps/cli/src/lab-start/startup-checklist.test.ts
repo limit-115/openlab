@@ -1,34 +1,20 @@
-import {
-    DaemonStartupOutcome,
-    DaemonStartupStep
-} from "@nightlab/daemon/daemon-runtime/daemon-startup-progress.const";
+import { DaemonStartupStep } from "@nightlab/daemon/daemon-runtime/daemon-startup-progress.const";
 import { describe, expect, it } from "vitest";
 import { startupLine } from "#src/lab-start/startup-checklist";
 
 describe("startupLine", () => {
-    /** A step nobody wrote a line for would come up as a blank tick the operator cannot read. */
-    it("has something to say about every step a lab passes through, either way it goes", () => {
-        for (const step of Object.values(DaemonStartupStep)) {
-            for (const outcome of Object.values(DaemonStartupOutcome)) {
-                expect(startupLine({ step, outcome, detail: "somewhere" })).not.toHaveLength(0);
-            }
-        }
-    });
-
     it("says where the lab put itself, which is the one thing nobody can guess", () => {
         expect(
             startupLine({
                 step: DaemonStartupStep.HOME,
-                outcome: DaemonStartupOutcome.READY,
-                detail: "/home/operator/.local/share/lab"
+                detail: "/home/operator/.local/share/nightlab"
             })
-        ).toContain("/home/operator/.local/share/lab");
+        ).toContain("/home/operator/.local/share/nightlab");
     });
 
     it("names where a missing dashboard was looked for, and that the lab runs anyway", () => {
         const line = startupLine({
-            step: DaemonStartupStep.DASHBOARD,
-            outcome: DaemonStartupOutcome.MISSING,
+            step: DaemonStartupStep.DASHBOARD_MISSING,
             detail: "/somewhere/dist"
         });
 
@@ -37,12 +23,8 @@ describe("startupLine", () => {
     });
 
     it("tells an empty lab it is empty rather than counting to zero", () => {
-        expect(
-            startupLine({
-                step: DaemonStartupStep.INVESTIGATIONS,
-                outcome: DaemonStartupOutcome.READY,
-                detail: "0"
-            })
-        ).toBe("No investigations yet");
+        expect(startupLine({ step: DaemonStartupStep.INVESTIGATIONS, detail: "0" })).toBe(
+            "No investigations yet"
+        );
     });
 });

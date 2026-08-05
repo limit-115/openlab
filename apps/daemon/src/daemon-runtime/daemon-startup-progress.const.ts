@@ -7,13 +7,12 @@ export const DaemonStartupStep = {
     HOME: "home",
     DATABASE: "database",
     DASHBOARD: "dashboard",
+    /**
+     * The dashboard is the one thing a lab can come up without, so its absence is a step of its own
+     * rather than an outcome every other step has to carry. The rest either happen or throw, and a
+     * throw ends the startup instead of reporting anything.
+     */
+    DASHBOARD_MISSING: "dashboard_missing",
     INVESTIGATIONS: "investigations"
 } as const;
 export type DaemonStartupStep = (typeof DaemonStartupStep)[keyof typeof DaemonStartupStep];
-
-/** Whether a step left the lab with the thing it was about. Only the dashboard may be missing. */
-export const DaemonStartupOutcome = {
-    READY: "ready",
-    MISSING: "missing"
-} as const;
-export type DaemonStartupOutcome = (typeof DaemonStartupOutcome)[keyof typeof DaemonStartupOutcome];
