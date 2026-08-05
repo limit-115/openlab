@@ -5,32 +5,34 @@ import { resolveLabHome } from "#src/lab-home/lab-home";
 
 describe("resolveLabHome", () => {
     it("gives the operator one lab instead of one per directory the daemon starts in", () => {
-        expect(resolveLabHome({})).toBe(path.join(homedir(), ".local", "share", "lab"));
+        expect(resolveLabHome({})).toBe(path.join(homedir(), ".local", "share", "nightlab"));
     });
 
     it("puts the lab in the data directory the environment names", () => {
-        expect(resolveLabHome({ XDG_DATA_HOME: "/opt/share" })).toBe("/opt/share/lab");
+        expect(resolveLabHome({ XDG_DATA_HOME: "/opt/share" })).toBe("/opt/share/nightlab");
     });
 
     it("ignores a relative data directory rather than resolving it against the process", () => {
         expect(resolveLabHome({ XDG_DATA_HOME: "share" })).toBe(
-            path.join(homedir(), ".local", "share", "lab")
+            path.join(homedir(), ".local", "share", "nightlab")
         );
     });
 
-    it("lets LAB_HOME overrule the data directory", () => {
-        expect(resolveLabHome({ LAB_HOME: "/srv/lab", XDG_DATA_HOME: "/opt/share" })).toBe(
+    it("lets NIGHTLAB_HOME overrule the data directory", () => {
+        expect(resolveLabHome({ NIGHTLAB_HOME: "/srv/lab", XDG_DATA_HOME: "/opt/share" })).toBe(
             "/srv/lab"
         );
     });
 
     it("expands a leading tilde no shell was there to expand", () => {
-        expect(resolveLabHome({ LAB_HOME: "~/labs/first" })).toBe(
+        expect(resolveLabHome({ NIGHTLAB_HOME: "~/labs/first" })).toBe(
             path.join(homedir(), "labs", "first")
         );
     });
 
-    it("resolves a relative LAB_HOME against the working directory", () => {
-        expect(resolveLabHome({ LAB_HOME: "./.lab" })).toBe(path.join(process.cwd(), ".lab"));
+    it("resolves a relative NIGHTLAB_HOME against the working directory", () => {
+        expect(resolveLabHome({ NIGHTLAB_HOME: "./.nightlab" })).toBe(
+            path.join(process.cwd(), ".nightlab")
+        );
     });
 });

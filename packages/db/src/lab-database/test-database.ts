@@ -5,7 +5,7 @@ import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-datab
 import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
 
 const DIRECTORY_PREFIX = "lab-database-";
-const FILE_NAME = "lab.db";
+const FILE_NAME = "nightlab.db";
 
 export interface TestDatabase extends DatabaseClient {
     readonly path: string;

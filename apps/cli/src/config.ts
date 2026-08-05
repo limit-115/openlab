@@ -4,11 +4,11 @@ import { z } from "zod";
 export function resolveCliConfig(): { apiUrl: string } {
     const environment = createEnv({
         server: {
-            LAB_API_URL: z.url().default("http://127.0.0.1:4318")
+            NIGHTLAB_API_URL: z.url().default("http://127.0.0.1:4318")
         },
         runtimeEnv: process.env,
         emptyStringAsUndefined: true
     });
 
-    return { apiUrl: environment.LAB_API_URL };
+    return { apiUrl: environment.NIGHTLAB_API_URL };
 }

@@ -3,7 +3,7 @@
  * The database sits beside the run directories it is about, so a home is the whole lab.
  */
 export const LabHomeLayout = {
-    DIRECTORY_NAME: "lab",
+    DIRECTORY_NAME: "nightlab",
     XDG_DATA_SEGMENTS: [".local", "share"],
-    DATABASE_FILE: "lab.db"
+    DATABASE_FILE: "nightlab.db"
 } as const;

@@ -32,7 +32,7 @@ describe("runExperiment", () => {
             cwd: root,
             artifactDirectory,
             input,
-            env: { LAB_TEST_SECRET: "do-not-persist-this-value" }
+            env: { NIGHTLAB_TEST_SECRET: "do-not-persist-this-value" }
         });
 
         const stdout = await readFile(result.stdout.path, "utf8");
@@ -60,7 +60,7 @@ describe("runExperiment", () => {
             },
             environment: {
                 overrides: {
-                    LAB_TEST_SECRET: { sha256: sha256("do-not-persist-this-value") }
+                    NIGHTLAB_TEST_SECRET: { sha256: sha256("do-not-persist-this-value") }
                 }
             }
         });
