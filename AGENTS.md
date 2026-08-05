@@ -1,5 +1,13 @@
 # Repository rules
 
+- Ease of use and simplicity outrank feature count. Every feature and every screen must be
+  intuitive to a developer meeting it for the first time: how to configure it, how to start it,
+  what it is doing right now, and why something failed. The interface answers those questions
+  itself, not a document the operator has to go find.
+- OpenClaw is the anti-example: twenty million features behind a UX where nothing is discoverable —
+  you cannot tell how to configure it, how to build it, what it is doing, or what broke. Surface
+  area bought at that price is a loss. A capability nobody can drive is worse than one that does not
+  exist, because it also costs the time spent failing to drive it.
 - Use the Node version from `.node-version` through `fnm` and the exact pnpm version from
   `packageManager`.
 - Run `pnpm init` when creating a package manifest, then adapt the generated manifest.
