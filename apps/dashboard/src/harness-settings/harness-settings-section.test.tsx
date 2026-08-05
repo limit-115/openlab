@@ -75,7 +75,14 @@ describe("HarnessSettingsSection", () => {
         const verifier = await roleField(AgentRole.VERIFIER);
 
         await userEvent.click(
-            verifier.getByRole("radio", { name: HARNESS_SETTINGS_EN[AgentEffortLevel.MAX] })
+            verifier.getByRole("combobox", {
+                name: `${HARNESS_SETTINGS_EN[AgentRole.VERIFIER]} ${HARNESS_SETTINGS_EN.effort}`
+            })
+        );
+        await userEvent.click(
+            await screen.findByRole("option", {
+                name: HARNESS_SETTINGS_EN[AgentEffortLevel.MAX]
+            })
         );
         await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 

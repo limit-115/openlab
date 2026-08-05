@@ -9,6 +9,13 @@ import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#src/design-system/card";
 import { Input } from "#src/design-system/input";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "#src/design-system/select";
+import {
     Table,
     TableBody,
     TableCell,
@@ -16,10 +23,9 @@ import {
     TableHeader,
     TableRow
 } from "#src/design-system/table";
-import { ToggleGroup, ToggleGroupItem } from "#src/design-system/toggle-group";
 import {
     EFFORT_LEVELS,
-    EFFORT_OPTION,
+    EFFORT_TRIGGER,
     MODEL_COLUMN,
     ROLE_CARD,
     ROLE_TABLE,
@@ -76,30 +82,28 @@ export function RoleExecutionTable({
                                     {t(role)}
                                 </TableHead>
                                 <TableCell>
-                                    <ToggleGroup
-                                        type="single"
-                                        variant="outline"
-                                        size="sm"
-                                        spacing={0}
+                                    <Select
                                         value={roleExecution(settings, role).effort}
-                                        aria-labelledby={`${fieldId}-${role} ${fieldId}-effort`}
                                         onValueChange={(chosen) => {
                                             if (isEffort(chosen)) {
                                                 chooseEffort(role, chosen);
                                             }
                                         }}
                                     >
-                                        {EFFORT_LEVELS.map((level) => (
-                                            <ToggleGroupItem
-                                                key={level}
-                                                value={level}
-                                                aria-label={t(level)}
-                                                className={EFFORT_OPTION}
-                                            >
-                                                {t(level)}
-                                            </ToggleGroupItem>
-                                        ))}
-                                    </ToggleGroup>
+                                        <SelectTrigger
+                                            className={EFFORT_TRIGGER}
+                                            aria-labelledby={`${fieldId}-${role} ${fieldId}-effort`}
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {EFFORT_LEVELS.map((level) => (
+                                                <SelectItem key={level} value={level}>
+                                                    {t(level)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </TableCell>
                                 {SELECTABLE_HARNESSES.map((harness) => (
                                     <TableCell key={harness}>

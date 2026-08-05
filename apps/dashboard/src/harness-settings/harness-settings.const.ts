@@ -45,8 +45,8 @@ export const ROLE_TABLE =
 export const MODEL_COLUMN = "w-1/4" as const;
 
 /**
- * The chosen level carries the same fill as a ticked box, because the shipped toggle marks it with
- * a shade of grey that is unreadable against the rest of the group.
+ * The levels are ordered, so one is picked from a list rather than read as five buttons. The floor
+ * holds the column steady against the longest level in either language, and filling the cell keeps
+ * every role's control the same width down the page.
  */
-export const EFFORT_OPTION =
-    "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground" as const;
+export const EFFORT_TRIGGER = "w-full min-w-44" as const;
