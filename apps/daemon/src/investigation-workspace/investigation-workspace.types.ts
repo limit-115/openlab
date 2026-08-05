@@ -18,7 +18,7 @@ export interface WorkspaceMutationResult {
 
 export type WorkspaceRuntimePersistence = Pick<
     RuntimePersistence,
-    "initialize" | "load" | "commit" | "eventsAfter"
+    "initialize" | "load" | "commit" | "eventsAfter" | "retask"
 >;
 
 export interface VerifiedResult {

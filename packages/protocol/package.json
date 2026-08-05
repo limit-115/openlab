@@ -42,6 +42,8 @@
         "./investigation-status/result-summary.types": "./src/investigation-status/result-summary.types.ts",
         "./investigation-status/status-snapshot.schema": "./src/investigation-status/status-snapshot.schema.ts",
         "./investigation-status/status-snapshot.types": "./src/investigation-status/status-snapshot.types.ts",
+        "./investigation-input/investigation-dispatch.schema": "./src/investigation-input/investigation-dispatch.schema.ts",
+        "./investigation-input/investigation-dispatch.types": "./src/investigation-input/investigation-dispatch.types.ts",
         "./investigation-input/investigation-input.const": "./src/investigation-input/investigation-input.const.ts",
         "./investigation-input/investigation-input.schema": "./src/investigation-input/investigation-input.schema.ts",
         "./investigation-input/investigation-input.types": "./src/investigation-input/investigation-input.types.ts",

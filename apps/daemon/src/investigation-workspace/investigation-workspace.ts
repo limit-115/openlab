@@ -21,6 +21,8 @@ import {
 } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationEventSchema } from "@lab/protocol/investigation-events/investigation-event.schema";
 import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
+import { InvestigationDispatchSchema } from "@lab/protocol/investigation-input/investigation-dispatch.schema";
+import type { InvestigationDispatch } from "@lab/protocol/investigation-input/investigation-dispatch.types";
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import {
@@ -52,8 +54,6 @@ import type {
 export class InvestigationWorkspace {
     readonly runDirectory: string;
     readonly investigationId: string;
-    /** What the operator asked this investigation to do. Fixed for the life of the run. */
-    readonly input: InvestigationInput;
     readonly recovered: boolean;
 
     private readonly mutex = new Mutex();
@@ -62,6 +62,16 @@ export class InvestigationWorkspace {
     private runtimePersistence: WorkspaceRuntimePersistence | undefined;
     private runtimeRevision: number | undefined;
     private snapshot: StatusSnapshot;
+    private task: InvestigationInput;
+
+    /**
+     * What the operator asked this investigation to do. The goal it is chasing is fixed for the life
+     * of the run; what it dispatches to is theirs to move, and every dispatch decision reads it here
+     * so a change reaches the next agent without the investigation being reopened.
+     */
+    get input(): InvestigationInput {
+        return this.task;
+    }
 
     private constructor(
         runDirectory: string,
@@ -74,7 +84,7 @@ export class InvestigationWorkspace {
     ) {
         this.runDirectory = runDirectory;
         this.investigationId = snapshot.investigation.id;
-        this.input = input;
+        this.task = input;
         this.snapshot = snapshot;
         this.events = events;
         this.recovered = recovered;
@@ -272,6 +282,25 @@ export class InvestigationWorkspace {
             throw new Error("Investigation state transition was unexpectedly skipped");
         }
         return mutation.snapshot;
+    }
+
+    /**
+     * Moves what the investigation dispatches to, and whether the lab's spend caps hold it. The
+     * roster is read when a research loop starts, so the caller decides what to do with the loop
+     * that is already running under the old one; this settles what the next one will read.
+     */
+    async changeDispatch(dispatch: InvestigationDispatch): Promise<InvestigationInput> {
+        const changed = InvestigationInputSchema.parse({
+            ...this.task,
+            ...InvestigationDispatchSchema.parse(dispatch)
+        });
+        this.task = await this.persistTask(changed);
+        await this.writeJson(WorkspaceFile.INPUT, this.task);
+        await this.appendEvent(EventType.INVESTIGATION_DISPATCH_CHANGED, {
+            harness_kinds: this.task.harness_kinds,
+            spend_past_caps: this.task.spend_past_caps
+        });
+        return this.task;
     }
 
     /**
@@ -520,6 +549,13 @@ export class InvestigationWorkspace {
         this.runtimeRevision = initialized.revision;
         this.snapshot = initialized.snapshot;
         await this.persistFilesystemSnapshot();
+    }
+
+    /** A lab with no database keeps the change in the run directory, exactly as it does its status. */
+    private async persistTask(task: InvestigationInput): Promise<InvestigationInput> {
+        return this.runtimePersistence === undefined
+            ? task
+            : this.runtimePersistence.retask(this.investigationId, task);
     }
 
     private async commitRuntime(

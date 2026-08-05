@@ -5,6 +5,8 @@ export const EventType = {
     INVESTIGATION_WOKEN: "investigation.woken",
     INVESTIGATION_HIBERNATED: "investigation.hibernated",
     INVESTIGATION_STOPPED: "investigation.stopped",
+    /** The operator moved what this investigation dispatches to, or lifted the caps off it. */
+    INVESTIGATION_DISPATCH_CHANGED: "investigation.dispatch_changed",
     INVESTIGATION_FAILED: "investigation.failed",
     HARNESS_PREFLIGHT_SUCCEEDED: "harness.preflight_succeeded",
     HARNESS_PREFLIGHT_FAILED: "harness.preflight_failed",

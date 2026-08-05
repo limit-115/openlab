@@ -20,7 +20,8 @@ export class ResearchLoopController {
         workspace: InvestigationWorkspace,
         options: ResearchLoopOptions
     ) => Promise<ResearchLoopOutcome>;
-    readonly #harnesses: readonly AgentHarness[] | undefined;
+    /** Built afresh for every loop, because the roster an investigation runs on can be moved. */
+    readonly #harnesses: (() => readonly AgentHarness[]) | undefined;
     readonly #settings: LabSettingsReader | undefined;
     readonly #subscriptions: SubscriptionAllowanceReadings | undefined;
     #abortController: AbortController | undefined;
@@ -36,7 +37,7 @@ export class ResearchLoopController {
             workspace: InvestigationWorkspace,
             options: ResearchLoopOptions
         ) => Promise<ResearchLoopOutcome>,
-        harnesses?: readonly AgentHarness[],
+        harnesses?: () => readonly AgentHarness[],
         settings?: LabSettingsReader,
         subscriptions?: SubscriptionAllowanceReadings
     ) {
@@ -75,7 +76,7 @@ export class ResearchLoopController {
         const running = this.#run(this.#workspace, {
             activity: this.#activity,
             signal: abortController.signal,
-            ...(this.#harnesses === undefined ? {} : { harnesses: this.#harnesses }),
+            ...(this.#harnesses === undefined ? {} : { harnesses: this.#harnesses() }),
             ...(this.#settings === undefined ? {} : { settings: this.#settings }),
             ...(this.#subscriptions === undefined ? {} : { subscriptions: this.#subscriptions })
         });
@@ -105,6 +106,28 @@ export class ResearchLoopController {
         } catch {
             // A daemon shutdown or stop must still close transport and settle lifecycle state.
         }
+    }
+
+    /**
+     * Puts the investigation on the work with what it dispatches to now. A loop reads the roster
+     * once, when it starts, so the one in flight is given up rather than finished — the same cost as
+     * a pause, and the only way a new harness reaches the next agent.
+     *
+     * An investigation the lab put to sleep with a date on it is sleeping on its subscriptions, and
+     * pointing it somewhere else is the operator answering exactly that wait, so it goes back to
+     * work now instead of at the reset it was holding out for. One that was paused, or that ran out
+     * of directions, stays where the operator left it.
+     */
+    async redispatch(reason: Error): Promise<void> {
+        const investigation = this.#workspace.getSnapshot().investigation;
+        if (investigation.state === InvestigationState.HIBERNATING) {
+            if (investigation.resume_at !== undefined) {
+                await this.#workspace.wakeIfHibernating(reason.message, WakeTrigger.USER);
+            }
+            return;
+        }
+        await this.cancel(reason);
+        this.start();
     }
 
     async close(reason: Error): Promise<void> {

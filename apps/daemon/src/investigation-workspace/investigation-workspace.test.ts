@@ -353,6 +353,9 @@ function readOnlyPersistence(): WorkspaceRuntimePersistence {
         commit: async () => {
             throw new Error("Unexpected runtime commit");
         },
-        eventsAfter: async () => []
+        eventsAfter: async () => [],
+        retask: async () => {
+            throw new Error("Unexpected runtime retask");
+        }
     };
 }

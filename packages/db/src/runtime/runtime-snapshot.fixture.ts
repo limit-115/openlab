@@ -28,7 +28,8 @@ export function makeInput(): InvestigationInput {
         goal: "Find a reproducible result",
         context: ["Known observation"],
         success_criteria: ["Independent reproduction"],
-        harness_kinds: [...DEFAULT_HARNESS_KINDS]
+        harness_kinds: [...DEFAULT_HARNESS_KINDS],
+        spend_past_caps: false
     };
 }
 

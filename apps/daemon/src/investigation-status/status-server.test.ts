@@ -152,6 +152,84 @@ describe("status server", () => {
         await lab.server.close();
     });
 
+    it("moves an investigation onto the harnesses the operator named, and lists it there", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Change what this dispatches to");
+        const url = `/api/investigations/${held.workspace.investigationId}/dispatch`;
+
+        const changed = await lab.server.inject({
+            method: "PUT",
+            url,
+            payload: { harness_kinds: [AgentHarnessKind.GLM], spend_past_caps: true }
+        });
+
+        expect(changed.json()).toEqual({
+            harness_kinds: [AgentHarnessKind.GLM],
+            spend_past_caps: true
+        });
+        expect((await lab.server.inject({ method: "GET", url })).json()).toEqual({
+            harness_kinds: [AgentHarnessKind.GLM],
+            spend_past_caps: true
+        });
+        expect(lab.registry.list()[0]?.harness_kinds).toEqual([AgentHarnessKind.GLM]);
+        await lab.server.close();
+    });
+
+    it("refuses a roster with nothing left to dispatch to, and keeps the one it had", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Keep something to dispatch to");
+        const url = `/api/investigations/${held.workspace.investigationId}/dispatch`;
+
+        const refused = await lab.server.inject({
+            method: "PUT",
+            url,
+            payload: { harness_kinds: [], spend_past_caps: false }
+        });
+
+        expect(refused.statusCode).toBe(400);
+        expect(held.workspace.input.harness_kinds).not.toHaveLength(0);
+        await lab.server.close();
+    });
+
+    it("puts a run sleeping on its subscriptions back to work when it is pointed elsewhere", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Waiting on the allowance");
+        await held.workspace.hibernate(
+            "Every subscription is at its cap",
+            new Date(Date.now() + 3_600_000).toISOString()
+        );
+
+        await lab.server.inject({
+            method: "PUT",
+            url: `/api/investigations/${held.workspace.investigationId}/dispatch`,
+            payload: { harness_kinds: [AgentHarnessKind.GLM], spend_past_caps: false }
+        });
+
+        expect(held.workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
+        await lab.server.close();
+    });
+
+    it("leaves an investigation the operator paused asleep, however it is pointed", async () => {
+        const lab = await createTestLab();
+        const held = await lab.open("Paused on purpose");
+        await lab.server.inject({
+            method: "POST",
+            url: `/api/investigations/${held.workspace.investigationId}/pause`
+        });
+
+        await lab.server.inject({
+            method: "PUT",
+            url: `/api/investigations/${held.workspace.investigationId}/dispatch`,
+            payload: { harness_kinds: [AgentHarnessKind.GLM], spend_past_caps: true }
+        });
+
+        expect(held.workspace.getSnapshot().investigation.state).toBe(
+            InvestigationState.HIBERNATING
+        );
+        expect(held.workspace.input.spend_past_caps).toBe(true);
+        await lab.server.close();
+    });
+
     it("starts a stopped investigation again on the operator's command", async () => {
         const lab = await createTestLab();
         const held = await lab.open("Start the investigation again");

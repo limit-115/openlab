@@ -4,6 +4,8 @@ import FastifyStatic from "@fastify/static";
 import { assessLifecycleTransition } from "@lab/core/investigation-lifecycle/investigation-state-transitions";
 import { WakeTrigger } from "@lab/core/investigation-lifecycle/wake-trigger.const";
 import { AnswerCapabilitySchema } from "@lab/protocol/capabilities/answer-capability.schema";
+import { InvestigationDispatchSchema } from "@lab/protocol/investigation-input/investigation-dispatch.schema";
+import type { InvestigationDispatch } from "@lab/protocol/investigation-input/investigation-dispatch.types";
 import { InvestigationRequestSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schema";
@@ -17,6 +19,7 @@ import type { HeldInvestigation } from "#src/investigation-registry/investigatio
 import { registerAgentActivityRoute } from "#src/investigation-status/agent-activity-route";
 import {
     CapabilityResponseError,
+    DISPATCH_CHANGED_REASON,
     InvestigationRoute,
     LabRoute,
     RosterStreamEvent,
@@ -211,6 +214,32 @@ export function createStatusServer(
     );
 
     /**
+     * What one investigation dispatches to. Reading it is how the operator sees which subscriptions
+     * a stopped run may still reach; writing it is one of the two ways past a lab held at its caps,
+     * the other being to lift the caps off this investigation, which is written here as well.
+     */
+    app.get<{ Params: InvestigationParams }>(InvestigationRoute.DISPATCH, async (request, reply) =>
+        investigationDispatch(held(request.params.id, reply))
+    );
+
+    app.put<{ Params: InvestigationParams }>(
+        InvestigationRoute.DISPATCH,
+        async (request, reply) => {
+            const investigation = held(request.params.id, reply);
+            if (investigation === undefined) {
+                return undefined;
+            }
+            const parsedDispatch = InvestigationDispatchSchema.safeParse(request.body);
+            if (!parsedDispatch.success) {
+                return reply.code(400).send({ error: StatusServerError.INVALID_DISPATCH });
+            }
+            await investigation.workspace.changeDispatch(parsedDispatch.data);
+            await investigation.controller.redispatch(new Error(DISPATCH_CHANGED_REASON));
+            return investigationDispatch(investigation);
+        }
+    );
+
+    /**
      * The lifecycle controls. Each asks the state machine whether the operator's transition is one
      * this investigation can make, rather than keeping a second copy of the rule here that drifts
      * from it. A refusal names the state that blocked it, which is the part an operator can act on.
@@ -345,6 +374,16 @@ export function createStatusServer(
     }
 
     return app;
+}
+
+function investigationDispatch(
+    investigation: HeldInvestigation | undefined
+): InvestigationDispatch | undefined {
+    if (investigation === undefined) {
+        return undefined;
+    }
+    const input = investigation.workspace.input;
+    return { harness_kinds: input.harness_kinds, spend_past_caps: input.spend_past_caps };
 }
 
 function writeStreamEvent(reply: FastifyReply, event: string, payload: unknown): void {

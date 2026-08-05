@@ -156,7 +156,7 @@ export class InvestigationRegistry {
             workspace,
             activity,
             this.#researchLoop,
-            createHarnesses(workspace.input.harness_kinds),
+            () => createHarnesses(workspace.input.harness_kinds),
             this.#settings,
             this.#subscriptions
         );

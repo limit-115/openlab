@@ -13,7 +13,7 @@ import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/
 
 export type RegistryPersistence = Pick<
     RuntimePersistence,
-    "initialize" | "load" | "commit" | "eventsAfter" | "listPersisted"
+    "initialize" | "load" | "commit" | "eventsAfter" | "listPersisted" | "retask"
 >;
 
 export type InvestigationRecords = Pick<InvestigationRepository, "delete">;

@@ -1,3 +1,4 @@
+import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -185,6 +186,34 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             running.lastEventSequence
         );
         expect(noReplay).toEqual([]);
+    });
+
+    it("keeps the harnesses an investigation was moved onto, and refuses to move its goal", async () => {
+        const input = makeInput();
+        const snapshot = makeSnapshot(testInvestigationId("retask"), input);
+        await persistence.initialize({
+            task: input,
+            workspacePath: "/tmp/lab-runtime-retask",
+            snapshot
+        });
+
+        const moved = await persistence.retask(snapshot.investigation.id, {
+            ...input,
+            harness_kinds: [AgentHarnessKind.GLM],
+            spend_past_caps: true
+        });
+
+        expect(moved).toMatchObject({
+            harness_kinds: [AgentHarnessKind.GLM],
+            spend_past_caps: true
+        });
+        expect((await persistence.load(snapshot.investigation.id))?.task).toEqual(moved);
+        await expect(
+            persistence.retask(snapshot.investigation.id, {
+                ...input,
+                goal: "Chase something else"
+            })
+        ).rejects.toThrow();
     });
 
     it("refuses a checkpoint written before a protocol change without hiding the readable ones", async () => {

@@ -54,6 +54,15 @@ export class InMemoryRuntime {
         );
     }
 
+    async retask(investigationId: string, task: InvestigationInput): Promise<InvestigationInput> {
+        const runtime = this.#runtimes.get(investigationId);
+        if (runtime === undefined || runtime.task.goal !== task.goal) {
+            throw new Error(`Runtime ${investigationId} does not exist under that goal`);
+        }
+        runtime.task = structuredClone(task);
+        return structuredClone(runtime.task);
+    }
+
     async eventsAfter(
         investigationId: string,
         afterSequence = 0,

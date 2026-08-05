@@ -1,4 +1,5 @@
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
+import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
@@ -215,6 +216,27 @@ export class RuntimePersistence {
             })
         );
         return runtimes.filter((runtime): runtime is PersistedRuntime => runtime !== undefined);
+    }
+
+    /**
+     * Rewrites what an investigation was asked to do. Only the operator's own instructions move —
+     * the goal has to match the one the investigation was opened on, because a run that is chasing
+     * something else is a different run and its history would no longer be about its goal.
+     */
+    async retask(investigationId: string, task: InvestigationInput): Promise<InvestigationInput> {
+        assertNonEmptyIdentifier(investigationId, "investigationId");
+        const parsed = InvestigationInputSchema.parse(task);
+        const [record] = await this.#database
+            .update(investigations)
+            .set({ input: parsed, updatedAt: new Date() })
+            .where(
+                and(eq(investigations.id, investigationId), eq(investigations.goal, parsed.goal))
+            )
+            .returning({ input: investigations.input });
+        if (record === undefined) {
+            throw new Error(`Investigation ${investigationId} does not exist under that goal`);
+        }
+        return record.input;
     }
 
     async eventsAfter(
