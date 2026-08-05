@@ -4,8 +4,12 @@ import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
  * How often the lab is asked to run the CLIs again while the setup page is open. An operator on this
  * page is installing something in another window, so the page has to notice on its own: being told
  * to press refresh after every command is the setup doing nothing that the operator cannot see.
+ *
+ * A check costs a couple of seconds and one call to Z.ai, and an install takes far longer than that,
+ * so a slower beat loses nothing. Coming back to the tab checks straight away in any case, which is
+ * what actually happens after a command has been run somewhere else.
  */
-export const HARNESS_CHECK_INTERVAL_MS = 5_000;
+export const HARNESS_CHECK_INTERVAL_MS = 10_000;
 
 /**
  * What puts each CLI on the machine. Both Anthropic-served harnesses run the same binary — GLM is
