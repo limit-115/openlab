@@ -1,4 +1,4 @@
-import path from "node:path";
+import { resolveLabHome } from "@lab/daemon/lab-home/lab-home";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
@@ -10,13 +10,14 @@ export interface PurgeConfig {
 export function resolvePurgeConfig(): PurgeConfig {
     const environment = createEnv({
         server: {
-            LAB_HOME: z.string().min(1).optional()
+            LAB_HOME: z.string().min(1).optional(),
+            XDG_DATA_HOME: z.string().min(1).optional()
         },
         runtimeEnv: process.env,
         emptyStringAsUndefined: true
     });
 
     return {
-        workspaceRoot: path.resolve(environment.LAB_HOME ?? path.join(process.cwd(), ".lab"))
+        workspaceRoot: resolveLabHome(environment)
     };
 }

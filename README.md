@@ -103,7 +103,7 @@ reads the lab, not part of how it runs.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `LAB_HOME` | `.lab` | The lab's database, run workspaces and durable artifacts |
+| `LAB_HOME` | `$XDG_DATA_HOME/lab` | The lab's database, run workspaces and durable artifacts |
 | `LAB_HOST` | `127.0.0.1` | Local status server host |
 | `LAB_PORT` | `4318` | Local status server port |
 | `LAB_DASHBOARD_ROOT` | `apps/dashboard/dist` | Built dashboard directory |
@@ -114,6 +114,13 @@ Environment values are validated at startup. Empty values are treated as unset. 
 is read by the daemon except `LAB_API_URL`, which is how the CLI finds it. The database is not among
 them: one home is one lab, so pointing `LAB_HOME` somewhere else moves the database with the runs it
 belongs to.
+
+A lab belongs to whoever runs it, not to the directory it was started in, so `LAB_HOME` falls back to
+the XDG data directory — `~/.local/share/lab` on a machine that leaves `XDG_DATA_HOME` unset, macOS
+included. A relative `XDG_DATA_HOME` is ignored as the specification asks; a relative `LAB_HOME` is
+an operator naming a home and resolves against the working directory, which is how `LAB_HOME=./.lab`
+gives a throwaway lab. Nothing expands a leading `~` inside a launch agent or a unit file, so the lab
+expands one itself.
 
 Where the lab runs is environment; what it runs with is not. The harness roster a new investigation
 starts on, and the model and reasoning effort behind each role, are set on the dashboard's settings

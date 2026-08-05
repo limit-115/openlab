@@ -3,6 +3,7 @@ import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 import { DaemonLogLevel, LAB_DATABASE_FILE } from "#src/daemon-runtime/daemon-config.const";
 import type { DaemonConfig, DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
+import { resolveLabHome } from "#src/lab-home/lab-home";
 
 /**
  * Where a lab home keeps its database. One home is one lab, so nothing names the file: pointing a
@@ -18,6 +19,7 @@ export function resolveDaemonConfig(options: DaemonOptions = {}): DaemonConfig {
             LAB_HOST: z.string().min(1).default("127.0.0.1"),
             LAB_PORT: z.coerce.number().int().min(0).max(65535).default(4318),
             LAB_HOME: z.string().min(1).optional(),
+            XDG_DATA_HOME: z.string().min(1).optional(),
             LAB_DASHBOARD_ROOT: z.string().min(1).optional(),
             LAB_LOG_LEVEL: z.enum(DaemonLogLevel).default(DaemonLogLevel.INFO)
         },
@@ -29,7 +31,7 @@ export function resolveDaemonConfig(options: DaemonOptions = {}): DaemonConfig {
         },
         emptyStringAsUndefined: true
     });
-    const workspaceRoot = path.resolve(environment.LAB_HOME ?? path.join(process.cwd(), ".lab"));
+    const workspaceRoot = resolveLabHome(environment);
 
     return {
         host: environment.LAB_HOST,

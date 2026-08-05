@@ -4,6 +4,8 @@
     "private": true,
     "type": "module",
     "exports": {
+        "./lab-home/lab-home": "./src/lab-home/lab-home.ts",
+        "./lab-home/lab-home.types": "./src/lab-home/lab-home.types.ts",
         "./run-purge/run-purge": "./src/run-purge/run-purge.ts",
         "./run-purge/run-purge.types": "./src/run-purge/run-purge.types.ts",
         "./server": "./src/daemon-runtime/daemon-startup.ts"
