@@ -86,7 +86,8 @@ asks the daemon for anything:
 - **Harnesses** — the roster a new investigation starts on, and the model and reasoning effort
   behind each of the director, researcher and verifier roles;
 - **Subscriptions** — what each authenticated subscription has left and when the reading was taken,
-  refreshed on its own and on demand;
+  refreshed on its own and on demand, with a limiter on every window that says how far into it the
+  lab may spend;
 - **Notifications** — the channels the lab reaches the operator through when nobody is watching
   this page, which moments each one reports and what language it writes in;
 - **Storage** — what each run directory takes up under `LAB_HOME`, including directories left behind
@@ -117,6 +118,23 @@ starts on, and the model and reasoning effort behind each role, are set on the d
 page and kept in the database. They apply to the next agent the lab dispatches, without a restart.
 An investigation that named its own roster keeps it, and a role that names no model is left to the
 harness default.
+
+## Spend caps
+
+A subscription window can be capped short of the vendor's own ceiling: 80% of the five-hour window,
+60% of the weekly one. The lab reads the caps before it prepares a run, so a subscription that has
+reached one is passed over exactly as a spent one is — the work moves to the next harness in the
+investigation's roster, and a run already under way finishes rather than being killed mid-thought.
+
+Nothing is asked of the operator for a limit they set themselves. When every subscription an
+investigation may use is blocked, it hibernates on what each one answered and dates the sleep by the
+first window due back, then takes itself up again then. A vendor that has genuinely stopped serving
+is still raised as a capability request, because only the operator can restore that.
+
+An investigation held at the caps has two ways out, both on its own page: point it at a subscription
+with headroom, or let it spend past the caps. The second is per investigation and never buys past a
+vendor's own ceiling. Changing either gives up the cycle in flight, because a research loop reads
+its roster when it starts.
 
 ## Notifications
 
