@@ -14,8 +14,7 @@ export const WELCOME_SCREEN =
     "mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center gap-8 px-6 py-12" as const;
 export const WELCOME_CHROME = "flex items-center justify-between gap-4" as const;
 export const WELCOME_PROGRESS = "text-muted-foreground" as const;
-export const WELCOME_SETTINGS = "flex shrink-0 items-center gap-4" as const;
-export const WELCOME_CHOICES = "flex shrink-0 items-center gap-1" as const;
+export const WELCOME_SETTINGS = "flex shrink-0 items-center gap-2" as const;
 export const WELCOME_TITLE = "text-3xl font-semibold text-balance" as const;
 export const WELCOME_LEAD = "text-lg text-muted-foreground" as const;
 export const WELCOME_CYCLE = "grid gap-4" as const;

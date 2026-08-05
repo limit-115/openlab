@@ -24,3 +24,6 @@ export const PAINTED_COLOR_SCHEME: Record<PaintedTheme, string> = {
 };
 
 export const SYSTEM_DARK_QUERY = "(prefers-color-scheme: dark)" as const;
+
+/** Wide enough to hold the longest palette name, so choosing one does not resize the row. */
+export const THEME_TRIGGER = "min-w-36" as const;

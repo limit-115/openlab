@@ -20,3 +20,6 @@ export const LOCALE_LABEL: Record<Locale, string> = {
     [Locale.EN]: "English",
     [Locale.RU]: "Русский"
 };
+
+/** Wide enough to hold the longest language name, so choosing one does not resize the row. */
+export const INTERFACE_LANGUAGE_TRIGGER = "min-w-36" as const;
