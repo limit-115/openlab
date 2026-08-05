@@ -20,9 +20,7 @@ export function hasReadyHarness(roster: HarnessReadinessRoster | undefined): boo
  * is worth doing while a card might still turn over and worth nothing once none of them can.
  */
 export function everyHarnessReady(roster: HarnessReadinessRoster | undefined): boolean {
-    return (
-        roster !== undefined && roster.every(({ state }) => state === HarnessReadinessState.READY)
-    );
+    return roster?.every(({ state }) => state === HarnessReadinessState.READY) ?? false;
 }
 
 interface HarnessReadinessListProps {
