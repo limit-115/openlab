@@ -20,7 +20,7 @@ type EventBody<Event> = Event extends unknown
     : never;
 
 export const ARTIFACT_DIRECTORY =
-    "/lab/workspaces/cycle-1/researcher-000/.lab-artifacts/run-9f0c" as const;
+    "/nightlab/workspaces/cycle-1/researcher-000/.nightlab-artifacts/run-9f0c" as const;
 
 export function activityIdentity(overrides: Partial<AgentRunIdentity> = {}): AgentRunIdentity {
     return {
@@ -77,7 +77,7 @@ export function harnessRunResult(overrides: Partial<HarnessRunResult> = {}): Har
         command: {
             file: "claude",
             args: ["-p"],
-            cwd: "/lab/workspaces/cycle-1/researcher-000",
+            cwd: "/nightlab/workspaces/cycle-1/researcher-000",
             stdin: HarnessInputSources.PROMPT,
             removedEnvironmentVariables: []
         },

@@ -24,7 +24,8 @@ export function watchedActivity(overrides: Partial<AgentActivity> = {}): AgentAc
             model: "claude-opus-5",
             effort: AgentEffortLevel.HIGH
         },
-        artifact_directory: "/lab/workspaces/cycle-1/researcher-000/.lab-artifacts/run-9f0c",
+        artifact_directory:
+            "/nightlab/workspaces/cycle-1/researcher-000/.nightlab-artifacts/run-9f0c",
         started_at: "2026-08-03T10:00:00.000Z",
         session_id: "session-1",
         phase: AgentActivityPhase.THINKING,

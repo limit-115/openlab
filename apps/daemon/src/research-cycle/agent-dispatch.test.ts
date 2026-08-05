@@ -89,7 +89,12 @@ function answeringHarness(kind: HarnessKind, requests: HarnessRunRequest[]): Ava
 
 async function agentWorkspace(role: AgentRole): Promise<AgentWorkspace> {
     const cwd = await mkdtemp(path.join(tmpdir(), `lab-agent-${role}-`));
-    return { id: `${role}-000`, role, cwd, artifactDirectory: path.join(cwd, ".lab-artifacts") };
+    return {
+        id: `${role}-000`,
+        role,
+        cwd,
+        artifactDirectory: path.join(cwd, ".nightlab-artifacts")
+    };
 }
 
 function readings(spent: readonly HarnessKind[]): SubscriptionAllowanceReadings {

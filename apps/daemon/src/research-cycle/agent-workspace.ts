@@ -31,7 +31,7 @@ export class RunDirectoryWorkspaceFactory implements AgentWorkspaceFactory {
             id,
             role,
             cwd,
-            artifactDirectory: path.join(cwd, ".lab-artifacts", `run-${randomUUID()}`)
+            artifactDirectory: path.join(cwd, ".nightlab-artifacts", `run-${randomUUID()}`)
         };
     }
 }
