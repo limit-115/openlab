@@ -1,6 +1,5 @@
 import type { NotifiableEventType } from "#src/operator-notifications/notifiable-event.const";
 import type { NotificationLanguage } from "#src/operator-notifications/notification-channel.const";
-import type { NotificationDefaults } from "#src/operator-notifications/notification-settings.types";
 
 /**
  * The two questions a channel may answer for itself. An unanswered one is absent rather than empty:
@@ -25,7 +24,7 @@ export interface ChannelReport {
  */
 export function channelReporting(
     channel: ChannelReportOverride,
-    defaults: NotificationDefaults
+    defaults: ChannelReport
 ): ChannelReport {
     return {
         events: channel.events ?? defaults.events,
