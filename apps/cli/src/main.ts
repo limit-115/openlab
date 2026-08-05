@@ -126,7 +126,7 @@ async function daemonIsAnswering(command: Command): Promise<boolean> {
 
 const program = new Command()
     .name("nightlab")
-    .description("Run and inspect the local autonomous AI research lab")
+    .description("Run and inspect NightLab, your local autonomous research lab")
     .version("0.1.0")
     .option("--api-url <url>", "local daemon URL", cliConfig.apiUrl)
     .option("-i, --investigation <id>", "which investigation the command is about")
@@ -141,7 +141,7 @@ program
     .option("--no-open", "leave the browser alone")
     .option("--verbose", "write what every request did, not only what went wrong")
     .action(async (options: StartOptions) => {
-        intro("AI Research Lab");
+        intro("NightLab");
         const daemon = await startDaemon(
             {
                 ...(options.port === undefined ? {} : { port: options.port }),

@@ -1,7 +1,7 @@
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 
 /** The lab is called this in every language, the way a piece of software is called what it is. */
-export const LAB_NAME = "Research Lab" as const;
+export const LAB_NAME = "NightLab" as const;
 
 /** The places the lab always has, each of which the interface has a word for in both languages. */
 export const LabPlace = {
