@@ -4,9 +4,13 @@
     "private": true,
     "type": "module",
     "bin": {
-        "lab": "./src/main.ts"
+        "lab": "./bin/lab.js"
+    },
+    "engines": {
+        "node": ">=24.18.1"
     },
     "imports": {
+        "#bin/*": "./bin/*",
         "#src/*": "./src/*.ts"
     },
     "scripts": {
