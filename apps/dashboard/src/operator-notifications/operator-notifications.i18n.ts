@@ -20,7 +20,7 @@ export const OPERATOR_NOTIFICATIONS_EN = {
     channelsDescription: "Where the lab sends what it decided to report. Open one to set it up.",
 
     followsLab: "As the lab reports",
-    setForChannel: "Set for this channel",
+    setForChannel: "Change for this channel",
     followLab: "Follow the lab",
     ownMoments: "Own moments",
     ownLanguage: "Own language",
@@ -88,7 +88,7 @@ export const OPERATOR_NOTIFICATIONS_RU = {
         "Куда лаборатория отправляет то, о чём решила сообщить. Раскройте канал, чтобы настроить его.",
 
     followsLab: "Как у лаборатории",
-    setForChannel: "Задать для этого канала",
+    setForChannel: "Изменить для этого канала",
     followLab: "Вернуть как у лаборатории",
     ownMoments: "Свои поводы",
     ownLanguage: "Свой язык",

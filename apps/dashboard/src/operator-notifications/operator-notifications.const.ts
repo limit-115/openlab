@@ -86,8 +86,12 @@ export const CHANNEL_REPORTING = "grid gap-6 border-t pt-5" as const;
  * The two credentials sit side by side on a wide screen: they are copied from the same place at the
  * same time, and reading one under the other makes the pair look like unrelated settings. Neither
  * is long enough to earn half of a very wide panel, so the pair stops before the panel does.
+ *
+ * Each keeps its own height rather than being drawn out to its neighbour's. One hint runs longer
+ * than the other, and a field stretched to match it pays for the difference by spacing its label off
+ * its box — which is the pair sitting crooked beside each other.
  */
-export const CREDENTIAL_FIELDS = "grid max-w-4xl gap-4 sm:grid-cols-2" as const;
+export const CREDENTIAL_FIELDS = "grid max-w-4xl items-start gap-4 sm:grid-cols-2" as const;
 export const FIELD = "grid gap-2" as const;
 
 /**
