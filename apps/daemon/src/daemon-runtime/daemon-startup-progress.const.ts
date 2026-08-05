@@ -4,7 +4,7 @@
  * them is where a lab that cannot start usually stops.
  */
 export const DaemonStartupStep = {
-    LAB_HOME: "lab_home",
+    HOME: "home",
     DATABASE: "database",
     DASHBOARD: "dashboard",
     INVESTIGATIONS: "investigations"

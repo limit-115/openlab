@@ -36,7 +36,7 @@ export async function startDaemon(
     const report = dependencies.reportStartup ?? (() => undefined);
     /** The database is created inside the lab home, so the home has to exist before it is opened. */
     await mkdir(config.workspaceRoot, { recursive: true });
-    report(ready(DaemonStartupStep.LAB_HOME, config.workspaceRoot));
+    report(ready(DaemonStartupStep.HOME, config.workspaceRoot));
     const database = await (dependencies.openDatabase ?? openDaemonDatabase)(config.databasePath);
     report(ready(DaemonStartupStep.DATABASE, config.databasePath));
     let app: FastifyInstance | undefined;

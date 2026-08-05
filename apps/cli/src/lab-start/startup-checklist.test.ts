@@ -18,7 +18,7 @@ describe("startupLine", () => {
     it("says where the lab put itself, which is the one thing nobody can guess", () => {
         expect(
             startupLine({
-                step: DaemonStartupStep.LAB_HOME,
+                step: DaemonStartupStep.HOME,
                 outcome: DaemonStartupOutcome.READY,
                 detail: "/home/operator/.local/share/lab"
             })

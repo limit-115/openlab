@@ -10,7 +10,7 @@ import type { DaemonStartupProgress } from "@nightlab/daemon/daemon-runtime/daem
  * operator would say it rather than as the daemon names it internally.
  */
 const READY_LINE: Record<DaemonStartupStep, (detail: string) => string> = {
-    [DaemonStartupStep.LAB_HOME]: (home) => `Lab home at ${home}`,
+    [DaemonStartupStep.HOME]: (home) => `Lab home at ${home}`,
     [DaemonStartupStep.DATABASE]: () => "Database ready",
     [DaemonStartupStep.DASHBOARD]: () => "Dashboard ready",
     [DaemonStartupStep.INVESTIGATIONS]: (count) =>
@@ -19,7 +19,7 @@ const READY_LINE: Record<DaemonStartupStep, (detail: string) => string> = {
 
 /** Only the dashboard can be absent and still leave a lab worth running. */
 const MISSING_LINE: Record<DaemonStartupStep, (detail: string) => string> = {
-    [DaemonStartupStep.LAB_HOME]: (home) => `No lab home at ${home}`,
+    [DaemonStartupStep.HOME]: (home) => `No lab home at ${home}`,
     [DaemonStartupStep.DATABASE]: (database) => `No database at ${database}`,
     [DaemonStartupStep.DASHBOARD]: (root) => `No dashboard at ${root} — the lab runs without one`,
     [DaemonStartupStep.INVESTIGATIONS]: () => "No investigations were reopened"
