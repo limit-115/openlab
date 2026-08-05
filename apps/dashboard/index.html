@@ -8,6 +8,16 @@
             name="description"
             content="Live observer dashboard for the local NightLab"
         />
+        <!--
+            The SVG mark answers first and follows the reader's own light or dark setting. The PNGs
+            beside it are not resamples of it: below 20px the mark is redrawn with a heavier stroke,
+            so a browser that cannot read the SVG is given the size it asked for, not a shrunk one.
+        -->
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
+        <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
         <title>NightLab</title>
     </head>
     <body class="min-h-screen min-w-80">

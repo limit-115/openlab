@@ -1,8 +1,5 @@
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 
-/** The lab is called this in every language, the way a piece of software is called what it is. */
-export const LAB_NAME = "NightLab" as const;
-
 /** The places the lab always has, each of which the interface has a word for in both languages. */
 export const LabPlace = {
     ROSTER: "roster",
@@ -15,6 +12,16 @@ export const LAB_VIEWS = [{ route: LabRoute.ROSTER, place: LabPlace.ROSTER }] as
 
 /** The one address that is not a view of the lab's work, so it stands apart from the rest. */
 export const LAB_SETTINGS = { route: LabRoute.SETTINGS, place: LabPlace.SETTINGS } as const;
+
+/**
+ * The mark in the sidebar's head, standing on the sidebar itself rather than inside a filled tile:
+ * the mark is already a boundary, and a boundary inside a second one reads as a box in a box. It
+ * carries the brand colour instead, which is the treatment the brand pack gives a mark left bare.
+ *
+ * The size is forced because a menu button sizes every icon it holds to `size-4`, which is the
+ * right rule for the addresses below and the wrong one for the thing the sidebar is headed by.
+ */
+export const SIDEBAR_MARK = "size-8! shrink-0 text-brand" as const;
 
 /**
  * The layout is exactly as tall as the viewport and never grows past it. Nothing outside the page

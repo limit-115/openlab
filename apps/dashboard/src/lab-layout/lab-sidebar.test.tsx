@@ -3,9 +3,11 @@ import { render, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { LAB_NAME } from "#src/brand/brand.const";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { investigationAddress, LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import { TooltipProvider } from "#src/design-system/tooltip";
+import { LAB_LAYOUT_EN } from "#src/lab-layout/lab-layout.i18n";
 import { FakeEventSource } from "#src/test-support/fake-event-source";
 import { rosterFixture } from "#src/test-support/roster-fixture";
 import { statusFixture } from "#src/test-support/status-fixture";
@@ -73,6 +75,22 @@ describe("LabSidebar", () => {
     beforeEach(() => {
         FakeEventSource.reset();
         vi.stubGlobal("EventSource", FakeEventSource);
+    });
+
+    /**
+     * The mark carries the lab's name and so does the word beside it, which is right for the eye
+     * and wrong for the ear: found by what only the subtitle can say, the head is then asked what
+     * it is called, and a mark left audible answers with the name twice over.
+     */
+    it("gives its own name once, though both the mark and the word carry it", async () => {
+        renderAt(LabRoute.ROSTER);
+
+        const head = await within(sidebar()).findByRole("link", {
+            name: new RegExp(LAB_LAYOUT_EN.subtitle)
+        });
+
+        /** Anchored, and loose about the join: what is being counted is the name, not the spacing. */
+        expect(head).toHaveAccessibleName(new RegExp(`^${LAB_NAME}\\s*${LAB_LAYOUT_EN.subtitle}$`));
     });
 
     it("marks the roster while the roster is what the operator is reading", async () => {

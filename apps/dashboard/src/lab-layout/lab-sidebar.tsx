@@ -1,7 +1,9 @@
-import { FlaskConicalIcon, MicroscopeIcon, Settings2Icon } from "lucide-react";
+import { MicroscopeIcon, Settings2Icon } from "lucide-react";
 import type * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, useMatch } from "react-router";
+import { LAB_NAME } from "#src/brand/brand.const";
+import { NightLabMark } from "#src/brand/nightlab-mark";
 import { LabRoute } from "#src/dashboard-routes/dashboard-routes.const";
 import {
     Sidebar,
@@ -16,7 +18,7 @@ import {
 import { LanguageEntry } from "#src/interface-language/language-entry";
 import { NewInvestigationDialog } from "#src/investigation-roster/new-investigation-dialog";
 import { RecentInvestigations } from "#src/investigation-roster/recent-investigations";
-import { LAB_NAME, LAB_SETTINGS, LAB_VIEWS } from "#src/lab-layout/lab-layout.const";
+import { LAB_SETTINGS, LAB_VIEWS, SIDEBAR_MARK } from "#src/lab-layout/lab-layout.const";
 import { LAB_LAYOUT_NAMESPACE } from "#src/lab-layout/lab-layout.i18n";
 import { ThemeEntry } from "#src/theme/theme-entry";
 
@@ -35,9 +37,7 @@ export function LabSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link to={LabRoute.ROSTER}>
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <FlaskConicalIcon className="size-4" />
-                                </div>
+                                <NightLabMark className={SIDEBAR_MARK} decorative />
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="font-medium">{LAB_NAME}</span>
                                     <span className="text-sm">{t("subtitle")}</span>

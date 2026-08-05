@@ -15,6 +15,12 @@ export const WELCOME_SCREEN =
 export const WELCOME_CHROME = "flex items-center justify-between gap-4" as const;
 export const WELCOME_PROGRESS = "text-muted-foreground" as const;
 export const WELCOME_SETTINGS = "flex shrink-0 items-center gap-2" as const;
+/**
+ * The lockup and the first thing the lab says are one block, held closer to each other than the
+ * screen's own spacing would put them: at a step's distance the name would read as a heading of its
+ * own, and the operator would meet two titles instead of a product introducing itself.
+ */
+export const WELCOME_HEADING = "grid gap-4" as const;
 export const WELCOME_TITLE = "text-3xl font-semibold text-balance" as const;
 export const WELCOME_LEAD = "text-lg text-muted-foreground" as const;
 export const WELCOME_CYCLE = "grid gap-4" as const;

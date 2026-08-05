@@ -1,6 +1,6 @@
-import { FlaskConicalIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { CENTER_STATE } from "#src/connection-screen/connection-screen.const";
+import { NightLabMark } from "#src/brand/nightlab-mark";
+import { CENTER_STATE, CENTER_STATE_MARK } from "#src/connection-screen/connection-screen.const";
 import { CONNECTION_SCREEN_NAMESPACE } from "#src/connection-screen/connection-screen.i18n";
 import {
     Empty,
@@ -19,8 +19,8 @@ export function LoadingDashboard() {
         <main className={CENTER_STATE} aria-busy="true">
             <Empty>
                 <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                        <FlaskConicalIcon />
+                    <EmptyMedia>
+                        <NightLabMark className={CENTER_STATE_MARK} />
                     </EmptyMedia>
                     <EmptyTitle>{t("loadingTitle")}</EmptyTitle>
                     <EmptyDescription>{t("loadingDescription")}</EmptyDescription>
