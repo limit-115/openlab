@@ -50,7 +50,8 @@ describeDatabase("purgeRuns", () => {
                 goal: `Goal for ${investigationId}`,
                 context: [],
                 success_criteria: [],
-                harness_kinds: [AgentHarnessKind.CODEX]
+                harness_kinds: [AgentHarnessKind.CODEX],
+                spend_past_caps: false
             },
             workspacePath: `/tmp/${investigationId}`
         });
