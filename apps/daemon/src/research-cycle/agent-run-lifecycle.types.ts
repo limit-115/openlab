@@ -1,5 +1,5 @@
-import type { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import type { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import type { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 
 export interface StartAgentRunInput {
     readonly id: string;

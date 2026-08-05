@@ -1,4 +1,4 @@
-import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import type { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";

@@ -1,6 +1,6 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { SubscriptionAllowanceState } from "@nightlab/protocol/subscription-allowance/subscription-allowance.const";
-import type { SubscriptionAllowanceRoster } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { SubscriptionAllowanceState } from "@openlab/protocol/subscription-allowance/subscription-allowance.const";
+import type { SubscriptionAllowanceRoster } from "@openlab/protocol/subscription-allowance/subscription-allowance.types";
 import { describe, expect, it } from "vitest";
 import { allowanceReadingTime } from "#src/subscription-allowance/allowance-reading-time";
 

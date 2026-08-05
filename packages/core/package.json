@@ -1,5 +1,5 @@
 {
-    "name": "@nightlab/core",
+    "name": "@openlab/core",
     "version": "0.1.0",
     "private": true,
     "license": "Apache-2.0",
@@ -39,6 +39,6 @@
         "format": "biome format --write ."
     },
     "dependencies": {
-        "@nightlab/protocol": "workspace:*"
+        "@openlab/protocol": "workspace:*"
     }
 }

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
-import type { CapabilityRequest } from "@nightlab/protocol/capabilities/capability-request.types";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import type { AgentRole } from "@openlab/protocol/agents/agent-role.const";
+import type { CapabilityRequest } from "@openlab/protocol/capabilities/capability-request.types";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { requiredById } from "#src/investigation-workspace/snapshot-entities";
 import { RUN_FAILURE_EVENT } from "#src/research-cycle/agent-run-lifecycle.const";

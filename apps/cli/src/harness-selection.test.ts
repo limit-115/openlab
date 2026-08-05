@@ -1,4 +1,4 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { InvalidArgumentError } from "commander";
 import { describe, expect, it } from "vitest";
 import { parseHarnessKinds } from "#src/harness-selection";

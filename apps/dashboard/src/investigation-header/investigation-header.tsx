@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import { useTranslation } from "react-i18next";
 import { INVESTIGATION_VIEWS } from "#src/dashboard-routes/dashboard-routes.const";
 import { TabsList, TabsTrigger } from "#src/design-system/tabs";

@@ -1,36 +1,36 @@
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { transitionInvestigationState } from "@nightlab/core/investigation-lifecycle/investigation-state-transitions";
-import type { LifecycleContext } from "@nightlab/core/investigation-lifecycle/investigation-state-transitions.types";
-import { WakeTrigger } from "@nightlab/core/investigation-lifecycle/wake-trigger.const";
+import { transitionInvestigationState } from "@openlab/core/investigation-lifecycle/investigation-state-transitions";
+import type { LifecycleContext } from "@openlab/core/investigation-lifecycle/investigation-state-transitions.types";
+import { WakeTrigger } from "@openlab/core/investigation-lifecycle/wake-trigger.const";
 import type {
     PersistedInvestigationEvent,
     PersistedRuntime
-} from "@nightlab/db/runtime/runtime-persistence.types";
-import { AnswerCapabilitySchema } from "@nightlab/protocol/capabilities/answer-capability.schema";
+} from "@openlab/db/runtime/runtime-persistence.types";
+import { AnswerCapabilitySchema } from "@openlab/protocol/capabilities/answer-capability.schema";
 import {
     CapabilityRequestType,
     CapabilityStatus
-} from "@nightlab/protocol/capabilities/capability-request.const";
-import type { CapabilityRequest } from "@nightlab/protocol/capabilities/capability-request.types";
-import type { Finding } from "@nightlab/protocol/findings/finding.types";
+} from "@openlab/protocol/capabilities/capability-request.const";
+import type { CapabilityRequest } from "@openlab/protocol/capabilities/capability-request.types";
+import type { Finding } from "@openlab/protocol/findings/finding.types";
 import {
     EventType,
     type EventType as InvestigationEventType
-} from "@nightlab/protocol/investigation-events/event-type.const";
-import { InvestigationEventSchema } from "@nightlab/protocol/investigation-events/investigation-event.schema";
-import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
-import { InvestigationDispatchSchema } from "@nightlab/protocol/investigation-input/investigation-dispatch.schema";
-import type { InvestigationDispatch } from "@nightlab/protocol/investigation-input/investigation-dispatch.types";
-import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
-import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
+} from "@openlab/protocol/investigation-events/event-type.const";
+import { InvestigationEventSchema } from "@openlab/protocol/investigation-events/investigation-event.schema";
+import type { InvestigationEvent } from "@openlab/protocol/investigation-events/investigation-event.types";
+import { InvestigationDispatchSchema } from "@openlab/protocol/investigation-input/investigation-dispatch.schema";
+import type { InvestigationDispatch } from "@openlab/protocol/investigation-input/investigation-dispatch.types";
+import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
+import type { InvestigationInput } from "@openlab/protocol/investigation-input/investigation-input.types";
 import {
     InvestigationState,
     type InvestigationState as InvestigationStateValue
-} from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import { StatusSnapshotSchema } from "@nightlab/protocol/investigation-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+} from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import { StatusSnapshotSchema } from "@openlab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import { Mutex } from "async-mutex";
 import writeFileAtomic from "write-file-atomic";
 import {

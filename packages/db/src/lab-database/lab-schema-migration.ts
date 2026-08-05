@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { shippedDirectory } from "@nightlab/core/lab-installation/shipped-directory";
-import { ShippedDirectory } from "@nightlab/core/lab-installation/shipped-directory.const";
+import { shippedDirectory } from "@openlab/core/lab-installation/shipped-directory";
+import { ShippedDirectory } from "@openlab/core/lab-installation/shipped-directory.const";
 import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/sqlite-proxy/migrator";
 import type { TransactionalDatabase } from "#src/lab-database/lab-database-client";

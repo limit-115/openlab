@@ -1,7 +1,7 @@
-import { HarnessKinds } from "@nightlab/harness/agent-harness.const";
-import type { SubscriptionAllowance as HarnessAllowance } from "@nightlab/harness/subscription-allowance.types";
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { SpendCapsSchema } from "@nightlab/protocol/spend-caps/spend-cap.schema";
+import { HarnessKinds } from "@openlab/harness/agent-harness.const";
+import type { SubscriptionAllowance as HarnessAllowance } from "@openlab/harness/subscription-allowance.types";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { SpendCapsSchema } from "@openlab/protocol/spend-caps/spend-cap.schema";
 import { describe, expect, it } from "vitest";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 import { subscriptionBlock } from "#src/subscription-allowance/subscription-block";

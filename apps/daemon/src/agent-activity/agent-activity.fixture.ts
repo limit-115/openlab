@@ -4,15 +4,12 @@ import {
     HarnessInputSources,
     HarnessKinds,
     HarnessRunStatuses
-} from "@nightlab/harness/agent-harness.const";
-import type { HarnessArtifact, HarnessRunResult } from "@nightlab/harness/agent-harness.types";
-import type { HarnessEvent } from "@nightlab/harness/harness-event.types";
-import type { AgentRunIdentity } from "@nightlab/protocol/agent-activity/agent-activity.types";
-import {
-    AgentEffortLevel,
-    AgentHarnessKind
-} from "@nightlab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+} from "@openlab/harness/agent-harness.const";
+import type { HarnessArtifact, HarnessRunResult } from "@openlab/harness/agent-harness.types";
+import type { HarnessEvent } from "@openlab/harness/harness-event.types";
+import type { AgentRunIdentity } from "@openlab/protocol/agent-activity/agent-activity.types";
+import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 
 /** Omitting keys from a union has to distribute, or every event collapses to its common fields. */
 type EventBody<Event> = Event extends unknown

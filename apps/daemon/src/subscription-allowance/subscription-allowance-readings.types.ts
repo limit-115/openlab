@@ -1,5 +1,5 @@
-import type { HarnessKind } from "@nightlab/harness/agent-harness.const";
-import type { SubscriptionAllowance as HarnessAllowance } from "@nightlab/harness/subscription-allowance.types";
+import type { HarnessKind } from "@openlab/harness/agent-harness.const";
+import type { SubscriptionAllowance as HarnessAllowance } from "@openlab/harness/subscription-allowance.types";
 
 export type ReadHarnessAllowance = (
     kind: HarnessKind,

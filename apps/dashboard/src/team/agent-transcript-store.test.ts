@@ -1,9 +1,9 @@
-import { AgentActivityPhase } from "@nightlab/protocol/agent-activity/agent-activity.const";
+import { AgentActivityPhase } from "@openlab/protocol/agent-activity/agent-activity.const";
 import {
     AgentActivityFrameKind,
     AgentToolPhase
-} from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+} from "@openlab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { beforeEach, describe, expect, it } from "vitest";
 import { StreamState } from "#src/live-status/status-stream.const";
 import type { TranscriptTurn } from "#src/team/agent-transcript.types";

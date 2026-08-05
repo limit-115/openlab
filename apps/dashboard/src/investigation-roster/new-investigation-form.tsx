@@ -1,5 +1,5 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { DEFAULT_HARNESS_KINDS } from "@nightlab/protocol/investigation-input/investigation-input.const";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { DEFAULT_HARNESS_KINDS } from "@openlab/protocol/investigation-input/investigation-input.const";
 import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";

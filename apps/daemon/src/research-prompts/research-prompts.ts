@@ -1,6 +1,6 @@
-import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
-import type { Finding } from "@nightlab/protocol/findings/finding.types";
-import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
+import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
+import type { Finding } from "@openlab/protocol/findings/finding.types";
+import type { InvestigationInput } from "@openlab/protocol/investigation-input/investigation-input.types";
 import {
     ARTIFACT_NOTE,
     AUTONOMOUS_EXECUTION_MANDATE,

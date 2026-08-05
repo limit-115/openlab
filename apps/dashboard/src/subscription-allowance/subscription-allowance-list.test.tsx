@@ -1,7 +1,7 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import type { SpendCaps } from "@nightlab/protocol/spend-caps/spend-cap.types";
-import { SubscriptionAllowanceState } from "@nightlab/protocol/subscription-allowance/subscription-allowance.const";
-import type { SubscriptionAllowanceRoster } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
+import { SubscriptionAllowanceState } from "@openlab/protocol/subscription-allowance/subscription-allowance.const";
+import type { SubscriptionAllowanceRoster } from "@openlab/protocol/subscription-allowance/subscription-allowance.types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { SubscriptionAllowanceList } from "#src/subscription-allowance/subscription-allowance-list";

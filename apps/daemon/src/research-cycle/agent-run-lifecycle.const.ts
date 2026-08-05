@@ -1,5 +1,5 @@
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 
 /** Which event a run's unsuccessful end is journalled as. */
 export const RUN_FAILURE_EVENT = {

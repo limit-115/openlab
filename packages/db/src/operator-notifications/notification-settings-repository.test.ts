@@ -1,9 +1,9 @@
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import {
     NotificationChannelKind,
     NotificationLanguage
-} from "@nightlab/protocol/operator-notifications/notification-channel.const";
-import { NotificationSettingsSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
+} from "@openlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsSchema } from "@openlab/protocol/operator-notifications/notification-settings.schema";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openTestDatabase, type TestDatabase } from "#src/lab-database/test-database";
 import { NotificationSettingsRepository } from "#src/operator-notifications/notification-settings-repository";

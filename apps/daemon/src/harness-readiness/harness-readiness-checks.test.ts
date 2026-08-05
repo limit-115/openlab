@@ -1,7 +1,7 @@
-import { HarnessAuthenticationMethods } from "@nightlab/harness/agent-harness.const";
-import type { HarnessPreflight } from "@nightlab/harness/agent-harness.types";
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { HarnessReadinessState } from "@nightlab/protocol/harness-readiness/harness-readiness.const";
+import { HarnessAuthenticationMethods } from "@openlab/harness/agent-harness.const";
+import type { HarnessPreflight } from "@openlab/harness/agent-harness.types";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { HarnessReadinessState } from "@openlab/protocol/harness-readiness/harness-readiness.const";
 import { describe, expect, it } from "vitest";
 import {
     harnessNotInstalled,

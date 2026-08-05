@@ -1,8 +1,8 @@
 import type {
     HarnessEffortLevel,
     HarnessExecutionProfile
-} from "@nightlab/harness/agent-harness.const";
-import type { AgentHarness, HarnessRunResult } from "@nightlab/harness/agent-harness.types";
+} from "@openlab/harness/agent-harness.const";
+import type { AgentHarness, HarnessRunResult } from "@openlab/harness/agent-harness.types";
 import type { z } from "zod";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";

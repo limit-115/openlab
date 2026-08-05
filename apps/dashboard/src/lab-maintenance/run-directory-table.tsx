@@ -1,4 +1,4 @@
-import type { RunDirectoryUsage } from "@nightlab/protocol/lab-storage/lab-storage.types";
+import type { RunDirectoryUsage } from "@openlab/protocol/lab-storage/lab-storage.types";
 import { useTranslation } from "react-i18next";
 import { CopyButton } from "#src/clipboard/copy-button";
 import {

@@ -1,4 +1,4 @@
-import type { NotificationSettings } from "@nightlab/protocol/operator-notifications/notification-settings.types";
+import type { NotificationSettings } from "@openlab/protocol/operator-notifications/notification-settings.types";
 import { eq } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { notificationSettings } from "#src/lab-database/lab-schema";

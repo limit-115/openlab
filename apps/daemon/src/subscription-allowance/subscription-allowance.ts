@@ -1,13 +1,13 @@
-import type { HarnessKind } from "@nightlab/harness/agent-harness.const";
-import type { SubscriptionAllowance as HarnessAllowance } from "@nightlab/harness/subscription-allowance.types";
+import type { HarnessKind } from "@openlab/harness/agent-harness.const";
+import type { SubscriptionAllowance as HarnessAllowance } from "@openlab/harness/subscription-allowance.types";
 import {
     ALLOWANCE_EXHAUSTED_PERCENT,
     SubscriptionAllowanceState
-} from "@nightlab/protocol/subscription-allowance/subscription-allowance.const";
+} from "@openlab/protocol/subscription-allowance/subscription-allowance.const";
 import type {
     AllowanceWindow,
     SubscriptionAllowance
-} from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
+} from "@openlab/protocol/subscription-allowance/subscription-allowance.types";
 
 /**
  * Classifies what a vendor answered into what the lab may do with that subscription. A window at

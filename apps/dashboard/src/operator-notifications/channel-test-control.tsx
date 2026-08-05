@@ -1,4 +1,4 @@
-import type { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import type { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
 import { useMutation } from "@tanstack/react-query";
 import { CheckIcon, SendIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";

@@ -1,18 +1,18 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createDatabase, type DatabaseClient } from "@nightlab/db/lab-database/lab-database-client";
+import { createDatabase, type DatabaseClient } from "@openlab/db/lab-database/lab-database-client";
 import {
     agentRuns,
     assumptions,
     events,
     findings,
     investigations
-} from "@nightlab/db/lab-database/lab-schema";
-import { migrateDatabase } from "@nightlab/db/lab-database/lab-schema-migration";
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+} from "@openlab/db/lab-database/lab-schema";
+import { migrateDatabase } from "@openlab/db/lab-database/lab-schema-migration";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import { afterEach, describe, expect, it } from "vitest";
 import {
     WorkspaceFile,

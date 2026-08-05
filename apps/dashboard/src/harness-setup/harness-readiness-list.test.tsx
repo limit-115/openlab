@@ -1,6 +1,6 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { HarnessReadinessState } from "@nightlab/protocol/harness-readiness/harness-readiness.const";
-import type { HarnessReadiness } from "@nightlab/protocol/harness-readiness/harness-readiness.types";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { HarnessReadinessState } from "@openlab/protocol/harness-readiness/harness-readiness.const";
+import type { HarnessReadiness } from "@openlab/protocol/harness-readiness/harness-readiness.types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { TooltipProvider } from "#src/design-system/tooltip";

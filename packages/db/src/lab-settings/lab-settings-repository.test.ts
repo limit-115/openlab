@@ -1,9 +1,6 @@
-import {
-    AgentEffortLevel,
-    AgentHarnessKind
-} from "@nightlab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
-import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
+import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
+import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openTestDatabase, type TestDatabase } from "#src/lab-database/test-database";
 import { LabSettingsRepository } from "#src/lab-settings/lab-settings-repository";

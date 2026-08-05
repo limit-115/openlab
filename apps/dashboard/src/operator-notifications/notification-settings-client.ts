@@ -1,8 +1,8 @@
-import type { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
-import { NotificationSettingsViewSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
-import type { NotificationSettingsView } from "@nightlab/protocol/operator-notifications/notification-settings.types";
-import { NotificationTestResultSchema } from "@nightlab/protocol/operator-notifications/notification-test.schema";
-import type { NotificationTestResult } from "@nightlab/protocol/operator-notifications/notification-test.types";
+import type { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsViewSchema } from "@openlab/protocol/operator-notifications/notification-settings.schema";
+import type { NotificationSettingsView } from "@openlab/protocol/operator-notifications/notification-settings.types";
+import { NotificationTestResultSchema } from "@openlab/protocol/operator-notifications/notification-test.schema";
+import type { NotificationTestResult } from "@openlab/protocol/operator-notifications/notification-test.types";
 import { NotificationEndpoint } from "#src/operator-notifications/operator-notifications.const";
 import type { NotificationSettingsSubmission } from "#src/operator-notifications/operator-notifications.types";
 

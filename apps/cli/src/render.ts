@@ -1,10 +1,10 @@
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
-import type { CapabilityRequest } from "@nightlab/protocol/capabilities/capability-request.types";
-import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
-import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
+import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
+import type { CapabilityRequest } from "@openlab/protocol/capabilities/capability-request.types";
+import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
+import type { InvestigationSummary } from "@openlab/protocol/investigation-status/investigation-summary.types";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import Table from "cli-table3";
 
 function lines(items: string[]): string {

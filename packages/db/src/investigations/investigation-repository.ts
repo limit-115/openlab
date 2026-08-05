@@ -1,5 +1,5 @@
-import { transitionInvestigationState } from "@nightlab/core/investigation-lifecycle/investigation-state-transitions";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import { transitionInvestigationState } from "@openlab/core/investigation-lifecycle/investigation-state-transitions";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import { and, eq, ne } from "drizzle-orm";
 import type {
     CreateInvestigationInput,

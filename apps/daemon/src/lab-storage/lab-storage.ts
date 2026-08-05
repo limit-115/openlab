@@ -2,7 +2,7 @@ import path from "node:path";
 import type {
     LabStorage,
     RunDirectoryUsage
-} from "@nightlab/protocol/lab-storage/lab-storage.types";
+} from "@openlab/protocol/lab-storage/lab-storage.types";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { WorkspaceLayout } from "#src/investigation-workspace/investigation-workspace.const";
 import { directoryUsage } from "#src/lab-storage/run-directory-usage";

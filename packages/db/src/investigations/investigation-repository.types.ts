@@ -1,6 +1,6 @@
-import type { LifecycleContext } from "@nightlab/core/investigation-lifecycle/investigation-state-transitions.types";
-import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
-import type { InvestigationState as InvestigationStateValue } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { LifecycleContext } from "@openlab/core/investigation-lifecycle/investigation-state-transitions.types";
+import type { InvestigationInput } from "@openlab/protocol/investigation-input/investigation-input.types";
+import type { InvestigationState as InvestigationStateValue } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import type { investigations } from "#src/lab-database/lab-schema";
 
 export type InvestigationRecord = typeof investigations.$inferSelect;

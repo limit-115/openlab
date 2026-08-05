@@ -1,6 +1,6 @@
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import type { NotifiableEventType } from "@nightlab/protocol/operator-notifications/notifiable-event.const";
-import { NotificationLanguage } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import type { NotifiableEventType } from "@openlab/protocol/operator-notifications/notifiable-event.const";
+import { NotificationLanguage } from "@openlab/protocol/operator-notifications/notification-channel.const";
 
 /**
  * Everything the lab says to somebody who is not looking at the dashboard. The daemon has no

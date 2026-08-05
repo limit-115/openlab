@@ -1,4 +1,4 @@
-import type { AgentRun } from "@nightlab/protocol/agent-runs/agent-run.types";
+import type { AgentRun } from "@openlab/protocol/agent-runs/agent-run.types";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";

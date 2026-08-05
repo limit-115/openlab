@@ -1,5 +1,5 @@
-import { InvestigationDispatchSchema } from "@nightlab/protocol/investigation-input/investigation-dispatch.schema";
-import type { InvestigationDispatch } from "@nightlab/protocol/investigation-input/investigation-dispatch.types";
+import { InvestigationDispatchSchema } from "@openlab/protocol/investigation-input/investigation-dispatch.schema";
+import type { InvestigationDispatch } from "@openlab/protocol/investigation-input/investigation-dispatch.types";
 
 function dispatchEndpoint(investigationId: string): string {
     return `/api/investigations/${investigationId}/dispatch`;

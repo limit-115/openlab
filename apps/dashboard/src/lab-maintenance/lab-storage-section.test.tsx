@@ -1,4 +1,4 @@
-import type { LabStorage } from "@nightlab/protocol/lab-storage/lab-storage.types";
+import type { LabStorage } from "@openlab/protocol/lab-storage/lab-storage.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

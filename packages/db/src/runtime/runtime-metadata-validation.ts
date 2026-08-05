@@ -1,5 +1,5 @@
-import type { InvestigationInput } from "@nightlab/protocol/investigation-input/investigation-input.types";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import type { InvestigationInput } from "@openlab/protocol/investigation-input/investigation-input.types";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 
 export function parseTimestamp(value: string, field: string): Date {
     const timestamp = new Date(value);

@@ -1,6 +1,6 @@
-import type { HarnessKind } from "@nightlab/harness/agent-harness.const";
-import type { HarnessCapabilityError } from "@nightlab/harness/harness-error";
-import type { SpendCaps } from "@nightlab/protocol/spend-caps/spend-cap.types";
+import type { HarnessKind } from "@openlab/harness/agent-harness.const";
+import type { HarnessCapabilityError } from "@openlab/harness/harness-error";
+import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
 import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 import type { SubscriptionBlockKind } from "#src/subscription-allowance/subscription-block.const";
 

@@ -1,6 +1,6 @@
-import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
-import type { Finding } from "@nightlab/protocol/findings/finding.types";
-import type { Verdict } from "@nightlab/protocol/verdicts/verdict.types";
+import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
+import type { Finding } from "@openlab/protocol/findings/finding.types";
+import type { Verdict } from "@openlab/protocol/verdicts/verdict.types";
 import { useTranslation } from "react-i18next";
 import { AssumptionCard } from "#src/assumptions/assumption-card";
 import { ASSUMPTION_LIST } from "#src/assumptions/assumption-card.const";

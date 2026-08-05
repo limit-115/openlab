@@ -1,4 +1,4 @@
-import type { OperatorReply } from "@nightlab/notifier/notification-message.types";
+import type { OperatorReply } from "@openlab/notifier/notification-message.types";
 import { describe, expect, it } from "vitest";
 import { capabilityAnsweredBy } from "#src/operator-answers/answered-capability";
 import { ReplyResolution } from "#src/operator-answers/operator-answers.const";

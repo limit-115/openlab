@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { shippedDirectory } from "@nightlab/core/lab-installation/shipped-directory";
-import { ShippedDirectory } from "@nightlab/core/lab-installation/shipped-directory.const";
+import { shippedDirectory } from "@openlab/core/lab-installation/shipped-directory";
+import { ShippedDirectory } from "@openlab/core/lab-installation/shipped-directory.const";
 import { BUILT_DASHBOARD_DIRECTORY } from "#src/daemon-runtime/built-dashboard.const";
 
 /**
@@ -21,6 +21,6 @@ export function builtDashboardRoot(): string {
         return shipped;
     }
 
-    const manifest = fileURLToPath(import.meta.resolve("@nightlab/dashboard/package.json"));
+    const manifest = fileURLToPath(import.meta.resolve("@openlab/dashboard/package.json"));
     return path.join(path.dirname(manifest), BUILT_DASHBOARD_DIRECTORY);
 }

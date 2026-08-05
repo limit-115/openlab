@@ -1,5 +1,5 @@
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 
 /**

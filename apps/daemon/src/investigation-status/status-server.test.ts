@@ -1,19 +1,16 @@
 import { mkdir, mkdtemp, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import {
-    AgentEffortLevel,
-    AgentHarnessKind
-} from "@nightlab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
-import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
-import { HarnessReadinessRosterSchema } from "@nightlab/protocol/harness-readiness/harness-readiness.schema";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
-import { LabStorageSchema } from "@nightlab/protocol/lab-storage/lab-storage.schema";
-import { SubscriptionAllowanceRosterSchema } from "@nightlab/protocol/subscription-allowance/subscription-allowance.schema";
+import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
+import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
+import { HarnessReadinessRosterSchema } from "@openlab/protocol/harness-readiness/harness-readiness.schema";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
+import { LabStorageSchema } from "@openlab/protocol/lab-storage/lab-storage.schema";
+import { SubscriptionAllowanceRosterSchema } from "@openlab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { harnessNotInstalled } from "#src/agent-harness/agent-harness.fixture";
 import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";

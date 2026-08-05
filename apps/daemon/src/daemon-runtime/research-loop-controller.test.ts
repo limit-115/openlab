@@ -1,8 +1,8 @@
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import { describe, expect, it, vi } from "vitest";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";

@@ -1,5 +1,5 @@
-import { HarnessReadinessState } from "@nightlab/protocol/harness-readiness/harness-readiness.const";
-import type { HarnessReadiness } from "@nightlab/protocol/harness-readiness/harness-readiness.types";
+import { HarnessReadinessState } from "@openlab/protocol/harness-readiness/harness-readiness.const";
+import type { HarnessReadiness } from "@openlab/protocol/harness-readiness/harness-readiness.types";
 import { CheckIcon, CircleAlertIcon, CircleDashedIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";

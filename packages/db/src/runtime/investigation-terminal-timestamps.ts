@@ -1,5 +1,5 @@
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 
 export function terminalTimestamps(snapshot: StatusSnapshot, updatedAt: Date) {
     switch (snapshot.investigation.state) {

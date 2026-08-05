@@ -1,5 +1,5 @@
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { InvestigationSummary } from "@openlab/protocol/investigation-status/investigation-summary.types";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";

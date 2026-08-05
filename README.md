@@ -139,7 +139,7 @@ before deleting.
 ## Dashboard
 
 The dashboard is served by the daemon when `apps/dashboard/dist` exists. Build it with
-`pnpm --filter @nightlab/dashboard build` before starting the lab.
+`pnpm --filter @openlab/dashboard build` before starting the lab.
 
 It reads the lab live: every investigation the lab holds, what each one is doing, its team, its
 event stream and what it ended up as. The settings page holds four panels, and only the open one

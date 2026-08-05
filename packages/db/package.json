@@ -1,5 +1,5 @@
 {
-    "name": "@nightlab/db",
+    "name": "@openlab/db",
     "version": "0.1.0",
     "private": true,
     "license": "Apache-2.0",
@@ -52,8 +52,8 @@
         "format": "biome format --write ."
     },
     "dependencies": {
-        "@nightlab/core": "workspace:*",
-        "@nightlab/protocol": "workspace:*",
+        "@openlab/core": "workspace:*",
+        "@openlab/protocol": "workspace:*",
         "drizzle-orm": "0.45.2"
     },
     "devDependencies": {

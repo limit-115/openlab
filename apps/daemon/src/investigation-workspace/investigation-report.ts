@@ -1,6 +1,6 @@
-import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
-import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
+import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 
 export interface InvestigationReportSubject {
     readonly snapshot: StatusSnapshot;

@@ -1,11 +1,11 @@
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import { InvestigationRequestSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import { InvestigationRequestSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
 import { describe, expect, it } from "vitest";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";

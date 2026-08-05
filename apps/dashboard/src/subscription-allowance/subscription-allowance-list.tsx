@@ -1,11 +1,11 @@
-import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { windowSpendCap, withheldWindows } from "@nightlab/protocol/spend-caps/spend-cap";
-import type { SpendCaps } from "@nightlab/protocol/spend-caps/spend-cap.types";
-import { SubscriptionAllowanceState } from "@nightlab/protocol/subscription-allowance/subscription-allowance.const";
+import type { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { windowSpendCap, withheldWindows } from "@openlab/protocol/spend-caps/spend-cap";
+import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
+import { SubscriptionAllowanceState } from "@openlab/protocol/subscription-allowance/subscription-allowance.const";
 import type {
     SubscriptionAllowance,
     SubscriptionAllowanceRoster
-} from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
+} from "@openlab/protocol/subscription-allowance/subscription-allowance.types";
 import { useTranslation } from "react-i18next";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { subscriptionPlanName } from "#src/agent-harness/subscription-plan-name";

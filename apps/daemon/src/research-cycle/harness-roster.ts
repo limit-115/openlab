@@ -1,6 +1,6 @@
-import type { AgentHarness } from "@nightlab/harness/agent-harness.types";
-import { HarnessCapabilityError } from "@nightlab/harness/harness-error";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import type { AgentHarness } from "@openlab/harness/agent-harness.types";
+import { HarnessCapabilityError } from "@openlab/harness/harness-error";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { requestSubscriptionCapability } from "#src/research-cycle/agent-dispatch";
 import type { AvailableHarness } from "#src/research-cycle/research-loop.types";

@@ -1,5 +1,5 @@
-import type { AgentRun } from "@nightlab/protocol/agent-runs/agent-run.types";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import type { AgentRun } from "@openlab/protocol/agent-runs/agent-run.types";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { CYCLE_STAGES, CycleStageState } from "#src/research-cycle/cycle-stage.const";
 import type { CycleStage } from "#src/research-cycle/cycle-stage.types";
 

@@ -1,10 +1,10 @@
-import type { NotificationSettingsRepository } from "@nightlab/db/operator-notifications/notification-settings-repository";
-import type { NotificationChannel } from "@nightlab/notifier/notification-channel.types";
-import type { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import type { NotificationSettingsRepository } from "@openlab/db/operator-notifications/notification-settings-repository";
+import type { NotificationChannel } from "@openlab/notifier/notification-channel.types";
+import type { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
 import type {
     NotificationChannel as ConfiguredChannel,
     NotificationSettings
-} from "@nightlab/protocol/operator-notifications/notification-settings.types";
+} from "@openlab/protocol/operator-notifications/notification-settings.types";
 
 export type NotificationSettingsRecords = Pick<NotificationSettingsRepository, "read" | "write">;
 

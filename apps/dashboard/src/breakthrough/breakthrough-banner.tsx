@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import { FileTextIcon, TrophyIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {

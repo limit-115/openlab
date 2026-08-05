@@ -1,4 +1,4 @@
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 
 /**
  * The order a research cycle runs its roles in. A cycle bets, then researches every bet in

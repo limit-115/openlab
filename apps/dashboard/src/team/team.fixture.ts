@@ -1,16 +1,13 @@
-import { AgentActivityPhase } from "@nightlab/protocol/agent-activity/agent-activity.const";
-import type { AgentActivity } from "@nightlab/protocol/agent-activity/agent-activity.types";
+import { AgentActivityPhase } from "@openlab/protocol/agent-activity/agent-activity.const";
+import type { AgentActivity } from "@openlab/protocol/agent-activity/agent-activity.types";
 import {
     AgentActivityFrameKind,
     AgentToolPhase
-} from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
-import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import {
-    AgentEffortLevel,
-    AgentHarnessKind
-} from "@nightlab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+} from "@openlab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentActivityFrame } from "@openlab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 
 export const RUN_ID = "run-researcher-9f0c" as const;
 

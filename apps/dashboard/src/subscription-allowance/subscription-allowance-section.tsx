@@ -1,7 +1,7 @@
-import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
-import type { SpendCaps } from "@nightlab/protocol/spend-caps/spend-cap.types";
-import type { SubscriptionAllowanceRoster } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
+import type { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import type { LabSettings } from "@openlab/protocol/lab-settings/lab-settings.types";
+import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
+import type { SubscriptionAllowanceRoster } from "@openlab/protocol/subscription-allowance/subscription-allowance.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";

@@ -1,16 +1,16 @@
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { NotificationChannel } from "@nightlab/notifier/notification-channel.types";
-import { NotificationDeliveryError } from "@nightlab/notifier/notification-delivery-error";
-import { NotificationDeliveryFailure } from "@nightlab/notifier/notification-delivery-error.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import type { NotificationChannel } from "@openlab/notifier/notification-channel.types";
+import { NotificationDeliveryError } from "@openlab/notifier/notification-delivery-error";
+import { NotificationDeliveryFailure } from "@openlab/notifier/notification-delivery-error.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import {
     NotificationChannelKind,
     NotificationLanguage
-} from "@nightlab/protocol/operator-notifications/notification-channel.const";
-import { NotificationSettingsSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
-import { NotificationTestResultSchema } from "@nightlab/protocol/operator-notifications/notification-test.schema";
+} from "@openlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsSchema } from "@openlab/protocol/operator-notifications/notification-settings.schema";
+import { NotificationTestResultSchema } from "@openlab/protocol/operator-notifications/notification-test.schema";
 import { describe, expect, it, vi } from "vitest";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";

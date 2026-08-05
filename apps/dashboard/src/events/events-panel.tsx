@@ -1,4 +1,4 @@
-import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import type { InvestigationEvent } from "@openlab/protocol/investigation-events/investigation-event.types";
 import { RadioIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "#src/design-system/badge";

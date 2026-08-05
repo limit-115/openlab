@@ -1,8 +1,8 @@
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
-import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
-import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
+import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
+import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {

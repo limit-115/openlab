@@ -1,13 +1,13 @@
-import { HarnessRunStatuses } from "@nightlab/harness/agent-harness.const";
+import { HarnessRunStatuses } from "@openlab/harness/agent-harness.const";
 import {
     HarnessDiagnosticLevels,
     HarnessEventTypes,
     HarnessToolPhases
-} from "@nightlab/harness/harness-event.const";
-import type { HarnessEvent } from "@nightlab/harness/harness-event.types";
-import { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
-import { AgentActivityFrameSchema } from "@nightlab/protocol/agent-activity/agent-activity-frame.schema";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+} from "@openlab/harness/harness-event.const";
+import type { HarnessEvent } from "@openlab/harness/harness-event.types";
+import { AgentActivityFrameKind } from "@openlab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentActivityFrameSchema } from "@openlab/protocol/agent-activity/agent-activity-frame.schema";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { describe, expect, it } from "vitest";
 import { UNSPECIFIED_DIAGNOSTIC } from "#src/agent-activity/agent-activity.const";
 import {

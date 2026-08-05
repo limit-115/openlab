@@ -1,12 +1,12 @@
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { WakeTrigger } from "@nightlab/core/investigation-lifecycle/wake-trigger.const";
-import type { NotificationMessage } from "@nightlab/notifier/notification-message.types";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
-import { NotificationSettingsSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
+import { WakeTrigger } from "@openlab/core/investigation-lifecycle/wake-trigger.const";
+import type { NotificationMessage } from "@openlab/notifier/notification-message.types";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsSchema } from "@openlab/protocol/operator-notifications/notification-settings.schema";
 import { describe, expect, it } from "vitest";
 import { startDaemon } from "#src/daemon-runtime/daemon-startup";
 import type { RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";

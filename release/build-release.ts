@@ -83,7 +83,7 @@ function requestedTargets(): readonly ReleaseTarget[] {
 /** The dashboard is built once and copied into every platform's archive unchanged. */
 async function buildDashboard(): Promise<void> {
     report("building the dashboard");
-    await execa("pnpm", ["--filter", "@nightlab/dashboard", "build"], {
+    await execa("pnpm", ["--filter", "@openlab/dashboard", "build"], {
         cwd: REPOSITORY,
         stdout: "ignore",
         stderr: "inherit"

@@ -1,5 +1,5 @@
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import {
     ResearchResultSchema,
     VerificationResultSchema

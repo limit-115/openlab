@@ -1,5 +1,5 @@
-import { HarnessReadinessState } from "@nightlab/protocol/harness-readiness/harness-readiness.const";
-import type { HarnessReadinessRoster } from "@nightlab/protocol/harness-readiness/harness-readiness.types";
+import { HarnessReadinessState } from "@openlab/protocol/harness-readiness/harness-readiness.const";
+import type { HarnessReadinessRoster } from "@openlab/protocol/harness-readiness/harness-readiness.types";
 import { useTranslation } from "react-i18next";
 import { Spinner } from "#src/design-system/spinner";
 import { HarnessReadinessCard } from "#src/harness-setup/harness-readiness-card";

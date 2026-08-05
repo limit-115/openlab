@@ -1,6 +1,6 @@
 import { log } from "@clack/prompts";
-import { DaemonStartupStep } from "@nightlab/daemon/daemon-runtime/daemon-startup-progress.const";
-import type { DaemonStartupProgress } from "@nightlab/daemon/daemon-runtime/daemon-startup-progress.types";
+import { DaemonStartupStep } from "@openlab/daemon/daemon-runtime/daemon-startup-progress.const";
+import type { DaemonStartupProgress } from "@openlab/daemon/daemon-runtime/daemon-startup-progress.types";
 
 /**
  * What a lab coming up looks like from the outside: one line per thing it got through, said as the

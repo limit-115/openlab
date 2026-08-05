@@ -1,4 +1,4 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { InvalidArgumentError } from "commander";
 
 const HARNESS_KIND_SEPARATOR = ",";

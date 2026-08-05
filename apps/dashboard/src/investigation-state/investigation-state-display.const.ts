@@ -1,4 +1,4 @@
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 
 export const STATE_DOT = "size-2 flex-none rounded-full" as const;
 

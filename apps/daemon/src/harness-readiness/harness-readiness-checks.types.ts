@@ -1,5 +1,5 @@
-import type { AgentHarness } from "@nightlab/harness/agent-harness.types";
-import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import type { AgentHarness } from "@openlab/harness/agent-harness.types";
+import type { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 
 export interface HarnessReadinessOptions {
     /** Swapped in tests, where a real CLI would be launched three times per check. */

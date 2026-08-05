@@ -1,4 +1,4 @@
-import type { NotificationSettingsView } from "@nightlab/protocol/operator-notifications/notification-settings.types";
+import type { NotificationSettingsView } from "@openlab/protocol/operator-notifications/notification-settings.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";

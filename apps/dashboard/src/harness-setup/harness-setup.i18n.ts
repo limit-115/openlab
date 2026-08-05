@@ -1,4 +1,4 @@
-import { HarnessReadinessState } from "@nightlab/protocol/harness-readiness/harness-readiness.const";
+import { HarnessReadinessState } from "@openlab/protocol/harness-readiness/harness-readiness.const";
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 
 export const HARNESS_SETUP_NAMESPACE = "harness-setup" as const;

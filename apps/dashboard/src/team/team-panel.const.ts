@@ -1,8 +1,8 @@
 import {
     AgentDiagnosticLevel,
     AgentToolPhase
-} from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+} from "@openlab/protocol/agent-activity/agent-activity-frame.const";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import type { BadgeVariant } from "#src/status-tag/status-tag.types";
 
 /**

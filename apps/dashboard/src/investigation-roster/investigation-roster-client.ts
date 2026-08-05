@@ -1,7 +1,7 @@
-import { InvestigationSummarySchema } from "@nightlab/protocol/investigation-status/investigation-summary.schema";
-import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
-import { StatusSnapshotSchema } from "@nightlab/protocol/investigation-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { InvestigationSummarySchema } from "@openlab/protocol/investigation-status/investigation-summary.schema";
+import type { InvestigationSummary } from "@openlab/protocol/investigation-status/investigation-summary.types";
+import { StatusSnapshotSchema } from "@openlab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import i18next from "i18next";
 import { investigationPath } from "#src/investigation-roster/investigation-address";
 import { INVESTIGATIONS_ENDPOINT } from "#src/investigation-roster/investigation-roster.const";

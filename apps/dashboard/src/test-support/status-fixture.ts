@@ -1,18 +1,15 @@
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import {
-    AgentEffortLevel,
-    AgentHarnessKind
-} from "@nightlab/protocol/agents/agent-execution.const";
-import { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
+import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import {
     CapabilityRequestType,
     CapabilityStatus
-} from "@nightlab/protocol/capabilities/capability-request.const";
-import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+} from "@openlab/protocol/capabilities/capability-request.const";
+import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 
 const now = "2026-08-02T10:00:00.000Z";
 

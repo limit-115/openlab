@@ -1,9 +1,9 @@
 import type {
     NotificationMessage,
     OperatorReply
-} from "@nightlab/notifier/notification-message.types";
-import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
-import { NotificationSettingsSchema } from "@nightlab/protocol/operator-notifications/notification-settings.schema";
+} from "@openlab/notifier/notification-message.types";
+import { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationSettingsSchema } from "@openlab/protocol/operator-notifications/notification-settings.schema";
 import { describe, expect, it, vi } from "vitest";
 import { OperatorAnswers } from "#src/operator-answers/operator-answers";
 import type { ListeningChat, OpenCapability } from "#src/operator-answers/operator-answers.types";

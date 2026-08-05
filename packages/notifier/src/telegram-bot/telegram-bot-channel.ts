@@ -1,4 +1,4 @@
-import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
 import type { NotificationChannel } from "#src/notification-channel/notification-channel.types";
 import { NotificationDeliveryError } from "#src/notification-channel/notification-delivery-error";
 import { NotificationDeliveryFailure } from "#src/notification-channel/notification-delivery-error.const";

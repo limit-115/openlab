@@ -1,5 +1,5 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { DEFAULT_HARNESS_KINDS } from "@nightlab/protocol/investigation-input/investigation-input.const";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { DEFAULT_HARNESS_KINDS } from "@openlab/protocol/investigation-input/investigation-input.const";
 import { describe, expect, it } from "vitest";
 import { createHarnesses } from "#src/agent-harness/harness-factory";
 

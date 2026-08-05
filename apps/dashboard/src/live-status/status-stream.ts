@@ -1,7 +1,7 @@
-import { InvestigationEventSchema } from "@nightlab/protocol/investigation-events/investigation-event.schema";
-import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
-import { StatusSnapshotSchema } from "@nightlab/protocol/investigation-status/status-snapshot.schema";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { InvestigationEventSchema } from "@openlab/protocol/investigation-events/investigation-event.schema";
+import type { InvestigationEvent } from "@openlab/protocol/investigation-events/investigation-event.types";
+import { StatusSnapshotSchema } from "@openlab/protocol/investigation-status/status-snapshot.schema";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import { useQueryClient } from "@tanstack/react-query";
 import i18next from "i18next";
 import { useEffect, useState } from "react";

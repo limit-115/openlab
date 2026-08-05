@@ -1,4 +1,4 @@
-import type { NotifiableEventType } from "@nightlab/protocol/operator-notifications/notifiable-event.const";
+import type { NotifiableEventType } from "@openlab/protocol/operator-notifications/notifiable-event.const";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "#src/design-system/checkbox";

@@ -1,9 +1,9 @@
-import { HarnessRunStatuses } from "@nightlab/harness/agent-harness.const";
-import type { HarnessCapabilityRequest } from "@nightlab/harness/harness-error";
-import { HarnessAbortedError, HarnessCapabilityError } from "@nightlab/harness/harness-error";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import type { CapabilityRequest } from "@nightlab/protocol/capabilities/capability-request.types";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
+import { HarnessRunStatuses } from "@openlab/harness/agent-harness.const";
+import type { HarnessCapabilityRequest } from "@openlab/harness/harness-error";
+import { HarnessAbortedError, HarnessCapabilityError } from "@openlab/harness/harness-error";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import type { CapabilityRequest } from "@openlab/protocol/capabilities/capability-request.types";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { resolveRoleExecution } from "#src/lab-settings/role-execution";
 import type { CapabilityRequestCandidate } from "#src/research-contract/research-contract";

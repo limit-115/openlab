@@ -20,7 +20,7 @@
   bundler — and states where that emit lands in `publishConfig`, which pnpm swaps in when it packs.
   The sources stay the thing that runs everywhere else.
 - Never create barrel files. Export explicit package subpaths and import the module that owns a symbol.
-- Use absolute aliases: `#src/*` inside a package and explicit `@nightlab/<package>/<module>` subpaths across
+- Use absolute aliases: `#src/*` inside a package and explicit `@openlab/<package>/<module>` subpaths across
   workspaces. Do not use relative source imports or `.js` specifier workarounds.
 - Organize every non-trivial application and package feature-first. Keep a feature's contracts,
   constants, implementation, and tests together under a self-explanatory feature directory.

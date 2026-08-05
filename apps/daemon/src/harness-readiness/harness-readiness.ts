@@ -1,12 +1,12 @@
-import type { HarnessPreflight } from "@nightlab/harness/agent-harness.types";
-import { HarnessCapabilityError } from "@nightlab/harness/harness-error";
+import type { HarnessPreflight } from "@openlab/harness/agent-harness.types";
+import { HarnessCapabilityError } from "@openlab/harness/harness-error";
 import {
     type HarnessCapabilityGap,
     HarnessCapabilityGaps
-} from "@nightlab/harness/harness-error.const";
-import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { HarnessReadinessState } from "@nightlab/protocol/harness-readiness/harness-readiness.const";
-import type { HarnessReadiness } from "@nightlab/protocol/harness-readiness/harness-readiness.types";
+} from "@openlab/harness/harness-error.const";
+import type { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { HarnessReadinessState } from "@openlab/protocol/harness-readiness/harness-readiness.const";
+import type { HarnessReadiness } from "@openlab/protocol/harness-readiness/harness-readiness.types";
 
 /**
  * What each gap means for someone who wants to start the lab. A spent allowance cannot come out of a

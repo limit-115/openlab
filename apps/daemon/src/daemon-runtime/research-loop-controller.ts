@@ -1,8 +1,8 @@
-import { WakeTrigger } from "@nightlab/core/investigation-lifecycle/wake-trigger.const";
-import type { AgentHarness } from "@nightlab/harness/agent-harness.types";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { WakeTrigger } from "@openlab/core/investigation-lifecycle/wake-trigger.const";
+import type { AgentHarness } from "@openlab/harness/agent-harness.types";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { RESUME_REASON, RESUME_STEP_MS } from "#src/daemon-runtime/research-loop-controller.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";

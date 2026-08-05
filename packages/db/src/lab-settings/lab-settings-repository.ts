@@ -1,4 +1,4 @@
-import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
+import type { LabSettings } from "@openlab/protocol/lab-settings/lab-settings.types";
 import { eq } from "drizzle-orm";
 import type { Database } from "#src/lab-database/lab-database-client";
 import { labSettings } from "#src/lab-database/lab-schema";

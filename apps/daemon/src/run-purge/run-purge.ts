@@ -1,5 +1,5 @@
-import { InvestigationRepository } from "@nightlab/db/investigations/investigation-repository";
-import { createDatabase } from "@nightlab/db/lab-database/lab-database-client";
+import { InvestigationRepository } from "@openlab/db/investigations/investigation-repository";
+import { createDatabase } from "@openlab/db/lab-database/lab-database-client";
 import { labDatabasePath } from "#src/lab-home/lab-home";
 import type {
     PurgePlan,

@@ -1,5 +1,5 @@
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import type { InvestigationEvent } from "@openlab/protocol/investigation-events/investigation-event.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";

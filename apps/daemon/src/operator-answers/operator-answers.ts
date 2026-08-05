@@ -1,5 +1,5 @@
-import type { OperatorReply } from "@nightlab/notifier/notification-message.types";
-import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import type { OperatorReply } from "@openlab/notifier/notification-message.types";
+import { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
 import { capabilityAnsweredBy } from "#src/operator-answers/answered-capability";
 import {
     REMEMBERED_QUESTIONS,

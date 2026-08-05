@@ -1,4 +1,4 @@
-import { DaemonStartupStep } from "@nightlab/daemon/daemon-runtime/daemon-startup-progress.const";
+import { DaemonStartupStep } from "@openlab/daemon/daemon-runtime/daemon-startup-progress.const";
 import { describe, expect, it } from "vitest";
 import { startupLine } from "#src/lab-start/startup-checklist";
 

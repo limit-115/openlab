@@ -1,8 +1,5 @@
-import type { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import type {
-    LabSettings,
-    RoleExecution
-} from "@nightlab/protocol/lab-settings/lab-settings.types";
+import type { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import type { LabSettings, RoleExecution } from "@openlab/protocol/lab-settings/lab-settings.types";
 
 /**
  * The settings while the operator is still editing them. A roster is allowed to be empty here and

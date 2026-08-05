@@ -1,4 +1,4 @@
-import type { AgentRun } from "@nightlab/protocol/agent-runs/agent-run.types";
+import type { AgentRun } from "@openlab/protocol/agent-runs/agent-run.types";
 import { useTranslation } from "react-i18next";
 import { cn } from "#src/design-system/class-names";
 import {

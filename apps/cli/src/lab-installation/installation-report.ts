@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { access, stat } from "node:fs/promises";
 import path from "node:path";
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { readInstallReceipt } from "#src/lab-installation/install-receipt";
 import type { InstalledPaths } from "#src/lab-installation/installed-layout";
 import { isOnPath } from "#src/lab-installation/path-entry";

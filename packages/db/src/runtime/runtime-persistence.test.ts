@@ -1,7 +1,7 @@
-import { AgentHarnessKind } from "@nightlab/protocol/agents/agent-execution.const";
-import { EventType } from "@nightlab/protocol/investigation-events/event-type.const";
-import { InvestigationState } from "@nightlab/protocol/investigation-lifecycle/investigation-state.const";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
+import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createDatabase } from "#src/lab-database/lab-database-client";

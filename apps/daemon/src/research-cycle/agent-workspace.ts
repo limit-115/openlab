@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import type { AgentRole } from "@nightlab/protocol/agents/agent-role.const";
+import type { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 import type {
     AgentWorkspace,
     AgentWorkspaceFactory

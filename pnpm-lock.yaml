@@ -32,10 +32,10 @@ importers:
       '@clack/prompts':
         specifier: 1.7.0
         version: 1.7.0
-      '@nightlab/daemon':
+      '@openlab/daemon':
         specifier: workspace:*
         version: link:../daemon
-      '@nightlab/protocol':
+      '@openlab/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       '@t3-oss/env-core':
@@ -69,25 +69,25 @@ importers:
       '@fastify/static':
         specifier: 10.1.2
         version: 10.1.2
-      '@nightlab/core':
+      '@openlab/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@nightlab/dashboard':
+      '@openlab/dashboard':
         specifier: workspace:*
         version: link:../dashboard
-      '@nightlab/db':
+      '@openlab/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@nightlab/executor':
+      '@openlab/executor':
         specifier: workspace:*
         version: link:../../packages/executor
-      '@nightlab/harness':
+      '@openlab/harness':
         specifier: workspace:*
         version: link:../../packages/harness
-      '@nightlab/notifier':
+      '@openlab/notifier':
         specifier: workspace:*
         version: link:../../packages/notifier
-      '@nightlab/protocol':
+      '@openlab/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       '@t3-oss/env-core':
@@ -115,7 +115,7 @@ importers:
 
   apps/dashboard:
     dependencies:
-      '@nightlab/protocol':
+      '@openlab/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       '@streamdown/code':
@@ -212,16 +212,16 @@ importers:
 
   packages/core:
     dependencies:
-      '@nightlab/protocol':
+      '@openlab/protocol':
         specifier: workspace:*
         version: link:../protocol
 
   packages/db:
     dependencies:
-      '@nightlab/core':
+      '@openlab/core':
         specifier: workspace:*
         version: link:../core
-      '@nightlab/protocol':
+      '@openlab/protocol':
         specifier: workspace:*
         version: link:../protocol
       drizzle-orm:
@@ -263,7 +263,7 @@ importers:
 
   packages/notifier:
     dependencies:
-      '@nightlab/protocol':
+      '@openlab/protocol':
         specifier: workspace:*
         version: link:../protocol
 

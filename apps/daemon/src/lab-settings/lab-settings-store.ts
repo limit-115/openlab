@@ -1,5 +1,5 @@
-import { LabSettingsSchema } from "@nightlab/protocol/lab-settings/lab-settings.schema";
-import type { LabSettings } from "@nightlab/protocol/lab-settings/lab-settings.types";
+import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
+import type { LabSettings } from "@openlab/protocol/lab-settings/lab-settings.types";
 import type { LabSettingsReader, LabSettingsRecords } from "#src/lab-settings/lab-settings.types";
 
 const SHIPPED_SETTINGS = LabSettingsSchema.parse({});

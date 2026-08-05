@@ -1,6 +1,6 @@
-import type { RuntimePersistence } from "@nightlab/db/runtime/runtime-persistence";
-import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
-import type { StatusSnapshot } from "@nightlab/protocol/investigation-status/status-snapshot.types";
+import type { RuntimePersistence } from "@openlab/db/runtime/runtime-persistence";
+import type { InvestigationEvent } from "@openlab/protocol/investigation-events/investigation-event.types";
+import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import type { WorkspaceMutationAction } from "#src/investigation-workspace/investigation-workspace.const";
 
 export type StatusListener = (event: InvestigationEvent, snapshot: StatusSnapshot) => void;

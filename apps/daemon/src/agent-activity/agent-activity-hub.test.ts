@@ -1,9 +1,9 @@
-import { HarnessRunStatuses } from "@nightlab/harness/agent-harness.const";
-import { HarnessEventTypes, HarnessToolPhases } from "@nightlab/harness/harness-event.const";
-import { AgentActivityPhase } from "@nightlab/protocol/agent-activity/agent-activity.const";
-import type { AgentActivity } from "@nightlab/protocol/agent-activity/agent-activity.types";
-import type { AgentActivityFrame } from "@nightlab/protocol/agent-activity/agent-activity-frame.types";
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
+import { HarnessRunStatuses } from "@openlab/harness/agent-harness.const";
+import { HarnessEventTypes, HarnessToolPhases } from "@openlab/harness/harness-event.const";
+import { AgentActivityPhase } from "@openlab/protocol/agent-activity/agent-activity.const";
+import type { AgentActivity } from "@openlab/protocol/agent-activity/agent-activity.types";
+import type { AgentActivityFrame } from "@openlab/protocol/agent-activity/agent-activity-frame.types";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { describe, expect, it } from "vitest";
 import { ACTIVITY_RETAINED_RUNS } from "#src/agent-activity/agent-activity.const";
 import {

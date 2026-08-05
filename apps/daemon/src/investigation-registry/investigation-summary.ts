@@ -1,7 +1,7 @@
-import { AgentRunStatus } from "@nightlab/protocol/agent-runs/agent-run-status.const";
-import { CapabilityStatus } from "@nightlab/protocol/capabilities/capability-request.const";
-import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
-import type { InvestigationSummary } from "@nightlab/protocol/investigation-status/investigation-summary.types";
+import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
+import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
+import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
+import type { InvestigationSummary } from "@openlab/protocol/investigation-status/investigation-summary.types";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 
 /** What one investigation looks like from the roster: the goal, the state, and the ground covered. */

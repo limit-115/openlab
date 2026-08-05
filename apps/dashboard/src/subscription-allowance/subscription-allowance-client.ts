@@ -1,5 +1,5 @@
-import { SubscriptionAllowanceRosterSchema } from "@nightlab/protocol/subscription-allowance/subscription-allowance.schema";
-import type { SubscriptionAllowanceRoster } from "@nightlab/protocol/subscription-allowance/subscription-allowance.types";
+import { SubscriptionAllowanceRosterSchema } from "@openlab/protocol/subscription-allowance/subscription-allowance.schema";
+import type { SubscriptionAllowanceRoster } from "@openlab/protocol/subscription-allowance/subscription-allowance.types";
 
 const SUBSCRIPTION_ALLOWANCE_ENDPOINT = "/api/subscriptions";
 

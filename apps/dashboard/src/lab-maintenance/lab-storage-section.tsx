@@ -1,4 +1,4 @@
-import type { LabStorage } from "@nightlab/protocol/lab-storage/lab-storage.types";
+import type { LabStorage } from "@openlab/protocol/lab-storage/lab-storage.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "#src/design-system/card";

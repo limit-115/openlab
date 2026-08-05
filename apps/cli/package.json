@@ -1,5 +1,5 @@
 {
-    "name": "@nightlab/cli",
+    "name": "@openlab/cli",
     "version": "0.1.0",
     "private": true,
     "license": "Apache-2.0",
@@ -34,8 +34,8 @@
     },
     "dependencies": {
         "@clack/prompts": "1.7.0",
-        "@nightlab/daemon": "workspace:*",
-        "@nightlab/protocol": "workspace:*",
+        "@openlab/daemon": "workspace:*",
+        "@openlab/protocol": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "cli-table3": "0.6.5",
         "commander": "15.0.0",

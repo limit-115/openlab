@@ -1,4 +1,4 @@
-import { NotificationChannelKind } from "@nightlab/protocol/operator-notifications/notification-channel.const";
+import { NotificationChannelKind } from "@openlab/protocol/operator-notifications/notification-channel.const";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "#src/design-system/accordion";

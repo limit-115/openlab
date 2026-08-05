@@ -1,4 +1,4 @@
-import { resolveLabHome } from "@nightlab/daemon/lab-home/lab-home";
+import { resolveLabHome } from "@openlab/daemon/lab-home/lab-home";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 

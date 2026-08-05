@@ -1,4 +1,4 @@
-import type { AgentActivityFrameKind } from "@nightlab/protocol/agent-activity/agent-activity-frame.const";
+import type { AgentActivityFrameKind } from "@openlab/protocol/agent-activity/agent-activity-frame.const";
 
 /** The frame kinds that carry a turn of text and therefore need turn numbering. */
 export type AgentTextFrameKind =

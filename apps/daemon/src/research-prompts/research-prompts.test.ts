@@ -1,8 +1,8 @@
-import type { Assumption } from "@nightlab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@nightlab/protocol/assumptions/assumption-status.const";
-import type { Finding } from "@nightlab/protocol/findings/finding.types";
-import { FindingStatus } from "@nightlab/protocol/findings/finding-status.const";
-import { InvestigationInputSchema } from "@nightlab/protocol/investigation-input/investigation-input.schema";
+import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
+import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
+import type { Finding } from "@openlab/protocol/findings/finding.types";
+import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
+import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
 import { describe, expect, it } from "vitest";
 import {
     directorPrompt,

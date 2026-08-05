@@ -1,4 +1,4 @@
-import type { InvestigationEvent } from "@nightlab/protocol/investigation-events/investigation-event.types";
+import type { InvestigationEvent } from "@openlab/protocol/investigation-events/investigation-event.types";
 import { useTranslation } from "react-i18next";
 import { CopyButton } from "#src/clipboard/copy-button";
 import {
