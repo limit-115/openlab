@@ -3,10 +3,14 @@ import type { NotificationMessage } from "@lab/notifier/notification-message.typ
 import type { InvestigationEvent } from "@lab/protocol/investigation-events/investigation-event.types";
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import type { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
+import { channelReporting } from "@lab/protocol/operator-notifications/notification-channel-reporting";
 import type { NotificationChannel as ConfiguredChannel } from "@lab/protocol/operator-notifications/notification-settings.types";
 import type { NotificationTestResult } from "@lab/protocol/operator-notifications/notification-test.types";
 import { openNotificationChannel } from "#src/operator-notifications/notification-channel-roster";
-import type { NotificationDispatchOptions } from "#src/operator-notifications/notification-dispatch.types";
+import type {
+    NotificationDispatchOptions,
+    ReportingChannel
+} from "#src/operator-notifications/notification-dispatch.types";
 import {
     notificationMessage,
     notificationTestMessage
@@ -43,13 +47,8 @@ export class NotificationDispatch {
      * must not be held up, or brought down, by a chat service.
      */
     record(event: InvestigationEvent, snapshot: StatusSnapshot): void {
-        for (const configured of this.#reporting(event.type)) {
-            const message = notificationMessage(
-                event,
-                snapshot,
-                configured.language,
-                this.#labUrl()
-            );
+        for (const { configured, language } of this.#reporting(event.type)) {
+            const message = notificationMessage(event, snapshot, language, this.#labUrl());
             if (message !== undefined) {
                 void this.#deliver(configured, message).catch(this.#onFailure);
             }
@@ -62,11 +61,13 @@ export class NotificationDispatch {
      * credentials for is not a failed delivery and yields nothing at all.
      */
     async test(kind: NotificationChannelKind): Promise<NotificationTestResult | undefined> {
-        const configured = this.#settings.read().channels.find((channel) => channel.kind === kind);
+        const { defaults, channels } = this.#settings.read();
+        const configured = channels.find((channel) => channel.kind === kind);
         if (configured === undefined) {
             return undefined;
         }
-        const message = notificationTestMessage(configured.language, this.#labUrl());
+        const { language } = channelReporting(configured, defaults);
+        const message = notificationTestMessage(language, this.#labUrl());
         try {
             await this.#deliver(configured, message);
             return { kind, delivered: true };
@@ -75,13 +76,20 @@ export class NotificationDispatch {
         }
     }
 
-    /** The channels switched on and listening for this moment, in the order they were configured. */
-    #reporting(type: InvestigationEvent["type"]): readonly ConfiguredChannel[] {
-        return this.#settings
-            .read()
-            .channels.filter(
-                (channel) => channel.enabled && channel.events.some((reported) => reported === type)
-            );
+    /**
+     * The channels switched on and listening for this moment, in the order they were configured.
+     * What a channel listens for is asked of the settings as a whole: a channel that named no
+     * moments of its own is listening for whatever the lab currently reports, not for nothing.
+     */
+    #reporting(type: InvestigationEvent["type"]): readonly ReportingChannel[] {
+        const { defaults, channels } = this.#settings.read();
+        return channels.flatMap((configured) => {
+            if (!configured.enabled) {
+                return [];
+            }
+            const { events, language } = channelReporting(configured, defaults);
+            return events.some((reported) => reported === type) ? [{ configured, language }] : [];
+        });
     }
 
     #deliver(configured: ConfiguredChannel, message: NotificationMessage): Promise<void> {

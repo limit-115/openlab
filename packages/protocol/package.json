@@ -52,6 +52,7 @@
         "./lab-settings/lab-settings.types": "./src/lab-settings/lab-settings.types.ts",
         "./operator-notifications/notifiable-event.const": "./src/operator-notifications/notifiable-event.const.ts",
         "./operator-notifications/notification-channel.const": "./src/operator-notifications/notification-channel.const.ts",
+        "./operator-notifications/notification-channel-reporting": "./src/operator-notifications/notification-channel-reporting.ts",
         "./operator-notifications/notification-channel-secrets": "./src/operator-notifications/notification-channel-secrets.ts",
         "./operator-notifications/notification-settings.const": "./src/operator-notifications/notification-settings.const.ts",
         "./operator-notifications/notification-settings.schema": "./src/operator-notifications/notification-settings.schema.ts",

@@ -36,8 +36,9 @@ const BREAKTHROUGH: InvestigationEvent = {
     payload: {}
 };
 
-function telegram(overrides: Record<string, unknown> = {}) {
+function telegram(overrides: Record<string, unknown> = {}, defaults?: Record<string, unknown>) {
     return NotificationSettingsSchema.parse({
+        ...(defaults === undefined ? {} : { defaults }),
         channels: [
             {
                 kind: NotificationChannelKind.TELEGRAM,
@@ -133,6 +134,45 @@ describe("NotificationDispatch.record", () => {
         );
     });
 
+    it("writes in the lab's own language to a channel that named none", async () => {
+        const channel = watching();
+        dispatching(telegram({}, { language: NotificationLanguage.RU }), channel).record(
+            BREAKTHROUGH,
+            SNAPSHOT
+        );
+        await settle();
+
+        expect(channel.sent[0]?.title).toBe(
+            NOTIFICATION_PHRASES[NotificationLanguage.RU].titles[EventType.BREAKTHROUGH_RECORDED]
+        );
+    });
+
+    it("stays quiet about a moment the lab dropped, through a channel that named none", async () => {
+        const channel = watching();
+        dispatching(telegram({}, { events: [EventType.INVESTIGATION_FAILED] }), channel).record(
+            BREAKTHROUGH,
+            SNAPSHOT
+        );
+        await settle();
+
+        expect(channel.open).not.toHaveBeenCalled();
+    });
+
+    /** Narrowing the lab is not censorship: a channel that asked for a moment still gets it. */
+    it("tells a channel about the moment it asked for though the lab dropped it", async () => {
+        const channel = watching();
+        dispatching(
+            telegram(
+                { events: [EventType.BREAKTHROUGH_RECORDED] },
+                { events: [EventType.INVESTIGATION_FAILED] }
+            ),
+            channel
+        ).record(BREAKTHROUGH, SNAPSHOT);
+        await settle();
+
+        expect(channel.sent).toHaveLength(1);
+    });
+
     it("says nothing at all about a moment the lab never offers to report", async () => {
         const channel = watching();
         dispatching(telegram(), channel).record(
@@ -173,6 +213,19 @@ describe("NotificationDispatch.test", () => {
         expect(result).toEqual({ kind: NotificationChannelKind.TELEGRAM, delivered: true });
         expect(channel.sent[0]?.title).toBe(
             NOTIFICATION_PHRASES[NotificationLanguage.EN].testTitle
+        );
+    });
+
+    /** A test proves the channel, so it has to arrive in the language its messages will. */
+    it("writes the test in the lab's own language to a channel that named none", async () => {
+        const channel = watching();
+
+        await dispatching(telegram({}, { language: NotificationLanguage.RU }), channel).test(
+            NotificationChannelKind.TELEGRAM
+        );
+
+        expect(channel.sent[0]?.title).toBe(
+            NOTIFICATION_PHRASES[NotificationLanguage.RU].testTitle
         );
     });
 
