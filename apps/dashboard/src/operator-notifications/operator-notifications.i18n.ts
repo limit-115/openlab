@@ -34,8 +34,8 @@ export const OPERATOR_NOTIFICATIONS_EN = {
     answersBackHint:
         "When the lab needs something it cannot get itself, it asks here and goes back to work on your reply. Whoever can write in this chat is answering for you, and what they write reaches an agent word for word.",
     answersBackTag: "Answers back",
-    configuredOff: "Switched off",
-    configuredOn: "Switched on",
+    configuredOff: "Disabled",
+    configuredOn: "Enabled",
     notConfigured: "Not set up",
 
     botToken: "Bot token",
