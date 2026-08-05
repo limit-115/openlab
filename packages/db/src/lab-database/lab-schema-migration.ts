@@ -1,10 +1,19 @@
 import { fileURLToPath } from "node:url";
+import { shippedDirectory } from "@nightlab/core/lab-installation/shipped-directory";
+import { ShippedDirectory } from "@nightlab/core/lab-installation/shipped-directory.const";
 import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/sqlite-proxy/migrator";
 import type { TransactionalDatabase } from "#src/lab-database/lab-database-client";
 
+/**
+ * The migrations this lab was released with, which a released lab keeps beside its executable and
+ * a lab run from its sources keeps in the package that generated them.
+ */
 export function getDatabaseMigrationsPath(): string {
-    return fileURLToPath(new URL("../../migrations", import.meta.url));
+    return (
+        shippedDirectory(ShippedDirectory.MIGRATIONS) ??
+        fileURLToPath(new URL("../../migrations", import.meta.url))
+    );
 }
 
 /**

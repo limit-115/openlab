@@ -8,6 +8,8 @@
     ],
     "publishConfig": {
         "exports": {
+            "./lab-installation/shipped-directory": "./dist/lab-installation/shipped-directory.js",
+            "./lab-installation/shipped-directory.const": "./dist/lab-installation/shipped-directory.const.js",
             "./investigation-lifecycle/investigation-state-transitions": "./dist/investigation-lifecycle/investigation-state-transitions.js",
             "./investigation-lifecycle/investigation-state-transitions.const": "./dist/investigation-lifecycle/investigation-state-transitions.const.js",
             "./investigation-lifecycle/investigation-state-transitions.types": "./dist/investigation-lifecycle/investigation-state-transitions.types.js",
@@ -18,6 +20,8 @@
         }
     },
     "exports": {
+        "./lab-installation/shipped-directory": "./src/lab-installation/shipped-directory.ts",
+        "./lab-installation/shipped-directory.const": "./src/lab-installation/shipped-directory.const.ts",
         "./investigation-lifecycle/investigation-state-transitions": "./src/investigation-lifecycle/investigation-state-transitions.ts",
         "./investigation-lifecycle/investigation-state-transitions.const": "./src/investigation-lifecycle/investigation-state-transitions.const.ts",
         "./investigation-lifecycle/investigation-state-transitions.types": "./src/investigation-lifecycle/investigation-state-transitions.types.ts",
