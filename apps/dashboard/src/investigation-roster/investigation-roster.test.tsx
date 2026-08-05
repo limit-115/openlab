@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { dashboardRoutes } from "#src/dashboard-routes/dashboard-routes";
 import { TooltipProvider } from "#src/design-system/tooltip";
 import { INVESTIGATION_ROSTER_EN } from "#src/investigation-roster/investigation-roster.i18n";
@@ -90,7 +91,9 @@ describe("InvestigationRoster", () => {
             within(composer).getByLabelText(INVESTIGATION_ROSTER_EN.goalLabel),
             "Measure the eviction tail"
         );
-        await user.click(within(composer).getByRole("checkbox", { name: AgentHarnessKind.CLAUDE }));
+        await user.click(
+            within(composer).getByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CLAUDE] })
+        );
         await user.click(
             within(composer).getByRole("button", { name: INVESTIGATION_ROSTER_EN.start })
         );

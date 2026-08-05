@@ -6,6 +6,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { DispatchPanel } from "#src/investigation-dispatch/dispatch-panel";
 import { INVESTIGATION_DISPATCH_EN } from "#src/investigation-dispatch/investigation-dispatch.i18n";
 
@@ -53,7 +54,7 @@ describe("DispatchPanel", () => {
         renderPanel();
 
         await userEvent.click(
-            await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX })
+            await screen.findByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CODEX] })
         );
         await userEvent.click(screen.getByRole("button", { name: INVESTIGATION_DISPATCH_EN.save }));
 
@@ -83,13 +84,17 @@ describe("DispatchPanel", () => {
         renderPanel();
 
         await userEvent.click(
-            await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX })
+            await screen.findByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CODEX] })
         );
         await userEvent.click(screen.getByRole("button", { name: INVESTIGATION_DISPATCH_EN.save }));
 
         expect(await screen.findByText(INVESTIGATION_DISPATCH_EN.saved)).toBeInTheDocument();
-        expect(screen.getByRole("checkbox", { name: AgentHarnessKind.GLM })).toBeChecked();
-        expect(screen.getByRole("checkbox", { name: AgentHarnessKind.CLAUDE })).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.GLM] })
+        ).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CLAUDE] })
+        ).not.toBeChecked();
         expect(
             screen.getByRole("switch", { name: INVESTIGATION_DISPATCH_EN.pastCaps })
         ).toBeChecked();
@@ -100,7 +105,9 @@ describe("DispatchPanel", () => {
         renderPanel();
 
         for (const harness of Object.values(AgentHarnessKind)) {
-            await userEvent.click(await screen.findByRole("checkbox", { name: harness }));
+            await userEvent.click(
+                await screen.findByRole("checkbox", { name: HARNESS_NAME[harness] })
+            );
         }
 
         expect(screen.getByRole("button", { name: INVESTIGATION_DISPATCH_EN.save })).toBeDisabled();
@@ -110,7 +117,7 @@ describe("DispatchPanel", () => {
         respond(HELD);
         renderPanel();
 
-        await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX });
+        await screen.findByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CODEX] });
 
         expect(
             screen.queryByRole("button", { name: INVESTIGATION_DISPATCH_EN.save })

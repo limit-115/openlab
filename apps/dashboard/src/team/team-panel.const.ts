@@ -3,7 +3,6 @@ import {
     AgentToolPhase
 } from "@lab/protocol/agent-activity/agent-activity-frame.const";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import type { BadgeVariant } from "#src/status-tag/status-tag.types";
 
 /**
@@ -119,11 +118,4 @@ export const DIAGNOSTIC_TONE: Record<AgentDiagnosticLevel, string> = {
     [AgentDiagnosticLevel.INFO]: "text-muted-foreground",
     [AgentDiagnosticLevel.WARNING]: "text-foreground",
     [AgentDiagnosticLevel.ERROR]: "text-destructive"
-};
-
-/** A harness is called what its vendor calls it, so this is a spelling rather than a translation. */
-export const HARNESS_LABEL: Record<AgentHarnessKind, string> = {
-    [AgentHarnessKind.CODEX]: "Codex",
-    [AgentHarnessKind.CLAUDE]: "Claude",
-    [AgentHarnessKind.GLM]: "GLM"
 };

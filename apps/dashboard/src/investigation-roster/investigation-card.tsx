@@ -2,6 +2,7 @@ import { InvestigationState } from "@lab/protocol/investigation-lifecycle/invest
 import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { investigationAddress } from "#src/dashboard-routes/dashboard-routes.const";
 import { Button } from "#src/design-system/button";
 import { cn } from "#src/design-system/class-names";
@@ -78,7 +79,7 @@ export function InvestigationCard({ investigation, discard, discarding }: Invest
             <footer className={CARD_FOOTER}>
                 <span>
                     {investigation.id} · {formatDuration(uptime)} · {t("harnesses")}:{" "}
-                    {investigation.harness_kinds.join(", ")}
+                    {investigation.harness_kinds.map((kind) => HARNESS_NAME[kind]).join(", ")}
                 </span>
                 <Button variant="ghost" size="sm" onClick={discard} disabled={discarding}>
                     {t("discard")}

@@ -7,6 +7,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { HARNESS_SETTINGS_EN } from "#src/harness-settings/harness-settings.i18n";
 import { HarnessSettingsSection } from "#src/harness-settings/harness-settings-section";
 
@@ -53,7 +54,10 @@ describe("HarnessSettingsSection", () => {
         renderSection();
         const director = await roleField(AgentRole.DIRECTOR);
 
-        await userEvent.type(director.getByLabelText(AgentHarnessKind.CLAUDE), "opus");
+        await userEvent.type(
+            director.getByLabelText(HARNESS_NAME[AgentHarnessKind.CLAUDE]),
+            "opus"
+        );
         await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 
         const saved = savedSettings(request);
@@ -86,7 +90,7 @@ describe("HarnessSettingsSection", () => {
         renderSection();
 
         await userEvent.click(
-            await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX })
+            await screen.findByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CODEX] })
         );
         await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 
@@ -101,7 +105,9 @@ describe("HarnessSettingsSection", () => {
         renderSection();
 
         for (const harness of Object.values(AgentHarnessKind)) {
-            await userEvent.click(await screen.findByRole("checkbox", { name: harness }));
+            await userEvent.click(
+                await screen.findByRole("checkbox", { name: HARNESS_NAME[harness] })
+            );
         }
 
         expect(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save })).toBeDisabled();
@@ -122,23 +128,28 @@ describe("HarnessSettingsSection", () => {
         );
         renderSection();
         const director = await roleField(AgentRole.DIRECTOR);
-        await userEvent.type(director.getByLabelText(AgentHarnessKind.CLAUDE), "opus");
+        await userEvent.type(
+            director.getByLabelText(HARNESS_NAME[AgentHarnessKind.CLAUDE]),
+            "opus"
+        );
 
         await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
 
         expect(
             (await roleField(AgentRole.DIRECTOR)).getByLabelText<HTMLInputElement>(
-                AgentHarnessKind.CLAUDE
+                HARNESS_NAME[AgentHarnessKind.CLAUDE]
             )
         ).toHaveValue("sonnet");
-        expect(screen.getByRole("checkbox", { name: AgentHarnessKind.CODEX })).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CODEX] })
+        ).not.toBeChecked();
     });
 
     it("offers no save while the page holds exactly what the lab does", async () => {
         respond(SHIPPED);
         renderSection();
 
-        await screen.findByRole("checkbox", { name: AgentHarnessKind.CODEX });
+        await screen.findByRole("checkbox", { name: HARNESS_NAME[AgentHarnessKind.CODEX] });
 
         expect(
             screen.queryByRole("button", { name: HARNESS_SETTINGS_EN.save })
@@ -150,7 +161,10 @@ describe("HarnessSettingsSection", () => {
         renderSection();
         const director = await roleField(AgentRole.DIRECTOR);
 
-        await userEvent.type(director.getByLabelText(AgentHarnessKind.CLAUDE), "opus");
+        await userEvent.type(
+            director.getByLabelText(HARNESS_NAME[AgentHarnessKind.CLAUDE]),
+            "opus"
+        );
         await userEvent.click(screen.getByRole("button", { name: HARNESS_SETTINGS_EN.save }));
         await screen.findByText(HARNESS_SETTINGS_EN.saved);
 

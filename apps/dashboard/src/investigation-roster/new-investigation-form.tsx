@@ -3,6 +3,7 @@ import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investi
 import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { Button } from "#src/design-system/button";
 import { Checkbox } from "#src/design-system/checkbox";
 import { Spinner } from "#src/design-system/spinner";
@@ -155,7 +156,7 @@ export function NewInvestigationForm({
                                     className={HARNESS_OPTION_NAME}
                                     htmlFor={`${harnessId}-${kind}`}
                                 >
-                                    {kind}
+                                    {HARNESS_NAME[kind]}
                                 </label>
                             </div>
                         ))}

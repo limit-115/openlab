@@ -1,6 +1,7 @@
 import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#src/design-system/card";
 import { Checkbox } from "#src/design-system/checkbox";
 import { cn } from "#src/design-system/class-names";
@@ -51,7 +52,7 @@ export function HarnessRosterField({ roster, choose }: HarnessRosterFieldProps) 
                                     checked={roster.includes(harness)}
                                     onCheckedChange={(chosen) => choose(harness, chosen === true)}
                                 />
-                                {harness}
+                                {HARNESS_NAME[harness]}
                             </label>
                         </li>
                     ))}

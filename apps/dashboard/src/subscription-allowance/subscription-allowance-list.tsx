@@ -7,6 +7,7 @@ import type {
     SubscriptionAllowanceRoster
 } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
 import { useTranslation } from "react-i18next";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
 import { allowanceWindowName } from "#src/subscription-allowance/allowance-window-label";
@@ -18,10 +19,10 @@ import {
     ALLOWANCE_CARD_SPENT,
     ALLOWANCE_ERROR,
     ALLOWANCE_LIST,
+    ALLOWANCE_PLAN_NAME,
     ALLOWANCE_SUBSCRIPTION_NAME,
     ALLOWANCE_WINDOW,
-    ALLOWANCE_WINDOW_LIST,
-    HARNESS_SUBSCRIPTION_LABEL
+    ALLOWANCE_WINDOW_LIST
 } from "#src/subscription-allowance/subscription-allowance-list.const";
 
 interface SubscriptionAllowanceListProps {
@@ -114,10 +115,12 @@ function SubscriptionHeader({
 
     return (
         <div className={ALLOWANCE_CARD_HEADER}>
-            <span className={ALLOWANCE_SUBSCRIPTION_NAME}>
-                {HARNESS_SUBSCRIPTION_LABEL[allowance.harness]}
-            </span>
-            {allowance.plan === null ? null : <Badge variant="outline">{allowance.plan}</Badge>}
+            <span className={ALLOWANCE_SUBSCRIPTION_NAME}>{HARNESS_NAME[allowance.harness]}</span>
+            {allowance.plan === null ? null : (
+                <Badge variant="outline" className={ALLOWANCE_PLAN_NAME}>
+                    {allowance.plan}
+                </Badge>
+            )}
             {allowance.state === SubscriptionAllowanceState.EXHAUSTED ? (
                 <Badge variant="destructive">{t("exhausted")}</Badge>
             ) : null}

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { Button } from "#src/design-system/button";
 import { Checkbox } from "#src/design-system/checkbox";
 import { cn } from "#src/design-system/class-names";
@@ -194,7 +195,7 @@ function DispatchHarnesses({
                                 checked={roster.includes(harness)}
                                 onCheckedChange={(chosen) => choose(harness, chosen === true)}
                             />
-                            {harness}
+                            {HARNESS_NAME[harness]}
                         </label>
                     </li>
                 ))}

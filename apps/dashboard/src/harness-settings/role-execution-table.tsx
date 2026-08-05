@@ -5,6 +5,7 @@ import type {
 import type { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#src/design-system/card";
 import { Input } from "#src/design-system/input";
 import {
@@ -63,7 +64,7 @@ export function RoleExecutionTable({
                             <TableHead id={`${fieldId}-effort`}>{t("effort")}</TableHead>
                             {SELECTABLE_HARNESSES.map((harness) => (
                                 <TableHead key={harness} className={MODEL_COLUMN}>
-                                    {harness}
+                                    {HARNESS_NAME[harness]}
                                 </TableHead>
                             ))}
                         </TableRow>
@@ -103,7 +104,7 @@ export function RoleExecutionTable({
                                 {SELECTABLE_HARNESSES.map((harness) => (
                                     <TableCell key={harness}>
                                         <Input
-                                            aria-label={harness}
+                                            aria-label={HARNESS_NAME[harness]}
                                             value={roleModel(settings, role, harness)}
                                             placeholder={t("modelPlaceholder")}
                                             autoComplete="off"

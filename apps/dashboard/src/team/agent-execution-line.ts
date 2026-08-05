@@ -1,7 +1,7 @@
 import type { AgentExecution } from "@lab/protocol/agents/agent-execution.types";
 import type { TFunction } from "i18next";
+import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
 import type { TEAM_NAMESPACE } from "#src/team/team.i18n";
-import { HARNESS_LABEL } from "#src/team/team-panel.const";
 
 /**
  * What an agent actually runs on, in one line: the harness, the exact model the run resolved to
@@ -12,5 +12,5 @@ export function agentExecutionLine(
     { harness, model, effort }: AgentExecution,
     t: TFunction<typeof TEAM_NAMESPACE>
 ): string {
-    return t("execution", { harness: HARNESS_LABEL[harness], model, effort: t(effort) });
+    return t("execution", { harness: HARNESS_NAME[harness], model, effort: t(effort) });
 }

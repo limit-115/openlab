@@ -1,11 +1,3 @@
-import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
-
-export const HARNESS_SUBSCRIPTION_LABEL = {
-    [AgentHarnessKind.CODEX]: "Codex",
-    [AgentHarnessKind.CLAUDE]: "Claude",
-    [AgentHarnessKind.GLM]: "GLM"
-} as const;
-
 export const ALLOWANCE_LIST = "grid list-none gap-3" as const;
 
 export const ALLOWANCE_CARD = "flex min-w-0 flex-col gap-3 rounded-2xl border p-4" as const;
@@ -19,6 +11,12 @@ export const SPENT_PERCENT = 100;
 export const ALLOWANCE_CARD_HEADER = "flex flex-wrap items-center gap-x-3 gap-y-2" as const;
 
 export const ALLOWANCE_SUBSCRIPTION_NAME = "text-base font-medium" as const;
+
+/**
+ * A vendor names its own tiers and spells them however it likes, so the page cases them on the way
+ * out rather than keeping a table of names the lab does not own.
+ */
+export const ALLOWANCE_PLAN_NAME = "capitalize" as const;
 
 export const ALLOWANCE_ERROR = "text-sm leading-relaxed text-muted-foreground" as const;
 
