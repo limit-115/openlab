@@ -1,9 +1,12 @@
 import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";
-import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
+import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
+import { eq } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createDatabase } from "#src/lab-database/lab-database-client";
+import { runtimeCheckpoints } from "#src/lab-database/lab-schema";
+import { openTestDatabase, type TestDatabase } from "#src/lab-database/test-database";
 import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
 import { RuntimePersistence } from "#src/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "#src/runtime/runtime-revision-conflict";
@@ -15,24 +18,17 @@ import {
     testInvestigationId
 } from "#src/runtime/runtime-snapshot.fixture";
 
-const databaseUrl = process.env.TEST_DATABASE_URL;
-const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
-
-describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
-    let client: DatabaseClient;
+describe("RuntimePersistence", () => {
+    let database: TestDatabase;
     let persistence: RuntimePersistence;
 
-    beforeAll(async () => {
-        if (databaseUrl === undefined) {
-            return;
-        }
-        client = createDatabase(databaseUrl, { max: 2 });
-        await migrateDatabase(client.db);
-        persistence = new RuntimePersistence(client.db);
+    beforeEach(async () => {
+        database = await openTestDatabase();
+        persistence = new RuntimePersistence(database);
     });
 
-    afterAll(async () => {
-        await client?.close();
+    afterEach(async () => {
+        await database.close();
     });
 
     it("initializes and recovers the complete runtime checkpoint with its event", async () => {
@@ -217,6 +213,13 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
     });
 
     it("refuses a checkpoint written before a protocol change without hiding the readable ones", async () => {
+        const readableInput = makeInput();
+        const readableSnapshot = makeSnapshot(testInvestigationId("readable"), readableInput);
+        await persistence.initialize({
+            task: readableInput,
+            workspacePath: "/tmp/lab-readable",
+            snapshot: readableSnapshot
+        });
         const staleInput = makeInput();
         const staleSnapshot = makeSnapshot(testInvestigationId("stale-contract"), staleInput);
         await persistence.initialize({
@@ -234,24 +237,26 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             throw new Error("Expected the snapshot fixture to carry a capability request");
         }
         const { provisioning_hint: _dropped, ...withoutProvisioningHint } = staleCapability;
-        await client.sql`
-            UPDATE runtime_checkpoints
-            SET snapshot = jsonb_set(
-                snapshot,
-                '{capability_requests}',
-                ${JSON.stringify([withoutProvisioningHint])}::jsonb
-            )
-            WHERE investigation_id = ${staleSnapshot.investigation.id}
-        `;
+        /** What a build from before the field existed would have left in the column. */
+        await database.db
+            .update(runtimeCheckpoints)
+            .set({
+                snapshot: {
+                    ...staleSnapshot,
+                    capability_requests: [withoutProvisioningHint]
+                } as unknown as StatusSnapshot
+            })
+            .where(eq(runtimeCheckpoints.investigationId, staleSnapshot.investigation.id));
 
         await expect(persistence.load(staleSnapshot.investigation.id)).rejects.toBeInstanceOf(
             IncompatibleCheckpointError
         );
         const persisted = await persistence.listPersisted();
-        expect(
-            persisted.map(({ checkpoint }) => checkpoint.snapshot.investigation.id)
-        ).not.toContain(staleSnapshot.investigation.id);
-        expect(persisted.length).toBeGreaterThan(0);
+        const persistedIds = persisted.map(
+            ({ checkpoint }) => checkpoint.snapshot.investigation.id
+        );
+        expect(persistedIds).not.toContain(staleSnapshot.investigation.id);
+        expect(persistedIds).toContain(readableSnapshot.investigation.id);
     });
 
     it("loads a checkpoint through a new database client after process restart", async () => {
@@ -268,12 +273,9 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
             )
         });
 
-        if (databaseUrl === undefined) {
-            throw new Error("TEST_DATABASE_URL is required for this integration test");
-        }
-        const restartedClient = createDatabase(databaseUrl, { max: 1 });
+        const restarted = createDatabase(database.path);
         try {
-            const recovered = await new RuntimePersistence(restartedClient.db).load(
+            const recovered = await new RuntimePersistence(restarted).load(
                 snapshot.investigation.id
             );
             expect(recovered?.checkpoint.snapshot).toEqual({
@@ -287,7 +289,7 @@ describeDatabase("RuntimePersistence PostgreSQL 18 integration", () => {
                 ]
             });
         } finally {
-            await restartedClient.close();
+            await restarted.close();
         }
     });
 });

@@ -276,14 +276,7 @@ program
             process.exitCode = 1;
             return;
         }
-        let config: ReturnType<typeof resolvePurgeConfig>;
-        try {
-            config = resolvePurgeConfig();
-        } catch {
-            consola.error("purge needs DATABASE_URL to reach the lab database");
-            process.exitCode = 1;
-            return;
-        }
+        const config = resolvePurgeConfig();
 
         intro("Purge every investigation");
         const plan = await planPurge(config);

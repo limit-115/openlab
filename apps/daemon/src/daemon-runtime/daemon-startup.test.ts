@@ -19,10 +19,6 @@ import { InMemoryLabSettings } from "#src/lab-settings/lab-settings.fixture";
 import { InMemoryNotificationSettings } from "#src/operator-notifications/notification-settings.fixture";
 import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
 
-const TestDatabase = {
-    URL: "postgres://test:test@127.0.0.1:5432/test"
-} as const;
-
 const CAPABILITY_ANSWER = "Mounted at /srv/corpora/independent-v1" as const;
 
 async function startTestDaemon(
@@ -33,7 +29,7 @@ async function startTestDaemon(
 ): Promise<RunningDaemon> {
     const workspaceRoot = home ?? (await mkdtemp(path.join(tmpdir(), `lab-daemon-${name}-`)));
     return startDaemon(
-        { workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
+        { workspaceRoot, port: 0 },
         {
             openDatabase: async () => ({
                 persistence: runtime,
@@ -209,7 +205,7 @@ describe("daemon startup", () => {
         const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-daemon-notify-"));
         const runtime = new InMemoryRuntime();
         const daemon = await startDaemon(
-            { workspaceRoot, port: 0, databaseUrl: TestDatabase.URL },
+            { workspaceRoot, port: 0 },
             {
                 openDatabase: async () => ({
                     persistence: runtime,

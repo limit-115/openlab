@@ -1,6 +1,5 @@
 export interface PurgeRunsInput {
     readonly workspaceRoot: string;
-    readonly databaseUrl: string;
 }
 
 export interface PurgeDirectoriesInput {
@@ -9,7 +8,6 @@ export interface PurgeDirectoriesInput {
 
 export interface PurgePlanInput {
     readonly workspaceRoot: string;
-    readonly databaseUrl: string;
 }
 
 export interface PurgePlan {

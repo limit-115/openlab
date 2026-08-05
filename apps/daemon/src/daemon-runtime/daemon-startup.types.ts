@@ -14,7 +14,7 @@ export interface RunningDaemon {
 
 export interface DaemonDependencies {
     researchLoop?: ResearchLoopRunner;
-    openDatabase?: (databaseUrl: string) => Promise<DaemonDatabase>;
+    openDatabase?: (databasePath: string) => Promise<DaemonDatabase>;
     /** How a configured channel is opened, so a test can watch the lab report without a vendor. */
     openNotificationChannel?: OpenNotificationChannel;
     /** How the operator's chat is read, so a test can speak as them without a vendor. */

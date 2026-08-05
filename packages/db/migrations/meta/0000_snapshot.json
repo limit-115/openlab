@@ -1,160 +1,146 @@
 {
-    "id": "3e16ab22-ae37-41f1-b9a2-d0c5454af808",
+    "version": "6",
+    "dialect": "sqlite",
+    "id": "ed4b946d-8600-4358-8786-b78b1f0e0d77",
     "prevId": "00000000-0000-0000-0000-000000000000",
-    "version": "7",
-    "dialect": "postgresql",
     "tables": {
-        "public.agent_runs": {
+        "agent_runs": {
             "name": "agent_runs",
-            "schema": "",
             "columns": {
                 "id": {
                     "name": "id",
                     "type": "text",
                     "primaryKey": true,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "investigation_id": {
                     "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "assumption_id": {
                     "name": "assumption_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "role": {
                     "name": "role",
-                    "type": "agent_role",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "objective": {
                     "name": "objective",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "status": {
                     "name": "status",
-                    "type": "agent_run_status",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": "'running'"
                 },
                 "harness": {
                     "name": "harness",
-                    "type": "agent_harness",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "model": {
                     "name": "model",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "effort": {
                     "name": "effort",
-                    "type": "agent_effort",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "cwd": {
                     "name": "cwd",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "exit_code": {
                     "name": "exit_code",
                     "type": "integer",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "error": {
                     "name": "error",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "manifest_path": {
                     "name": "manifest_path",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "started_at": {
                     "name": "started_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 },
                 "finished_at": {
                     "name": "finished_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "created_at": {
                     "name": "created_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 },
                 "updated_at": {
                     "name": "updated_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "agent_runs_investigation_status_idx": {
                     "name": "agent_runs_investigation_status_idx",
-                    "columns": [
-                        {
-                            "expression": "investigation_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
                 },
                 "agent_runs_assumption_idx": {
                     "name": "agent_runs_assumption_idx",
-                    "columns": [
-                        {
-                            "expression": "assumption_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["assumption_id"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {
@@ -179,95 +165,84 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         },
-        "public.assumptions": {
+        "assumptions": {
             "name": "assumptions",
-            "schema": "",
             "columns": {
                 "id": {
                     "name": "id",
                     "type": "text",
                     "primaryKey": true,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "investigation_id": {
                     "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "cycle": {
                     "name": "cycle",
                     "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": 0
                 },
                 "statement": {
                     "name": "statement",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "rationale": {
                     "name": "rationale",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "status": {
                     "name": "status",
-                    "type": "assumption_status",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": "'open'"
                 },
                 "outcome": {
                     "name": "outcome",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "created_at": {
                     "name": "created_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 },
                 "updated_at": {
                     "name": "updated_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "assumptions_investigation_status_idx": {
                     "name": "assumptions_investigation_status_idx",
-                    "columns": [
-                        {
-                            "expression": "investigation_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {
@@ -283,119 +258,112 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         },
-        "public.capability_requests": {
+        "capability_requests": {
             "name": "capability_requests",
-            "schema": "",
             "columns": {
                 "id": {
                     "name": "id",
                     "type": "text",
                     "primaryKey": true,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "investigation_id": {
                     "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "assumption_id": {
                     "name": "assumption_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "need": {
                     "name": "need",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "reason": {
                     "name": "reason",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "provisioning_hint": {
                     "name": "provisioning_hint",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "self_provisioning_attempt": {
                     "name": "self_provisioning_attempt",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "blocking": {
                     "name": "blocking",
-                    "type": "boolean",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": false
                 },
                 "status": {
                     "name": "status",
-                    "type": "capability_status",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": "'open'"
                 },
                 "answer": {
                     "name": "answer",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "answered_at": {
                     "name": "answered_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "created_at": {
                     "name": "created_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 },
                 "updated_at": {
                     "name": "updated_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "capability_requests_investigation_status_idx": {
                     "name": "capability_requests_investigation_status_idx",
-                    "columns": [
-                        {
-                            "expression": "investigation_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {
@@ -420,100 +388,65 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         },
-        "public.events": {
+        "events": {
             "name": "events",
-            "schema": "",
             "columns": {
                 "sequence": {
                     "name": "sequence",
-                    "type": "bigint",
+                    "type": "integer",
                     "primaryKey": true,
                     "notNull": true,
-                    "identity": {
-                        "type": "always",
-                        "name": "events_sequence_seq",
-                        "schema": "public",
-                        "increment": "1",
-                        "startWith": "1",
-                        "minValue": "1",
-                        "maxValue": "9223372036854775807",
-                        "cache": "1",
-                        "cycle": false
-                    }
+                    "autoincrement": true
                 },
                 "id": {
                     "name": "id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "investigation_id": {
                     "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "type": {
                     "name": "type",
-                    "type": "event_type",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "payload": {
                     "name": "payload",
-                    "type": "jsonb",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "occurred_at": {
                     "name": "occurred_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "events_id_unique": {
                     "name": "events_id_unique",
-                    "columns": [
-                        {
-                            "expression": "id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["id"],
+                    "isUnique": true
                 },
                 "events_investigation_sequence_idx": {
                     "name": "events_investigation_sequence_idx",
-                    "columns": [
-                        {
-                            "expression": "investigation_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "sequence",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["investigation_id", "sequence"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {
@@ -529,94 +462,83 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         },
-        "public.findings": {
+        "findings": {
             "name": "findings",
-            "schema": "",
             "columns": {
                 "id": {
                     "name": "id",
                     "type": "text",
                     "primaryKey": true,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "investigation_id": {
                     "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "assumption_id": {
                     "name": "assumption_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "run_id": {
                     "name": "run_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "claim": {
                     "name": "claim",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "work": {
                     "name": "work",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "artifact_paths": {
                     "name": "artifact_paths",
-                    "type": "jsonb",
+                    "type": "text",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "'[]'::jsonb"
+                    "autoincrement": false,
+                    "default": "'[]'"
                 },
                 "status": {
                     "name": "status",
-                    "type": "finding_status",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": "'unverified'"
                 },
                 "created_at": {
                     "name": "created_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "findings_investigation_status_idx": {
                     "name": "findings_investigation_status_idx",
-                    "columns": [
-                        {
-                            "expression": "investigation_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {
@@ -650,168 +572,238 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         },
-        "public.investigations": {
+        "investigations": {
             "name": "investigations",
-            "schema": "",
             "columns": {
                 "id": {
                     "name": "id",
                     "type": "text",
                     "primaryKey": true,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "goal": {
                     "name": "goal",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "input": {
                     "name": "input",
-                    "type": "jsonb",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "state": {
                     "name": "state",
-                    "type": "investigation_state",
-                    "typeSchema": "public",
+                    "type": "text",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": "'RUNNING'"
                 },
                 "state_reason": {
                     "name": "state_reason",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "workspace_path": {
                     "name": "workspace_path",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "started_at": {
                     "name": "started_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 },
                 "hibernated_at": {
                     "name": "hibernated_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "breakthrough_at": {
                     "name": "breakthrough_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "stopped_at": {
                     "name": "stopped_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "created_at": {
                     "name": "created_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 },
                 "updated_at": {
                     "name": "updated_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "labs_state_idx": {
                     "name": "labs_state_idx",
-                    "columns": [
-                        {
-                            "expression": "state",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["state"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {},
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         },
-        "public.runtime_checkpoints": {
+        "lab_settings": {
+            "name": "lab_settings",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "settings": {
+                    "name": "settings",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "notification_settings": {
+            "name": "notification_settings",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "settings": {
+                    "name": "settings",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "runtime_checkpoints": {
             "name": "runtime_checkpoints",
-            "schema": "",
             "columns": {
                 "investigation_id": {
                     "name": "investigation_id",
                     "type": "text",
                     "primaryKey": true,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "revision": {
                     "name": "revision",
-                    "type": "bigint",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
+                    "autoincrement": false,
                     "default": 1
                 },
                 "snapshot": {
                     "name": "snapshot",
-                    "type": "jsonb",
+                    "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "last_event_sequence": {
                     "name": "last_event_sequence",
-                    "type": "bigint",
+                    "type": "integer",
                     "primaryKey": false,
-                    "notNull": false
+                    "notNull": false,
+                    "autoincrement": false
                 },
                 "persisted_at": {
                     "name": "persisted_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "runtime_checkpoints_persisted_at_idx": {
                     "name": "runtime_checkpoints_persisted_at_idx",
-                    "columns": [
-                        {
-                            "expression": "persisted_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["persisted_at"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {
@@ -827,73 +819,67 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         },
-        "public.verdicts": {
+        "verdicts": {
             "name": "verdicts",
-            "schema": "",
             "columns": {
                 "id": {
                     "name": "id",
                     "type": "text",
                     "primaryKey": true,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "investigation_id": {
                     "name": "investigation_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "finding_id": {
                     "name": "finding_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "run_id": {
                     "name": "run_id",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "confirmed": {
                     "name": "confirmed",
-                    "type": "boolean",
+                    "type": "integer",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "reasoning": {
                     "name": "reasoning",
                     "type": "text",
                     "primaryKey": false,
-                    "notNull": true
+                    "notNull": true,
+                    "autoincrement": false
                 },
                 "created_at": {
                     "name": "created_at",
-                    "type": "timestamp with time zone",
+                    "type": "integer",
                     "primaryKey": false,
                     "notNull": true,
-                    "default": "now()"
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
                 }
             },
             "indexes": {
                 "verdicts_finding_idx": {
                     "name": "verdicts_finding_idx",
-                    "columns": [
-                        {
-                            "expression": "finding_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
+                    "columns": ["finding_id"],
+                    "isUnique": false
                 }
             },
             "foreignKeys": {
@@ -927,94 +913,17 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+            "checkConstraints": {}
         }
     },
-    "enums": {
-        "public.agent_effort": {
-            "name": "agent_effort",
-            "schema": "public",
-            "values": ["low", "medium", "high", "xhigh", "max"]
-        },
-        "public.agent_harness": {
-            "name": "agent_harness",
-            "schema": "public",
-            "values": ["codex", "claude", "glm"]
-        },
-        "public.agent_role": {
-            "name": "agent_role",
-            "schema": "public",
-            "values": ["director", "researcher", "verifier"]
-        },
-        "public.agent_run_status": {
-            "name": "agent_run_status",
-            "schema": "public",
-            "values": ["running", "succeeded", "failed", "timed_out", "cancelled", "blocked"]
-        },
-        "public.assumption_status": {
-            "name": "assumption_status",
-            "schema": "public",
-            "values": ["open", "researching", "exhausted", "confirmed"]
-        },
-        "public.capability_status": {
-            "name": "capability_status",
-            "schema": "public",
-            "values": ["open", "answered"]
-        },
-        "public.event_type": {
-            "name": "event_type",
-            "schema": "public",
-            "values": [
-                "investigation.started",
-                "investigation.recovered",
-                "investigation.state_changed",
-                "investigation.woken",
-                "investigation.hibernated",
-                "investigation.stopped",
-                "investigation.failed",
-                "harness.preflight_succeeded",
-                "harness.preflight_failed",
-                "assumptions.proposed",
-                "assumption.research_started",
-                "assumption.exhausted",
-                "assumption.confirmed",
-                "run.started",
-                "run.succeeded",
-                "run.failed",
-                "run.timed_out",
-                "run.cancelled",
-                "run.blocked",
-                "finding.claimed",
-                "verification.started",
-                "finding.confirmed",
-                "finding.refuted",
-                "breakthrough.recorded",
-                "capability.requested",
-                "capability.answered",
-                "report.generated"
-            ]
-        },
-        "public.finding_status": {
-            "name": "finding_status",
-            "schema": "public",
-            "values": ["unverified", "confirmed", "refuted"]
-        },
-        "public.investigation_state": {
-            "name": "investigation_state",
-            "schema": "public",
-            "values": ["RUNNING", "BREAKTHROUGH", "HIBERNATING", "STOPPED", "FAILED"]
-        }
-    },
-    "schemas": {},
-    "sequences": {},
-    "roles": {},
-    "policies": {},
     "views": {},
+    "enums": {},
     "_meta": {
-        "columns": {},
         "schemas": {},
-        "tables": {}
+        "tables": {},
+        "columns": {}
+    },
+    "internal": {
+        "indexes": {}
     }
 }

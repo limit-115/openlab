@@ -1,26 +1,12 @@
 {
     "version": "7",
-    "dialect": "postgresql",
+    "dialect": "sqlite",
     "entries": [
         {
             "idx": 0,
-            "version": "7",
-            "when": 1785853642396,
-            "tag": "0000_wide_payback",
-            "breakpoints": true
-        },
-        {
-            "idx": 1,
-            "version": "7",
-            "when": 1785867570922,
-            "tag": "0001_old_moon_knight",
-            "breakpoints": true
-        },
-        {
-            "idx": 2,
-            "version": "7",
-            "when": 1785882272477,
-            "tag": "0002_brief_blur",
+            "version": "6",
+            "when": 1785938607520,
+            "tag": "0000_sharp_cobalt_man",
             "breakpoints": true
         }
     ]

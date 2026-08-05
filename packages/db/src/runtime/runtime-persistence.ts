@@ -2,7 +2,7 @@ import { InvestigationInputSchema } from "@lab/protocol/investigation-input/inve
 import type { InvestigationInput } from "@lab/protocol/investigation-input/investigation-input.types";
 import { StatusSnapshotSchema } from "@lab/protocol/investigation-status/status-snapshot.schema";
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
-import type { Database } from "#src/lab-database/lab-database-client";
+import type { TransactionalDatabase } from "#src/lab-database/lab-database-client";
 import { events, investigations, runtimeCheckpoints } from "#src/lab-database/lab-schema";
 import { IncompatibleCheckpointError } from "#src/runtime/incompatible-checkpoint";
 import { terminalTimestamps } from "#src/runtime/investigation-terminal-timestamps";
@@ -31,9 +31,9 @@ import { RuntimeRevisionConflictError } from "#src/runtime/runtime-revision-conf
 import { projectRuntimeSnapshot } from "#src/runtime/snapshot-projection/snapshot-projection";
 
 export class RuntimePersistence {
-    readonly #database: Database;
+    readonly #database: TransactionalDatabase;
 
-    constructor(database: Database) {
+    constructor(database: TransactionalDatabase) {
         this.#database = database;
     }
 
@@ -161,7 +161,7 @@ export class RuntimePersistence {
 
     async load(investigationId: string): Promise<PersistedRuntime | undefined> {
         assertNonEmptyIdentifier(investigationId, "investigationId");
-        const [record] = await this.#database
+        const [record] = await this.#database.db
             .select({
                 investigationId: investigations.id,
                 task: investigations.input,
@@ -178,7 +178,7 @@ export class RuntimePersistence {
         if (record === undefined) {
             return undefined;
         }
-        return toPersistedRuntime(this.#database, record);
+        return toPersistedRuntime(this.#database.db, record);
     }
 
     /**
@@ -188,7 +188,7 @@ export class RuntimePersistence {
      */
     async listPersisted(limit = 100): Promise<PersistedRuntime[]> {
         assertPageSize(limit, RuntimePersistenceLimit.MAX_RECOVERABLE_INVESTIGATIONS);
-        const records = await this.#database
+        const records = await this.#database.db
             .select({
                 investigationId: investigations.id,
                 task: investigations.input,
@@ -206,7 +206,7 @@ export class RuntimePersistence {
         const runtimes = await Promise.all(
             records.map(async (record) => {
                 try {
-                    return await toPersistedRuntime(this.#database, record);
+                    return await toPersistedRuntime(this.#database.db, record);
                 } catch (error) {
                     if (error instanceof IncompatibleCheckpointError) {
                         return undefined;
@@ -226,7 +226,7 @@ export class RuntimePersistence {
     async retask(investigationId: string, task: InvestigationInput): Promise<InvestigationInput> {
         assertNonEmptyIdentifier(investigationId, "investigationId");
         const parsed = InvestigationInputSchema.parse(task);
-        const [record] = await this.#database
+        const [record] = await this.#database.db
             .update(investigations)
             .set({ input: parsed, updatedAt: new Date() })
             .where(
@@ -249,7 +249,7 @@ export class RuntimePersistence {
             throw new RangeError("Event cursor must be a non-negative safe integer");
         }
         assertPageSize(limit, RuntimePersistenceLimit.MAX_EVENT_PAGE);
-        const rows = await this.#database
+        const rows = await this.#database.db
             .select()
             .from(events)
             .where(

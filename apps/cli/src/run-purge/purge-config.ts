@@ -4,25 +4,19 @@ import { z } from "zod";
 
 export interface PurgeConfig {
     readonly workspaceRoot: string;
-    readonly databaseUrl: string;
 }
 
-/**
- * Resolved on demand rather than at module load, because every other command works without a
- * database and must keep starting when DATABASE_URL is unset.
- */
+/** Which lab home a purge is about. Its database is inside it, so there is nothing else to find. */
 export function resolvePurgeConfig(): PurgeConfig {
     const environment = createEnv({
         server: {
-            LAB_HOME: z.string().min(1).optional(),
-            DATABASE_URL: z.url()
+            LAB_HOME: z.string().min(1).optional()
         },
         runtimeEnv: process.env,
         emptyStringAsUndefined: true
     });
 
     return {
-        workspaceRoot: path.resolve(environment.LAB_HOME ?? path.join(process.cwd(), ".lab")),
-        databaseUrl: environment.DATABASE_URL
+        workspaceRoot: path.resolve(environment.LAB_HOME ?? path.join(process.cwd(), ".lab"))
     };
 }

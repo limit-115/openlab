@@ -11,57 +11,43 @@ import { InvestigationState } from "@lab/protocol/investigation-lifecycle/invest
 import type { StatusSnapshot } from "@lab/protocol/investigation-status/status-snapshot.types";
 import type { LabSettings } from "@lab/protocol/lab-settings/lab-settings.types";
 import type { NotificationSettings } from "@lab/protocol/operator-notifications/notification-settings.types";
-import {
-    bigint,
-    boolean,
-    index,
-    integer,
-    jsonb,
-    pgEnum,
-    pgTable,
-    text,
-    timestamp,
-    uniqueIndex
-} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-export const investigationStateEnum = pgEnum(
-    "investigation_state",
-    domainValues(InvestigationState)
-);
-export const agentRoleEnum = pgEnum("agent_role", domainValues(AgentRole));
-export const agentRunStatusEnum = pgEnum("agent_run_status", domainValues(AgentRunStatus));
-export const agentHarnessEnum = pgEnum("agent_harness", domainValues(AgentHarnessKind));
-export const agentEffortEnum = pgEnum("agent_effort", domainValues(AgentEffortLevel));
-export const assumptionStatusEnum = pgEnum("assumption_status", domainValues(AssumptionStatus));
-export const findingStatusEnum = pgEnum("finding_status", domainValues(FindingStatus));
-export const capabilityStatusEnum = pgEnum("capability_status", domainValues(CapabilityStatus));
-export const eventTypeEnum = pgEnum("event_type", domainValues(EventType));
+/**
+ * The moment a row was written, in the milliseconds the timestamp columns are stored as. SQLite has
+ * no `now()`, and a bare `unixepoch()` rounds to the whole second, so the sub-second reading is what
+ * gets scaled.
+ */
+const now = sql`(cast(unixepoch('subsec') * 1000 as integer))`;
 
 const timestamps = {
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().default(now)
 };
 
-export const investigations = pgTable(
+export const investigations = sqliteTable(
     "investigations",
     {
         id: text("id").primaryKey(),
         goal: text("goal").notNull(),
-        input: jsonb("input").$type<InvestigationInput>().notNull(),
-        state: investigationStateEnum("state").notNull().default(InvestigationState.RUNNING),
+        input: text("input", { mode: "json" }).$type<InvestigationInput>().notNull(),
+        state: text("state", { enum: domainValues(InvestigationState) })
+            .notNull()
+            .default(InvestigationState.RUNNING),
         stateReason: text("state_reason"),
         workspacePath: text("workspace_path").notNull(),
-        startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
-        hibernatedAt: timestamp("hibernated_at", { withTimezone: true }),
-        breakthroughAt: timestamp("breakthrough_at", { withTimezone: true }),
-        stoppedAt: timestamp("stopped_at", { withTimezone: true }),
+        startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull().default(now),
+        hibernatedAt: integer("hibernated_at", { mode: "timestamp_ms" }),
+        breakthroughAt: integer("breakthrough_at", { mode: "timestamp_ms" }),
+        stoppedAt: integer("stopped_at", { mode: "timestamp_ms" }),
         ...timestamps
     },
     (table) => [index("labs_state_idx").on(table.state)]
 );
 
 /** A director's bet on where the goal might be reachable. One researcher takes one bet. */
-export const assumptions = pgTable(
+export const assumptions = sqliteTable(
     "assumptions",
     {
         id: text("id").primaryKey(),
@@ -71,7 +57,9 @@ export const assumptions = pgTable(
         cycle: integer("cycle").notNull().default(0),
         statement: text("statement").notNull(),
         rationale: text("rationale").notNull(),
-        status: assumptionStatusEnum("status").notNull().default(AssumptionStatus.OPEN),
+        status: text("status", { enum: domainValues(AssumptionStatus) })
+            .notNull()
+            .default(AssumptionStatus.OPEN),
         outcome: text("outcome"),
         ...timestamps
     },
@@ -81,7 +69,7 @@ export const assumptions = pgTable(
 );
 
 /** One agent session. Replaces the agent, task, attempt and experiment records it used to take. */
-export const agentRuns = pgTable(
+export const agentRuns = sqliteTable(
     "agent_runs",
     {
         id: text("id").primaryKey(),
@@ -91,18 +79,20 @@ export const agentRuns = pgTable(
         assumptionId: text("assumption_id").references(() => assumptions.id, {
             onDelete: "cascade"
         }),
-        role: agentRoleEnum("role").notNull(),
+        role: text("role", { enum: domainValues(AgentRole) }).notNull(),
         objective: text("objective").notNull(),
-        status: agentRunStatusEnum("status").notNull().default(AgentRunStatus.RUNNING),
-        harness: agentHarnessEnum("harness"),
+        status: text("status", { enum: domainValues(AgentRunStatus) })
+            .notNull()
+            .default(AgentRunStatus.RUNNING),
+        harness: text("harness", { enum: domainValues(AgentHarnessKind) }),
         model: text("model"),
-        effort: agentEffortEnum("effort"),
+        effort: text("effort", { enum: domainValues(AgentEffortLevel) }),
         cwd: text("cwd").notNull(),
         exitCode: integer("exit_code"),
         error: text("error"),
         manifestPath: text("manifest_path"),
-        startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
-        finishedAt: timestamp("finished_at", { withTimezone: true }),
+        startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull().default(now),
+        finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
         ...timestamps
     },
     (table) => [
@@ -112,7 +102,7 @@ export const agentRuns = pgTable(
 );
 
 /** What a researcher says it found. Artifacts are a pointer for a reader, never a precondition. */
-export const findings = pgTable(
+export const findings = sqliteTable(
     "findings",
     {
         id: text("id").primaryKey(),
@@ -127,15 +117,20 @@ export const findings = pgTable(
             .references(() => agentRuns.id, { onDelete: "cascade" }),
         claim: text("claim").notNull(),
         work: text("work").notNull(),
-        artifactPaths: jsonb("artifact_paths").$type<string[]>().notNull().default([]),
-        status: findingStatusEnum("status").notNull().default(FindingStatus.UNVERIFIED),
-        createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+        artifactPaths: text("artifact_paths", { mode: "json" })
+            .$type<string[]>()
+            .notNull()
+            .default([]),
+        status: text("status", { enum: domainValues(FindingStatus) })
+            .notNull()
+            .default(FindingStatus.UNVERIFIED),
+        createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now)
     },
     (table) => [index("findings_investigation_status_idx").on(table.investigationId, table.status)]
 );
 
 /** An independent verifier's prose answer about one finding. */
-export const verdicts = pgTable(
+export const verdicts = sqliteTable(
     "verdicts",
     {
         id: text("id").primaryKey(),
@@ -148,24 +143,24 @@ export const verdicts = pgTable(
         runId: text("run_id")
             .notNull()
             .references(() => agentRuns.id, { onDelete: "cascade" }),
-        confirmed: boolean("confirmed").notNull(),
+        confirmed: integer("confirmed", { mode: "boolean" }).notNull(),
         reasoning: text("reasoning").notNull(),
-        createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+        createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now)
     },
     (table) => [index("verdicts_finding_idx").on(table.findingId)]
 );
 
-export const events = pgTable(
+export const events = sqliteTable(
     "events",
     {
-        sequence: bigint("sequence", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+        sequence: integer("sequence").primaryKey({ autoIncrement: true }),
         id: text("id").notNull(),
         investigationId: text("investigation_id")
             .notNull()
             .references(() => investigations.id, { onDelete: "cascade" }),
-        type: eventTypeEnum("type").notNull(),
-        payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
-        occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow()
+        type: text("type", { enum: domainValues(EventType) }).notNull(),
+        payload: text("payload", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+        occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull().default(now)
     },
     (table) => [
         uniqueIndex("events_id_unique").on(table.id),
@@ -173,16 +168,16 @@ export const events = pgTable(
     ]
 );
 
-export const runtimeCheckpoints = pgTable(
+export const runtimeCheckpoints = sqliteTable(
     "runtime_checkpoints",
     {
         investigationId: text("investigation_id")
             .primaryKey()
             .references(() => investigations.id, { onDelete: "cascade" }),
-        revision: bigint("revision", { mode: "number" }).notNull().default(1),
-        snapshot: jsonb("snapshot").$type<StatusSnapshot>().notNull(),
-        lastEventSequence: bigint("last_event_sequence", { mode: "number" }),
-        persistedAt: timestamp("persisted_at", { withTimezone: true }).notNull().defaultNow()
+        revision: integer("revision").notNull().default(1),
+        snapshot: text("snapshot", { mode: "json" }).$type<StatusSnapshot>().notNull(),
+        lastEventSequence: integer("last_event_sequence"),
+        persistedAt: integer("persisted_at", { mode: "timestamp_ms" }).notNull().default(now)
     },
     (table) => [index("runtime_checkpoints_persisted_at_idx").on(table.persistedAt)]
 );
@@ -191,9 +186,9 @@ export const runtimeCheckpoints = pgTable(
  * What the operator set for the lab itself. One database is one lab, so this table holds one row;
  * an absent row is a lab that has never been configured rather than a broken one.
  */
-export const labSettings = pgTable("lab_settings", {
+export const labSettings = sqliteTable("lab_settings", {
     id: text("id").primaryKey(),
-    settings: jsonb("settings").$type<LabSettings>().notNull(),
+    settings: text("settings", { mode: "json" }).$type<LabSettings>().notNull(),
     ...timestamps
 });
 
@@ -203,13 +198,13 @@ export const labSettings = pgTable("lab_settings", {
  * documents are read by different callers under different rules, and only one of them is served
  * back whole.
  */
-export const notificationSettings = pgTable("notification_settings", {
+export const notificationSettings = sqliteTable("notification_settings", {
     id: text("id").primaryKey(),
-    settings: jsonb("settings").$type<NotificationSettings>().notNull(),
+    settings: text("settings", { mode: "json" }).$type<NotificationSettings>().notNull(),
     ...timestamps
 });
 
-export const capabilityRequests = pgTable(
+export const capabilityRequests = sqliteTable(
     "capability_requests",
     {
         id: text("id").primaryKey(),
@@ -223,10 +218,12 @@ export const capabilityRequests = pgTable(
         reason: text("reason").notNull(),
         provisioningHint: text("provisioning_hint").notNull(),
         selfProvisioningAttempt: text("self_provisioning_attempt"),
-        blocking: boolean("blocking").notNull().default(false),
-        status: capabilityStatusEnum("status").notNull().default(CapabilityStatus.OPEN),
+        blocking: integer("blocking", { mode: "boolean" }).notNull().default(false),
+        status: text("status", { enum: domainValues(CapabilityStatus) })
+            .notNull()
+            .default(CapabilityStatus.OPEN),
         answer: text("answer"),
-        answeredAt: timestamp("answered_at", { withTimezone: true }),
+        answeredAt: integer("answered_at", { mode: "timestamp_ms" }),
         ...timestamps
     },
     (table) => [

@@ -1,33 +1,35 @@
-import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import postgres, { type Options, type Sql } from "postgres";
+import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import * as schema from "#src/lab-database/lab-schema";
+import { openSqliteConnection } from "#src/lab-database/sqlite-connection";
+import { SqliteStatementRunner } from "#src/lab-database/sqlite-statement-runner";
 
-export type Database = PostgresJsDatabase<typeof schema> & { readonly $client: Sql };
+export type Database = SqliteRemoteDatabase<typeof schema>;
 
-export interface DatabaseClient {
+/**
+ * A lab database and the only way to write several statements to it as one. Drizzle's own
+ * `transaction()` issues its `BEGIN` down the same single connection every other caller writes
+ * through, so a transaction is opened here instead, where the connection can be held for it.
+ */
+export interface TransactionalDatabase {
     readonly db: Database;
-    readonly sql: Sql;
+    transaction<Result>(run: (db: Database) => Promise<Result>): Promise<Result>;
+}
+
+export interface DatabaseClient extends TransactionalDatabase {
     close(): Promise<void>;
 }
 
-export interface DatabaseOptions extends Options<Record<string, never>> {
-    readonly max?: number;
-}
-
-export function createDatabase(
-    connectionString: string,
-    options: DatabaseOptions = {}
-): DatabaseClient {
-    const client = postgres(connectionString, {
-        max: 10,
-        idle_timeout: 20,
-        connect_timeout: 10,
-        ...options
-    });
+/** Opens the lab database, creating the file if this is the first time it has been asked for. */
+export function createDatabase(databasePath: string): DatabaseClient {
+    const connection = openSqliteConnection(databasePath);
+    const runner = new SqliteStatementRunner(connection);
+    const db = drizzle(runner.execute, { schema });
 
     return {
-        db: drizzle(client, { schema }),
-        sql: client,
-        close: async () => client.end()
+        db,
+        transaction: (run) => runner.transaction(() => run(db)),
+        close: async () => {
+            connection.close();
+        }
     };
 }

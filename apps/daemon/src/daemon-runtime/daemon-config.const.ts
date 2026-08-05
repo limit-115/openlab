@@ -1,8 +1,5 @@
-export const DatabaseProtocol = {
-    POSTGRES: "postgres:",
-    POSTGRESQL: "postgresql:"
-} as const;
-export type DatabaseProtocol = (typeof DatabaseProtocol)[keyof typeof DatabaseProtocol];
+/** The lab's database, kept in the lab's home beside the run directories it is about. */
+export const LAB_DATABASE_FILE = "lab.db";
 
 export const DaemonLogLevel = {
     TRACE: "trace",

@@ -2,9 +2,8 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createDatabase, type DatabaseClient } from "@lab/db/lab-database/lab-database-client";
-import { agentRuns, assumptions, investigations } from "@lab/db/lab-database/lab-schema";
-import { migrateDatabase } from "@lab/db/lab-database/lab-schema-migration";
+import { agentRuns, assumptions } from "@lab/db/lab-database/lab-schema";
+import { openTestDatabase, type TestDatabase } from "@lab/db/lab-database/test-database";
 import { RuntimePersistence } from "@lab/db/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "@lab/db/runtime/runtime-revision-conflict";
 import { AgentRunStatus } from "@lab/protocol/agent-runs/agent-run-status.const";
@@ -15,7 +14,7 @@ import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { WorkspaceFile } from "#src/investigation-workspace/investigation-workspace.const";
 
@@ -66,31 +65,20 @@ async function seedBet(workspace: InvestigationWorkspace, statement: string): Pr
     return id;
 }
 
-const databaseUrl = process.env.TEST_DATABASE_URL;
-const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
+describe("InvestigationWorkspace recovery", () => {
+    let database: TestDatabase;
 
-describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
-    let client: DatabaseClient;
-
-    beforeAll(async () => {
-        if (databaseUrl === undefined) {
-            return;
-        }
-        client = createDatabase(databaseUrl, { max: 2 });
-        await migrateDatabase(client.db);
-    });
-
-    afterAll(async () => {
-        await client?.close();
+    beforeEach(async () => {
+        database = await openTestDatabase();
     });
 
     afterEach(async () => {
-        await client?.db.delete(investigations);
+        await database.close();
     });
 
     it("namespaces entities across investigations that share a goal", async () => {
-        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-multiple-runs-"));
-        const persistence = new RuntimePersistence(client.db);
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-multiple-runs-"));
+        const persistence = new RuntimePersistence(database);
         const first = await InvestigationWorkspace.create(
             workspaceRoot,
             goal("Run the first independent investigation"),
@@ -115,8 +103,8 @@ describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
         ).toBe(3);
         await seedBet(first, "The first investigation bets here");
         await seedBet(repeated, "The rerun bets somewhere else");
-        const projectedAssumptions = await client.db.select().from(assumptions);
-        const projectedRuns = await client.db.select().from(agentRuns);
+        const projectedAssumptions = await database.db.select().from(assumptions);
+        const projectedRuns = await database.db.select().from(agentRuns);
         expect(projectedAssumptions.map(({ investigationId }) => investigationId).sort()).toEqual(
             [first.investigationId, repeated.investigationId].sort()
         );
@@ -126,8 +114,8 @@ describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
     });
 
     it("commits a state transition and its event in one runtime revision", async () => {
-        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-atomic-transition-"));
-        const persistence = new RuntimePersistence(client.db);
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-atomic-transition-"));
+        const persistence = new RuntimePersistence(database);
         const workspace = await InvestigationWorkspace.create(
             workspaceRoot,
             goal("Commit one atomic transition"),
@@ -159,8 +147,8 @@ describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
     });
 
     it("rolls back a stale state transition without a ghost event or local mutation", async () => {
-        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-stale-transition-"));
-        const persistence = new RuntimePersistence(client.db);
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-stale-transition-"));
+        const persistence = new RuntimePersistence(database);
         const workspace = await InvestigationWorkspace.create(
             workspaceRoot,
             goal("Reject a stale transition"),
@@ -217,8 +205,8 @@ describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
     });
 
     it("repairs corrupt filesystem snapshots from the atomic database checkpoint", async () => {
-        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-pg-recovery-"));
-        const persistence = new RuntimePersistence(client.db);
+        const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-recovery-"));
+        const persistence = new RuntimePersistence(database);
         const workspace = await InvestigationWorkspace.create(
             workspaceRoot,
             goal("Recover the authoritative state"),
@@ -270,7 +258,7 @@ describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
             )
         ).resolves.toMatchObject([{ id: assumptionId, findings: [{ id: "finding-durable" }] }]);
         expect(
-            await client.db.query.findings.findFirst({
+            await database.db.query.findings.findFirst({
                 where: (finding, { eq }) => eq(finding.id, "finding-durable")
             })
         ).toMatchObject({
@@ -304,7 +292,7 @@ describeDatabase("InvestigationWorkspace PostgreSQL 18 recovery", () => {
         });
         expect(capability?.answered_at).toBeDefined();
         expect(
-            await client.db.query.capabilityRequests.findFirst({
+            await database.db.query.capabilityRequests.findFirst({
                 where: (capability, { eq }) => eq(capability.id, request.id)
             })
         ).toMatchObject({

@@ -1,5 +1,6 @@
 import { InvestigationRepository } from "@lab/db/investigations/investigation-repository";
 import { createDatabase } from "@lab/db/lab-database/lab-database-client";
+import { labDatabasePath } from "#src/daemon-runtime/daemon-config";
 import type {
     PurgePlan,
     PurgePlanInput,
@@ -13,7 +14,7 @@ import { listRunInvestigationIds, purgeRunDirectories } from "#src/run-purge/run
  * whenever a run directory is deleted by hand, and the leftover rows still have to be purgeable.
  */
 export async function planPurge(input: PurgePlanInput): Promise<PurgePlan> {
-    const client = createDatabase(input.databaseUrl, { max: 1 });
+    const client = createDatabase(labDatabasePath(input.workspaceRoot));
     let persistedInvestigationIds: string[];
     try {
         persistedInvestigationIds = await new InvestigationRepository(client.db).listIds();
@@ -34,7 +35,7 @@ export async function planPurge(input: PurgePlanInput): Promise<PurgePlan> {
  * no longer exist. Discarding one investigation is the daemon's job, not this one's.
  */
 export async function purgeRuns(input: PurgeRunsInput): Promise<PurgeResult> {
-    const client = createDatabase(input.databaseUrl, { max: 1 });
+    const client = createDatabase(labDatabasePath(input.workspaceRoot));
     let purgedInvestigationIds: string[];
     try {
         purgedInvestigationIds = await new InvestigationRepository(client.db).purge();

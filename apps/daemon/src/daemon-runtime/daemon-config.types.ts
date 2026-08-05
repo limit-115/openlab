@@ -4,7 +4,6 @@ export interface DaemonOptions {
     host?: string;
     port?: number;
     workspaceRoot?: string;
-    databaseUrl?: string;
 }
 
 export interface DaemonConfig {
@@ -12,6 +11,6 @@ export interface DaemonConfig {
     port: number;
     workspaceRoot: string;
     dashboardRoot: string;
-    databaseUrl: string;
+    databasePath: string;
     logLevel: DaemonLogLevel;
 }

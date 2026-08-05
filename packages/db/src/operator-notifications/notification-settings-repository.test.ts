@@ -4,29 +4,21 @@ import {
     NotificationLanguage
 } from "@lab/protocol/operator-notifications/notification-channel.const";
 import { NotificationSettingsSchema } from "@lab/protocol/operator-notifications/notification-settings.schema";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";
-import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { openTestDatabase, type TestDatabase } from "#src/lab-database/test-database";
 import { NotificationSettingsRepository } from "#src/operator-notifications/notification-settings-repository";
 
-const databaseUrl = process.env.TEST_DATABASE_URL;
-const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
-
-describeDatabase("NotificationSettingsRepository PostgreSQL 18 integration", () => {
-    let client: DatabaseClient;
+describe("NotificationSettingsRepository", () => {
+    let database: TestDatabase;
     let repository: NotificationSettingsRepository;
 
-    beforeAll(async () => {
-        if (databaseUrl === undefined) {
-            return;
-        }
-        client = createDatabase(databaseUrl, { max: 2 });
-        await migrateDatabase(client.db);
-        repository = new NotificationSettingsRepository(client.db);
+    beforeEach(async () => {
+        database = await openTestDatabase();
+        repository = new NotificationSettingsRepository(database.db);
     });
 
-    afterAll(async () => {
-        await client?.close();
+    afterEach(async () => {
+        await database.close();
     });
 
     it("reads nothing from a lab that has been told to report to nobody", async () => {

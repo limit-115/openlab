@@ -7,7 +7,7 @@
         "./lab-database/lab-database-client": "./src/lab-database/lab-database-client.ts",
         "./lab-database/lab-schema": "./src/lab-database/lab-schema.ts",
         "./lab-database/lab-schema-migration": "./src/lab-database/lab-schema-migration.ts",
-        "./lab-database/postgres-test-container": "./src/lab-database/postgres-test-container.ts",
+        "./lab-database/test-database": "./src/lab-database/test-database.ts",
         "./investigations/investigation-repository": "./src/investigations/investigation-repository.ts",
         "./lab-settings/lab-settings-repository": "./src/lab-settings/lab-settings-repository.ts",
         "./operator-notifications/notification-settings-repository": "./src/operator-notifications/notification-settings-repository.ts",
@@ -22,22 +22,17 @@
     },
     "scripts": {
         "db:generate": "drizzle-kit generate",
-        "db:migrate": "drizzle-kit migrate",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run",
-        "test:unit": "vitest run --project unit",
-        "test:integration": "vitest run --project integration",
         "lint": "biome lint .",
         "format": "biome format --write ."
     },
     "dependencies": {
         "@lab/core": "workspace:*",
         "@lab/protocol": "workspace:*",
-        "drizzle-orm": "0.45.2",
-        "postgres": "3.4.9"
+        "drizzle-orm": "0.45.2"
     },
     "devDependencies": {
-        "@testcontainers/postgresql": "12.0.4",
         "drizzle-kit": "0.31.10"
     }
 }

@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import { TelegramBotConversation } from "@lab/notifier/telegram-bot-conversation";
 import { NotificationChannelKind } from "@lab/protocol/operator-notifications/notification-channel.const";
@@ -27,7 +27,9 @@ export async function startDaemon(
     dependencies: DaemonDependencies = {}
 ): Promise<RunningDaemon> {
     const config = resolveDaemonConfig(options);
-    const database = await (dependencies.openDatabase ?? openDaemonDatabase)(config.databaseUrl);
+    /** The database is created inside the lab home, so the home has to exist before it is opened. */
+    await mkdir(config.workspaceRoot, { recursive: true });
+    const database = await (dependencies.openDatabase ?? openDaemonDatabase)(config.databasePath);
     let app: FastifyInstance | undefined;
     let registry: InvestigationRegistry | undefined;
 

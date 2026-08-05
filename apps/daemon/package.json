@@ -15,8 +15,6 @@
         "start": "node src/main.ts",
         "typecheck": "tsc -p tsconfig.json",
         "test": "vitest run --passWithNoTests",
-        "test:unit": "vitest run --project unit --passWithNoTests",
-        "test:integration": "vitest run --project integration --passWithNoTests",
         "lint": "biome lint .",
         "format": "biome format --write ."
     },

@@ -4,8 +4,7 @@ import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.
 import { FindingStatus } from "@lab/protocol/findings/finding-status.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDatabase, type DatabaseClient } from "#src/lab-database/lab-database-client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
     agentRuns,
     assumptions,
@@ -13,7 +12,7 @@ import {
     findings,
     verdicts
 } from "#src/lab-database/lab-schema";
-import { migrateDatabase } from "#src/lab-database/lab-schema-migration";
+import { openTestDatabase, type TestDatabase } from "#src/lab-database/test-database";
 import { RuntimePersistence } from "#src/runtime/runtime-persistence";
 import {
     makeEvent,
@@ -23,24 +22,17 @@ import {
     testInvestigationId
 } from "#src/runtime/runtime-snapshot.fixture";
 
-const databaseUrl = process.env.TEST_DATABASE_URL;
-const describeDatabase = databaseUrl === undefined ? describe.skip : describe.sequential;
-
-describeDatabase("Runtime snapshot normalized table projection", () => {
-    let client: DatabaseClient;
+describe("Runtime snapshot normalized table projection", () => {
+    let database: TestDatabase;
     let persistence: RuntimePersistence;
 
-    beforeAll(async () => {
-        if (databaseUrl === undefined) {
-            return;
-        }
-        client = createDatabase(databaseUrl, { max: 2 });
-        await migrateDatabase(client.db);
-        persistence = new RuntimePersistence(client.db);
+    beforeEach(async () => {
+        database = await openTestDatabase();
+        persistence = new RuntimePersistence(database);
     });
 
-    afterAll(async () => {
-        await client?.close();
+    afterEach(async () => {
+        await database.close();
     });
 
     it("projects checkpoint state into normalized tables and removes stale rows", async () => {
@@ -64,17 +56,17 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
         });
 
         expect(
-            await client.db.query.assumptions.findMany({
+            await database.db.query.assumptions.findMany({
                 where: eq(assumptions.investigationId, snapshot.investigation.id)
             })
         ).toHaveLength(2);
         expect(
-            await client.db.query.agentRuns.findMany({
+            await database.db.query.agentRuns.findMany({
                 where: eq(agentRuns.investigationId, snapshot.investigation.id)
             })
         ).toHaveLength(3);
         expect(
-            await client.db.query.findings.findFirst({
+            await database.db.query.findings.findFirst({
                 where: eq(findings.investigationId, snapshot.investigation.id)
             })
         ).toEqual(
@@ -125,18 +117,20 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
         const committed = await persistence.commit({ snapshot: updated, expectedRevision: 1 });
         expect(committed.revision).toBe(2);
         expect(
-            await client.db.query.assumptions.findMany({
+            await database.db.query.assumptions.findMany({
                 where: eq(assumptions.investigationId, snapshot.investigation.id)
             })
         ).toHaveLength(1);
         expect(
-            await client.db.query.findings.findFirst({ where: eq(findings.id, finding.id) })
+            await database.db.query.findings.findFirst({ where: eq(findings.id, finding.id) })
         ).toEqual(expect.objectContaining({ status: FindingStatus.CONFIRMED }));
         expect(
-            await client.db.query.verdicts.findFirst({ where: eq(verdicts.findingId, finding.id) })
+            await database.db.query.verdicts.findFirst({
+                where: eq(verdicts.findingId, finding.id)
+            })
         ).toEqual(expect.objectContaining({ confirmed: true }));
         expect(
-            await client.db.query.agentRuns.findFirst({ where: eq(agentRuns.id, verifierRun.id) })
+            await database.db.query.agentRuns.findFirst({ where: eq(agentRuns.id, verifierRun.id) })
         ).toEqual(
             expect.objectContaining({
                 status: AgentRunStatus.SUCCEEDED,
@@ -144,7 +138,7 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
             })
         );
         expect(
-            await client.db.query.capabilityRequests.findFirst({
+            await database.db.query.capabilityRequests.findFirst({
                 where: eq(capabilityRequests.id, capability.id)
             })
         ).toEqual(
@@ -178,7 +172,7 @@ describeDatabase("Runtime snapshot normalized table projection", () => {
 
         expect((await persistence.load(snapshot.investigation.id))?.checkpoint.revision).toBe(2);
         expect(
-            await client.db.query.findings.findFirst({ where: eq(findings.id, finding.id) })
+            await database.db.query.findings.findFirst({ where: eq(findings.id, finding.id) })
         ).toEqual(expect.objectContaining({ status: FindingStatus.CONFIRMED }));
         expect(
             (await persistence.eventsAfter(snapshot.investigation.id)).map(({ id }) => id)

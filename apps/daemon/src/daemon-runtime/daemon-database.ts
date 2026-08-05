@@ -19,11 +19,11 @@ export interface DaemonDatabase {
     close(): Promise<void>;
 }
 
-export async function openDaemonDatabase(databaseUrl: string): Promise<DaemonDatabase> {
-    const client = createDatabase(databaseUrl);
+export async function openDaemonDatabase(databasePath: string): Promise<DaemonDatabase> {
+    const client = createDatabase(databasePath);
 
     try {
-        await migrateDatabase(client.db);
+        await migrateDatabase(client);
         return createDaemonDatabase(client);
     } catch (error) {
         await client.close();
@@ -33,7 +33,7 @@ export async function openDaemonDatabase(databaseUrl: string): Promise<DaemonDat
 
 function createDaemonDatabase(client: DatabaseClient): DaemonDatabase {
     return {
-        persistence: new RuntimePersistence(client.db),
+        persistence: new RuntimePersistence(client),
         investigations: new InvestigationRepository(client.db),
         settings: new LabSettingsRepository(client.db),
         notifications: new NotificationSettingsRepository(client.db),
