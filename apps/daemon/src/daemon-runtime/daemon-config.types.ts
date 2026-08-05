@@ -4,6 +4,7 @@ export interface DaemonOptions {
     host?: string;
     port?: number;
     workspaceRoot?: string;
+    logLevel?: DaemonLogLevel;
 }
 
 export interface DaemonConfig {

@@ -8,6 +8,11 @@ import type { DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
 import { type DaemonDatabase, openDaemonDatabase } from "#src/daemon-runtime/daemon-database";
 import { PromiseSettlementStatus } from "#src/daemon-runtime/daemon-startup.const";
 import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
+import {
+    DaemonStartupOutcome,
+    DaemonStartupStep
+} from "#src/daemon-runtime/daemon-startup-progress.const";
+import type { DaemonStartupProgress } from "#src/daemon-runtime/daemon-startup-progress.types";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { createStatusServer } from "#src/investigation-status/status-server";
 import { LabSettingsStore } from "#src/lab-settings/lab-settings-store";
@@ -27,14 +32,26 @@ export async function startDaemon(
     dependencies: DaemonDependencies = {}
 ): Promise<RunningDaemon> {
     const config = resolveDaemonConfig(options);
+    const report = dependencies.reportStartup ?? (() => undefined);
     /** The database is created inside the lab home, so the home has to exist before it is opened. */
     await mkdir(config.workspaceRoot, { recursive: true });
+    report(ready(DaemonStartupStep.LAB_HOME, config.workspaceRoot));
     const database = await (dependencies.openDatabase ?? openDaemonDatabase)(config.databasePath);
+    report(ready(DaemonStartupStep.DATABASE, config.databasePath));
     let app: FastifyInstance | undefined;
     let registry: InvestigationRegistry | undefined;
 
     try {
         const dashboardRoot = await existingDirectory(config.dashboardRoot);
+        report(
+            dashboardRoot === undefined
+                ? {
+                      step: DaemonStartupStep.DASHBOARD,
+                      outcome: DaemonStartupOutcome.MISSING,
+                      detail: config.dashboardRoot
+                  }
+                : ready(DaemonStartupStep.DASHBOARD, dashboardRoot)
+        );
         const subscriptions = new SubscriptionAllowanceReadings();
         const settings = new LabSettingsStore(database.settings);
         const notificationSettings = new NotificationSettingsStore(database.notifications);
@@ -105,6 +122,7 @@ export async function startDaemon(
         });
         answers.start();
         await registry.restore();
+        report(ready(DaemonStartupStep.INVESTIGATIONS, String(registry.list().length)));
         const runningApp = app;
         const runningRegistry = registry;
         const listening = answers;
@@ -129,6 +147,10 @@ export async function startDaemon(
         }
         throw error;
     }
+}
+
+function ready(step: DaemonStartupStep, detail: string): DaemonStartupProgress {
+    return { step, outcome: DaemonStartupOutcome.READY, detail };
 }
 
 async function closeDaemonResources(

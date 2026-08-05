@@ -2,6 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { cancel, confirm, intro, isCancel, isTTY, note, outro, text } from "@clack/prompts";
+import { DaemonLogLevel } from "@lab/daemon/daemon-runtime/daemon-config.const";
 import { planPurge, purgeRuns } from "@lab/daemon/run-purge/run-purge";
 import { startDaemon } from "@lab/daemon/server";
 import type { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
@@ -14,6 +15,7 @@ import { LabApiClient, LabApiError } from "#src/api-client";
 import { resolveCliConfig } from "#src/config";
 import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
 import { openDashboard } from "#src/lab-start/open-dashboard";
+import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
 import {
     renderAssumptions,
     renderCapabilities,
@@ -31,6 +33,7 @@ interface GlobalOptions {
 interface StartOptions {
     port?: number;
     open?: boolean;
+    verbose?: boolean;
 }
 
 interface NewOptions {
@@ -136,11 +139,16 @@ program
     .description("bring the lab up: the daemon, its dashboard and every investigation it holds")
     .option("-p, --port <port>", "status API port", parsePort)
     .option("--no-open", "leave the browser alone")
+    .option("--verbose", "write what every request did, not only what went wrong")
     .action(async (options: StartOptions) => {
         intro("AI Research Lab");
-        const daemon = await startDaemon({
-            ...(options.port === undefined ? {} : { port: options.port })
-        });
+        const daemon = await startDaemon(
+            {
+                ...(options.port === undefined ? {} : { port: options.port }),
+                ...(options.verbose === true ? { logLevel: DaemonLogLevel.INFO } : {})
+            },
+            { reportStartup: reportStartupToTerminal }
+        );
         let closing = false;
         for (const signal of Object.values(ShutdownSignal)) {
             process.once(signal, async () => {
@@ -153,11 +161,10 @@ program
             });
         }
         const shown = options.open === false ? false : await openDashboard(daemon.url);
-        const held = `${daemon.registry.list().length} investigation(s)`;
         outro(
             shown
-                ? `Lab running at ${daemon.url} with ${held}, opened in your browser`
-                : `Lab running at ${daemon.url} with ${held}`
+                ? `Lab running at ${daemon.url}, opened in your browser`
+                : `Lab running at ${daemon.url}`
         );
     });
 

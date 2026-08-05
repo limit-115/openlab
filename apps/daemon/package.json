@@ -8,6 +8,9 @@
     ],
     "publishConfig": {
         "exports": {
+            "./daemon-runtime/daemon-config.const": "./dist/daemon-runtime/daemon-config.const.js",
+            "./daemon-runtime/daemon-startup-progress.const": "./dist/daemon-runtime/daemon-startup-progress.const.js",
+            "./daemon-runtime/daemon-startup-progress.types": "./dist/daemon-runtime/daemon-startup-progress.types.js",
             "./lab-home/lab-home": "./dist/lab-home/lab-home.js",
             "./lab-home/lab-home.types": "./dist/lab-home/lab-home.types.js",
             "./run-purge/run-purge": "./dist/run-purge/run-purge.js",
@@ -19,6 +22,9 @@
         }
     },
     "exports": {
+        "./daemon-runtime/daemon-config.const": "./src/daemon-runtime/daemon-config.const.ts",
+        "./daemon-runtime/daemon-startup-progress.const": "./src/daemon-runtime/daemon-startup-progress.const.ts",
+        "./daemon-runtime/daemon-startup-progress.types": "./src/daemon-runtime/daemon-startup-progress.types.ts",
         "./lab-home/lab-home": "./src/lab-home/lab-home.ts",
         "./lab-home/lab-home.types": "./src/lab-home/lab-home.types.ts",
         "./run-purge/run-purge": "./src/run-purge/run-purge.ts",

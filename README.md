@@ -107,7 +107,7 @@ reads the lab, not part of how it runs.
 | `LAB_HOST` | `127.0.0.1` | Local status server host |
 | `LAB_PORT` | `4318` | Local status server port |
 | `LAB_DASHBOARD_ROOT` | `apps/dashboard/dist` | Built dashboard directory |
-| `LAB_LOG_LEVEL` | `info` | Fastify log level |
+| `LAB_LOG_LEVEL` | `warn` | Fastify log level, raised to `info` by `lab start --verbose` |
 | `LAB_API_URL` | `http://127.0.0.1:4318` | Daemon the CLI talks to |
 
 Environment values are validated at startup. Empty values are treated as unset. Every variable above

@@ -14,13 +14,18 @@ export function resolveDaemonConfig(options: DaemonOptions = {}): DaemonConfig {
             LAB_HOME: z.string().min(1).optional(),
             XDG_DATA_HOME: z.string().min(1).optional(),
             LAB_DASHBOARD_ROOT: z.string().min(1).optional(),
-            LAB_LOG_LEVEL: z.enum(DaemonLogLevel).default(DaemonLogLevel.INFO)
+            /**
+             * A lab runs in the terminal an operator started it from, so it says only what stops it
+             * working. Everything a request did is there for whoever asks for it.
+             */
+            LAB_LOG_LEVEL: z.enum(DaemonLogLevel).default(DaemonLogLevel.WARN)
         },
         runtimeEnv: {
             ...process.env,
             LAB_HOST: options.host ?? process.env.LAB_HOST,
             LAB_PORT: options.port ?? process.env.LAB_PORT,
-            LAB_HOME: options.workspaceRoot ?? process.env.LAB_HOME
+            LAB_HOME: options.workspaceRoot ?? process.env.LAB_HOME,
+            LAB_LOG_LEVEL: options.logLevel ?? process.env.LAB_LOG_LEVEL
         },
         emptyStringAsUndefined: true
     });
