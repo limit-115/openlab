@@ -8,6 +8,7 @@ import type {
 } from "@lab/protocol/subscription-allowance/subscription-allowance.types";
 import { useTranslation } from "react-i18next";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
+import { subscriptionPlanName } from "#src/agent-harness/subscription-plan-name";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
 import { allowanceWindowName } from "#src/subscription-allowance/allowance-window-label";
@@ -118,7 +119,7 @@ function SubscriptionHeader({
             <span className={ALLOWANCE_SUBSCRIPTION_NAME}>{HARNESS_NAME[allowance.harness]}</span>
             {allowance.plan === null ? null : (
                 <Badge variant="outline" className={ALLOWANCE_PLAN_NAME}>
-                    {allowance.plan}
+                    {subscriptionPlanName(allowance.plan)}
                 </Badge>
             )}
             {allowance.state === SubscriptionAllowanceState.EXHAUSTED ? (

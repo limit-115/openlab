@@ -68,7 +68,7 @@ describe("SubscriptionAllowanceList", () => {
         renderList();
 
         expect(screen.getByText("No allowance left")).toBeInTheDocument();
-        expect(screen.getByText("plus")).toBeInTheDocument();
+        expect(screen.getByText("Plus")).toBeInTheDocument();
     });
 
     it("gives the vendor's reason in full when a subscription could not be read", () => {

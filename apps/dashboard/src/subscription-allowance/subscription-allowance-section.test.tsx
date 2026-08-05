@@ -104,7 +104,7 @@ describe("SubscriptionAllowanceSection", () => {
         const session = await screen.findByLabelText<HTMLProgressElement>("5 hours window");
 
         expect(session.value).toBe(97);
-        expect(screen.getByText("pro")).toBeInTheDocument();
+        expect(screen.getByText("Pro")).toBeInTheDocument();
     });
 
     it("dates the numbers by the moment the vendors were read", async () => {

@@ -4,6 +4,7 @@ import { CheckIcon, CircleAlertIcon, CircleDashedIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
+import { subscriptionPlanName } from "#src/agent-harness/subscription-plan-name";
 import { CopyButton } from "#src/clipboard/copy-button";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
@@ -42,7 +43,9 @@ export function HarnessReadinessCard({ harness }: { harness: HarnessReadiness })
                 {STATE_ICON[harness.state]}
                 <span className={HARNESS_CARD_NAME}>{HARNESS_NAME[harness.harness]}</span>
                 <Badge variant={ready ? "default" : "secondary"}>{t(harness.state)}</Badge>
-                {harness.plan === null ? null : <Badge variant="outline">{harness.plan}</Badge>}
+                {harness.plan === null ? null : (
+                    <Badge variant="outline">{subscriptionPlanName(harness.plan)}</Badge>
+                )}
                 {harness.cli_version === null ? null : (
                     <span className={HARNESS_CARD_VERSION}>{harness.cli_version}</span>
                 )}
