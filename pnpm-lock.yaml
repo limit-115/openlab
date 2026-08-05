@@ -59,6 +59,9 @@ importers:
       '@lab/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@lab/dashboard':
+        specifier: workspace:*
+        version: link:../dashboard
       '@lab/db':
         specifier: workspace:*
         version: link:../../packages/db

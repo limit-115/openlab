@@ -4,6 +4,9 @@
     "private": true,
     "description": "Local observer dashboard for AI Research Lab",
     "type": "module",
+    "exports": {
+        "./package.json": "./package.json"
+    },
     "imports": {
         "#src/*": "./src/*"
     },

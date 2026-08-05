@@ -23,6 +23,7 @@
     "dependencies": {
         "@fastify/static": "10.1.2",
         "@lab/core": "workspace:*",
+        "@lab/dashboard": "workspace:*",
         "@lab/db": "workspace:*",
         "@lab/executor": "workspace:*",
         "@lab/harness": "workspace:*",

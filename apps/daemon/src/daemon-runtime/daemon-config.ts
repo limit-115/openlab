@@ -1,6 +1,7 @@
 import path from "node:path";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
+import { builtDashboardRoot } from "#src/daemon-runtime/built-dashboard";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
 import type { DaemonConfig, DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
 import { labDatabasePath, resolveLabHome } from "#src/lab-home/lab-home";
@@ -29,10 +30,7 @@ export function resolveDaemonConfig(options: DaemonOptions = {}): DaemonConfig {
         host: environment.LAB_HOST,
         port: environment.LAB_PORT,
         workspaceRoot,
-        dashboardRoot: path.resolve(
-            environment.LAB_DASHBOARD_ROOT ??
-                path.join(import.meta.dirname, "..", "..", "..", "dashboard", "dist")
-        ),
+        dashboardRoot: path.resolve(environment.LAB_DASHBOARD_ROOT ?? builtDashboardRoot()),
         databasePath: labDatabasePath(workspaceRoot),
         logLevel: environment.LAB_LOG_LEVEL
     };
