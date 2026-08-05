@@ -4,7 +4,7 @@ export const CLAUDE_BINARY = "claude";
 
 /** Applied when a run request does not name its own model or effort. */
 export const ClaudeSessionDefaults = {
-    MODEL: "haiku",
+    MODEL: "claude-sonnet-5",
     EFFORT: HarnessEffortLevels.MEDIUM
 } as const;
 
