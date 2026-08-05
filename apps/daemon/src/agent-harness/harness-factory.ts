@@ -1,0 +1,23 @@
+import type { AgentHarness } from "@lab/harness/agent-harness.types";
+import { ClaudeHarness } from "@lab/harness/claude-harness";
+import { CodexHarness } from "@lab/harness/codex-harness";
+import { GlmHarness } from "@lab/harness/glm-harness";
+import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
+
+const HARNESS_FACTORY: Record<AgentHarnessKind, () => AgentHarness> = {
+    [AgentHarnessKind.CODEX]: () => new CodexHarness(),
+    [AgentHarnessKind.CLAUDE]: () => new ClaudeHarness(),
+    [AgentHarnessKind.GLM]: () => new GlmHarness()
+};
+
+/** Every kind the lab can run, which is what a lab being set up has to be told about. */
+export const EVERY_HARNESS_KIND: readonly AgentHarnessKind[] = Object.values(AgentHarnessKind);
+
+export function createHarness(kind: AgentHarnessKind): AgentHarness {
+    return HARNESS_FACTORY[kind]();
+}
+
+/** Builds the roster one investigation rotates through, in the order the operator asked for. */
+export function createHarnesses(kinds: readonly AgentHarnessKind[]): AgentHarness[] {
+    return kinds.map(createHarness);
+}

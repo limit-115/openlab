@@ -1,7 +1,7 @@
 import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
 import { describe, expect, it } from "vitest";
-import { createHarnesses } from "#src/research-cycle/harness-roster";
+import { createHarnesses } from "#src/agent-harness/harness-factory";
 
 describe("createHarnesses", () => {
     it("keeps the roster order, because the order is the rotation stages walk", () => {

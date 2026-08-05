@@ -13,6 +13,7 @@ import {
     DaemonStartupStep
 } from "#src/daemon-runtime/daemon-startup-progress.const";
 import type { DaemonStartupProgress } from "#src/daemon-runtime/daemon-startup-progress.types";
+import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { createStatusServer } from "#src/investigation-status/status-server";
 import { LabSettingsStore } from "#src/lab-settings/lab-settings-store";
@@ -53,6 +54,7 @@ export async function startDaemon(
                 : ready(DaemonStartupStep.DASHBOARD, dashboardRoot)
         );
         const subscriptions = new SubscriptionAllowanceReadings();
+        const harnesses = new HarnessReadinessChecks();
         const settings = new LabSettingsStore(database.settings);
         const notificationSettings = new NotificationSettingsStore(database.notifications);
         await Promise.all([settings.load(), notificationSettings.load()]);
@@ -89,6 +91,7 @@ export async function startDaemon(
         });
         app = createStatusServer(registry, {
             subscriptions,
+            harnesses,
             settings,
             notifications: { settings: notificationSettings, dispatch },
             workspaceRoot: config.workspaceRoot,

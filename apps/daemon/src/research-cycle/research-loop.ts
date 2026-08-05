@@ -7,6 +7,7 @@ import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { DEFAULT_HARNESS_KINDS } from "@lab/protocol/investigation-input/investigation-input.const";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import { createHarnesses } from "#src/agent-harness/harness-factory";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { type DirectorPlan, DirectorPlanSchema } from "#src/research-contract/research-contract";
@@ -14,7 +15,7 @@ import { DispatchBlockedError, runAgentWithFallback } from "#src/research-cycle/
 import { RunDirectoryWorkspaceFactory } from "#src/research-cycle/agent-workspace";
 import type { AgentWorkspaceFactory } from "#src/research-cycle/agent-workspace.types";
 import { researchAssumption } from "#src/research-cycle/assumption-research";
-import { createHarnesses, preflightHarnesses } from "#src/research-cycle/harness-roster";
+import { preflightHarnesses } from "#src/research-cycle/harness-roster";
 import { throwIfAborted } from "#src/research-cycle/research-cancellation";
 import { recordAssumptions } from "#src/research-cycle/research-journal";
 import {

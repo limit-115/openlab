@@ -4,6 +4,7 @@ import path from "node:path";
 import { AgentEffortLevel, AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@lab/protocol/capabilities/capability-request.const";
+import { HarnessReadinessRosterSchema } from "@lab/protocol/harness-readiness/harness-readiness.schema";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@lab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
@@ -11,6 +12,8 @@ import { LabSettingsSchema } from "@lab/protocol/lab-settings/lab-settings.schem
 import { LabStorageSchema } from "@lab/protocol/lab-storage/lab-storage.schema";
 import { SubscriptionAllowanceRosterSchema } from "@lab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
+import { harnessNotInstalled } from "#src/agent-harness/agent-harness.fixture";
+import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
 import { InMemoryRuntime } from "#src/investigation-registry/investigation-runtime.fixture";
@@ -376,6 +379,18 @@ describe("status server", () => {
         expect(polled).toBe(3);
         expect(asked).toBe(6);
         expect(refreshed.statusCode).toBe(200);
+        await lab.server.close();
+    });
+
+    it("serves every harness against the schema the setup page validates with", async () => {
+        const lab = await createTestLab({
+            harnesses: new HarnessReadinessChecks({ createHarness: harnessNotInstalled })
+        });
+
+        const response = await lab.server.inject({ method: "GET", url: "/api/harnesses" });
+
+        expect(response.statusCode).toBe(200);
+        expect(HarnessReadinessRosterSchema.parse(response.json())).toHaveLength(3);
         await lab.server.close();
     });
 

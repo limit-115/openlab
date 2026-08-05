@@ -3,6 +3,7 @@ import type { InvestigationRequest } from "@lab/protocol/investigation-input/inv
 import { InvestigationState } from "@lab/protocol/investigation-lifecycle/investigation-state.const";
 import type { InvestigationSummary } from "@lab/protocol/investigation-status/investigation-summary.types";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import { createHarnesses } from "#src/agent-harness/harness-factory";
 import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
 import {
     RESTORED_INVESTIGATION_LIMIT,
@@ -21,7 +22,6 @@ import { InvestigationWorkspace } from "#src/investigation-workspace/investigati
 import type { StatusListener } from "#src/investigation-workspace/investigation-workspace.types";
 import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
-import { createHarnesses } from "#src/research-cycle/harness-roster";
 import { runResearchLoop } from "#src/research-cycle/research-loop";
 import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 

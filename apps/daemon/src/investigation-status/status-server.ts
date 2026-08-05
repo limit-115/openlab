@@ -15,6 +15,7 @@ import { NotificationTestRequestSchema } from "@lab/protocol/operator-notificati
 import { isSpendCapLoosened } from "@lab/protocol/spend-caps/spend-cap";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
+import { HARNESS_READINESS_ROUTE } from "#src/harness-readiness/harness-readiness.const";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
 import { registerAgentActivityRoute } from "#src/investigation-status/agent-activity-route";
@@ -134,6 +135,17 @@ export function createStatusServer(
         const workspaceRoot = options.workspaceRoot;
         app.get(LabStorageRoute.USAGE, async () => readLabStorage(workspaceRoot, registry));
         app.post(LabStorageRoute.PURGE, async () => purgeLabStorage(workspaceRoot, registry));
+    }
+
+    /**
+     * Whether the CLIs this lab researches through can run, asked of the CLIs themselves rather than
+     * of anything the lab has stored. It is the one reading that has to be taken at the moment it is
+     * requested: an operator asks for it while installing, and the answer they want is the one that
+     * has changed.
+     */
+    if (options.harnesses !== undefined) {
+        const harnesses = options.harnesses;
+        app.get(HARNESS_READINESS_ROUTE, async () => harnesses.checkAll());
     }
 
     if (options.subscriptions !== undefined) {
