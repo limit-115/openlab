@@ -14,11 +14,11 @@ import { AgentHarnessKind } from "@lab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@lab/protocol/agents/agent-role.const";
 import { EventType } from "@lab/protocol/investigation-events/event-type.const";
 import { afterEach, describe, expect, it } from "vitest";
-import { labDatabasePath } from "#src/daemon-runtime/daemon-config";
 import {
     WorkspaceFile,
     WorkspaceLayout
 } from "#src/investigation-workspace/investigation-workspace.const";
+import { labDatabasePath } from "#src/lab-home/lab-home";
 import { planPurge, purgeRuns } from "#src/run-purge/run-purge";
 
 describe("purgeRuns", () => {

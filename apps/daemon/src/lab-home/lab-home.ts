@@ -4,6 +4,14 @@ import { LabHomeLayout } from "#src/lab-home/lab-home.const";
 import type { LabHomeEnvironment } from "#src/lab-home/lab-home.types";
 
 /**
+ * Where a lab home keeps its database. One home is one lab, so nothing names the file: pointing a
+ * lab somewhere else is pointing its home somewhere else, and its runs go with it.
+ */
+export function labDatabasePath(labHome: string): string {
+    return path.join(labHome, LabHomeLayout.DATABASE_FILE);
+}
+
+/**
  * A path that reaches the lab from a unit file, a launch agent or a JSON config was never seen by a
  * shell, so a leading tilde arrives unexpanded and would otherwise become a directory named `~`.
  */

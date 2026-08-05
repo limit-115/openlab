@@ -1,17 +1,9 @@
 import path from "node:path";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
-import { DaemonLogLevel, LAB_DATABASE_FILE } from "#src/daemon-runtime/daemon-config.const";
+import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
 import type { DaemonConfig, DaemonOptions } from "#src/daemon-runtime/daemon-config.types";
-import { resolveLabHome } from "#src/lab-home/lab-home";
-
-/**
- * Where a lab home keeps its database. One home is one lab, so nothing names the file: pointing a
- * lab somewhere else is pointing `LAB_HOME` somewhere else, and its runs go with it.
- */
-export function labDatabasePath(workspaceRoot: string): string {
-    return path.join(workspaceRoot, LAB_DATABASE_FILE);
-}
+import { labDatabasePath, resolveLabHome } from "#src/lab-home/lab-home";
 
 export function resolveDaemonConfig(options: DaemonOptions = {}): DaemonConfig {
     const environment = createEnv({

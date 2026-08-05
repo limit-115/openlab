@@ -1,6 +1,3 @@
-/** The lab's database, kept in the lab's home beside the run directories it is about. */
-export const LAB_DATABASE_FILE = "lab.db";
-
 export const DaemonLogLevel = {
     TRACE: "trace",
     DEBUG: "debug",

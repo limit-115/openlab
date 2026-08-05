@@ -1,6 +1,6 @@
 import { InvestigationRepository } from "@lab/db/investigations/investigation-repository";
 import { createDatabase } from "@lab/db/lab-database/lab-database-client";
-import { labDatabasePath } from "#src/daemon-runtime/daemon-config";
+import { labDatabasePath } from "#src/lab-home/lab-home";
 import type {
     PurgePlan,
     PurgePlanInput,
