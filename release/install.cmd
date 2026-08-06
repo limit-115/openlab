@@ -7,9 +7,12 @@
 :: mean a second installer to keep honest. So this hands straight over to install.ps1, which is the
 :: one that does the work. PowerShell ships with every supported Windows, so nothing is installed to
 :: make this possible.
+::
+:: This entry point takes no options: a script piped into `iex` has no parameters to receive them.
+:: Anyone who needs one runs install.ps1 directly, which is what its own help describes.
 setlocal
 
-if "%OPENLAB_BASE_URL%"=="" set "OPENLAB_BASE_URL=https://openlab.bot"
+if "%OPENLAB_RELEASES_URL%"=="" set "OPENLAB_RELEASES_URL=https://github.com/dibenkobit/openlab/releases"
 
 where powershell >nul 2>&1
 if errorlevel 1 (
@@ -22,6 +25,6 @@ if errorlevel 1 (
 :: Bypass for this one process only, which is what lets the script run on a default Windows without
 :: changing a machine-wide setting on the operator's behalf.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$ErrorActionPreference='Stop'; iex (irm '%OPENLAB_BASE_URL%/install.ps1')" %*
+    "$ErrorActionPreference='Stop'; iex (irm '%OPENLAB_RELEASES_URL%/latest/download/install.ps1')"
 
 exit /b %ERRORLEVEL%

@@ -47,7 +47,6 @@ async function buildRelease(): Promise<void> {
         `${JSON.stringify(manifest, null, 4)}\n`,
         "utf8"
     );
-    await writeFile(path.join(OUTPUT, "latest"), `${version}\n`, "utf8");
     await rm(STAGING, { recursive: true, force: true });
 
     report(`wrote ${path.relative(REPOSITORY, OUTPUT)}/manifest.json`);

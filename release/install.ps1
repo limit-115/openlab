@@ -29,7 +29,20 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$BaseUrl = if ($env:OPENLAB_BASE_URL) { $env:OPENLAB_BASE_URL } else { 'https://openlab.bot' }
+# Windows PowerShell on an older build still negotiates TLS 1.0 by default, which GitHub refuses,
+# and the only symptom is a download that cannot say why it failed. Added to what is already
+# enabled rather than replacing it, so a newer host keeps the newer protocol it would have used.
+[Net.ServicePointManager]::SecurityProtocol =
+    [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+# Releases live on GitHub, which serves every asset of the newest one under `latest/download` as
+# well as under its own tag. That stable URL is why finding the current version costs no extra
+# request: the manifest fetched from it states the version the rest of the install is pinned to.
+$ReleasesUrl = if ($env:OPENLAB_RELEASES_URL) {
+    $env:OPENLAB_RELEASES_URL
+} else {
+    'https://github.com/dibenkobit/openlab/releases'
+}
 
 function Write-Step([string]$Message) {
     Write-Host $Message
@@ -53,7 +66,8 @@ function Get-Platform {
 }
 
 # A response whose type PowerShell does not recognise as text arrives as raw bytes rather than a
-# string, which is what `latest` does, so both shapes are read here and every caller gets text.
+# string, which is what a release asset does, so both shapes are read here and every caller gets
+# text.
 function Get-Text([string]$Url) {
     try {
         $content = (Invoke-WebRequest -Uri $Url -UseBasicParsing).Content
@@ -77,16 +91,18 @@ function Save-File([string]$Url, [string]$Destination) {
 
 $platform = Get-Platform
 
-if (-not $Version) {
-    $Version = (Get-Text "$BaseUrl/latest").Trim()
+if ($Version) {
+    $manifest = Get-Text "$ReleasesUrl/download/v$Version/manifest.json" | ConvertFrom-Json
+} else {
+    $manifest = Get-Text "$ReleasesUrl/latest/download/manifest.json" | ConvertFrom-Json
+    $Version = $manifest.version
     if (-not $Version) {
-        Stop-Install "Could not read the current version from $BaseUrl/latest"
+        Stop-Install 'The current release states no version, so nothing can be installed.'
     }
 }
 
 Write-Step "OpenLab $Version for $platform"
 
-$manifest = Get-Text "$BaseUrl/$Version/manifest.json" | ConvertFrom-Json
 $artifact = $manifest.artifacts.$platform
 if (-not $artifact) {
     Stop-Install "This release has no build for $platform."
@@ -101,7 +117,7 @@ New-Item -ItemType Directory -Path $workspace -Force | Out-Null
 try {
     $archive = Join-Path $workspace $artifact.file
     Write-Step "downloading $($artifact.file)"
-    Save-File "$BaseUrl/$Version/$($artifact.file)" $archive
+    Save-File "$ReleasesUrl/download/v$Version/$($artifact.file)" $archive
 
     $actual = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($actual -ne $artifact.sha256) {

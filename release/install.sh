@@ -13,7 +13,10 @@
 
 set -eu
 
-OPENLAB_BASE_URL="${OPENLAB_BASE_URL:-https://openlab.bot}"
+# Releases live on GitHub, which serves every asset of the newest one under `latest/download` as
+# well as under its own tag. That stable URL is why finding the current version costs no extra
+# request: the manifest fetched from it states the version the rest of the install is pinned to.
+OPENLAB_RELEASES_URL="${OPENLAB_RELEASES_URL:-https://github.com/dibenkobit/openlab/releases}"
 
 main() {
     version="${OPENLAB_VERSION:-}"
@@ -31,14 +34,16 @@ main() {
     need curl tar mkdir mktemp uname
     platform="$(detect_platform)"
 
-    if [ -z "$version" ]; then
-        version="$(fetch "$OPENLAB_BASE_URL/latest" | tr -d '[:space:]')"
-        [ -n "$version" ] || fail "Could not read the current version from $OPENLAB_BASE_URL/latest"
+    if [ -n "$version" ]; then
+        manifest="$(fetch "$OPENLAB_RELEASES_URL/download/v$version/manifest.json")"
+    else
+        manifest="$(fetch "$OPENLAB_RELEASES_URL/latest/download/manifest.json")"
+        version="$(manifest_version "$manifest")"
+        [ -n "$version" ] || fail "The current release states no version, so nothing can be installed."
     fi
 
     say "OpenLab $version for $platform"
 
-    manifest="$(fetch "$OPENLAB_BASE_URL/$version/manifest.json")"
     archive_name="$(manifest_field "$manifest" "$platform" file)"
     expected="$(manifest_field "$manifest" "$platform" sha256)"
 
@@ -53,7 +58,7 @@ main() {
 
     archive="$workspace/$archive_name"
     say "downloading $archive_name"
-    download "$OPENLAB_BASE_URL/$version/$archive_name" "$archive"
+    download "$OPENLAB_RELEASES_URL/download/v$version/$archive_name" "$archive"
 
     actual="$(digest_of "$archive")"
     [ "$actual" = "$expected" ] || fail "Checksum mismatch for $archive_name.
@@ -90,7 +95,7 @@ Options:
 Environment:
     OPENLAB_VERSION      same as --version
     OPENLAB_INSTALL_DIR  where the launcher goes; defaults to ~/.local/bin
-    OPENLAB_BASE_URL     where releases are fetched from
+    OPENLAB_RELEASES_URL where releases are fetched from
 USAGE
 }
 
@@ -119,6 +124,14 @@ detect_platform() {
     fi
 
     printf '%s-%s' "$os" "$arch"
+}
+
+# The version the manifest was cut at, which names the tag every archive it lists is published
+# under. Reading it here is what pins the rest of the install to one release rather than to
+# whichever one happens to be newest by the time each file is asked for.
+manifest_version() {
+    printf '%s' "$1" | tr -d '\n' |
+        sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
 }
 
 # The manifest is small and fixed in shape, so it is read with the tools every machine already has
