@@ -32,7 +32,7 @@ jobs:
             attestations: write
         steps:
             # The whole history, because the release notes are written from it.
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -53,7 +53,7 @@ jobs:
             # version it installs is the one `packageManager` pins rather than one named here.
             - uses: pnpm/action-setup@v6
 
-            - uses: actions/setup-node@v6
+            - uses: actions/setup-node@v7
               with:
                   node-version-file: .node-version
                   cache: pnpm

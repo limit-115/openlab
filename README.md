@@ -70,7 +70,7 @@ unpacked, and a mismatch stops the install rather than warning about it. Release
 GitHub Actions and attested, so what you downloaded can be traced back to the workflow that built it:
 
 ```bash
-gh attestation verify openlab-<version>-<platform>.tar.gz --repo <owner>/openlab
+gh attestation verify openlab-<version>-<platform>.tar.gz --repo dibenkobit/openlab
 ```
 
 ## Running from the sources
