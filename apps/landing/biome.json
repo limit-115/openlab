@@ -1,0 +1,13 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
+    "root": false,
+    "extends": "//",
+    "html": {
+        "experimentalFullSupportEnabled": true
+    },
+    "css": {
+        "parser": {
+            "tailwindDirectives": true
+        }
+    }
+}

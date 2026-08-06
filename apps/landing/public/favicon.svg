@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="OpenLab">
+    <!-- Flask glyph: flask-conical from Lucide (lucide.dev), ISC. See ATTRIBUTION.md. -->
+    <style>
+        :root { --mark: #09090B; }
+        @media (prefers-color-scheme: dark) { :root { --mark: #FAFAFA; } }
+    </style>
+    <g fill="none" stroke="var(--mark)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 20V9H20" />
+        <path d="M44 9H55V20" />
+        <path d="M55 44V55H44" />
+        <path d="M20 55H9V44" />
+    </g>
+    <g transform="translate(14.6 14.6) scale(1.45)" fill="none" stroke="var(--mark)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" />
+        <path d="M6.453 15h11.094" />
+        <path d="M8.5 2h7" />
+    </g>
+</svg>

@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+@source "./";
+
+/**
+ * The site carries the smallest set of tokens a page needs, not the dashboard's whole palette, and
+ * every value here is the dashboard's own so the two products cannot drift apart. The theme is the
+ * reader's own setting: there is no toggle and no script, so nothing flashes before it resolves.
+ */
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.141 0.005 285.823);
+    --muted-foreground: oklch(0.552 0.016 285.938);
+    --border: oklch(0.92 0.004 286.32);
+    /** The one colour the brand carries. On a light ground this is the dashboard's `--primary`. */
+    --brand: oklch(0.488 0.243 264.376);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: oklch(0.141 0.005 285.823);
+        --foreground: oklch(0.985 0 0);
+        --muted-foreground: oklch(0.705 0.015 286.067);
+        --border: oklch(1 0 0 / 10%);
+        /** On a dark ground `--primary` is far too dim to be ink; this is `--sidebar-primary`. */
+        --brand: oklch(0.623 0.214 259.815);
+    }
+}
+
+@theme inline {
+    --font-sans: "Inter Variable", sans-serif;
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-border: var(--border);
+    --color-brand: var(--brand);
+}
+
+@layer base {
+    html {
+        @apply font-sans;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+}

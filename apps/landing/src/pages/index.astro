@@ -1,0 +1,94 @@
+---
+import OpenLabMark from "#src/brand/openlab-mark.astro";
+import { INSTALL_COMMAND, INSTALL_PLATFORM_NAME } from "#src/install/install.const";
+import "#src/tailwind.css";
+
+const DESCRIPTION =
+    "Local autonomous research runtime. One lab, many investigations, your machine.";
+
+/**
+ * The lockup is the brand pack's tuned triple: a 36px mark, the word at `text-2xl` and the gap at
+ * `gap-1`. The pack states all three as shares of the mark's height, and only these values land on
+ * the named scale within a percent, so they move together or not at all.
+ */
+const LOCKUP_MARK = "size-9 shrink-0";
+const LOCKUP_WORD = "font-[640] text-2xl leading-none";
+
+const installs = Object.entries(INSTALL_COMMAND).map(([platform, command]) => ({
+    name: INSTALL_PLATFORM_NAME[platform as keyof typeof INSTALL_COMMAND],
+    command
+}));
+---
+
+<html lang="en" class="scroll-smooth motion-reduce:scroll-auto">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content={DESCRIPTION} />
+        <meta property="og:title" content="OpenLab" />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:image" content={new URL("/social-preview-1280x640.png", Astro.site)} />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href={Astro.site} />
+        <!--
+            The SVG mark answers first and follows the reader's own light or dark setting. The PNGs
+            beside it are not resamples of it: below 20px the mark is redrawn with a heavier stroke,
+            so a browser that cannot read the SVG is given the size it asked for, not a shrunk one.
+        -->
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
+        <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
+        <title>OpenLab — local autonomous research runtime</title>
+    </head>
+    <body class="min-h-screen min-w-80">
+        <div class="mx-auto flex min-h-screen max-w-3xl flex-col gap-16 px-6 py-12">
+            <header>
+                <div class="flex items-center gap-1">
+                    <OpenLabMark class={LOCKUP_MARK} />
+                    <span class={LOCKUP_WORD}>OpenLab</span>
+                </div>
+            </header>
+
+            <main class="flex flex-col gap-12">
+                <section class="flex flex-col gap-6">
+                    <h1 class="text-4xl font-[640] leading-tight text-balance">
+                        A research lab that runs on your machine.
+                    </h1>
+                    <p class="max-w-2xl text-lg text-muted-foreground text-pretty">
+                        One lab holds many investigations. Each investigation is one goal with its
+                        own agents, its own run directory and its own research loop, running
+                        alongside the others.
+                    </p>
+                    <p class="max-w-2xl text-lg text-muted-foreground text-pretty">
+                        A lab is a directory you own: copy it to keep it, delete it to be rid of it.
+                    </p>
+                </section>
+
+                <section class="flex flex-col gap-4">
+                    <h2 class="text-brand text-base font-[640]">Install</h2>
+                    <ul class="flex flex-col gap-4">
+                        {
+                            installs.map((install) => (
+                                <li class="flex flex-col gap-2">
+                                    <span class="text-sm text-muted-foreground">{install.name}</span>
+                                    <code
+                                        class="block rounded-md border border-border px-4 py-3 font-mono text-sm whitespace-pre-wrap"
+                                    >
+                                        {install.command}
+                                    </code>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                </section>
+            </main>
+
+            <footer class="mt-auto border-t border-border pt-6 text-sm text-muted-foreground">
+                Apache-2.0. The lab runs locally and reaches models through a CLI you are already
+                signed in to.
+            </footer>
+        </div>
+    </body>
+</html>
