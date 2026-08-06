@@ -1,0 +1,52 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+# A newer push makes an older run pointless, so the older one stops rather than finishing into a
+# result nobody will read.
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .node-version
+                  cache: pnpm
+
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
+
+            - run: pnpm install --frozen-lockfile
+
+            # The same command a developer runs: formatting, types, every test, every build.
+            - run: pnpm check
+
+            # The installers are the lab's front door and nothing else reads them. POSIX sh is easy
+            # to get subtly wrong, and getting it wrong here means an operator who cannot install.
+            - name: Lint the shell installer
+              run: shellcheck --shell=sh release/install.sh
+
+            # A compiled lab can break while the sources still pass, because the release runtime is
+            # not the one the tests ran on. Building one and installing it is what catches that.
+            - name: Build and install a release
+              run: |
+                  pnpm release linux-x64
+                  mkdir -p /tmp/release-check
+                  tar -xzf release/dist/openlab-*-linux-x64.tar.gz -C /tmp/release-check
+                  HOME=/tmp/release-home /tmp/release-check/openlab install --no-modify-path
+                  HOME=/tmp/release-home /tmp/release-check/openlab doctor

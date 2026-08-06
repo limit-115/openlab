@@ -6,12 +6,9 @@ on:
     push:
         tags:
             - "v*"
+    # Run by hand to build every artifact without publishing any of them, which is how a release is
+    # rehearsed. Only a tag publishes.
     workflow_dispatch:
-        inputs:
-            dry_run:
-                description: Build every artifact but publish nothing
-                type: boolean
-                default: true
 
 permissions:
     contents: read
@@ -25,7 +22,23 @@ jobs:
             id-token: write
             attestations: write
         steps:
+            # The whole history, because the release notes are written from it.
             - uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            # The version is read from the manifest rather than from the tag, so a tag that says
+            # something else would publish artifacts named after a version nobody asked for. They
+            # are compared here, before anything is built.
+            - name: The tag and the version must agree
+              if: startsWith(github.ref, 'refs/tags/v')
+              run: |
+                  tagged="${GITHUB_REF_NAME#v}"
+                  stated="$(node -p "require('./apps/cli/package.json').version")"
+                  if [ "$tagged" != "$stated" ]; then
+                      echo "::error::Tag ${GITHUB_REF_NAME} does not match apps/cli/package.json version ${stated}"
+                      exit 1
+                  fi
 
             # pnpm comes first because the Node cache below is keyed on its lockfile, and the
             # version it installs is the one `packageManager` pins rather than one named here.
@@ -65,6 +78,17 @@ jobs:
                   HOME=/tmp/release-home /tmp/release-check/openlab install --no-modify-path
                   HOME=/tmp/release-home /tmp/release-check/openlab doctor
 
+            # Written from the conventional commits since the last tag, grouped by what each change
+            # was, rather than from raw subject lines in the order they happened.
+            - name: Write the release notes
+              id: notes
+              uses: orhun/git-cliff-action@v4
+              with:
+                  config: cliff.toml
+                  args: --latest --strip all
+              env:
+                  OUTPUT: release-notes.md
+
             - name: Publish
               if: startsWith(github.ref, 'refs/tags/v')
               env:
@@ -72,7 +96,7 @@ jobs:
               run: |
                   gh release create "${GITHUB_REF_NAME}" \
                       --title "${GITHUB_REF_NAME}" \
-                      --generate-notes \
+                      --notes-file "${{ steps.notes.outputs.changelog }}" \
                       release/dist/openlab-* \
                       release/dist/manifest.json \
                       release/install.sh \
