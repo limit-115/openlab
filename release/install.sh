@@ -1,7 +1,7 @@
 #!/bin/sh
 # OpenLab installer for macOS and Linux.
 #
-#   curl -fsSL https://get.openlab.dev/install.sh | sh
+#   curl -fsSL https://openlab.bot/install.sh | sh
 #
 # This script does four things and then gets out of the way: work out the platform, read the
 # release manifest, verify what it downloaded against the digest the manifest states, and hand over
@@ -13,7 +13,7 @@
 
 set -eu
 
-OPENLAB_BASE_URL="${OPENLAB_BASE_URL:-https://get.openlab.dev}"
+OPENLAB_BASE_URL="${OPENLAB_BASE_URL:-https://openlab.bot}"
 
 main() {
     version="${OPENLAB_VERSION:-}"
@@ -80,7 +80,7 @@ usage() {
     cat <<'USAGE'
 Install OpenLab, a local autonomous research lab.
 
-    curl -fsSL https://get.openlab.dev/install.sh | sh
+    curl -fsSL https://openlab.bot/install.sh | sh
 
 Options:
     --version <version>   install a named version instead of the current one

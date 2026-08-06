@@ -5,7 +5,7 @@
 .DESCRIPTION
     Run it the way it is meant to be run:
 
-        irm https://get.openlab.dev/install.ps1 | iex
+        irm https://openlab.bot/install.ps1 | iex
 
     The script works out the platform, reads the release manifest, verifies what it downloaded
     against the digest the manifest states, and hands over to the lab's own `install`. Where a
@@ -29,7 +29,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$BaseUrl = if ($env:OPENLAB_BASE_URL) { $env:OPENLAB_BASE_URL } else { 'https://get.openlab.dev' }
+$BaseUrl = if ($env:OPENLAB_BASE_URL) { $env:OPENLAB_BASE_URL } else { 'https://openlab.bot' }
 
 function Write-Step([string]$Message) {
     Write-Host $Message
