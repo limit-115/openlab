@@ -12,10 +12,10 @@ export const INSTALL_PLATFORM = {
 export type InstallPlatform = (typeof INSTALL_PLATFORM)[keyof typeof INSTALL_PLATFORM];
 
 /**
- * What a reader is asked to paste. These are the commands `release/install.sh`, `install.ps1` and
- * `install.cmd` are reached by, so they state the same host the installer reads its downloads
- * from. A command that drifts from those files sends an operator to a URL that answers nothing,
- * which is the one failure this page cannot recover from — so they are stated once, here.
+ * What a reader is asked to paste. Each command fetches one of `public/install.sh`, `install.ps1`
+ * and `install.cmd`, which this site builds and serves: the file named here and the file shipped
+ * are the same object, so the URL cannot go stale while the page still recommends it. A command
+ * that answers nothing is the one failure this page cannot recover from.
  */
 export const INSTALL_COMMAND = {
     unix: "curl -fsSL https://openlab.bot/install.sh | sh",

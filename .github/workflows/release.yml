@@ -111,9 +111,9 @@ jobs:
                       --notes-file "${{ steps.notes.outputs.changelog }}" \
                       release/dist/openlab-* \
                       release/dist/manifest.json \
-                      release/install.sh \
-                      release/install.ps1 \
-                      release/install.cmd
+                      apps/landing/public/install.sh \
+                      apps/landing/public/install.ps1 \
+                      apps/landing/public/install.cmd
 
             # A rehearsal publishes nothing, so without this it leaves nothing behind but a green
             # tick. Attaching the archives to the run is what makes it a rehearsal rather than a

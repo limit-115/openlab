@@ -42,7 +42,7 @@ jobs:
             # The installers are the lab's front door and nothing else reads them. POSIX sh is easy
             # to get subtly wrong, and getting it wrong here means an operator who cannot install.
             - name: Lint the shell installer
-              run: shellcheck --shell=sh release/install.sh
+              run: shellcheck --shell=sh apps/landing/public/install.sh
 
             # A compiled lab can break while the sources still pass, because the release runtime is
             # not the one the tests ran on. Building one and installing it is what catches that.
