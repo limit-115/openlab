@@ -1,10 +1,17 @@
 ---
 import OpenLabMark from "#src/brand/openlab-mark.astro";
-import { INSTALL_COMMAND, INSTALL_PLATFORM_NAME } from "#src/install/install.const";
+import {
+    DEFAULT_INSTALL_PLATFORM,
+    INSTALL_COMMAND,
+    INSTALL_PLATFORM,
+    INSTALL_PLATFORM_LABEL,
+    INSTALL_PROMPT,
+    type InstallPlatform
+} from "#src/install/install.const";
 import "#src/tailwind.css";
 
 const DESCRIPTION =
-    "Local autonomous research runtime. One lab, many investigations, your machine.";
+    "A research lab that runs on your machine. Autonomous investigations driven by the agent CLI you are already signed in to.";
 
 /**
  * The lockup is the brand pack's tuned triple: a 36px mark, the word at `text-2xl` and the gap at
@@ -14,17 +21,34 @@ const DESCRIPTION =
 const LOCKUP_MARK = "size-9 shrink-0";
 const LOCKUP_WORD = "font-[640] text-2xl leading-none";
 
-const installs = Object.entries(INSTALL_COMMAND).map(([platform, command]) => ({
-    name: INSTALL_PLATFORM_NAME[platform as keyof typeof INSTALL_COMMAND],
-    command
-}));
+/**
+ * Which platform is lit and which command is shown are both decided in CSS, from the attribute the
+ * document carries. The markup below is written for the default platform, so a reader with no
+ * scripting sees a working command, and a reader with scripting sees theirs from the first paint —
+ * the attribute is set before the body renders, so nothing swaps under them.
+ */
+const TAB_STATE = {
+    unix: "bg-surface text-foreground platform-powershell:bg-transparent platform-powershell:text-muted-foreground platform-cmd:bg-transparent platform-cmd:text-muted-foreground",
+    powershell:
+        "text-muted-foreground platform-powershell:bg-surface platform-powershell:text-foreground",
+    cmd: "text-muted-foreground platform-cmd:bg-surface platform-cmd:text-foreground"
+} as const satisfies Record<InstallPlatform, string>;
+
+const COMMAND_STATE = {
+    unix: "flex platform-powershell:hidden platform-cmd:hidden",
+    powershell: "hidden platform-powershell:flex",
+    cmd: "hidden platform-cmd:flex"
+} as const satisfies Record<InstallPlatform, string>;
+
+const platforms = Object.values(INSTALL_PLATFORM);
 ---
 
-<html lang="en" class="scroll-smooth motion-reduce:scroll-auto">
+<html lang="en">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={DESCRIPTION} />
+        <meta name="theme-color" content="#09090b" />
         <meta property="og:title" content="OpenLab" />
         <meta property="og:description" content={DESCRIPTION} />
         <meta property="og:image" content={new URL("/social-preview-1280x640.png", Astro.site)} />
@@ -40,55 +64,133 @@ const installs = Object.entries(INSTALL_COMMAND).map(([platform, command]) => ({
         <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
         <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
         <link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
-        <title>OpenLab — local autonomous research runtime</title>
+        <title>OpenLab — a research lab that runs on your machine</title>
+        <!--
+            This runs before the body renders, because its whole job is to be right on the first
+            paint: it marks the document with the platform it read from the browser, and the
+            stylesheet does the rest. Nothing here touches layout, so nothing here can shift it.
+        -->
+        <script is:inline define:vars={{ INSTALL_PLATFORM }}>
+            document.documentElement.dataset.platform = /Win/i.test(navigator.userAgent)
+                ? INSTALL_PLATFORM.powershell
+                : INSTALL_PLATFORM.unix;
+        </script>
     </head>
-    <body class="min-h-screen min-w-80">
-        <div class="mx-auto flex min-h-screen max-w-3xl flex-col gap-16 px-6 py-12">
-            <header>
-                <div class="flex items-center gap-1">
-                    <OpenLabMark class={LOCKUP_MARK} />
-                    <span class={LOCKUP_WORD}>OpenLab</span>
-                </div>
+    <body class="min-h-dvh min-w-80">
+        <div class="mx-auto flex min-h-dvh max-w-2xl flex-col gap-12 px-6 py-10">
+            <header class="flex items-center gap-1">
+                <OpenLabMark class={LOCKUP_MARK} />
+                <span class={LOCKUP_WORD}>OpenLab</span>
             </header>
 
-            <main class="flex flex-col gap-12">
-                <section class="flex flex-col gap-6">
-                    <h1 class="text-4xl font-[640] leading-tight text-balance">
+            <main class="flex flex-1 flex-col justify-center gap-10">
+                <div class="flex flex-col gap-5">
+                    <h1 class="text-4xl leading-tight font-[640] text-balance sm:text-5xl">
                         A research lab that runs on your machine.
                     </h1>
-                    <p class="max-w-2xl text-lg text-muted-foreground text-pretty">
-                        One lab holds many investigations. Each investigation is one goal with its
-                        own agents, its own run directory and its own research loop, running
-                        alongside the others.
+                    <p class="text-lg text-muted-foreground text-pretty">
+                        One goal, its own agents, its own run directory. It reaches models through
+                        the agent CLI you are already signed in to, so nothing here resells you
+                        tokens.
                     </p>
-                    <p class="max-w-2xl text-lg text-muted-foreground text-pretty">
-                        A lab is a directory you own: copy it to keep it, delete it to be rid of it.
-                    </p>
-                </section>
+                </div>
 
-                <section class="flex flex-col gap-4">
-                    <h2 class="text-brand text-base font-[640]">Install</h2>
-                    <ul class="flex flex-col gap-4">
-                        {
-                            installs.map((install) => (
-                                <li class="flex flex-col gap-2">
-                                    <span class="text-sm text-muted-foreground">{install.name}</span>
-                                    <code
-                                        class="block rounded-md border border-border px-4 py-3 font-mono text-sm whitespace-pre-wrap"
+                <section class="flex flex-col gap-3" aria-labelledby="install-heading">
+                    <div class="flex items-center justify-between gap-4">
+                        <h2 id="install-heading" class="text-sm text-muted-foreground">Install</h2>
+                        <div class="flex gap-1">
+                            {
+                                platforms.map((platform) => (
+                                    <button
+                                        type="button"
+                                        data-platform-tab={platform}
+                                        aria-pressed={platform === DEFAULT_INSTALL_PLATFORM}
+                                        class:list={[
+                                            "rounded-md px-2.5 py-1 text-sm transition-colors",
+                                            TAB_STATE[platform]
+                                        ]}
                                     >
-                                        {install.command}
-                                    </code>
-                                </li>
-                            ))
-                        }
-                    </ul>
+                                        {INSTALL_PLATFORM_LABEL[platform]}
+                                    </button>
+                                ))
+                            }
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex items-start gap-3 rounded-lg border border-border bg-surface p-4"
+                    >
+                        <div class="flex-1">
+                            {
+                                platforms.map((platform) => (
+                                    <div class:list={["gap-3", COMMAND_STATE[platform]]}>
+                                        <span class="text-brand shrink-0 font-mono text-sm select-none">
+                                            {INSTALL_PROMPT[platform]}
+                                        </span>
+                                        <code
+                                            data-platform-command={platform}
+                                            class="font-mono text-sm whitespace-pre-wrap"
+                                        >
+                                            {INSTALL_COMMAND[platform]}
+                                        </code>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                        <button
+                            type="button"
+                            data-copy
+                            class="shrink-0 rounded-md border border-border px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            Copy
+                        </button>
+                    </div>
                 </section>
             </main>
 
-            <footer class="mt-auto border-t border-border pt-6 text-sm text-muted-foreground">
-                Apache-2.0. The lab runs locally and reaches models through a CLI you are already
-                signed in to.
+            <footer class="text-sm text-muted-foreground">
+                Apache-2.0. The lab is a directory you own: copy it to keep it, delete it to be rid
+                of it.
             </footer>
         </div>
+
+        <script>
+            import { INSTALL_PLATFORM } from "#src/install/install.const";
+
+            const root = document.documentElement;
+            const tabs = document.querySelectorAll<HTMLButtonElement>("[data-platform-tab]");
+            const copy = document.querySelector<HTMLButtonElement>("[data-copy]");
+
+            /**
+             * The attribute is what the stylesheet reads, so setting it is the whole of switching.
+             * `aria-pressed` follows it rather than driving it, which keeps the state a reader
+             * sees and the state a screen reader is told the same one.
+             */
+            function select(platform: string) {
+                root.dataset.platform = platform;
+                for (const tab of tabs) {
+                    tab.setAttribute("aria-pressed", String(tab.dataset.platformTab === platform));
+                }
+            }
+
+            select(root.dataset.platform ?? INSTALL_PLATFORM.unix);
+
+            for (const tab of tabs) {
+                tab.addEventListener("click", () => select(tab.dataset.platformTab ?? ""));
+            }
+
+            copy?.addEventListener("click", async () => {
+                /** Read back what is on screen, so the copied line cannot differ from the shown one. */
+                const shown = document.querySelector<HTMLElement>(
+                    `[data-platform-command="${root.dataset.platform}"]`
+                );
+                if (!shown?.textContent) return;
+                await navigator.clipboard.writeText(shown.textContent);
+                copy.textContent = "Copied";
+                setTimeout(() => {
+                    copy.textContent = "Copy";
+                }, 2000);
+            });
+        </script>
     </body>
 </html>
