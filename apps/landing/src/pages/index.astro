@@ -10,8 +10,46 @@ import {
 } from "#src/install/install.const";
 import "#src/tailwind.css";
 
+/**
+ * The two lines quoted by everything that is not this page: a search result, a shared link, an
+ * answer engine. They name Codex and Claude Code outright, because the page's own phrasing for
+ * them — the agent CLI you are already signed in to — is true and completely unsearchable, and
+ * someone looking for this lab is looking for the harness they already run.
+ */
+const TITLE = "OpenLab — a research lab that runs on your machine";
 const DESCRIPTION =
-    "A research lab that runs on your machine. Autonomous investigations driven by the agent CLI you are already signed in to.";
+    "A research lab that runs on your machine. Autonomous investigations driven by the Codex and Claude Code CLIs you are already signed in to.";
+
+/**
+ * Stating the size lets a card reserve the space before the image arrives, so the preview does not
+ * reflow under the reader. The alt text describes the picture rather than repeating the title,
+ * which is what someone hearing the card read aloud is missing.
+ */
+const SOCIAL_PREVIEW = {
+    url: new URL("/social-preview-1280x640.png", Astro.site),
+    width: "1280",
+    height: "640",
+    alt: "The OpenLab lockup: a flask inside focus brackets, beside the word OpenLab"
+} as const;
+
+/**
+ * The same claims the page already makes in prose, in the one shape a search engine and an answer
+ * engine both parse without guessing. Every field here is checkable against something: the licence
+ * is the one in the repository, the price is nothing because the lab sells nothing. No ratings and
+ * no user counts — a number stated to a machine is a number that has to keep being true.
+ */
+const STRUCTURED_DATA = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "OpenLab",
+    description: DESCRIPTION,
+    url: Astro.site,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "macOS, Linux, Windows",
+    license: "https://www.apache.org/licenses/LICENSE-2.0",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    sameAs: ["https://github.com/dibenkobit/openlab"]
+};
 
 /**
  * The lockup is the brand pack's tuned triple: a 36px mark, the word at `text-2xl` and the gap at
@@ -49,11 +87,22 @@ const platforms = Object.values(INSTALL_PLATFORM);
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={DESCRIPTION} />
         <meta name="theme-color" content="#09090b" />
-        <meta property="og:title" content="OpenLab" />
-        <meta property="og:description" content={DESCRIPTION} />
-        <meta property="og:image" content={new URL("/social-preview-1280x640.png", Astro.site)} />
-        <meta property="og:type" content="website" />
         <link rel="canonical" href={Astro.site} />
+        <!--
+            One card described twice, because the services that show it disagree about which tags
+            they read. `og:*` is what nearly all of them take; `twitter:card` is the one thing that
+            makes X give the image the full width instead of a thumbnail beside the text.
+        -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="OpenLab" />
+        <meta property="og:url" content={Astro.site} />
+        <meta property="og:title" content={TITLE} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:image" content={SOCIAL_PREVIEW.url} />
+        <meta property="og:image:width" content={SOCIAL_PREVIEW.width} />
+        <meta property="og:image:height" content={SOCIAL_PREVIEW.height} />
+        <meta property="og:image:alt" content={SOCIAL_PREVIEW.alt} />
+        <meta name="twitter:card" content="summary_large_image" />
         <!--
             The SVG mark answers first and follows the reader's own light or dark setting. The PNGs
             beside it are not resamples of it: below 20px the mark is redrawn with a heavier stroke,
@@ -64,7 +113,8 @@ const platforms = Object.values(INSTALL_PLATFORM);
         <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
         <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
         <link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
-        <title>OpenLab — a research lab that runs on your machine</title>
+        <title>{TITLE}</title>
+        <script type="application/ld+json" is:inline set:html={JSON.stringify(STRUCTURED_DATA)} />
         <!--
             This runs before the body renders, because its whole job is to be right on the first
             paint: it marks the document with the platform it read from the browser, and the
@@ -90,8 +140,8 @@ const platforms = Object.values(INSTALL_PLATFORM);
                     </h1>
                     <p class="text-lg text-muted-foreground text-pretty">
                         One goal, its own agents, its own run directory. It reaches models through
-                        the agent CLI you are already signed in to, so nothing here resells you
-                        tokens.
+                        the agent CLI you are already signed in to — Codex or Claude Code — so
+                        nothing here resells you tokens.
                     </p>
                 </div>
 
