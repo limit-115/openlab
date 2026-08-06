@@ -1,5 +1,5 @@
 {
-    "name": "openlab",
+    "name": "@exoform/openlab",
     "version": "0.0.0",
     "description": "Local autonomous AI research runtime — install from https://openlab.bot",
     "license": "Apache-2.0",
@@ -10,6 +10,9 @@
         "directory": "release/npm/openlab"
     },
     "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
     "bin": {
         "openlab": "./bin/openlab.js"
     },
