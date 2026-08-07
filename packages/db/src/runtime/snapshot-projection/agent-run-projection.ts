@@ -22,6 +22,7 @@ export async function upsertAgentRuns(
             exitCode: run.exit_code ?? null,
             error: run.error ?? null,
             manifestPath: run.manifest_path ?? null,
+            manifestSha256: run.manifest_sha256 ?? null,
             finishedAt: run.finished_at === undefined ? null : new Date(run.finished_at)
         };
         const records = await database

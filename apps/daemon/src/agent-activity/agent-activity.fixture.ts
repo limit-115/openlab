@@ -50,10 +50,11 @@ export function harnessEvents(bodies: readonly EventBody<HarnessEvent>[]): Harne
 }
 
 export function harnessRunResult(overrides: Partial<HarnessRunResult> = {}): HarnessRunResult {
+    /** The digest of the empty file, which is what a harness hands back for one. */
     const artifact: HarnessArtifact = {
         path: `${ARTIFACT_DIRECTORY}/events.jsonl`,
         bytes: 0,
-        sha256: ""
+        sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     };
     return {
         kind: HarnessKinds.CLAUDE,
