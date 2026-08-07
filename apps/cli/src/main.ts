@@ -25,8 +25,7 @@ import {
 import { uninstallLab } from "#src/lab-installation/uninstall-lab";
 import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
-import { stopLab } from "#src/lab-start/stop-lab";
-import { ShutdownSignal } from "#src/lab-start/stop-lab.const";
+import { stopLabOnSignal } from "#src/lab-start/stop-lab";
 import { LAB_VERSION } from "#src/lab-version";
 import {
     renderAssumptions,
@@ -155,22 +154,7 @@ program
             },
             { reportStartup: reportStartupToTerminal }
         );
-        /**
-         * The first signal stops the lab and every later one is the same request arriving again:
-         * Ctrl+C reaches a lab started through a script runner twice, once from the terminal and
-         * once forwarded by the runner, and a stop that let the second one through would be killed
-         * halfway rather than finished.
-         */
-        let stopping = false;
-        for (const signal of Object.values(ShutdownSignal)) {
-            process.on(signal, () => {
-                if (stopping) {
-                    return;
-                }
-                stopping = true;
-                void stopLab(() => daemon.close());
-            });
-        }
+        stopLabOnSignal(() => daemon.close());
         const shown = options.open === false ? false : await openDashboard(daemon.url);
         /**
          * The block stays open for as long as the lab is up: what is on screen is a lab running,

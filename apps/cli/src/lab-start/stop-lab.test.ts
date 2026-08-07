@@ -1,10 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { stopLab } from "#src/lab-start/stop-lab";
+import { stopLab, stopLabOnSignal } from "#src/lab-start/stop-lab";
+import { ShutdownSignal } from "#src/lab-start/stop-lab.const";
 
 const exitCodeBeforeTests = process.exitCode;
+const listenersBeforeTests = new Map(
+    Object.values(ShutdownSignal).map((signal) => [signal, process.listeners(signal)])
+);
 
 afterEach(() => {
     process.exitCode = exitCodeBeforeTests;
+    /** A test that put the lab under a signal takes it back out, and leaves the run's own alone. */
+    for (const [signal, held] of listenersBeforeTests) {
+        for (const listener of process.listeners(signal)) {
+            if (!held.includes(listener)) {
+                process.removeListener(signal, listener);
+            }
+        }
+    }
     vi.restoreAllMocks();
 });
 
@@ -19,15 +31,16 @@ function terminal(): () => string {
 }
 
 describe("stopLab", () => {
-    it("says goodbye once the lab is down, rather than while it is still going", async () => {
+    it("says the lab is going while it goes, and goodbye only once it is down", async () => {
         const read = terminal();
-        let closed = false;
+        let terminalWhileClosing = "";
 
         await stopLab(async () => {
-            closed = true;
+            terminalWhileClosing = read();
         });
 
-        expect(closed).toBe(true);
+        expect(terminalWhileClosing).toContain("Stopping the lab");
+        expect(terminalWhileClosing).not.toContain("See you soon");
         expect(read()).toContain("See you soon");
     });
 
@@ -52,5 +65,45 @@ describe("stopLab", () => {
 
         expect(read()).toContain("The database would not close");
         expect(process.exitCode).toBe(1);
+    });
+});
+
+describe("stopLabOnSignal", () => {
+    it("stops the lab on an interrupt", () => {
+        terminal();
+        const close = vi.fn(async () => undefined);
+
+        stopLabOnSignal(close);
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(close).toHaveBeenCalledOnce();
+    });
+
+    /**
+     * The interrupt a script runner forwards lands while the lab is still going down, and Node
+     * kills whatever is left of a process holding no listener for it.
+     */
+    it("stays under the signal while it is stopping, so a second one cannot kill the stop", () => {
+        terminal();
+        const close = vi.fn(async () => undefined);
+
+        stopLabOnSignal(close);
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(process.listenerCount(ShutdownSignal.INTERRUPT)).toBeGreaterThan(0);
+
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(close).toHaveBeenCalledOnce();
+    });
+
+    it("stops a lab a service manager takes down the same way it stops one an operator does", () => {
+        terminal();
+        const close = vi.fn(async () => undefined);
+
+        stopLabOnSignal(close);
+        process.emit(ShutdownSignal.TERMINATE);
+
+        expect(close).toHaveBeenCalledOnce();
     });
 });

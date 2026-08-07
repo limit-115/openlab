@@ -1,4 +1,25 @@
 import { cancel, log, outro } from "@clack/prompts";
+import { ShutdownSignal } from "#src/lab-start/stop-lab.const";
+
+/**
+ * Puts a running lab under the interrupt that stops it. The first one stops it and every later one
+ * is the same request arriving again: Ctrl+C reaches a lab started through a script runner twice,
+ * once from the terminal and once forwarded by the runner, so the lab stays subscribed to the
+ * signal for as long as it is going down. Letting the forwarded one through to Node would kill the
+ * stop halfway rather than finish it.
+ */
+export function stopLabOnSignal(close: () => Promise<void>): void {
+    let stopping = false;
+    for (const signal of Object.values(ShutdownSignal)) {
+        process.on(signal, () => {
+            if (stopping) {
+                return;
+            }
+            stopping = true;
+            void stopLab(close);
+        });
+    }
+}
 
 /**
  * Taking the lab down the way the operator asked for. The terminal hears that the lab is going
