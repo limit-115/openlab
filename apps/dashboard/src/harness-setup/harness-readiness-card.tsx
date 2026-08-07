@@ -1,3 +1,5 @@
+import { AgentHarnessBilling, HARNESS_BILLING } from "@openlab/protocol/agents/agent-billing.const";
+import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { HarnessReadinessState } from "@openlab/protocol/harness-readiness/harness-readiness.const";
 import type { HarnessReadiness } from "@openlab/protocol/harness-readiness/harness-readiness.types";
 import { CheckIcon, CircleAlertIcon, CircleDashedIcon } from "lucide-react";
@@ -8,7 +10,9 @@ import { subscriptionPlanName } from "#src/agent-harness/subscription-plan-name"
 import { CopyButton } from "#src/clipboard/copy-button";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
+import { DeepseekKeyField } from "#src/harness-setup/deepseek-key-field";
 import {
+    HARNESS_BILLING_WARNING,
     HARNESS_CARD,
     HARNESS_CARD_ERROR,
     HARNESS_CARD_HEADER,
@@ -43,15 +47,34 @@ export function HarnessReadinessCard({ harness }: { harness: HarnessReadiness })
                 {STATE_ICON[harness.state]}
                 <span className={HARNESS_CARD_NAME}>{HARNESS_NAME[harness.harness]}</span>
                 <Badge variant={ready ? "default" : "secondary"}>{t(harness.state)}</Badge>
+                {HARNESS_BILLING[harness.harness] === AgentHarnessBilling.USAGE ? (
+                    <Badge variant="destructive">{t("billingUsage")}</Badge>
+                ) : null}
                 {harness.plan === null ? null : (
                     <Badge variant="outline">{subscriptionPlanName(harness.plan)}</Badge>
+                )}
+                {harness.balance === null ? null : (
+                    <Badge variant="outline">{harness.balance}</Badge>
                 )}
                 {harness.cli_version === null ? null : (
                     <span className={HARNESS_CARD_VERSION}>{harness.cli_version}</span>
                 )}
             </div>
 
+            {HARNESS_BILLING[harness.harness] === AgentHarnessBilling.USAGE ? (
+                <p className={HARNESS_BILLING_WARNING}>{t("billingUsageNote")}</p>
+            ) : null}
             <HarnessNextStep harness={harness} />
+            {/**
+             * The key field stays after the harness is ready, because forgetting the key is the only
+             * control that stops the lab spending the wallet, and it must not disappear at exactly
+             * the moment the lab has started spending it. Only a missing CLI hides it: a key is no
+             * use until the binary that spends it is on the machine.
+             */}
+            {harness.harness === AgentHarnessKind.DEEPSEEK &&
+            harness.state !== HarnessReadinessState.NOT_INSTALLED ? (
+                <DeepseekKeyField />
+            ) : null}
         </li>
     );
 }
