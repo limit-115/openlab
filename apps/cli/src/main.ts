@@ -24,6 +24,7 @@ import {
     renderUninstallOutcome
 } from "#src/lab-installation/render-installation";
 import { uninstallLab } from "#src/lab-installation/uninstall-lab";
+import { hideControlKeyEcho } from "#src/lab-start/control-key-echo";
 import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
 import { stopLabOnSignal } from "#src/lab-start/stop-lab";
@@ -196,6 +197,8 @@ program
                 }
             }
         );
+        /** What Ctrl+C did is on the line below it, so the terminal need not print the key too. */
+        hideControlKeyEcho();
         stopLabOnSignal(() => daemon.close());
         const shown = options.open === false ? false : await openDashboard(daemon.url);
         /**
