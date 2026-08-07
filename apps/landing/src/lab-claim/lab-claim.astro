@@ -1,0 +1,51 @@
+---
+import CropMarks from "#src/brand/crop-marks.astro";
+import InstallCommand from "#src/install/install-command.astro";
+import { CLAIM_PROOF } from "#src/lab-claim/lab-claim.const";
+
+/**
+ * The opening plate: what the lab is, and the line that installs it, inside the mark's own crop
+ * marks blown up to the size of the page. The install command is here rather than further down on
+ * purpose — a reader who already knows what this is should never have to scroll to act on it.
+ */
+---
+
+<section id="top" class="border-b border-border px-6 py-12 sm:px-10 sm:py-16">
+    <div class="relative px-4 py-10 sm:px-8 sm:py-14">
+        <CropMarks />
+
+        <p class="flex items-center gap-2.5 text-sm text-muted-foreground uppercase">
+            <span class="size-2 shrink-0 rounded-full bg-brand motion-safe:animate-pulse"></span>
+            Local autonomous research runtime
+        </p>
+
+        <h1
+            class="mt-7 max-w-5xl text-5xl leading-[1.1] font-[820] text-balance sm:text-7xl lg:text-8xl"
+        >
+            A research lab that runs on <span
+                class="box-decoration-clone bg-brand px-3 py-1 text-brand-foreground"
+                >your machine.</span
+            >
+        </h1>
+
+        <p class="mt-8 max-w-2xl text-lg text-pretty text-muted-foreground sm:text-xl">
+            One goal, its own agents, its own run directory. It reaches models through the agent CLI
+            you are already signed in to — Codex or Claude Code — so nothing here resells you tokens.
+        </p>
+
+        <div id="install" class="mt-10 max-w-3xl">
+            <InstallCommand />
+        </div>
+
+        <ul class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
+            {
+                CLAIM_PROOF.map((proof) => (
+                    <li class="flex items-center gap-2.5 text-sm text-muted-foreground">
+                        <span class="size-1.5 shrink-0 bg-brand" aria-hidden="true" />
+                        {proof}
+                    </li>
+                ))
+            }
+        </ul>
+    </div>
+</section>

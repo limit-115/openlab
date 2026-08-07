@@ -1,0 +1,65 @@
+---
+import SectionMarker from "#src/brand/section-marker.astro";
+import { GUARDRAIL } from "#src/guardrails/guardrails.const";
+
+/**
+ * The section for the reader who has already decided the thing is interesting and is now working
+ * out what it will do to them overnight. It answers the money, the silence, the self-update and the
+ * visibility, then closes on the one fact the rest of it rests on: the lab is a directory, and it
+ * is yours.
+ */
+---
+
+<section id="guardrails" class="border-t border-border">
+    <SectionMarker label="Guardrails" />
+
+    <div class="grid gap-8 px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16">
+        <h2 class="text-3xl leading-tight font-[780] text-balance sm:text-5xl">
+            It runs for hours. Here is what it will not do.
+        </h2>
+        <p class="max-w-xl text-lg text-pretty text-muted-foreground lg:mt-2">
+            Research runs long and mostly unwatched, so the answers below are behaviour the runtime
+            already has rather than a setting somebody has to go and find first.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2">
+        {
+            GUARDRAIL.map((guardrail, position) => {
+                const isLead = position === 0;
+                return (
+                    <article
+                        class:list={[
+                            "flex flex-col gap-4 p-6 sm:p-10",
+                            isLead ? "bg-brand text-brand-foreground" : "bg-background"
+                        ]}
+                    >
+                        <h3 class="text-2xl font-[720] text-balance sm:text-3xl">
+                            {guardrail.title}
+                        </h3>
+                        <p
+                            class:list={[
+                                "text-pretty",
+                                isLead ? "text-brand-foreground/85" : "text-muted-foreground"
+                            ]}
+                        >
+                            {guardrail.line}
+                        </p>
+                    </article>
+                );
+            })
+        }
+    </div>
+
+    <div class="dot-matrix border-t border-border px-6 py-12 sm:px-10 sm:py-16">
+        <h3 class="max-w-3xl text-2xl leading-tight font-[760] text-balance sm:text-4xl">
+            And the lab itself is a directory you own.
+        </h3>
+        <p class="mt-5 max-w-2xl text-pretty text-muted-foreground">
+            One SQLite file and the run directories beside it, under <code
+                class="font-mono text-foreground">OPENLAB_HOME</code
+            >. Copy it to keep it, delete it to be rid of it. Installing and uninstalling the program
+            never touches it.
+        </p>
+    </div>
+</section>

@@ -1,12 +1,13 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 
 @source "./";
 
 /**
  * The site is dark and only dark, so the palette is stated once and never branches. Every value is
- * the dashboard's own, so the page a reader lands on and the product they install cannot drift
- * apart. Black, white, and one accent: nothing here is a gradient.
+ * the dashboard's own dark theme, so the page a reader lands on and the product they install cannot
+ * drift apart. One ground, one ink, one accent: nothing here is a colour ramp.
  */
 :root {
     color-scheme: dark;
@@ -17,16 +18,40 @@
     --surface: oklch(0.21 0.006 285.885);
     /** The one colour the brand carries. On a dark ground this is the dashboard's own accent. */
     --brand: oklch(0.623 0.214 259.815);
+    /**
+     * What is written on a panel the accent fills rather than inks. The ground reads at 5.6:1 on
+     * the accent and the foreground at 3.8:1, so a filled panel is always dark on blue, never the
+     * other way around. Anything reversed out of this rule stops being readable at body size.
+     */
+    --brand-foreground: oklch(0.141 0.005 285.823);
 }
 
 @theme inline {
     --font-sans: "Inter Variable", sans-serif;
+    --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-muted-foreground: var(--muted-foreground);
     --color-border: var(--border);
     --color-surface: var(--surface);
     --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+}
+
+/**
+ * The harness strip reads as one long line that never ends, which is only true while it is moving.
+ * The track holds the roster twice and travels exactly half its width, so the seam lands where the
+ * first copy ended and there is nothing to see at the wrap. Markup asks for it through
+ * `motion-safe:`, so a reader who turned motion off is left with a strip that simply sits still.
+ */
+@theme {
+    --animate-harness-strip: harness-strip 48s linear infinite;
+
+    @keyframes harness-strip {
+        to {
+            transform: translateX(-50%);
+        }
+    }
 }
 
 /**
@@ -38,9 +63,27 @@
 @custom-variant platform-powershell (&:where([data-platform="powershell"] *));
 @custom-variant platform-cmd (&:where([data-platform="cmd"] *));
 
+/**
+ * The texture a panel with nothing in it is filled with: a dot on a 7px pitch, drawn with a hard
+ * stop so it stays a matrix of dots rather than a smudge. There are two because the page has two
+ * grounds — `dot-matrix` for the dark sheet, `dot-matrix-inverse` for a panel the accent fills.
+ */
+@utility dot-matrix {
+    background-image: radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 7px 7px;
+}
+
+@utility dot-matrix-inverse {
+    background-image: radial-gradient(
+        color-mix(in oklab, var(--brand-foreground) 22%, transparent) 1px,
+        transparent 1px
+    );
+    background-size: 7px 7px;
+}
+
 @layer base {
     html {
-        @apply font-sans;
+        @apply font-sans scroll-smooth;
     }
 
     body {
@@ -49,5 +92,23 @@
 
     button:not(:disabled) {
         cursor: pointer;
+    }
+
+    /**
+     * A command has to show the characters it is made of and no others. The monospace face ligates
+     * by default, which is a pleasure to read source in and a trap on a page whose whole purpose is
+     * getting a line typed correctly: `--goal` drawn as one long dash is a line somebody retypes
+     * wrong.
+     */
+    code {
+        font-variant-ligatures: none;
+    }
+
+    /**
+     * Everything on this page is anchored, and the header stands over the top of the sheet, so a
+     * section jumped to has to stop below it rather than under it.
+     */
+    :target {
+        scroll-margin-top: 5rem;
     }
 }

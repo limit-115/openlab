@@ -1,0 +1,79 @@
+---
+import { INSTALL_PLATFORM } from "#src/install/install.const";
+import {
+    DESCRIPTION,
+    LICENSE_URL,
+    REPOSITORY_URL,
+    SOCIAL_PREVIEW,
+    TITLE
+} from "#src/site-metadata/site-metadata.const";
+
+/**
+ * Everything in the document head: what the page says about itself to a search engine, to a service
+ * unfurling a link, and to the browser drawing a tab. It is one module because those three audiences
+ * read overlapping tags, and splitting them is how a title and an `og:title` start disagreeing.
+ */
+const socialPreviewUrl = new URL(SOCIAL_PREVIEW.path, Astro.site);
+
+/**
+ * The same claims the page already makes in prose, in the one shape a search engine and an answer
+ * engine both parse without guessing. Every field here is checkable against something: the licence
+ * is the one in the repository, the price is nothing because the lab sells nothing. No ratings and
+ * no user counts — a number stated to a machine is a number that has to keep being true.
+ */
+const STRUCTURED_DATA = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "OpenLab",
+    description: DESCRIPTION,
+    url: Astro.site,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "macOS, Linux, Windows",
+    license: LICENSE_URL,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    sameAs: [REPOSITORY_URL]
+};
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content={DESCRIPTION} />
+<meta name="theme-color" content="#09090b" />
+<link rel="canonical" href={Astro.site} />
+<!--
+    One card described twice, because the services that show it disagree about which tags they read.
+    `og:*` is what nearly all of them take; `twitter:card` is the one thing that makes X give the
+    image the full width instead of a thumbnail beside the text.
+-->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="OpenLab" />
+<meta property="og:url" content={Astro.site} />
+<meta property="og:title" content={TITLE} />
+<meta property="og:description" content={DESCRIPTION} />
+<meta property="og:image" content={socialPreviewUrl} />
+<meta property="og:image:width" content={SOCIAL_PREVIEW.width} />
+<meta property="og:image:height" content={SOCIAL_PREVIEW.height} />
+<meta property="og:image:alt" content={SOCIAL_PREVIEW.alt} />
+<meta name="twitter:card" content="summary_large_image" />
+<!--
+    The SVG mark answers first and follows the reader's own light or dark setting. The PNGs beside it
+    are not resamples of it: below 20px the mark is redrawn with a heavier stroke, so a browser that
+    cannot read the SVG is given the size it asked for, not a shrunk one.
+-->
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
+<link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
+<title>{TITLE}</title>
+<script type="application/ld+json" is:inline set:html={JSON.stringify(STRUCTURED_DATA)} />
+<!--
+    This runs before the body renders, because its whole job is to be right on the first paint: it
+    marks the document with the platform it read from the browser, and the stylesheet does the rest.
+    Nothing here touches layout, so nothing here can shift it.
+-->
+<script is:inline define:vars={{ INSTALL_PLATFORM }}>
+    document.documentElement.dataset.platform = /Win/i.test(navigator.userAgent)
+        ? INSTALL_PLATFORM.powershell
+        : INSTALL_PLATFORM.unix;
+</script>

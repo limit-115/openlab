@@ -1,0 +1,76 @@
+---
+import SectionMarker from "#src/brand/section-marker.astro";
+import {
+    HARNESS,
+    HARNESS_BILLING,
+    HARNESS_BILLING_LABEL,
+    HARNESS_STRIP_REPEATS
+} from "#src/harness-roster/harness-roster.const";
+
+/**
+ * What the lab thinks with. A page selling autonomous research has to answer the money question
+ * before anything else, so the roster leads with who pays for each harness rather than burying it:
+ * three run on a plan already bought, and the fourth says outright that it bills a wallet.
+ *
+ * The moving strip above the roster is the same four names and carries no information the cells
+ * below do not, which is why it is hidden from assistive technology rather than read out twice.
+ */
+const stripRoster = Array.from({ length: HARNESS_STRIP_REPEATS }, () => HARNESS).flat();
+---
+
+<section id="harnesses">
+    <div class="overflow-hidden border-y border-border bg-brand py-3.5" aria-hidden="true">
+        <div class="flex w-max motion-safe:animate-harness-strip">
+            {
+                [0, 1].map(() => (
+                    <ul class="flex shrink-0 items-center">
+                        {stripRoster.map((harness) => (
+                            <li class="flex items-center gap-8 px-8 text-sm text-brand-foreground uppercase">
+                                <span class="size-1.5 shrink-0 bg-brand-foreground" />
+                                {harness.name}
+                            </li>
+                        ))}
+                    </ul>
+                ))
+            }
+        </div>
+    </div>
+
+    <SectionMarker label="Harnesses" />
+
+    <div class="grid gap-8 px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16">
+        <h2 class="text-3xl leading-tight font-[780] text-balance sm:text-5xl">
+            It thinks with the CLI you already pay for.
+        </h2>
+        <p class="max-w-xl text-lg text-pretty text-muted-foreground lg:mt-2">
+            OpenLab installs no model and resells no tokens. It dispatches every agent to a locally
+            authenticated harness on this machine, and <code class="font-mono">openlab doctor</code
+            >{" "}says which of them it can find.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+        {
+            HARNESS.map((harness) => (
+                <article class="flex flex-col gap-4 bg-background p-6 sm:p-8">
+                    <h3 class="text-2xl font-[720]">{harness.name}</h3>
+                    <p
+                        class:list={[
+                            "w-fit px-2.5 py-1 text-sm",
+                            harness.billing === HARNESS_BILLING.SUBSCRIPTION
+                                ? "bg-brand text-brand-foreground"
+                                : "border border-border text-muted-foreground"
+                        ]}
+                    >
+                        {HARNESS_BILLING_LABEL[harness.billing]}
+                    </p>
+                    <p class="text-pretty text-muted-foreground">{harness.note}</p>
+                    <p class="mt-auto pt-2 text-sm text-muted-foreground">
+                        Found on your <code class="font-mono text-foreground">PATH</code> as{" "}
+                        <code class="font-mono text-foreground">{harness.command}</code>
+                    </p>
+                </article>
+            ))
+        }
+    </div>
+</section>

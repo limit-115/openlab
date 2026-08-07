@@ -1,0 +1,41 @@
+---
+import SectionMarker from "#src/brand/section-marker.astro";
+import { FIRST_RUN_STEP } from "#src/first-run/first-run.const";
+
+/**
+ * The whole of getting started, written out so a reader can count the steps before they commit to
+ * the first one. The commands are set in the monospace face because they are literally typed; the
+ * lines beside them are prose about what happens, and are not.
+ */
+---
+
+<section class="border-t border-border">
+    <SectionMarker label="First run" />
+
+    <div class="grid gap-8 px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16">
+        <h2 class="text-3xl leading-tight font-[780] text-balance sm:text-5xl">
+            Three commands, and it is working.
+        </h2>
+        <p class="max-w-xl text-lg text-pretty text-muted-foreground lg:mt-2">
+            Node, pnpm and a toolchain are not requirements. A release is one executable with its
+            runtime inside it, and the database is created on first start beside the runs it is
+            about.
+        </p>
+    </div>
+
+    <ol class="grid gap-px border-t border-border bg-border">
+        {
+            FIRST_RUN_STEP.map((step) => (
+                <li class="grid gap-4 bg-background px-6 py-8 sm:px-10 lg:grid-cols-2 lg:items-baseline lg:gap-10">
+                    <p class="flex items-baseline gap-3">
+                        <span class="shrink-0 font-mono text-brand select-none">$</span>
+                        <code class="font-mono text-lg wrap-anywhere sm:text-xl">
+                            {step.command}
+                        </code>
+                    </p>
+                    <p class="text-pretty text-muted-foreground">{step.line}</p>
+                </li>
+            ))
+        }
+    </ol>
+</section>

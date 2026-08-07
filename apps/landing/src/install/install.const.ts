@@ -46,3 +46,10 @@ export const INSTALL_PLATFORM_LABEL = {
  * It is the Unix line because that installer covers two of the three platforms.
  */
 export const DEFAULT_INSTALL_PLATFORM: InstallPlatform = INSTALL_PLATFORM.unix;
+
+/**
+ * How long the copy button says it copied before it goes back to offering to. Long enough to be
+ * read after the eye has moved to the terminal, short enough that the button is never lying about
+ * what pressing it does next.
+ */
+export const COPY_FEEDBACK_MS = 2000;

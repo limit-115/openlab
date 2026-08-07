@@ -1,0 +1,20 @@
+---
+/**
+ * How a section says its own name. The page is laid out as a sheet under registration marks, and
+ * this is the margin note on each plate: a slash in the accent, the section's name, and a square
+ * closing the line off on the right. It sits above a section's real heading rather than replacing
+ * it, so what a screen reader walks is still the headings and never these.
+ */
+type Props = {
+    label: string;
+};
+
+const { label } = Astro.props;
+---
+
+<div class="flex items-center justify-between gap-4 border-b border-border px-6 py-4 sm:px-10">
+    <p class="text-sm text-muted-foreground uppercase">
+        <span class="text-brand" aria-hidden="true">/</span>{" "}{label}
+    </p>
+    <span class="size-2 shrink-0 bg-brand" aria-hidden="true"></span>
+</div>

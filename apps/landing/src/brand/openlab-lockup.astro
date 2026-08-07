@@ -1,0 +1,23 @@
+---
+import OpenLabMark from "#src/brand/openlab-mark.astro";
+
+/**
+ * The mark with the name beside it, which is how the product is signed wherever there is room for
+ * both. The word is live text in the product's own typeface rather than a drawing of it, so it
+ * stays crisp at any size and cannot fall out of step when the typeface updates.
+ *
+ * The three numbers are the brand pack's tuned triple: a 36px mark, the word at `text-2xl` and the
+ * gap at `gap-1`. The pack states all three as shares of the mark's height, and only these values
+ * land on the named scale within a percent, so they move together or not at all.
+ */
+type Props = {
+    class?: string;
+};
+
+const { class: className } = Astro.props;
+---
+
+<span class:list={["flex items-center gap-1", className]}>
+    <OpenLabMark class="size-9 shrink-0" />
+    <span class="text-2xl leading-none font-[640]">OpenLab</span>
+</span>

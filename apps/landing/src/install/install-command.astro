@@ -1,0 +1,133 @@
+---
+import {
+    DEFAULT_INSTALL_PLATFORM,
+    INSTALL_COMMAND,
+    INSTALL_PLATFORM,
+    INSTALL_PLATFORM_LABEL,
+    INSTALL_PROMPT,
+    type InstallPlatform
+} from "#src/install/install.const";
+
+/**
+ * The one control this page exists for: the line a reader pastes into a shell. It appears more than
+ * once, and every copy is the same control — which platform is lit is a single attribute on the
+ * document, so switching in one place switches in all of them and no two copies can disagree about
+ * what they are offering.
+ *
+ * Which tab is lit and which command is shown are both decided in CSS, from that attribute. The
+ * markup below is written for the default platform, so a reader with no scripting sees a working
+ * command, and a reader with scripting sees theirs from the first paint — the attribute is set
+ * before the body renders, so nothing swaps under them.
+ */
+type Props = {
+    class?: string;
+};
+
+const { class: className } = Astro.props;
+
+const TAB_STATE = {
+    unix: "bg-foreground text-background platform-powershell:bg-transparent platform-powershell:text-muted-foreground platform-cmd:bg-transparent platform-cmd:text-muted-foreground",
+    powershell:
+        "text-muted-foreground platform-powershell:bg-foreground platform-powershell:text-background",
+    cmd: "text-muted-foreground platform-cmd:bg-foreground platform-cmd:text-background"
+} as const satisfies Record<InstallPlatform, string>;
+
+const COMMAND_STATE = {
+    unix: "flex platform-powershell:hidden platform-cmd:hidden",
+    powershell: "hidden platform-powershell:flex",
+    cmd: "hidden platform-cmd:flex"
+} as const satisfies Record<InstallPlatform, string>;
+
+const platforms = Object.values(INSTALL_PLATFORM);
+---
+
+<div data-install class:list={["border border-border bg-background", className]}>
+    <div class="flex border-b border-border">
+        {
+            platforms.map((platform) => (
+                <button
+                    type="button"
+                    data-platform-tab={platform}
+                    aria-pressed={platform === DEFAULT_INSTALL_PLATFORM}
+                    class:list={[
+                        "border-r border-border px-4 py-2.5 text-sm transition-colors",
+                        TAB_STATE[platform]
+                    ]}
+                >
+                    {INSTALL_PLATFORM_LABEL[platform]}
+                </button>
+            ))
+        }
+    </div>
+
+    <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <div class="min-w-0 flex-1">
+            {
+                platforms.map((platform) => (
+                    <div class:list={["items-start gap-3", COMMAND_STATE[platform]]}>
+                        <span class="shrink-0 font-mono text-base text-brand select-none sm:text-lg">
+                            {INSTALL_PROMPT[platform]}
+                        </span>
+                        <code
+                            data-platform-command={platform}
+                            class="font-mono text-base wrap-anywhere whitespace-pre-wrap sm:text-lg"
+                        >
+                            {INSTALL_COMMAND[platform]}
+                        </code>
+                    </div>
+                ))
+            }
+        </div>
+        <button
+            type="button"
+            data-copy
+            class="shrink-0 self-start rounded-full bg-brand px-5 py-2.5 text-sm font-[620] text-brand-foreground transition-opacity hover:opacity-85 sm:self-auto"
+        >
+            Copy
+        </button>
+    </div>
+</div>
+
+<script>
+    import { COPY_FEEDBACK_MS, INSTALL_PLATFORM } from "#src/install/install.const";
+
+    const root = document.documentElement;
+    const tabs = document.querySelectorAll<HTMLButtonElement>("[data-platform-tab]");
+
+    /**
+     * The attribute is what the stylesheet reads, so setting it is the whole of switching, and it is
+     * set once for every copy of the control on the page. `aria-pressed` follows it rather than
+     * driving it, which keeps the state a reader sees and the state a screen reader is told the
+     * same one.
+     */
+    function select(platform: string) {
+        root.dataset.platform = platform;
+        for (const tab of tabs) {
+            tab.setAttribute("aria-pressed", String(tab.dataset.platformTab === platform));
+        }
+    }
+
+    select(root.dataset.platform ?? INSTALL_PLATFORM.unix);
+
+    for (const tab of tabs) {
+        tab.addEventListener("click", () => select(tab.dataset.platformTab ?? ""));
+    }
+
+    for (const copy of document.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
+        copy.addEventListener("click", async () => {
+            /**
+             * Read back the line this control is showing, so what lands on the clipboard cannot
+             * differ from what the reader is looking at when they press the button.
+             */
+            const shown = copy
+                .closest("[data-install]")
+                ?.querySelector<HTMLElement>(`[data-platform-command="${root.dataset.platform}"]`);
+            if (!shown?.textContent) return;
+            await navigator.clipboard.writeText(shown.textContent);
+            copy.textContent = "Copied";
+            setTimeout(() => {
+                copy.textContent = "Copy";
+            }, COPY_FEEDBACK_MS);
+        });
+    }
+</script>

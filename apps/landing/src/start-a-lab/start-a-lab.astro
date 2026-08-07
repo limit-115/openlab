@@ -1,0 +1,45 @@
+---
+import InstallCommand from "#src/install/install-command.astro";
+import { LICENSE_URL, REPOSITORY_URL } from "#src/site-metadata/site-metadata.const";
+
+/**
+ * The close. It is the one full field of accent on the page, so it reads as the end of the argument
+ * rather than another plate in the sheet, and it carries the same install control the opening did —
+ * a reader who scrolled the whole way to be convinced should not then have to scroll back.
+ */
+---
+
+<section class="dot-matrix-inverse border-t border-border bg-brand px-6 py-20 sm:px-10 sm:py-28">
+    <h2
+        class="max-w-4xl text-5xl leading-[1.02] font-[840] text-balance text-brand-foreground sm:text-7xl lg:text-8xl"
+    >
+        Start a lab.
+    </h2>
+    <p class="mt-7 max-w-xl text-lg text-pretty text-brand-foreground/80 sm:text-xl">
+        One command, on the plan you already hold. Nothing to sign up for, nothing to configure
+        before it can tell you what it is missing.
+    </p>
+
+    <div class="mt-12 max-w-3xl">
+        <InstallCommand class="shadow-[10px_10px_0_0_var(--brand-foreground)]" />
+    </div>
+
+    <div class="mt-12 flex flex-wrap items-center gap-3">
+        <a
+            href={REPOSITORY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-full bg-brand-foreground px-6 py-3 font-[620] text-foreground transition-opacity hover:opacity-85"
+        >
+            Read the source
+        </a>
+        <a
+            href={LICENSE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-full border border-brand-foreground/40 px-6 py-3 font-[620] text-brand-foreground transition-colors hover:border-brand-foreground"
+        >
+            Apache-2.0
+        </a>
+    </div>
+</section>

@@ -1,0 +1,28 @@
+---
+/**
+ * The product mark's frame, drawn at the scale of a page block. The mark is four crop marks with a
+ * flask standing inside them, because the lab is a boundary you own and the work happens within it;
+ * this is that same boundary placed around a section, so the page is built out of the mark rather
+ * than merely carrying it in the corner.
+ *
+ * It is absolutely positioned and takes no space and no pointer events, so whatever it marks has to
+ * be `relative` and needs no room made for it. Corners sit a hair outside the block's own edge, so
+ * they read as brackets standing around it rather than as a border drawn on it.
+ */
+type Props = {
+    class?: string;
+};
+
+const { class: className } = Astro.props;
+
+const CORNER = "pointer-events-none absolute size-5 border-brand sm:size-7";
+---
+
+<span aria-hidden="true" class:list={[CORNER, "-top-px -left-px border-t border-l", className]}
+></span>
+<span aria-hidden="true" class:list={[CORNER, "-top-px -right-px border-t border-r", className]}
+></span>
+<span aria-hidden="true" class:list={[CORNER, "-bottom-px -left-px border-b border-l", className]}
+></span>
+<span aria-hidden="true" class:list={[CORNER, "-right-px -bottom-px border-r border-b", className]}
+></span>

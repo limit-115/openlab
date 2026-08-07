@@ -1,288 +1,42 @@
 ---
-import OpenLabMark from "#src/brand/openlab-mark.astro";
-import {
-    DEFAULT_INSTALL_PLATFORM,
-    INSTALL_COMMAND,
-    INSTALL_PLATFORM,
-    INSTALL_PLATFORM_LABEL,
-    INSTALL_PROMPT,
-    type InstallPlatform
-} from "#src/install/install.const";
+import FirstRun from "#src/first-run/first-run.astro";
+import Guardrails from "#src/guardrails/guardrails.astro";
+import HarnessRoster from "#src/harness-roster/harness-roster.astro";
+import LabClaim from "#src/lab-claim/lab-claim.astro";
+import ResearchLoop from "#src/research-loop/research-loop.astro";
+import SiteFooter from "#src/site-footer/site-footer.astro";
+import SiteHeader from "#src/site-header/site-header.astro";
+import SiteMetadata from "#src/site-metadata/site-metadata.astro";
+import StartALab from "#src/start-a-lab/start-a-lab.astro";
 import "#src/tailwind.css";
 
 /**
- * The two lines quoted by everything that is not this page: a search result, a shared link, an
- * answer engine. They name Codex and Claude Code outright, because the page's own phrasing for
- * them — the agent CLI you are already signed in to — is true and completely unsearchable, and
- * someone looking for this lab is looking for the harness they already run.
+ * The whole site, in the order a reader asks their questions: what is this and how do I get it,
+ * what does it think with and who pays for that, what does it do while I am not looking, what does
+ * it take to start, what will it not do to me, and then the command again.
+ *
+ * The page is laid out as one sheet under registration rails, which is the product mark drawn at
+ * the scale of a page: the lab is a boundary you own and the work happens within it. Every section
+ * is a plate on that sheet, divided by a hairline rather than by empty space.
  */
-const TITLE = "OpenLab — a research lab that runs on your machine";
-const DESCRIPTION =
-    "A research lab that runs on your machine. Autonomous investigations driven by the Codex and Claude Code CLIs you are already signed in to.";
-
-/**
- * Stating the size lets a card reserve the space before the image arrives, so the preview does not
- * reflow under the reader. The alt text describes the picture rather than repeating the title,
- * which is what someone hearing the card read aloud is missing.
- */
-const SOCIAL_PREVIEW = {
-    url: new URL("/social-preview-1280x640.png", Astro.site),
-    width: "1280",
-    height: "640",
-    alt: "The OpenLab lockup: a flask inside focus brackets, beside the word OpenLab"
-} as const;
-
-/**
- * Where the source is. The git remote still carries the owner the repository was created under and
- * GitHub redirects it here, so the canonical owner is the one written down: a redirect lasts only
- * until somebody creates a repository under the retired name. Stated once because both the header
- * link and the structured data below point at it, and a page that names its repository twice will
- * eventually name two different ones.
- */
-const REPOSITORY_URL = "https://github.com/limit-115/openlab";
-
-/**
- * The same claims the page already makes in prose, in the one shape a search engine and an answer
- * engine both parse without guessing. Every field here is checkable against something: the licence
- * is the one in the repository, the price is nothing because the lab sells nothing. No ratings and
- * no user counts — a number stated to a machine is a number that has to keep being true.
- */
-const STRUCTURED_DATA = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "OpenLab",
-    description: DESCRIPTION,
-    url: Astro.site,
-    applicationCategory: "DeveloperApplication",
-    operatingSystem: "macOS, Linux, Windows",
-    license: "https://www.apache.org/licenses/LICENSE-2.0",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-    sameAs: [REPOSITORY_URL]
-};
-
-/**
- * The lockup is the brand pack's tuned triple: a 36px mark, the word at `text-2xl` and the gap at
- * `gap-1`. The pack states all three as shares of the mark's height, and only these values land on
- * the named scale within a percent, so they move together or not at all.
- */
-const LOCKUP_MARK = "size-9 shrink-0";
-const LOCKUP_WORD = "font-[640] text-2xl leading-none";
-
-/**
- * Which platform is lit and which command is shown are both decided in CSS, from the attribute the
- * document carries. The markup below is written for the default platform, so a reader with no
- * scripting sees a working command, and a reader with scripting sees theirs from the first paint —
- * the attribute is set before the body renders, so nothing swaps under them.
- */
-const TAB_STATE = {
-    unix: "bg-surface text-foreground platform-powershell:bg-transparent platform-powershell:text-muted-foreground platform-cmd:bg-transparent platform-cmd:text-muted-foreground",
-    powershell:
-        "text-muted-foreground platform-powershell:bg-surface platform-powershell:text-foreground",
-    cmd: "text-muted-foreground platform-cmd:bg-surface platform-cmd:text-foreground"
-} as const satisfies Record<InstallPlatform, string>;
-
-const COMMAND_STATE = {
-    unix: "flex platform-powershell:hidden platform-cmd:hidden",
-    powershell: "hidden platform-powershell:flex",
-    cmd: "hidden platform-cmd:flex"
-} as const satisfies Record<InstallPlatform, string>;
-
-const platforms = Object.values(INSTALL_PLATFORM);
 ---
 
 <html lang="en">
     <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="description" content={DESCRIPTION} />
-        <meta name="theme-color" content="#09090b" />
-        <link rel="canonical" href={Astro.site} />
-        <!--
-            One card described twice, because the services that show it disagree about which tags
-            they read. `og:*` is what nearly all of them take; `twitter:card` is the one thing that
-            makes X give the image the full width instead of a thumbnail beside the text.
-        -->
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="OpenLab" />
-        <meta property="og:url" content={Astro.site} />
-        <meta property="og:title" content={TITLE} />
-        <meta property="og:description" content={DESCRIPTION} />
-        <meta property="og:image" content={SOCIAL_PREVIEW.url} />
-        <meta property="og:image:width" content={SOCIAL_PREVIEW.width} />
-        <meta property="og:image:height" content={SOCIAL_PREVIEW.height} />
-        <meta property="og:image:alt" content={SOCIAL_PREVIEW.alt} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <!--
-            The SVG mark answers first and follows the reader's own light or dark setting. The PNGs
-            beside it are not resamples of it: below 20px the mark is redrawn with a heavier stroke,
-            so a browser that cannot read the SVG is given the size it asked for, not a shrunk one.
-        -->
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
-        <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
-        <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
-        <title>{TITLE}</title>
-        <script type="application/ld+json" is:inline set:html={JSON.stringify(STRUCTURED_DATA)} />
-        <!--
-            This runs before the body renders, because its whole job is to be right on the first
-            paint: it marks the document with the platform it read from the browser, and the
-            stylesheet does the rest. Nothing here touches layout, so nothing here can shift it.
-        -->
-        <script is:inline define:vars={{ INSTALL_PLATFORM }}>
-            document.documentElement.dataset.platform = /Win/i.test(navigator.userAgent)
-                ? INSTALL_PLATFORM.powershell
-                : INSTALL_PLATFORM.unix;
-        </script>
+        <SiteMetadata />
     </head>
-    <body class="min-h-dvh min-w-80">
-        <div class="mx-auto flex min-h-dvh max-w-2xl flex-col gap-12 px-6 py-10">
-            <header class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-1">
-                    <OpenLabMark class={LOCKUP_MARK} />
-                    <span class={LOCKUP_WORD}>OpenLab</span>
-                </div>
-                <!--
-                    The source is the claim the footer already makes — Apache-2.0, a directory you
-                    own — so the page has to be able to hand it over. It borrows the copy button's
-                    shape rather than a pill of its own: the page has one kind of small control on
-                    it, and a second kind would read as a second thing.
-                -->
-                <a
-                    href={REPOSITORY_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="OpenLab on GitHub"
-                    class="flex shrink-0 items-center gap-2 rounded-md border border-border px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                    <svg
-                        class="size-4 shrink-0"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
-                        ></path>
-                    </svg>
-                    GitHub
-                </a>
-            </header>
-
-            <main class="flex flex-1 flex-col justify-center gap-10">
-                <div class="flex flex-col gap-5">
-                    <h1 class="text-4xl leading-tight font-[640] text-balance sm:text-5xl">
-                        A research lab that runs on your machine.
-                    </h1>
-                    <p class="text-lg text-muted-foreground text-pretty">
-                        One goal, its own agents, its own run directory. It reaches models through
-                        the agent CLI you are already signed in to — Codex or Claude Code — so
-                        nothing here resells you tokens.
-                    </p>
-                </div>
-
-                <section class="flex flex-col gap-3" aria-labelledby="install-heading">
-                    <div class="flex items-center justify-between gap-4">
-                        <h2 id="install-heading" class="text-sm text-muted-foreground">Install</h2>
-                        <div class="flex gap-1">
-                            {
-                                platforms.map((platform) => (
-                                    <button
-                                        type="button"
-                                        data-platform-tab={platform}
-                                        aria-pressed={platform === DEFAULT_INSTALL_PLATFORM}
-                                        class:list={[
-                                            "rounded-md px-2.5 py-1 text-sm transition-colors",
-                                            TAB_STATE[platform]
-                                        ]}
-                                    >
-                                        {INSTALL_PLATFORM_LABEL[platform]}
-                                    </button>
-                                ))
-                            }
-                        </div>
-                    </div>
-
-                    <div
-                        class="flex items-start gap-3 rounded-lg border border-border bg-surface p-4"
-                    >
-                        <div class="flex-1">
-                            {
-                                platforms.map((platform) => (
-                                    <div class:list={["gap-3", COMMAND_STATE[platform]]}>
-                                        <span class="text-brand shrink-0 font-mono text-sm select-none">
-                                            {INSTALL_PROMPT[platform]}
-                                        </span>
-                                        <code
-                                            data-platform-command={platform}
-                                            class="font-mono text-sm whitespace-pre-wrap"
-                                        >
-                                            {INSTALL_COMMAND[platform]}
-                                        </code>
-                                    </div>
-                                ))
-                            }
-                        </div>
-                        <button
-                            type="button"
-                            data-copy
-                            class="shrink-0 rounded-md border border-border px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                            Copy
-                        </button>
-                    </div>
-
-                    <p class="text-sm text-muted-foreground">
-                        It keeps itself current from there. <code class="font-mono">openlab
-                        update</code> moves to the release published now, and a lab that is already
-                        running is left on the one it started with until you restart it.
-                    </p>
-                </section>
+    <body class="min-w-80">
+        <div class="mx-auto max-w-7xl border-border sm:border-x">
+            <SiteHeader />
+            <main>
+                <LabClaim />
+                <HarnessRoster />
+                <ResearchLoop />
+                <FirstRun />
+                <Guardrails />
+                <StartALab />
             </main>
-
-            <footer class="text-sm text-muted-foreground">
-                Apache-2.0. The lab is a directory you own: copy it to keep it, delete it to be rid
-                of it.
-            </footer>
+            <SiteFooter />
         </div>
-
-        <script>
-            import { INSTALL_PLATFORM } from "#src/install/install.const";
-
-            const root = document.documentElement;
-            const tabs = document.querySelectorAll<HTMLButtonElement>("[data-platform-tab]");
-            const copy = document.querySelector<HTMLButtonElement>("[data-copy]");
-
-            /**
-             * The attribute is what the stylesheet reads, so setting it is the whole of switching.
-             * `aria-pressed` follows it rather than driving it, which keeps the state a reader
-             * sees and the state a screen reader is told the same one.
-             */
-            function select(platform: string) {
-                root.dataset.platform = platform;
-                for (const tab of tabs) {
-                    tab.setAttribute("aria-pressed", String(tab.dataset.platformTab === platform));
-                }
-            }
-
-            select(root.dataset.platform ?? INSTALL_PLATFORM.unix);
-
-            for (const tab of tabs) {
-                tab.addEventListener("click", () => select(tab.dataset.platformTab ?? ""));
-            }
-
-            copy?.addEventListener("click", async () => {
-                /** Read back what is on screen, so the copied line cannot differ from the shown one. */
-                const shown = document.querySelector<HTMLElement>(
-                    `[data-platform-command="${root.dataset.platform}"]`
-                );
-                if (!shown?.textContent) return;
-                await navigator.clipboard.writeText(shown.textContent);
-                copy.textContent = "Copied";
-                setTimeout(() => {
-                    copy.textContent = "Copy";
-                }, 2000);
-            });
-        </script>
     </body>
 </html>

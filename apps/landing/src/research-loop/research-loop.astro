@@ -1,0 +1,81 @@
+---
+import SectionMarker from "#src/brand/section-marker.astro";
+import { RESEARCH_PAUSE, RESEARCH_STAGE } from "#src/research-loop/research-loop.const";
+
+/**
+ * What a lab is doing while nobody is watching it. This is the section that has to answer "what
+ * does it actually do for six hours", so it walks one turn of the loop the daemon really runs and
+ * then says the two ways a turn ends without an answer — because an investigation that has gone
+ * quiet looks the same from outside whichever of them happened.
+ */
+---
+
+<section id="loop" class="border-t border-border">
+    <SectionMarker label="How a lab works" />
+
+    <div class="grid gap-8 px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16">
+        <h2 class="text-3xl leading-tight font-[780] text-balance sm:text-5xl">
+            One goal. Its own agents. Its own directory.
+        </h2>
+        <p class="max-w-xl text-lg text-pretty text-muted-foreground lg:mt-2">
+            One lab holds many investigations, each running alongside the others. An investigation is
+            a goal, a team, and a research loop that turns until it has something or has nowhere left
+            to look.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+        {
+            RESEARCH_STAGE.map((stage, position) => {
+                const isOutcome = position === RESEARCH_STAGE.length - 1;
+                return (
+                    <article
+                        class:list={[
+                            "flex flex-col gap-4 p-6 sm:p-8",
+                            isOutcome ? "bg-brand text-brand-foreground" : "bg-background"
+                        ]}
+                    >
+                        <p
+                            class:list={[
+                                "text-sm",
+                                isOutcome ? "text-brand-foreground/70" : "text-muted-foreground"
+                            ]}
+                        >
+                            {stage.index}
+                        </p>
+                        <h3 class="text-2xl font-[720] sm:text-3xl">{stage.name}</h3>
+                        <p
+                            class:list={[
+                                "text-pretty",
+                                isOutcome ? "text-brand-foreground/85" : "text-muted-foreground"
+                            ]}
+                        >
+                            {stage.line}
+                        </p>
+                    </article>
+                );
+            })
+        }
+    </div>
+
+    <div class="border-t border-border px-6 py-8 sm:px-10">
+        <p class="max-w-3xl text-pretty text-muted-foreground">
+            Then it turns again, on what the last turn spent and what it ruled out. Two things stop
+            it, and it tells you which:
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2">
+        {
+            RESEARCH_PAUSE.map((pause) => (
+                <article class="flex flex-col gap-3 bg-background p-6 sm:p-8">
+                    <h3 class="flex items-center gap-3 text-xl font-[700]">
+                        <span class="size-2 shrink-0 bg-brand" aria-hidden="true" />
+                        {pause.title}
+                    </h3>
+                    <p class="text-pretty text-muted-foreground">{pause.line}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>
