@@ -27,6 +27,7 @@ import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
 import { stopLab } from "#src/lab-start/stop-lab";
 import { ShutdownSignal } from "#src/lab-start/stop-lab.const";
+import { LAB_VERSION } from "#src/lab-version";
 import {
     renderAssumptions,
     renderCapabilities,
@@ -50,9 +51,6 @@ interface StartOptions {
 interface InstallOptions {
     modifyPath?: boolean;
 }
-
-/** What this build of the lab is, which is both what `--version` answers and what installs itself. */
-const LAB_VERSION = "0.1.0";
 
 interface NewOptions {
     goal?: string;

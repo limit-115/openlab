@@ -22,7 +22,8 @@
     },
     "imports": {
         "#bin/*": "./bin/*",
-        "#src/*": "./src/*.ts"
+        "#src/*": "./src/*.ts",
+        "#package.json": "./package.json"
     },
     "scripts": {
         "build": "tsc -p tsconfig.build.json",
