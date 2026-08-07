@@ -11,8 +11,8 @@ import type {
     HarnessPreflight,
     HarnessRunRequest
 } from "@openlab/harness/agent-harness.types";
+import type { HarnessAllowanceReading } from "@openlab/harness/harness-allowance.types";
 import { HarnessEventTypes } from "@openlab/harness/harness-event.const";
-import type { SubscriptionAllowance as HarnessAllowance } from "@openlab/harness/subscription-allowance.types";
 import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
@@ -22,6 +22,8 @@ import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.s
 import { describe, expect, it } from "vitest";
 import { harnessEvents, harnessRunResult } from "#src/agent-activity/agent-activity.fixture";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
+import { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowance-readings";
+import { HarnessBlockKind } from "#src/harness-allowance/harness-block.const";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
@@ -29,10 +31,8 @@ import { DirectorPlanSchema } from "#src/research-contract/research-contract";
 import { DispatchBlockedError, runAgentWithFallback } from "#src/research-cycle/agent-dispatch";
 import type { AgentWorkspace } from "#src/research-cycle/agent-workspace.types";
 import type { AvailableHarness } from "#src/research-cycle/research-loop.types";
-import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
-import { SubscriptionBlockKind } from "#src/subscription-allowance/subscription-block.const";
 
-/** The window every subscription in these tests is metered on, and the cap set against it. */
+/** The window every harness in these tests is metered on, and the cap set against it. */
 const WEEKLY_WINDOW_MINUTES = 10_080;
 const WEEKLY_CAP_PERCENT = 60;
 
@@ -94,9 +94,9 @@ async function agentWorkspace(role: AgentRole): Promise<AgentWorkspace> {
     };
 }
 
-function readings(spent: readonly HarnessKind[]): SubscriptionAllowanceReadings {
-    return new SubscriptionAllowanceReadings({
-        read: async (kind): Promise<HarnessAllowance> => ({
+function readings(spent: readonly HarnessKind[]): HarnessAllowanceReadings {
+    return new HarnessAllowanceReadings({
+        read: async (kind): Promise<HarnessAllowanceReading> => ({
             kind,
             plan: "max",
             balance: null,
@@ -111,10 +111,10 @@ function readings(spent: readonly HarnessKind[]): SubscriptionAllowanceReadings 
     });
 }
 
-/** Every subscription part-spent, so only a cap the operator set can stop the lab reaching one. */
-function partlySpentReadings(usedPercent: number): SubscriptionAllowanceReadings {
-    return new SubscriptionAllowanceReadings({
-        read: async (kind): Promise<HarnessAllowance> => ({
+/** Every harness part-spent, so only a cap the operator set can stop the lab reaching one. */
+function partlySpentReadings(usedPercent: number): HarnessAllowanceReadings {
+    return new HarnessAllowanceReadings({
+        read: async (kind): Promise<HarnessAllowanceReading> => ({
             kind,
             plan: "max",
             balance: null,
@@ -152,7 +152,7 @@ async function testWorkspace(
 }
 
 describe("runAgentWithFallback", () => {
-    it("asks the operator instead of dispatching when no subscription has allowance left", async () => {
+    it("asks the operator instead of dispatching when no harness has allowance left", async () => {
         const workspace = await testWorkspace("dispatch-spent");
         let workspacesCreated = 0;
 
@@ -160,14 +160,14 @@ describe("runAgentWithFallback", () => {
             workspace,
             activity: new AgentActivityHub(),
             available: [unusedHarness(HarnessKinds.CODEX), unusedHarness(HarnessKinds.CLAUDE)],
-            subscriptions: readings([HarnessKinds.CODEX, HarnessKinds.CLAUDE]),
+            allowances: readings([HarnessKinds.CODEX, HarnessKinds.CLAUDE]),
             settings: SHIPPED_LAB_SETTINGS,
             preferredIndex: 0,
             role: AgentRole.DIRECTOR,
             objective: "Find where this goal might be reachable",
             createAgentWorkspace: async () => {
                 workspacesCreated += 1;
-                throw new Error("a run was prepared for a spent subscription");
+                throw new Error("a run was prepared for a spent harness");
             },
             prompt: "Plan the cycle",
             schema: DirectorPlanSchema
@@ -182,7 +182,7 @@ describe("runAgentWithFallback", () => {
         ).not.toHaveLength(0);
     });
 
-    it("moves on to the subscription that still has allowance", async () => {
+    it("moves on to the harness that still has allowance", async () => {
         const workspace = await testWorkspace("dispatch-fallthrough");
         const dispatched: string[] = [];
         const reached = new Error("reached dispatch");
@@ -191,7 +191,7 @@ describe("runAgentWithFallback", () => {
             workspace,
             activity: new AgentActivityHub(),
             available: [unusedHarness(HarnessKinds.CODEX), unusedHarness(HarnessKinds.CLAUDE)],
-            subscriptions: readings([HarnessKinds.CODEX]),
+            allowances: readings([HarnessKinds.CODEX]),
             settings: SHIPPED_LAB_SETTINGS,
             preferredIndex: 0,
             role: AgentRole.DIRECTOR,
@@ -230,7 +230,7 @@ describe("runAgentWithFallback", () => {
         await expect(dispatch).rejects.toBe(reached);
     });
 
-    it("passes over the subscription that reached its cap and reaches for one that has not", async () => {
+    it("passes over the harness that reached its cap and reaches for one that has not", async () => {
         const workspace = await testWorkspace("dispatch-capped");
         const dispatched: HarnessKind[] = [];
         const requests: HarnessRunRequest[] = [];
@@ -242,7 +242,7 @@ describe("runAgentWithFallback", () => {
                 unusedHarness(HarnessKinds.CODEX),
                 answeringHarness(HarnessKinds.CLAUDE, requests)
             ],
-            subscriptions: partlySpentReadings(WEEKLY_CAP_PERCENT + 4),
+            allowances: partlySpentReadings(WEEKLY_CAP_PERCENT + 4),
             settings: cappedSettings(AgentHarnessKind.CODEX),
             preferredIndex: 0,
             role: AgentRole.DIRECTOR,
@@ -264,20 +264,20 @@ describe("runAgentWithFallback", () => {
         ).toEqual([HarnessKinds.CODEX]);
     });
 
-    it("asks the operator for nothing when its own caps are what held every subscription", async () => {
+    it("asks the operator for nothing when its own caps are what held every harness", async () => {
         const workspace = await testWorkspace("dispatch-all-capped");
 
         const dispatch = runAgentWithFallback({
             workspace,
             activity: new AgentActivityHub(),
             available: [unusedHarness(HarnessKinds.CODEX), unusedHarness(HarnessKinds.CLAUDE)],
-            subscriptions: partlySpentReadings(WEEKLY_CAP_PERCENT),
+            allowances: partlySpentReadings(WEEKLY_CAP_PERCENT),
             settings: cappedSettings(AgentHarnessKind.CODEX, AgentHarnessKind.CLAUDE),
             preferredIndex: 0,
             role: AgentRole.DIRECTOR,
             objective: "Find where this goal might be reachable",
             createAgentWorkspace: async () => {
-                throw new Error("a run was prepared for a subscription at its cap");
+                throw new Error("a run was prepared for a harness at its cap");
             },
             prompt: "Plan the cycle",
             schema: DirectorPlanSchema
@@ -285,8 +285,8 @@ describe("runAgentWithFallback", () => {
 
         await expect(dispatch).rejects.toMatchObject({
             blocks: [
-                { harness: HarnessKinds.CODEX, kind: SubscriptionBlockKind.WITHHELD },
-                { harness: HarnessKinds.CLAUDE, kind: SubscriptionBlockKind.WITHHELD }
+                { harness: HarnessKinds.CODEX, kind: HarnessBlockKind.WITHHELD },
+                { harness: HarnessKinds.CLAUDE, kind: HarnessBlockKind.WITHHELD }
             ]
         });
         expect(workspace.getSnapshot().capability_requests).toHaveLength(0);
@@ -300,7 +300,7 @@ describe("runAgentWithFallback", () => {
             workspace,
             activity: new AgentActivityHub(),
             available: [answeringHarness(HarnessKinds.CODEX, requests)],
-            subscriptions: partlySpentReadings(WEEKLY_CAP_PERCENT + 30),
+            allowances: partlySpentReadings(WEEKLY_CAP_PERCENT + 30),
             settings: cappedSettings(AgentHarnessKind.CODEX),
             preferredIndex: 0,
             role: AgentRole.DIRECTOR,
@@ -320,20 +320,20 @@ describe("runAgentWithFallback", () => {
             workspace,
             activity: new AgentActivityHub(),
             available: [unusedHarness(HarnessKinds.CODEX)],
-            subscriptions: readings([HarnessKinds.CODEX]),
+            allowances: readings([HarnessKinds.CODEX]),
             settings: cappedSettings(AgentHarnessKind.CODEX),
             preferredIndex: 0,
             role: AgentRole.DIRECTOR,
             objective: "Find where this goal might be reachable",
             createAgentWorkspace: async () => {
-                throw new Error("a run was prepared for a spent subscription");
+                throw new Error("a run was prepared for a spent harness");
             },
             prompt: "Plan the cycle",
             schema: DirectorPlanSchema
         });
 
         await expect(dispatch).rejects.toMatchObject({
-            blocks: [{ harness: HarnessKinds.CODEX, kind: SubscriptionBlockKind.EXHAUSTED }]
+            blocks: [{ harness: HarnessKinds.CODEX, kind: HarnessBlockKind.EXHAUSTED }]
         });
         expect(workspace.getSnapshot().capability_requests).not.toHaveLength(0);
     });

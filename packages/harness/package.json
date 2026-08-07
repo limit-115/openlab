@@ -38,8 +38,8 @@
             "./response-schema": "./dist/cli-agent-harness/response-schema.js",
             "./cli-agent-harness": "./dist/cli-agent-harness/cli-agent-harness.js",
             "./cli-agent-harness.types": "./dist/cli-agent-harness/cli-agent-harness.types.js",
-            "./subscription-allowance": "./dist/subscription-allowance/subscription-allowance.js",
-            "./subscription-allowance.types": "./dist/subscription-allowance/subscription-allowance.types.js",
+            "./harness-allowance": "./dist/harness-allowance/harness-allowance.js",
+            "./harness-allowance.types": "./dist/harness-allowance/harness-allowance.types.js",
             "./harness-environment": "./dist/cli-execution/harness-environment.js",
             "./spent-allowance": "./dist/spent-allowance/spent-allowance.js",
             "./spent-allowance.const": "./dist/spent-allowance/spent-allowance.const.js"
@@ -78,8 +78,8 @@
         "./response-schema": "./src/cli-agent-harness/response-schema.ts",
         "./cli-agent-harness": "./src/cli-agent-harness/cli-agent-harness.ts",
         "./cli-agent-harness.types": "./src/cli-agent-harness/cli-agent-harness.types.ts",
-        "./subscription-allowance": "./src/subscription-allowance/subscription-allowance.ts",
-        "./subscription-allowance.types": "./src/subscription-allowance/subscription-allowance.types.ts",
+        "./harness-allowance": "./src/harness-allowance/harness-allowance.ts",
+        "./harness-allowance.types": "./src/harness-allowance/harness-allowance.types.ts",
         "./harness-environment": "./src/cli-execution/harness-environment.ts",
         "./spent-allowance": "./src/spent-allowance/spent-allowance.ts",
         "./spent-allowance.const": "./src/spent-allowance/spent-allowance.const.ts"

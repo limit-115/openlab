@@ -16,6 +16,11 @@ import { isSpendCapLoosened } from "@openlab/protocol/spend-caps/spend-cap";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
 import { registerDeepseekKeyRoute } from "#src/deepseek-key/deepseek-key-route";
+import {
+    FRESH_READING_PARAM,
+    FRESH_READING_VALUE,
+    HARNESS_ALLOWANCE_ROUTE
+} from "#src/harness-allowance/harness-allowance.const";
 import { HARNESS_READINESS_ROUTE } from "#src/harness-readiness/harness-readiness.const";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
@@ -41,11 +46,6 @@ import {
     NotificationRoute
 } from "#src/operator-notifications/operator-notifications.const";
 import { RELEASE_NOTICE_ROUTE } from "#src/release-notice/release-notice.const";
-import {
-    FRESH_READING_PARAM,
-    FRESH_READING_VALUE,
-    SUBSCRIPTION_ALLOWANCE_ROUTE
-} from "#src/subscription-allowance/subscription-allowance.const";
 
 interface InvestigationParams {
     id: string;
@@ -102,7 +102,7 @@ export function createStatusServer(
              * out for. Every other settings change is read by the next dispatch anyway.
              */
             if (isSpendCapLoosened(held, stored.spend_caps)) {
-                await registry.wakeInvestigationsWaitingOnSubscriptions(SPEND_CAPS_RAISED_REASON);
+                await registry.wakeInvestigationsWaitingOnAllowances(SPEND_CAPS_RAISED_REASON);
             }
             return stored;
         });
@@ -164,14 +164,14 @@ export function createStatusServer(
         registerDeepseekKeyRoute(app);
     }
 
-    if (options.subscriptions !== undefined) {
-        const subscriptions = options.subscriptions;
+    if (options.allowances !== undefined) {
+        const allowances = options.allowances;
         app.get<{ Querystring: Record<string, string> }>(
-            SUBSCRIPTION_ALLOWANCE_ROUTE,
+            HARNESS_ALLOWANCE_ROUTE,
             async (request) =>
                 request.query[FRESH_READING_PARAM] === FRESH_READING_VALUE
-                    ? subscriptions.refreshAll()
-                    : subscriptions.readAll()
+                    ? allowances.refreshAll()
+                    : allowances.readAll()
         );
     }
 
@@ -253,7 +253,7 @@ export function createStatusServer(
     );
 
     /**
-     * What one investigation dispatches to. Reading it is how the operator sees which subscriptions
+     * What one investigation dispatches to. Reading it is how the operator sees which allowances
      * a stopped run may still reach; writing it is one of the two ways past a lab held at its caps,
      * the other being to lift the caps off this investigation, which is written here as well.
      */

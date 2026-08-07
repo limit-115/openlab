@@ -4,16 +4,17 @@ import path from "node:path";
 import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
+import { HarnessAllowanceRosterSchema } from "@openlab/protocol/harness-allowance/harness-allowance.schema";
 import { HarnessReadinessRosterSchema } from "@openlab/protocol/harness-readiness/harness-readiness.schema";
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
 import { LabStorageSchema } from "@openlab/protocol/lab-storage/lab-storage.schema";
-import { SubscriptionAllowanceRosterSchema } from "@openlab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { harnessNotInstalled } from "#src/agent-harness/agent-harness.fixture";
 import { EVERY_HARNESS_KIND } from "#src/agent-harness/harness-factory";
+import { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowance-readings";
 import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
@@ -24,7 +25,6 @@ import { InMemoryLabSettings } from "#src/lab-settings/lab-settings.fixture";
 import { LabSettingsStore } from "#src/lab-settings/lab-settings-store";
 import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.const";
 import type { ResearchLoopOutcome } from "#src/research-cycle/research-loop.types";
-import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 async function createTestLab(options: StatusServerOptions = {}) {
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), "lab-server-test-"));
@@ -195,7 +195,7 @@ describe("status server", () => {
         await lab.server.close();
     });
 
-    it("puts a run sleeping on its subscriptions back to work when it is pointed elsewhere", async () => {
+    it("puts a run sleeping on its allowances back to work when it is pointed elsewhere", async () => {
         const lab = await createTestLab();
         const held = await lab.open("Waiting on the allowance");
         await held.workspace.hibernate(
@@ -342,7 +342,7 @@ describe("status server", () => {
 
     it("serves every subscription against the schema the dashboard validates with", async () => {
         const lab = await createTestLab({
-            subscriptions: new SubscriptionAllowanceReadings({
+            allowances: new HarnessAllowanceReadings({
                 read: async (kind) => ({
                     kind,
                     plan: "max",
@@ -352,10 +352,10 @@ describe("status server", () => {
             })
         });
 
-        const response = await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
+        const response = await lab.server.inject({ method: "GET", url: "/api/allowances" });
 
         expect(response.statusCode).toBe(200);
-        expect(SubscriptionAllowanceRosterSchema.parse(response.json())).toHaveLength(
+        expect(HarnessAllowanceRosterSchema.parse(response.json())).toHaveLength(
             EVERY_HARNESS_KIND.length
         );
         await lab.server.close();
@@ -364,7 +364,7 @@ describe("status server", () => {
     it("re-asks the vendors for a refresh and serves the held reading to every other poll", async () => {
         let asked = 0;
         const lab = await createTestLab({
-            subscriptions: new SubscriptionAllowanceReadings({
+            allowances: new HarnessAllowanceReadings({
                 read: async (kind) => {
                     asked += 1;
                     return { kind, plan: "max", balance: null, windows: [] };
@@ -372,12 +372,12 @@ describe("status server", () => {
             })
         });
 
-        await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
-        await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
+        await lab.server.inject({ method: "GET", url: "/api/allowances" });
+        await lab.server.inject({ method: "GET", url: "/api/allowances" });
         const polled = asked;
         const refreshed = await lab.server.inject({
             method: "GET",
-            url: "/api/subscriptions?fresh=1"
+            url: "/api/allowances?fresh=1"
         });
 
         expect(polled).toBe(EVERY_HARNESS_KIND.length);
@@ -400,10 +400,10 @@ describe("status server", () => {
         await lab.server.close();
     });
 
-    it("leaves the subscriptions route unserved when no readings were wired in", async () => {
+    it("leaves the allowances route unserved when no readings were wired in", async () => {
         const lab = await createTestLab();
 
-        const response = await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
+        const response = await lab.server.inject({ method: "GET", url: "/api/allowances" });
 
         expect(response.statusCode).toBe(404);
         await lab.server.close();
@@ -491,7 +491,7 @@ describe("status server", () => {
         await lab.server.close();
     });
 
-    it("puts a run sleeping on its subscriptions back to work when the caps are raised", async () => {
+    it("puts a run sleeping on its allowances back to work when the caps are raised", async () => {
         const store = new LabSettingsStore(new InMemoryLabSettings());
         await store.write(
             LabSettingsSchema.parse({

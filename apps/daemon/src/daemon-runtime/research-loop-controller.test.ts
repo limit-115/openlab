@@ -28,7 +28,7 @@ function countingLoop(started: string[]) {
 }
 
 describe("ResearchLoopController", () => {
-    it("takes the investigation back up once the subscriptions it slept on are due", async () => {
+    it("takes the investigation back up once the allowances it slept on are due", async () => {
         const workspace = await createWorkspace();
         const started: string[] = [];
         const controller = new ResearchLoopController(

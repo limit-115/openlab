@@ -8,6 +8,8 @@ import type { Lead } from "@openlab/protocol/leads/lead.types";
 import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { createHarnesses } from "#src/agent-harness/harness-factory";
+import { HarnessBlockKind } from "#src/harness-allowance/harness-block.const";
+import type { HarnessBlock } from "#src/harness-allowance/harness-block.types";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { type DirectorPlan, DirectorPlanSchema } from "#src/research-contract/research-contract";
@@ -35,8 +37,6 @@ import type {
 } from "#src/research-cycle/research-loop.types";
 import { cancelActiveWork } from "#src/research-cycle/research-work-recovery";
 import { directorPrompt } from "#src/research-prompts/research-prompts";
-import { SubscriptionBlockKind } from "#src/subscription-allowance/subscription-block.const";
-import type { SubscriptionBlock } from "#src/subscription-allowance/subscription-block.types";
 
 export async function runResearchLoop(
     workspace: InvestigationWorkspace,
@@ -72,9 +72,7 @@ export async function runResearchLoop(
                 activity,
                 task,
                 available,
-                ...(options.subscriptions === undefined
-                    ? {}
-                    : { subscriptions: options.subscriptions }),
+                ...(options.allowances === undefined ? {} : { allowances: options.allowances }),
                 settings,
                 createAgentWorkspace,
                 cycle,
@@ -137,7 +135,7 @@ class DirectorExhaustedError extends Error {
  */
 async function hibernateOnBlockedDispatch(
     workspace: InvestigationWorkspace,
-    blocks: readonly SubscriptionBlock[]
+    blocks: readonly HarnessBlock[]
 ): Promise<ResearchLoopOutcome> {
     await workspace.update((draft) => {
         for (const run of draft.runs) {
@@ -163,15 +161,15 @@ async function hibernateOnBlockedDispatch(
 }
 
 /** Nothing but the operator's own caps stopped the work, so there is nothing to ask them for. */
-function heldBySpendCaps(blocks: readonly SubscriptionBlock[]): boolean {
-    return blocks.length > 0 && blocks.every(({ kind }) => kind === SubscriptionBlockKind.WITHHELD);
+function heldBySpendCaps(blocks: readonly HarnessBlock[]): boolean {
+    return blocks.length > 0 && blocks.every(({ kind }) => kind === HarnessBlockKind.WITHHELD);
 }
 
 /**
- * What every subscription answered, under the one sentence that says what it amounts to. A preflight
+ * What every harness answered, under the one sentence that says what it amounts to. A preflight
  * that found nothing carries no answers at all, which is the older and blunter way to be stopped.
  */
-function blockedDispatchReason(blocks: readonly SubscriptionBlock[]): string {
+function blockedDispatchReason(blocks: readonly HarnessBlock[]): string {
     if (blocks.length === 0) {
         return HibernationReason.NO_HARNESS;
     }
@@ -183,11 +181,11 @@ function blockedDispatchReason(blocks: readonly SubscriptionBlock[]): string {
 }
 
 /**
- * When the first of the blocked subscriptions is worth asking again. One of them coming back is
+ * When the first of the blocked allowances is worth asking again. One of them coming back is
  * enough to research on, so the earliest wins, and the margin keeps the investigation from waking
  * onto a reading taken before the reset it is waiting for.
  */
-function dispatchResumesAt(blocks: readonly SubscriptionBlock[]): string | undefined {
+function dispatchResumesAt(blocks: readonly HarnessBlock[]): string | undefined {
     const returns = blocks
         .flatMap(({ returnsAt }) => (returnsAt === undefined ? [] : [Date.parse(returnsAt)]))
         .filter((instant) => !Number.isNaN(instant));
@@ -203,7 +201,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
         activity,
         task,
         available,
-        subscriptions,
+        allowances,
         settings,
         createAgentWorkspace,
         cycle,
@@ -224,7 +222,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
                 task,
                 lead,
                 available,
-                ...(subscriptions === undefined ? {} : { subscriptions }),
+                ...(allowances === undefined ? {} : { allowances }),
                 settings,
                 preferredHarnessIndex: cycle + index + 1,
                 createAgentWorkspace,
@@ -263,7 +261,7 @@ async function directorPlan(
             workspace: input.workspace,
             activity: input.activity,
             available: input.available,
-            ...(input.subscriptions === undefined ? {} : { subscriptions: input.subscriptions }),
+            ...(input.allowances === undefined ? {} : { allowances: input.allowances }),
             settings: input.settings,
             preferredIndex: input.cycle,
             role: AgentRole.DIRECTOR,
