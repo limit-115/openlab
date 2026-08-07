@@ -5,6 +5,7 @@ import type { InvestigationSummary } from "@openlab/protocol/investigation-statu
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { createHarnesses } from "#src/agent-harness/harness-factory";
 import { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
+import type { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowance-readings";
 import {
     RESTORED_INVESTIGATION_LIMIT,
     RegistryCloseReason
@@ -23,10 +24,9 @@ import type { StatusListener } from "#src/investigation-workspace/investigation-
 import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import { SHIPPED_LAB_SETTINGS } from "#src/lab-settings/lab-settings-store";
 import { runResearchLoop } from "#src/research-cycle/research-loop";
-import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 /**
- * Every investigation the lab is holding. One lab, one database, one set of subscriptions — and as
+ * Every investigation the lab is holding. One lab, one database, one set of allowances — and as
  * many investigations as the operator has started, each with its own run directory, its own agents
  * and its own research loop running alongside the others.
  */
@@ -38,7 +38,7 @@ export class InvestigationRegistry {
     readonly #workspaceRoot: string;
     readonly #persistence: RegistryPersistence;
     readonly #investigations: InvestigationRecords;
-    readonly #subscriptions: SubscriptionAllowanceReadings | undefined;
+    readonly #allowances: HarnessAllowanceReadings | undefined;
     readonly #settings: LabSettingsReader;
     readonly #researchLoop: ResearchLoopRunner;
 
@@ -46,7 +46,7 @@ export class InvestigationRegistry {
         this.#workspaceRoot = options.workspaceRoot;
         this.#persistence = options.persistence;
         this.#investigations = options.investigations;
-        this.#subscriptions = options.subscriptions;
+        this.#allowances = options.allowances;
         this.#settings = options.settings ?? SHIPPED_LAB_SETTINGS;
         this.#researchLoop = options.researchLoop ?? runResearchLoop;
     }
@@ -124,14 +124,14 @@ export class InvestigationRegistry {
     }
 
     /**
-     * Gives every investigation the lab put to sleep on its subscriptions another go at them. The
+     * Gives every investigation the lab put to sleep on its allowances another go at them. The
      * caps are the lab's, so raising one answers the wait of every run held by it at once, and each
      * investigation decides for itself whether it was that wait it was sleeping on.
      */
-    async wakeInvestigationsWaitingOnSubscriptions(reason: string): Promise<void> {
+    async wakeInvestigationsWaitingOnAllowances(reason: string): Promise<void> {
         await Promise.all(
             [...this.#held.values()].map((held) =>
-                held.controller.wakeIfWaitingOnSubscriptions(new Error(reason))
+                held.controller.wakeIfWaitingOnAllowances(new Error(reason))
             )
         );
     }
@@ -171,7 +171,7 @@ export class InvestigationRegistry {
             this.#researchLoop,
             () => createHarnesses(workspace.input.harness_kinds),
             this.#settings,
-            this.#subscriptions
+            this.#allowances
         );
         const held: HeldInvestigation = { workspace, activity, controller };
         this.#held.set(workspace.investigationId, held);

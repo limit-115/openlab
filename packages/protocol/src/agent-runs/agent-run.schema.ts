@@ -29,6 +29,18 @@ export const AgentRunSchema = z.object({
      * directory, including the lab's copy of what the CLI recorded for its own subagents.
      */
     manifest_path: z.string().trim().min(1).optional(),
+    /**
+     * The manifest's own digest, held outside the directory it describes. Every other hash a run
+     * produced is written into that manifest, and an agent runs unrestricted in the directory the
+     * manifest sits in, so on its own the record attests to nothing: whatever could alter an
+     * artifact could restate its digest in the same breath. Kept here, it is one value an operator
+     * can hold a run's account of itself against.
+     */
+    manifest_sha256: z
+        .string()
+        .trim()
+        .regex(/^[0-9a-f]{64}$/)
+        .optional(),
     started_at: z.iso.datetime(),
     finished_at: z.iso.datetime().optional()
 });

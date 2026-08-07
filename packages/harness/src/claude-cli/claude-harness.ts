@@ -17,16 +17,16 @@ import {
     claudeRunArguments
 } from "#src/claude-cli/claude-run-arguments";
 import { claudeSessionStore } from "#src/claude-cli/claude-session-store";
+import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
+import type {
+    CliHarnessOptions,
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/cli-agent-harness/cli-agent-harness.types";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import type { SessionStore } from "#src/session-transcript/session-transcript.types";
-import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type {
-    HarnessCommand,
-    HarnessRunPaths,
-    SubscriptionHarnessOptions
-} from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
 const ClaudeAuthStatusSchema = z.looseObject({
     loggedIn: z.literal(true),
@@ -35,10 +35,10 @@ const ClaudeAuthStatusSchema = z.looseObject({
     subscriptionType: z.string().trim().min(1)
 });
 
-export class ClaudeHarness extends SubscriptionCliHarness {
+export class ClaudeHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.CLAUDE;
 
-    constructor(options: SubscriptionHarnessOptions = {}) {
+    constructor(options: CliHarnessOptions = {}) {
         super(CLAUDE_BINARY, options);
     }
 
@@ -60,7 +60,7 @@ export class ClaudeHarness extends SubscriptionCliHarness {
         } catch (error) {
             throw new HarnessCapabilityError(
                 this.kind,
-                HarnessCapabilityGaps.SUBSCRIPTION,
+                HarnessCapabilityGaps.CREDENTIAL,
                 "Claude CLI is not authenticated through a claude.ai subscription",
                 {
                     need: "Claude CLI logged in through an active claude.ai subscription",

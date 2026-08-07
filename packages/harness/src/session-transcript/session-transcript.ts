@@ -1,6 +1,8 @@
 import { chmod, cp, mkdir, readdir, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { HarnessArtifact } from "#src/agent-harness/agent-harness.types";
+import { hashArtifact } from "#src/cli-agent-harness/harness-run-artifacts";
+import { HARNESS_ARTIFACT_FILE_MODE } from "#src/cli-agent-harness/harness-run-artifacts.const";
 import {
     SESSION_TRANSCRIPT_DIRECTORY,
     SessionTranscriptGaps
@@ -9,8 +11,6 @@ import type {
     SessionTranscript,
     SessionTranscriptRequest
 } from "#src/session-transcript/session-transcript.types";
-import { hashArtifact } from "#src/subscription-cli-harness/harness-run-artifacts";
-import { HARNESS_ARTIFACT_FILE_MODE } from "#src/subscription-cli-harness/harness-run-artifacts.const";
 
 /**
  * Takes the lab's own copy of what the CLI recorded for this session, and hashes it.

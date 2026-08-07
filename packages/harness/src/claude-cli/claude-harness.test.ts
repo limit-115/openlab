@@ -11,25 +11,25 @@ import { HarnessEventTypes, HarnessToolPhases } from "#src/agent-harness/harness
 import { ClaudePermissionModes, ClaudeSessionDefaults } from "#src/claude-cli/claude-cli.const";
 import { ClaudeHarness } from "#src/claude-cli/claude-harness";
 import {
+    AnswerJsonSchema,
+    answerSchema,
+    harnessRequest,
+    lastCompleted,
+    removeHarnessRunDirectories
+} from "#src/cli-agent-harness/harness-run.fixture";
+import {
     captureSuccess,
     FakeHarnessProcessRunner,
     streamSuccess
 } from "#src/cli-execution/cli-process-runner.fixture";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import {
     removeSessionStores,
     sessionStoreRootDirectory,
     writeClaudeSession
 } from "#src/session-transcript/session-store.fixture";
 import { SessionTranscriptGaps } from "#src/session-transcript/session-transcript.const";
-import {
-    AnswerJsonSchema,
-    answerSchema,
-    harnessRequest,
-    lastCompleted,
-    removeHarnessRunDirectories
-} from "#src/subscription-cli-harness/harness-run.fixture";
 
 const ClaudeTestNativeEventTypes = {
     SYSTEM: "system",

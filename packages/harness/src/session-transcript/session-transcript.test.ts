@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { claudeSessionStore } from "#src/claude-cli/claude-session-store";
+import { HARNESS_ARTIFACT_FILE_MODE } from "#src/cli-agent-harness/harness-run-artifacts.const";
 import { museSessionStore } from "#src/muse-cli/muse-session-store";
 import {
     removeSessionStores,
@@ -15,7 +16,6 @@ import {
     SessionTranscriptGaps
 } from "#src/session-transcript/session-transcript.const";
 import type { SessionStore } from "#src/session-transcript/session-transcript.types";
-import { HARNESS_ARTIFACT_FILE_MODE } from "#src/subscription-cli-harness/harness-run-artifacts.const";
 
 afterEach(removeSessionStores);
 

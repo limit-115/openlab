@@ -1,8 +1,11 @@
 ---
+import {
+    AgentHarnessBilling,
+    HARNESS_BILLING
+} from "@openlab/protocol/agents/agent-billing.const";
 import SectionMarker from "#src/brand/section-marker.astro";
 import {
     HARNESS,
-    HARNESS_BILLING,
     HARNESS_BILLING_LABEL,
     HARNESS_STRIP_REPEATS
 } from "#src/harness-roster/harness-roster.const";
@@ -10,10 +13,11 @@ import {
 /**
  * What the lab thinks with. A page selling autonomous research has to answer the money question
  * before anything else, so the roster leads with who pays for each harness rather than burying it:
- * three run on a plan already bought, and the fourth says outright that it bills a wallet.
+ * three run on a plan already bought, and two say outright that they bill a wallet. Which is which
+ * is read from the runtime's own billing table, so the site cannot drift from what the lab does.
  *
- * The moving strip above the roster is the same four names and carries no information the cells
- * below do not, which is why it is hidden from assistive technology rather than read out twice.
+ * The moving strip above the roster is the same names and carries no information the cells below do
+ * not, which is why it is hidden from assistive technology rather than read out twice.
  */
 const stripRoster = Array.from({ length: HARNESS_STRIP_REPEATS }, () => HARNESS).flat();
 ---
@@ -59,12 +63,12 @@ const stripRoster = Array.from({ length: HARNESS_STRIP_REPEATS }, () => HARNESS)
                     <p
                         class:list={[
                             "w-fit px-2.5 py-1 text-sm",
-                            harness.billing === HARNESS_BILLING.SUBSCRIPTION
+                            HARNESS_BILLING[harness.kind] === AgentHarnessBilling.SUBSCRIPTION
                                 ? "bg-brand text-brand-foreground"
                                 : "border border-border text-muted-foreground"
                         ]}
                     >
-                        {HARNESS_BILLING_LABEL[harness.billing]}
+                        {HARNESS_BILLING_LABEL[HARNESS_BILLING[harness.kind]]}
                     </p>
                     <p class="text-pretty text-muted-foreground">{harness.note}</p>
                     <p class="mt-auto pt-2 text-sm text-muted-foreground">

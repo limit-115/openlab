@@ -5,6 +5,12 @@ import type {
     HarnessSession
 } from "#src/agent-harness/agent-harness.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
+import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
+import type {
+    CliHarnessOptions,
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/cli-agent-harness/cli-agent-harness.types";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
@@ -20,17 +26,11 @@ import {
 } from "#src/codex-cli/codex-run-arguments";
 import { codexSessionStore } from "#src/codex-cli/codex-session-store";
 import type { SessionStore } from "#src/session-transcript/session-transcript.types";
-import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type {
-    HarnessCommand,
-    HarnessRunPaths,
-    SubscriptionHarnessOptions
-} from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
-export class CodexHarness extends SubscriptionCliHarness {
+export class CodexHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.CODEX;
 
-    constructor(options: SubscriptionHarnessOptions = {}) {
+    constructor(options: CliHarnessOptions = {}) {
         super(CODEX_BINARY, options);
     }
 
@@ -43,7 +43,7 @@ export class CodexHarness extends SubscriptionCliHarness {
         if (result.failed || !statusOutput.includes(CodexLoginMarkers.CHATGPT)) {
             throw new HarnessCapabilityError(
                 this.kind,
-                HarnessCapabilityGaps.SUBSCRIPTION,
+                HarnessCapabilityGaps.CREDENTIAL,
                 "Codex CLI is not authenticated through ChatGPT",
                 {
                     need: "Codex CLI logged in through an active ChatGPT subscription",
