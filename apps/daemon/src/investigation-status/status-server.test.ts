@@ -10,6 +10,7 @@ import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
 import { LabStorageSchema } from "@openlab/protocol/lab-storage/lab-storage.schema";
+import { SpendCapKinds } from "@openlab/protocol/spend-caps/spend-cap.const";
 import { SubscriptionAllowanceRosterSchema } from "@openlab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { harnessNotInstalled } from "#src/agent-harness/agent-harness.fixture";
@@ -346,7 +347,8 @@ describe("status server", () => {
                 read: async (kind) => ({
                     kind,
                     plan: "max",
-                    windows: [{ durationMinutes: 300, usedPercent: 41, resetsAt: null }]
+                    windows: [{ durationMinutes: 300, usedPercent: 41, resetsAt: null }],
+                    balances: []
                 })
             })
         });
@@ -366,7 +368,7 @@ describe("status server", () => {
             subscriptions: new SubscriptionAllowanceReadings({
                 read: async (kind) => {
                     asked += 1;
-                    return { kind, plan: "max", windows: [] };
+                    return { kind, plan: "max", windows: [], balances: [] };
                 }
             })
         });
@@ -495,7 +497,12 @@ describe("status server", () => {
         await store.write(
             LabSettingsSchema.parse({
                 spend_caps: [
-                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+                    {
+                        kind: SpendCapKinds.WINDOW_PERCENT,
+                        harness: AgentHarnessKind.CLAUDE,
+                        window_minutes: 300,
+                        max_used_percent: 40
+                    }
                 ]
             })
         );
@@ -536,7 +543,12 @@ describe("status server", () => {
             url: "/api/settings",
             payload: LabSettingsSchema.parse({
                 spend_caps: [
-                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+                    {
+                        kind: SpendCapKinds.WINDOW_PERCENT,
+                        harness: AgentHarnessKind.CLAUDE,
+                        window_minutes: 300,
+                        max_used_percent: 40
+                    }
                 ]
             })
         });

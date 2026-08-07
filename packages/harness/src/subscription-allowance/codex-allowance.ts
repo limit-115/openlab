@@ -30,7 +30,8 @@ export function codexAllowanceFromRateLimits(payload: unknown): SubscriptionAllo
         plan: limits.planType ?? null,
         windows: [limits.primary, limits.secondary]
             .filter((window) => window !== null && window !== undefined)
-            .map(codexWindow)
+            .map(codexWindow),
+        balances: []
     };
 }
 

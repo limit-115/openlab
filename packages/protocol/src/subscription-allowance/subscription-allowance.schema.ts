@@ -15,19 +15,36 @@ export const AllowanceWindowSchema = z.object({
 });
 
 /**
- * What one subscription had left when it was last read. `windows` is empty whenever the state is
- * `unreadable`, so a viewer never renders a meter built from a failed reading.
+ * Money as the vendor wrote it. It stays a decimal string end to end: a balance read as a float and
+ * written back out is rounded, and this is the one number an operator sets a floor against.
+ */
+export const WalletAmountSchema = z
+    .string()
+    .trim()
+    .regex(/^-?\d+(\.\d+)?$/, "A wallet amount is decimal money, written as the vendor writes it");
+
+/**
+ * What one currency of a wallet holds. A wallet can pay in more than one, and a vendor says so per
+ * currency, so each is carried whole rather than folded into a total that no vendor stated.
+ */
+export const AllowanceBalanceSchema = z.object({
+    currency: z.string().trim().min(1),
+    amount: WalletAmountSchema
+});
+
+/**
+ * What one subscription had left when it was last read. `windows` and `balances` are both empty
+ * whenever the state is `unreadable`, so a viewer never renders a meter built from a failed reading,
+ * and a vendor fills whichever of the two it meters by: a subscription reports windows, a wallet
+ * reports balances, and neither is invented for a vendor that states the other.
  */
 export const SubscriptionAllowanceSchema = z.object({
     harness: z.enum(AgentHarnessKind),
     state: z.enum(SubscriptionAllowanceState),
-    /**
-     * What the vendor said the account is worth: a plan tier from a vendor that sells tiers, and the
-     * balance left from one that sells tokens. Either way it is the sentence that tells the operator
-     * which account answered and how much of it is left.
-     */
+    /** The plan tier the vendor named, which is what identifies the account that answered. */
     plan: z.string().min(1).nullable(),
     windows: z.array(AllowanceWindowSchema),
+    balances: z.array(AllowanceBalanceSchema),
     error: z.string().min(1).nullable(),
     read_at: z.iso.datetime()
 });

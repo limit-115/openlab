@@ -8,7 +8,7 @@ import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subsc
 const TTL_MILLISECONDS = 60_000;
 
 function reading(windows: HarnessAllowance["windows"]): HarnessAllowance {
-    return { kind: HarnessKinds.CLAUDE, plan: "max", windows };
+    return { kind: HarnessKinds.CLAUDE, plan: "max", windows, balances: [] };
 }
 
 describe("SubscriptionAllowanceReadings", () => {
@@ -153,7 +153,7 @@ describe("SubscriptionAllowanceReadings", () => {
         const readings = new SubscriptionAllowanceReadings({
             read: async (kind) => {
                 asked += 1;
-                return { kind, plan: "max", windows: [] };
+                return { kind, plan: "max", windows: [], balances: [] };
             },
             ttlMs: TTL_MILLISECONDS,
             now: () => 0
@@ -171,7 +171,7 @@ describe("SubscriptionAllowanceReadings", () => {
                 if (kind === HarnessKinds.CODEX) {
                     throw new Error("codex CLI is not installed");
                 }
-                return { kind, plan: "pro", windows: [] };
+                return { kind, plan: "pro", windows: [], balances: [] };
             }
         });
 

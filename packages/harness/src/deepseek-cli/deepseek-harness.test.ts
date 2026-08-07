@@ -41,7 +41,7 @@ const DeepseekTestCliValues = {
 const DeepseekTestWallet: DeepseekWallet = {
     apiKey: "sk-wallet-key",
     available: true,
-    balance: "42.50 USD"
+    balances: [{ currency: "USD", amount: "42.50" }]
 } as const;
 
 /** What `codex login status` prints. The DeepSeek harness reads it for nothing but liveness. */
@@ -111,7 +111,7 @@ describe("DeepseekHarness", () => {
             authentication: {
                 method: HarnessAuthenticationMethods.DEEPSEEK_API_KEY,
                 subscription: null,
-                wallet: DeepseekTestWallet.balance
+                wallet: "42.50 USD"
             }
         });
     });

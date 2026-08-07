@@ -39,7 +39,8 @@ export function glmAllowanceFromQuota(payload: unknown): SubscriptionAllowance {
         windows: quota.limits
             .filter((limit) => SPENDING_LIMIT_TYPES.includes(limit.type))
             .map(glmWindow)
-            .filter((window): window is AllowanceWindow => window !== undefined)
+            .filter((window): window is AllowanceWindow => window !== undefined),
+        balances: []
     };
 }
 

@@ -12,12 +12,27 @@ export interface AllowanceWindow {
     readonly resetsAt: string | null;
 }
 
-/** What one vendor answered when asked what is left of the operator's subscription. */
+/**
+ * What one currency of a wallet holds. The amount stays a decimal string the whole way through: it
+ * is money, and a float would round the one number an operator sets a floor against.
+ */
+export interface WalletBalance {
+    readonly currency: string;
+    readonly amount: string;
+}
+
+/**
+ * What one vendor answered when asked what is left of the operator's account. A vendor fills
+ * whichever of the two meters it sells by — a subscription reports windows, a wallet reports
+ * balances — and a vendor that meters by neither answers with both empty, which is a reading that
+ * succeeded and found nothing to meter rather than a reading that failed.
+ */
 export interface SubscriptionAllowance {
     readonly kind: HarnessKind;
     /** The plan tier the vendor named, which is what identifies the account that answered. */
     readonly plan: string | null;
     readonly windows: readonly AllowanceWindow[];
+    readonly balances: readonly WalletBalance[];
 }
 
 export type ReadSubscriptionAllowance = (signal?: AbortSignal) => Promise<SubscriptionAllowance>;

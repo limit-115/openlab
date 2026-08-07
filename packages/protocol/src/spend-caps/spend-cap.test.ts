@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { AgentHarnessKind } from "#src/agents/agent-execution.const";
-import { isSpendCapLoosened, windowSpendCap, withheldWindows } from "#src/spend-caps/spend-cap";
+import {
+    isSpendCapLoosened,
+    walletSpendFloor,
+    windowSpendCap,
+    withheldBalances,
+    withheldWindows
+} from "#src/spend-caps/spend-cap";
+import { SpendCapKinds } from "#src/spend-caps/spend-cap.const";
 import { SpendCapsSchema } from "#src/spend-caps/spend-cap.schema";
 import { SubscriptionAllowanceState } from "#src/subscription-allowance/subscription-allowance.const";
 import type {
+    AllowanceBalance,
     AllowanceWindow,
     SubscriptionAllowance
 } from "#src/subscription-allowance/subscription-allowance.types";
@@ -12,8 +20,27 @@ const FIVE_HOURS = 300;
 const SEVEN_DAYS = 10_080;
 
 const CAPS = SpendCapsSchema.parse([
-    { harness: AgentHarnessKind.CLAUDE, window_minutes: FIVE_HOURS, max_used_percent: 80 },
-    { harness: AgentHarnessKind.CLAUDE, window_minutes: SEVEN_DAYS, max_used_percent: 60 }
+    {
+        kind: SpendCapKinds.WINDOW_PERCENT,
+        harness: AgentHarnessKind.CLAUDE,
+        window_minutes: FIVE_HOURS,
+        max_used_percent: 80
+    },
+    {
+        kind: SpendCapKinds.WINDOW_PERCENT,
+        harness: AgentHarnessKind.CLAUDE,
+        window_minutes: SEVEN_DAYS,
+        max_used_percent: 60
+    }
+]);
+
+const FLOORS = SpendCapsSchema.parse([
+    {
+        kind: SpendCapKinds.WALLET_FLOOR,
+        harness: AgentHarnessKind.DEEPSEEK,
+        currency: "USD",
+        minimum_balance: "5.00"
+    }
 ]);
 
 function claudeAllowance(windows: readonly AllowanceWindow[]): SubscriptionAllowance {
@@ -22,6 +49,19 @@ function claudeAllowance(windows: readonly AllowanceWindow[]): SubscriptionAllow
         state: SubscriptionAllowanceState.AVAILABLE,
         plan: "max",
         windows: [...windows],
+        balances: [],
+        error: null,
+        read_at: "2026-08-05T09:00:00.000Z"
+    };
+}
+
+function deepseekWallet(balances: readonly AllowanceBalance[]): SubscriptionAllowance {
+    return {
+        harness: AgentHarnessKind.DEEPSEEK,
+        state: SubscriptionAllowanceState.AVAILABLE,
+        plan: null,
+        windows: [],
+        balances: [...balances],
         error: null,
         read_at: "2026-08-05T09:00:00.000Z"
     };
@@ -40,6 +80,31 @@ describe("windowSpendCap", () => {
     it("keeps each window on the cap set for it rather than on the subscription's lowest", () => {
         expect(windowSpendCap(CAPS, AgentHarnessKind.CLAUDE, FIVE_HOURS)).toBe(80);
         expect(windowSpendCap(CAPS, AgentHarnessKind.CLAUDE, SEVEN_DAYS)).toBe(60);
+    });
+
+    it("reads past a wallet floor set on the same harness, which caps no window", () => {
+        const mixed = SpendCapsSchema.parse([
+            ...CAPS,
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.CLAUDE,
+                currency: "USD",
+                minimum_balance: "40"
+            }
+        ]);
+
+        expect(windowSpendCap(mixed, AgentHarnessKind.CLAUDE, FIVE_HOURS)).toBe(80);
+    });
+});
+
+describe("walletSpendFloor", () => {
+    it("answers with nothing for a currency the operator floored nowhere", () => {
+        expect(walletSpendFloor(FLOORS, AgentHarnessKind.DEEPSEEK, "CNY")).toBeUndefined();
+        expect(walletSpendFloor(FLOORS, AgentHarnessKind.MUSE, "USD")).toBeUndefined();
+    });
+
+    it("keeps the floor as the operator wrote it rather than as a rounded number", () => {
+        expect(walletSpendFloor(FLOORS, AgentHarnessKind.DEEPSEEK, "USD")).toBe("5.00");
     });
 });
 
@@ -73,6 +138,7 @@ describe("withheldWindows", () => {
             state: SubscriptionAllowanceState.UNREADABLE,
             plan: null,
             windows: [],
+            balances: [],
             error: "No Keychain entry",
             read_at: "2026-08-05T09:00:00.000Z"
         };
@@ -90,10 +156,87 @@ describe("withheldWindows", () => {
     });
 });
 
+describe("withheldBalances", () => {
+    it("withholds a wallet that has fallen under the floor the operator set", () => {
+        const withheld = withheldBalances(
+            deepseekWallet([{ currency: "USD", amount: "4.99" }]),
+            FLOORS
+        );
+
+        expect(withheld.map(({ amount }) => amount)).toEqual(["4.99"]);
+    });
+
+    it("withholds on the floor exactly, which is the money the operator asked to keep", () => {
+        expect(
+            withheldBalances(deepseekWallet([{ currency: "USD", amount: "5.00" }]), FLOORS)
+        ).toHaveLength(1);
+    });
+
+    it("compares the balance as decimal money rather than by how the number reads", () => {
+        expect(
+            withheldBalances(deepseekWallet([{ currency: "USD", amount: "40.00" }]), FLOORS)
+        ).toEqual([]);
+        expect(
+            withheldBalances(deepseekWallet([{ currency: "USD", amount: "5.000000001" }]), FLOORS)
+        ).toEqual([]);
+    });
+
+    it("holds nothing back on a currency the operator floored nowhere", () => {
+        expect(
+            withheldBalances(deepseekWallet([{ currency: "CNY", amount: "0.01" }]), FLOORS)
+        ).toEqual([]);
+    });
+
+    it("withholds the wallet on one currency while another still pays, because the floor was on that money", () => {
+        const withheld = withheldBalances(
+            deepseekWallet([
+                { currency: "USD", amount: "1.00" },
+                { currency: "CNY", amount: "900.00" }
+            ]),
+            FLOORS
+        );
+
+        expect(withheld.map(({ currency }) => currency)).toEqual(["USD"]);
+    });
+
+    it("withholds nothing on a floor whose currency the wallet has stopped reporting", () => {
+        expect(
+            withheldBalances(deepseekWallet([{ currency: "CNY", amount: "0" }]), FLOORS)
+        ).toEqual([]);
+    });
+
+    it("reads a floor against the wallet it was set on and no other", () => {
+        const muse = {
+            ...deepseekWallet([{ currency: "USD", amount: "0" }]),
+            harness: AgentHarnessKind.MUSE
+        };
+
+        expect(withheldBalances(muse, FLOORS)).toEqual([]);
+    });
+});
+
 describe("isSpendCapLoosened", () => {
     const raised = SpendCapsSchema.parse([
-        { harness: AgentHarnessKind.CLAUDE, window_minutes: FIVE_HOURS, max_used_percent: 95 },
-        { harness: AgentHarnessKind.CLAUDE, window_minutes: SEVEN_DAYS, max_used_percent: 60 }
+        {
+            kind: SpendCapKinds.WINDOW_PERCENT,
+            harness: AgentHarnessKind.CLAUDE,
+            window_minutes: FIVE_HOURS,
+            max_used_percent: 95
+        },
+        {
+            kind: SpendCapKinds.WINDOW_PERCENT,
+            harness: AgentHarnessKind.CLAUDE,
+            window_minutes: SEVEN_DAYS,
+            max_used_percent: 60
+        }
+    ]);
+    const lowered = SpendCapsSchema.parse([
+        {
+            kind: SpendCapKinds.WALLET_FLOOR,
+            harness: AgentHarnessKind.DEEPSEEK,
+            currency: "USD",
+            minimum_balance: "1.00"
+        }
     ]);
 
     it("sees a cap raised, and one handed back to the vendor's own ceiling", () => {
@@ -110,6 +253,38 @@ describe("isSpendCapLoosened", () => {
     it("reads a newly capped window as tighter, however far off the cap stands", () => {
         expect(isSpendCapLoosened([], CAPS)).toBe(false);
     });
+
+    it("sees a wallet floor lowered, and one lifted off the wallet altogether", () => {
+        expect(isSpendCapLoosened(FLOORS, lowered)).toBe(true);
+        expect(isSpendCapLoosened(FLOORS, [])).toBe(true);
+    });
+
+    it("leaves a raised or unchanged wallet floor alone, which frees no wallet", () => {
+        expect(isSpendCapLoosened(lowered, FLOORS)).toBe(false);
+        expect(isSpendCapLoosened(FLOORS, FLOORS)).toBe(false);
+        expect(isSpendCapLoosened([], FLOORS)).toBe(false);
+    });
+
+    it("sees a wallet freed while a window cap alongside it was tightened", () => {
+        const held = SpendCapsSchema.parse([...CAPS, ...FLOORS]);
+        const swapped = SpendCapsSchema.parse([
+            {
+                kind: SpendCapKinds.WINDOW_PERCENT,
+                harness: AgentHarnessKind.CLAUDE,
+                window_minutes: FIVE_HOURS,
+                max_used_percent: 10
+            },
+            {
+                kind: SpendCapKinds.WINDOW_PERCENT,
+                harness: AgentHarnessKind.CLAUDE,
+                window_minutes: SEVEN_DAYS,
+                max_used_percent: 10
+            },
+            ...lowered
+        ]);
+
+        expect(isSpendCapLoosened(held, swapped)).toBe(true);
+    });
 });
 
 describe("SpendCapsSchema", () => {
@@ -117,11 +292,13 @@ describe("SpendCapsSchema", () => {
         expect(() =>
             SpendCapsSchema.parse([
                 {
+                    kind: SpendCapKinds.WINDOW_PERCENT,
                     harness: AgentHarnessKind.CLAUDE,
                     window_minutes: FIVE_HOURS,
                     max_used_percent: 80
                 },
                 {
+                    kind: SpendCapKinds.WINDOW_PERCENT,
                     harness: AgentHarnessKind.CLAUDE,
                     window_minutes: FIVE_HOURS,
                     max_used_percent: 40
@@ -134,11 +311,13 @@ describe("SpendCapsSchema", () => {
         expect(
             SpendCapsSchema.parse([
                 {
+                    kind: SpendCapKinds.WINDOW_PERCENT,
                     harness: AgentHarnessKind.CLAUDE,
                     window_minutes: FIVE_HOURS,
                     max_used_percent: 80
                 },
                 {
+                    kind: SpendCapKinds.WINDOW_PERCENT,
                     harness: AgentHarnessKind.CODEX,
                     window_minutes: FIVE_HOURS,
                     max_used_percent: 40
@@ -151,9 +330,61 @@ describe("SpendCapsSchema", () => {
         expect(() =>
             SpendCapsSchema.parse([
                 {
+                    kind: SpendCapKinds.WINDOW_PERCENT,
                     harness: AgentHarnessKind.CLAUDE,
                     window_minutes: FIVE_HOURS,
                     max_used_percent: 120
+                }
+            ])
+        ).toThrow();
+    });
+
+    it("refuses one wallet currency floored twice, which names no floor", () => {
+        expect(() =>
+            SpendCapsSchema.parse([
+                {
+                    kind: SpendCapKinds.WALLET_FLOOR,
+                    harness: AgentHarnessKind.DEEPSEEK,
+                    currency: "USD",
+                    minimum_balance: "5"
+                },
+                {
+                    kind: SpendCapKinds.WALLET_FLOOR,
+                    harness: AgentHarnessKind.DEEPSEEK,
+                    currency: "USD",
+                    minimum_balance: "9"
+                }
+            ])
+        ).toThrow();
+    });
+
+    it("takes one wallet floored in each currency it pays in", () => {
+        expect(
+            SpendCapsSchema.parse([
+                {
+                    kind: SpendCapKinds.WALLET_FLOOR,
+                    harness: AgentHarnessKind.DEEPSEEK,
+                    currency: "USD",
+                    minimum_balance: "5"
+                },
+                {
+                    kind: SpendCapKinds.WALLET_FLOOR,
+                    harness: AgentHarnessKind.DEEPSEEK,
+                    currency: "CNY",
+                    minimum_balance: "30"
+                }
+            ])
+        ).toHaveLength(2);
+    });
+
+    it("refuses a floor that is not money, which nothing could be compared against", () => {
+        expect(() =>
+            SpendCapsSchema.parse([
+                {
+                    kind: SpendCapKinds.WALLET_FLOOR,
+                    harness: AgentHarnessKind.DEEPSEEK,
+                    currency: "USD",
+                    minimum_balance: "5 dollars"
                 }
             ])
         ).toThrow();

@@ -4,20 +4,21 @@ import { allowanceDeadline } from "#src/subscription-allowance/allowance-deadlin
 import type { SubscriptionAllowance } from "#src/subscription-allowance/subscription-allowance.types";
 
 /**
- * DeepSeek meters nothing. There is no window that fills and resets, so this reading carries none:
- * a wallet is spent until it is empty, whenever that happens. The balance is reported as the plan,
- * because it is the one thing about the account that decides whether the lab can keep working, and
- * the harness setup card says outright that it is money rather than a subscription.
+ * DeepSeek meters no window. There is nothing here that fills and resets, so this reading carries no
+ * window at all: a wallet is spent until it is empty, whenever that happens, and it refills only when
+ * the operator pays into it.
  *
- * Carrying no windows also means no spend cap can be set against DeepSeek, which is the truth rather
- * than an omission: a cap is a fraction of a window, and there is no window here to take a fraction
- * of.
+ * What it does carry is the money, per currency and as DeepSeek wrote it. That is the meter this
+ * account has, so it is the meter an operator sets a floor under — the lab stops dispatching here
+ * while the wallet is down to what they asked to keep, exactly as it stops on a subscription window
+ * that has reached its cap. DeepSeek sells no tier, so nothing stands where a plan name goes.
  */
 export async function readDeepseekAllowance(signal?: AbortSignal): Promise<SubscriptionAllowance> {
     const wallet = await resolveDeepseekWallet(allowanceDeadline(signal));
     return {
         kind: HarnessKinds.DEEPSEEK,
-        plan: wallet.balance,
-        windows: []
+        plan: null,
+        windows: [],
+        balances: wallet.balances
     };
 }
