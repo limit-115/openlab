@@ -21,10 +21,10 @@ export const HARNESS_BILLING_LABEL = {
 } as const satisfies Record<HarnessBilling, string>;
 
 /**
- * The four harnesses the lab dispatches agents to, each named the way its vendor names it. Two of
- * them are driven through another vendor's CLI, and saying which keeps an operator from reading
- * them as a second subscription to that vendor. The `command` is the executable `openlab doctor`
- * looks for, so it is the literal name on `PATH` and never a prettier spelling of it.
+ * Every harness the lab dispatches agents to, each named the way its vendor names it. Two of them
+ * are driven through another vendor's CLI, and saying which keeps an operator from reading them as
+ * a second subscription to that vendor. The `command` is the executable `openlab doctor` looks for,
+ * so it is the literal name on `PATH` and never a prettier spelling of it.
  */
 export const HARNESS = [
     {
@@ -50,6 +50,12 @@ export const HARNESS = [
         command: "deepseek",
         billing: HARNESS_BILLING.USAGE,
         note: "A key you hand over, driven through the Codex CLI. Nothing caps it, and its setup card says so first."
+    },
+    {
+        name: "Muse Code",
+        command: "muse",
+        billing: HARNESS_BILLING.USAGE,
+        note: "A Meta account, metered the same way and publishing no balance at all, so the lab cannot say what a run cost until Meta does."
     }
 ] as const;
 
