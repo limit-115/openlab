@@ -238,7 +238,13 @@ on_windows_path() {
         >"$workspace/user-path" 2>&1 ||
         fail "Could not read the user's PATH out of the registry."
 
-    grep -qiF "$directory" "$workspace/user-path" ||
+    # One entry per line, folded, and matched whole. A substring search would take
+    # `...\.local\bin-old` for `...\.local\bin` and pass while a new shell still found nothing,
+    # which is the very regression this exists to catch.
+    tr ';' '\n' <"$workspace/user-path" | tr -d '\r' | tr '[:upper:]' '[:lower:]' >"$workspace/entries"
+    printf '%s' "$directory" | tr '[:upper:]' '[:lower:]' >"$workspace/wanted"
+
+    grep -qxF -f "$workspace/wanted" "$workspace/entries" ||
         fail "The install left $directory off the user's PATH, which holds: $(cat "$workspace/user-path")"
     printf '  ok    the registry names %s\n' "$directory"
 }
