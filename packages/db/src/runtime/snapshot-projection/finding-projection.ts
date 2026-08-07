@@ -20,7 +20,7 @@ export async function upsertFindings(
             .values({
                 id: finding.id,
                 investigationId: snapshot.investigation.id,
-                assumptionId: finding.assumption_id,
+                leadId: finding.lead_id,
                 runId: finding.run_id,
                 ...mutable,
                 createdAt: new Date(finding.created_at)

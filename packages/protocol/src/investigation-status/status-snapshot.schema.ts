@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { AgentRunSchema } from "#src/agent-runs/agent-run.schema";
-import { AssumptionSchema } from "#src/assumptions/assumption.schema";
 import { CapabilityRequestSchema } from "#src/capabilities/capability-request.schema";
 import { IdentifierSchema } from "#src/entity-identity/entity-identifier.schema";
 import { FindingSchema } from "#src/findings/finding.schema";
 import { InvestigationEventSchema } from "#src/investigation-events/investigation-event.schema";
 import { InvestigationStateSchema } from "#src/investigation-lifecycle/investigation-state.schema";
 import { ResultSummarySchema } from "#src/investigation-status/result-summary.schema";
+import { LeadSchema } from "#src/leads/lead.schema";
 import { VerdictSchema } from "#src/verdicts/verdict.schema";
 
 export const StatusSnapshotSchema = z.object({
@@ -25,7 +25,7 @@ export const StatusSnapshotSchema = z.object({
          */
         resume_at: z.iso.datetime().optional()
     }),
-    assumptions: z.array(AssumptionSchema).default([]),
+    leads: z.array(LeadSchema).default([]),
     runs: z.array(AgentRunSchema).default([]),
     findings: z.array(FindingSchema).default([]),
     verdicts: z.array(VerdictSchema).default([]),

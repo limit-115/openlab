@@ -1,6 +1,6 @@
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 
 export interface InvestigationReportSubject {
     readonly snapshot: StatusSnapshot;
@@ -19,14 +19,14 @@ export function renderInvestigationReport(
     const refuted = snapshot.findings
         .filter(({ status }) => status === FindingStatus.REFUTED)
         .map((finding) => `${finding.claim} — ${verdictFor(snapshot, finding.id)}`);
-    const spent = snapshot.assumptions
-        .filter(({ status }) => status === AssumptionStatus.EXHAUSTED)
+    const spent = snapshot.leads
+        .filter(({ status }) => status === LeadStatus.EXHAUSTED)
         .map(
             ({ statement, outcome }) =>
                 `${statement} — ${outcome ?? "the researcher came back with nothing"}`
         );
-    const open = snapshot.assumptions
-        .filter(({ status }) => status !== AssumptionStatus.EXHAUSTED)
+    const open = snapshot.leads
+        .filter(({ status }) => status !== LeadStatus.EXHAUSTED)
         .map(({ statement, status }) => `[${status}] ${statement}`);
     const blockers = snapshot.capability_requests
         .filter(({ blocking }) => blocking)
@@ -50,11 +50,11 @@ ${markdownList(confirmed, "Nothing has survived verification.")}
 
 ${markdownList(refuted, "None recorded.")}
 
-## Bets that ran out
+## Leads that ran out
 
 ${markdownList(spent, "None recorded.")}
 
-## Bets still open
+## Leads still open
 
 ${markdownList(open, "None recorded.")}
 

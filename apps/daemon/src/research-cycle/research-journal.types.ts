@@ -1,5 +1,5 @@
 export interface RecordFindingInput {
-    readonly assumptionId: string;
+    readonly leadId: string;
     readonly runId: string;
     readonly claim: string;
     readonly work: string;

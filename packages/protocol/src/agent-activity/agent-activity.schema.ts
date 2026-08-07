@@ -11,8 +11,8 @@ import { IdentifierSchema } from "#src/entity-identity/entity-identifier.schema"
  */
 export const AgentRunIdentitySchema = z.object({
     run_id: IdentifierSchema,
-    /** Absent on a director run, which answers to the goal rather than to one bet. */
-    assumption_id: IdentifierSchema.optional(),
+    /** Absent on a director run, which answers to the goal rather than to one lead. */
+    lead_id: IdentifierSchema.optional(),
     role: AgentRoleSchema,
     execution: AgentExecutionSchema,
     /** The full transcript this stream summarizes, for an operator who wants the raw record. */

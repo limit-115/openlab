@@ -1,7 +1,7 @@
 CREATE TABLE `agent_runs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`investigation_id` text NOT NULL,
-	`assumption_id` text,
+	`lead_id` text,
 	`role` text NOT NULL,
 	`objective` text NOT NULL,
 	`status` text DEFAULT 'running' NOT NULL,
@@ -17,29 +17,15 @@ CREATE TABLE `agent_runs` (
 	`created_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`investigation_id`) REFERENCES `investigations`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`assumption_id`) REFERENCES `assumptions`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `agent_runs_investigation_status_idx` ON `agent_runs` (`investigation_id`,`status`);--> statement-breakpoint
-CREATE INDEX `agent_runs_assumption_idx` ON `agent_runs` (`assumption_id`);--> statement-breakpoint
-CREATE TABLE `assumptions` (
-	`id` text PRIMARY KEY NOT NULL,
-	`investigation_id` text NOT NULL,
-	`cycle` integer DEFAULT 0 NOT NULL,
-	`statement` text NOT NULL,
-	`rationale` text NOT NULL,
-	`status` text DEFAULT 'open' NOT NULL,
-	`outcome` text,
-	`created_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
-	`updated_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
-	FOREIGN KEY (`investigation_id`) REFERENCES `investigations`(`id`) ON UPDATE no action ON DELETE cascade
-);
---> statement-breakpoint
-CREATE INDEX `assumptions_investigation_status_idx` ON `assumptions` (`investigation_id`,`status`);--> statement-breakpoint
+CREATE INDEX `agent_runs_lead_idx` ON `agent_runs` (`lead_id`);--> statement-breakpoint
 CREATE TABLE `capability_requests` (
 	`id` text PRIMARY KEY NOT NULL,
 	`investigation_id` text NOT NULL,
-	`assumption_id` text,
+	`lead_id` text,
 	`need` text NOT NULL,
 	`reason` text NOT NULL,
 	`provisioning_hint` text NOT NULL,
@@ -51,7 +37,7 @@ CREATE TABLE `capability_requests` (
 	`created_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`investigation_id`) REFERENCES `investigations`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`assumption_id`) REFERENCES `assumptions`(`id`) ON UPDATE no action ON DELETE set null
+	FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE INDEX `capability_requests_investigation_status_idx` ON `capability_requests` (`investigation_id`,`status`);--> statement-breakpoint
@@ -70,7 +56,7 @@ CREATE INDEX `events_investigation_sequence_idx` ON `events` (`investigation_id`
 CREATE TABLE `findings` (
 	`id` text PRIMARY KEY NOT NULL,
 	`investigation_id` text NOT NULL,
-	`assumption_id` text NOT NULL,
+	`lead_id` text NOT NULL,
 	`run_id` text NOT NULL,
 	`claim` text NOT NULL,
 	`work` text NOT NULL,
@@ -78,7 +64,7 @@ CREATE TABLE `findings` (
 	`status` text DEFAULT 'unverified' NOT NULL,
 	`created_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`investigation_id`) REFERENCES `investigations`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`assumption_id`) REFERENCES `assumptions`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`run_id`) REFERENCES `agent_runs`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
@@ -106,6 +92,20 @@ CREATE TABLE `lab_settings` (
 	`updated_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `leads` (
+	`id` text PRIMARY KEY NOT NULL,
+	`investigation_id` text NOT NULL,
+	`cycle` integer DEFAULT 0 NOT NULL,
+	`statement` text NOT NULL,
+	`rationale` text NOT NULL,
+	`status` text DEFAULT 'open' NOT NULL,
+	`outcome` text,
+	`created_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
+	FOREIGN KEY (`investigation_id`) REFERENCES `investigations`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `leads_investigation_status_idx` ON `leads` (`investigation_id`,`status`);--> statement-breakpoint
 CREATE TABLE `notification_settings` (
 	`id` text PRIMARY KEY NOT NULL,
 	`settings` text NOT NULL,

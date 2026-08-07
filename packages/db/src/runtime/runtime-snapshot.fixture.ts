@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import {
     CapabilityRequestType,
     CapabilityStatus
@@ -12,6 +11,7 @@ import { DEFAULT_HARNESS_KINDS } from "@openlab/protocol/investigation-input/inv
 import type { InvestigationInput } from "@openlab/protocol/investigation-input/investigation-input.types";
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 
 const testRunId = randomUUID();
 
@@ -39,7 +39,7 @@ export function makeSnapshot(
     state: InvestigationState = InvestigationState.RUNNING
 ): StatusSnapshot {
     const timestamp = "2026-08-02T00:00:00.000Z";
-    const assumptionId = `${investigationId}-assumption-cache`;
+    const leadId = `${investigationId}-lead-cache`;
     const directorRunId = `${investigationId}-run-director`;
     const researcherRunId = `${investigationId}-run-researcher`;
     const verifierRunId = `${investigationId}-run-verifier`;
@@ -53,13 +53,13 @@ export function makeSnapshot(
             updated_at: timestamp,
             uptime_ms: 0
         },
-        assumptions: [
+        leads: [
             {
-                id: assumptionId,
+                id: leadId,
                 cycle: 0,
                 statement: "The bottleneck is the cache eviction order",
                 rationale: "Nothing in the literature measures eviction under this access pattern",
-                status: AssumptionStatus.RESEARCHING,
+                status: LeadStatus.RESEARCHING,
                 created_at: timestamp,
                 updated_at: timestamp
             }
@@ -68,7 +68,7 @@ export function makeSnapshot(
             {
                 id: directorRunId,
                 role: AgentRole.DIRECTOR,
-                objective: "Turn the goal into bets worth taking",
+                objective: "Turn the goal into leads worth taking",
                 status: AgentRunStatus.SUCCEEDED,
                 cwd: "/tmp/lab/director",
                 started_at: timestamp,
@@ -77,7 +77,7 @@ export function makeSnapshot(
             {
                 id: researcherRunId,
                 role: AgentRole.RESEARCHER,
-                assumption_id: assumptionId,
+                lead_id: leadId,
                 objective: "Reach the goal through the eviction order",
                 status: AgentRunStatus.SUCCEEDED,
                 cwd: "/tmp/lab/researcher",
@@ -87,7 +87,7 @@ export function makeSnapshot(
             {
                 id: verifierRunId,
                 role: AgentRole.VERIFIER,
-                assumption_id: assumptionId,
+                lead_id: leadId,
                 objective: "Check the eviction claim independently",
                 status: AgentRunStatus.RUNNING,
                 cwd: "/tmp/lab/verifier",
@@ -97,7 +97,7 @@ export function makeSnapshot(
         findings: [
             {
                 id: findingId,
-                assumption_id: assumptionId,
+                lead_id: leadId,
                 run_id: researcherRunId,
                 claim: "Reordering eviction by access recency removes the stall entirely",
                 work: "Patched the allocator, ran the workload 40 times, stall disappeared in all runs",

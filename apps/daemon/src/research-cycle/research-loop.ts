@@ -1,11 +1,11 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
-import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import { DEFAULT_HARNESS_KINDS } from "@openlab/protocol/investigation-input/investigation-input.const";
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import type { Lead } from "@openlab/protocol/leads/lead.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { createHarnesses } from "#src/agent-harness/harness-factory";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
@@ -14,10 +14,10 @@ import { type DirectorPlan, DirectorPlanSchema } from "#src/research-contract/re
 import { DispatchBlockedError, runAgentWithFallback } from "#src/research-cycle/agent-dispatch";
 import { RunDirectoryWorkspaceFactory } from "#src/research-cycle/agent-workspace";
 import type { AgentWorkspaceFactory } from "#src/research-cycle/agent-workspace.types";
-import { researchAssumption } from "#src/research-cycle/assumption-research";
 import { preflightHarnesses } from "#src/research-cycle/harness-roster";
+import { researchLead } from "#src/research-cycle/lead-research";
 import { throwIfAborted } from "#src/research-cycle/research-cancellation";
-import { recordAssumptions } from "#src/research-cycle/research-journal";
+import { recordLeads } from "#src/research-cycle/research-journal";
 import {
     DEFAULT_CYCLE_BACKOFF_MS,
     HibernationReason,
@@ -26,8 +26,8 @@ import {
     ResearchLoopOutcomeStatus
 } from "#src/research-cycle/research-loop.const";
 import type {
-    AssumptionResearchResult,
     CreateAgentWorkspace,
+    LeadResearchResult,
     ResearchCycleInput,
     ResearchCycleResult,
     ResearchLoopOptions,
@@ -118,7 +118,7 @@ export async function runResearchLoop(
     }
 }
 
-/** The director had nothing left to bet on, which is the only research reason to stop. */
+/** The director had no leads left to open, which is the only research reason to stop. */
 class DirectorExhaustedError extends Error {
     constructor(options?: ErrorOptions) {
         super(HibernationReason.NO_DIRECTION, options);
@@ -211,18 +211,18 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
     } = input;
     const spent = workspace
         .getSnapshot()
-        .assumptions.filter(({ status }) => status === AssumptionStatus.EXHAUSTED);
+        .leads.filter(({ status }) => status === LeadStatus.EXHAUSTED);
 
     const plan = await directorPlan(input, spent);
-    const assumptions = await recordAssumptions(workspace, cycle, plan.assumptions);
+    const leads = await recordLeads(workspace, cycle, plan.leads);
 
     const settled = await Promise.allSettled(
-        assumptions.map((assumption, index) =>
-            researchAssumption({
+        leads.map((lead, index) =>
+            researchLead({
                 workspace,
                 activity,
                 task,
-                assumption,
+                lead,
                 available,
                 ...(subscriptions === undefined ? {} : { subscriptions }),
                 settings,
@@ -238,7 +238,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
     if (signal?.aborted && rejected !== undefined) {
         throw rejected.reason;
     }
-    const results = settled.map((result): AssumptionResearchResult => {
+    const results = settled.map((result): LeadResearchResult => {
         if (result.status === PromiseSettlement.FULFILLED) {
             return result.value;
         }
@@ -256,7 +256,7 @@ async function runResearchCycle(input: ResearchCycleInput): Promise<ResearchCycl
 
 async function directorPlan(
     input: ResearchCycleInput,
-    spent: readonly Assumption[]
+    spent: readonly Lead[]
 ): Promise<DirectorPlan> {
     try {
         const run = await runAgentWithFallback({

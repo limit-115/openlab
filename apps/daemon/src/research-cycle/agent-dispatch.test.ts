@@ -55,7 +55,7 @@ function unusedHarness(kind: HarnessKind): AvailableHarness {
 
 const DIRECTOR_PLAN = {
     reconnaissance: "Read the reference implementation end to end",
-    assumptions: [{ statement: "The hot loop dominates", rationale: "It runs per byte" }],
+    leads: [{ statement: "The hot loop dominates", rationale: "It runs per byte" }],
     capability_requests: []
 } as const;
 

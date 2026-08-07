@@ -1,9 +1,4 @@
 import {
-    ASSUMPTIONS_EN,
-    ASSUMPTIONS_NAMESPACE,
-    ASSUMPTIONS_RU
-} from "#src/assumptions/assumptions.i18n";
-import {
     BREAKTHROUGH_EN,
     BREAKTHROUGH_NAMESPACE,
     BREAKTHROUGH_RU
@@ -85,6 +80,7 @@ import {
     LAB_MAINTENANCE_NAMESPACE,
     LAB_MAINTENANCE_RU
 } from "#src/lab-maintenance/lab-maintenance.i18n";
+import { LEADS_EN, LEADS_NAMESPACE, LEADS_RU } from "#src/leads/leads.i18n";
 import {
     LIVE_STATUS_EN,
     LIVE_STATUS_NAMESPACE,
@@ -135,7 +131,7 @@ import { WELCOME_EN, WELCOME_NAMESPACE, WELCOME_RU } from "#src/welcome/welcome.
  * be handed a single object per language, and it is a list of features rather than a store of copy.
  */
 export const EN_TRANSLATIONS = {
-    [ASSUMPTIONS_NAMESPACE]: ASSUMPTIONS_EN,
+    [LEADS_NAMESPACE]: LEADS_EN,
     [BREAKTHROUGH_NAMESPACE]: BREAKTHROUGH_EN,
     [CLIPBOARD_NAMESPACE]: CLIPBOARD_EN,
     [CONNECTION_SCREEN_NAMESPACE]: CONNECTION_SCREEN_EN,
@@ -169,7 +165,7 @@ export const EN_TRANSLATIONS = {
 
 /** Measured against the English source, so a namespace nobody translated fails the build. */
 export const RU_TRANSLATIONS = {
-    [ASSUMPTIONS_NAMESPACE]: ASSUMPTIONS_RU,
+    [LEADS_NAMESPACE]: LEADS_RU,
     [BREAKTHROUGH_NAMESPACE]: BREAKTHROUGH_RU,
     [CLIPBOARD_NAMESPACE]: CLIPBOARD_RU,
     [CONNECTION_SCREEN_NAMESPACE]: CONNECTION_SCREEN_RU,

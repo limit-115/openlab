@@ -85,7 +85,7 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
         await startAgentRun(input.workspace, {
             id: runId,
             role: input.role,
-            ...(input.assumptionId === undefined ? {} : { assumptionId: input.assumptionId }),
+            ...(input.leadId === undefined ? {} : { leadId: input.leadId }),
             objective: input.objective,
             cwd: agentWorkspace.cwd
         });
@@ -95,7 +95,7 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
                 activity: input.activity,
                 harness,
                 runId,
-                ...(input.assumptionId === undefined ? {} : { assumptionId: input.assumptionId }),
+                ...(input.leadId === undefined ? {} : { leadId: input.leadId }),
                 agentWorkspace,
                 prompt: input.prompt,
                 schema: input.schema,

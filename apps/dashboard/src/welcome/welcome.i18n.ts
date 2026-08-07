@@ -11,15 +11,15 @@ export const WELCOME_EN = {
     title: "This is a laboratory, not a chat",
     lead: "You set a goal. From there the lab works on its own.",
     director: "Director",
-    directorWork: "reads the field and places a few bets on where the answer might be hiding.",
+    directorWork: "reads the field and opens a few leads on where the answer might be hiding.",
     researcher: "Researchers",
     researcherWork:
-        "take one bet each, at the same time and blind to each other: they write code, install what they need and run the experiment to the end.",
+        "take one lead each, at the same time and blind to each other: they write code, install what they need and run the experiment to the end.",
     verifier: "Verifier",
     verifierWork:
         "takes every claim and checks it from scratch, on a different harness, in a clean session.",
     outcome:
-        "What survives that is a breakthrough: the lab stops and shows it. Everything else is a bet closed honestly.",
+        "What survives that is a breakthrough: the lab stops and shows it. Everything else is a lead closed honestly.",
     hours: "A cycle runs for hours. You can close this tab.",
 
     notificationsTitle: "Tell the lab where to find you",
@@ -32,7 +32,7 @@ export const WELCOME_EN = {
 
     goalTitle: "Give it something to find out",
     goalLead:
-        "One sentence. The director turns it into the bets the researchers take, and the lab stops when one of them survives verification.",
+        "One sentence. The director turns it into the leads the researchers take, and the lab stops when one of them survives verification.",
     goalExamples: "For example",
     goalStart: "Start the investigation",
     goalStarting: "Starting",
@@ -57,12 +57,12 @@ export const WELCOME_RU = {
     directorWork: "изучает область и делает несколько ставок — где решение может прятаться.",
     researcher: "Исследователи",
     researcherWork:
-        "берут по ставке, одновременно и ничего не зная друг о друге: пишут код, ставят себе инструменты и доводят эксперимент до конца.",
+        "берут по зацепке, одновременно и ничего не зная друг о друге: пишут код, ставят себе инструменты и доводят эксперимент до конца.",
     verifier: "Верификатор",
     verifierWork:
         "берёт каждое заявление и проверяет его с нуля, другим харнессом, в чистой сессии.",
     outcome:
-        "Что это выдержало — прорыв: лаборатория останавливается и показывает его. Всё остальное — честно закрытая ставка.",
+        "Что это выдержало — прорыв: лаборатория останавливается и показывает его. Всё остальное — честно закрытая зацепка.",
     hours: "Цикл идёт часами. Вкладку можно закрыть.",
 
     notificationsTitle: "Скажи лаборатории, где тебя искать",
@@ -75,7 +75,7 @@ export const WELCOME_RU = {
 
     goalTitle: "Дай ей, что выяснить",
     goalLead:
-        "Одно предложение. Директор превратит его в ставки, которые возьмут исследователи, и лаборатория остановится, когда одна из них выдержит проверку.",
+        "Одно предложение. Директор превратит его в зацепки, которые возьмут исследователи, и лаборатория остановится, когда одна из них выдержит проверку.",
     goalExamples: "Например",
     goalStart: "Запустить исследование",
     goalStarting: "Запускаем",

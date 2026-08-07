@@ -11,7 +11,7 @@ export async function upsertAgentRuns(
 ): Promise<void> {
     for (const run of snapshot.runs) {
         const mutable = {
-            assumptionId: run.assumption_id ?? null,
+            leadId: run.lead_id ?? null,
             role: run.role,
             objective: run.objective,
             status: run.status,

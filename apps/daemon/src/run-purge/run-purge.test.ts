@@ -4,10 +4,10 @@ import path from "node:path";
 import { createDatabase, type DatabaseClient } from "@openlab/db/lab-database/lab-database-client";
 import {
     agentRuns,
-    assumptions,
     events,
     findings,
-    investigations
+    investigations,
+    leads
 } from "@openlab/db/lab-database/lab-schema";
 import { migrateDatabase } from "@openlab/db/lab-database/lab-schema-migration";
 import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
@@ -61,24 +61,24 @@ describe("purgeRuns", () => {
             },
             workspacePath: `/tmp/${investigationId}`
         });
-        await database.insert(assumptions).values({
-            id: `assumption-${investigationId}`,
+        await database.insert(leads).values({
+            id: `lead-${investigationId}`,
             investigationId,
-            statement: `Bet for ${investigationId}`,
+            statement: `Lead for ${investigationId}`,
             rationale: "Seeded by a purge test"
         });
         await database.insert(agentRuns).values({
             id: `run-${investigationId}`,
             investigationId,
-            assumptionId: `assumption-${investigationId}`,
+            leadId: `lead-${investigationId}`,
             role: AgentRole.RESEARCHER,
-            objective: `Spend the bet for ${investigationId}`,
+            objective: `Spend the lead for ${investigationId}`,
             cwd: `/tmp/${investigationId}`
         });
         await database.insert(findings).values({
             id: `finding-${investigationId}`,
             investigationId,
-            assumptionId: `assumption-${investigationId}`,
+            leadId: `lead-${investigationId}`,
             runId: `run-${investigationId}`,
             claim: `Claim for ${investigationId}`,
             work: "Seeded by a purge test"
@@ -104,14 +104,14 @@ describe("purgeRuns", () => {
         );
     }
 
-    it("cascades the delete to assumptions, findings, and events", async () => {
+    it("cascades the delete to leads, findings, and events", async () => {
         const workspaceRoot = await seedLab(["investigation-alpha"]);
 
         const result = await purgeRuns({ workspaceRoot });
 
         expect(result.purgedInvestigationRowCount).toBe(1);
         expect(result.purgedDirectoryCount).toBe(1);
-        expect(await client?.db.select().from(assumptions)).toEqual([]);
+        expect(await client?.db.select().from(leads)).toEqual([]);
         expect(await client?.db.select().from(findings)).toEqual([]);
         expect(await client?.db.select().from(events)).toEqual([]);
     });

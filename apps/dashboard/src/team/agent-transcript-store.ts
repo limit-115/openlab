@@ -105,7 +105,7 @@ function startedActivity(
 ): AgentActivity {
     return {
         run_id: frame.run_id,
-        ...(frame.assumption_id === undefined ? {} : { assumption_id: frame.assumption_id }),
+        ...(frame.lead_id === undefined ? {} : { lead_id: frame.lead_id }),
         role: frame.role,
         execution: frame.execution,
         artifact_directory: frame.artifact_directory,

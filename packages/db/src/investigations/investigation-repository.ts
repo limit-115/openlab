@@ -61,7 +61,7 @@ export class InvestigationRepository {
     }
 
     /**
-     * Deletes investigation rows and, through the schema cascade, every assumption, agent run, finding,
+     * Deletes investigation rows and, through the schema cascade, every lead, agent run, finding,
      * verdict, event, checkpoint, and capability request that hangs off them. Passing an investigation id
      * spares that one run. Returns the deleted investigation ids.
      */

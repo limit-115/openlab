@@ -6,17 +6,17 @@ import {
 } from "#src/research-contract/research-contract";
 
 describe("research structured-output contracts", () => {
-    it("requires the director to bet on somewhere", () => {
+    it("requires the director to name somewhere to look", () => {
         expect(() =>
             DirectorPlanSchema.parse({
                 reconnaissance: "Read the allocator and its issue tracker",
-                assumptions: []
+                leads: []
             })
         ).toThrow();
         expect(
             DirectorPlanSchema.parse({
                 reconnaissance: "Read the allocator and its issue tracker",
-                assumptions: [
+                leads: [
                     {
                         statement: "The eviction order is the bottleneck",
                         rationale: "Nobody measures eviction under this access pattern"
@@ -35,7 +35,7 @@ describe("research structured-output contracts", () => {
         ).toThrow(/must state what it claims/);
     });
 
-    it("lets a bet that ran out close without a claim", () => {
+    it("lets a lead that ran out close without a claim", () => {
         const empty = ResearchResultSchema.parse({
             found: false,
             work: "Reordered eviction three ways; the stall stayed within noise every time"

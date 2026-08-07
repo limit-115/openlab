@@ -14,8 +14,8 @@ export const AgentRunStatusSchema = z.enum(AgentRunStatus);
 export const AgentRunSchema = z.object({
     id: IdentifierSchema,
     role: AgentRoleSchema,
-    /** Absent on a director run, which answers to the goal rather than to one bet. */
-    assumption_id: IdentifierSchema.optional(),
+    /** Absent on a director run, which answers to the goal rather than to one lead. */
+    lead_id: IdentifierSchema.optional(),
     objective: z.string().trim().min(1),
     status: AgentRunStatusSchema.default(AgentRunStatus.RUNNING),
     /** Absent until the harness has resolved which model and effort the session runs at. */

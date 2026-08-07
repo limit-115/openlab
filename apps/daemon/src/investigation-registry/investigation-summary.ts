@@ -18,7 +18,7 @@ export function summarizeInvestigation(workspace: InvestigationWorkspace): Inves
         updated_at: snapshot.investigation.updated_at,
         uptime_ms: snapshot.investigation.uptime_ms,
         harness_kinds: workspace.input.harness_kinds,
-        assumption_count: snapshot.assumptions.length,
+        lead_count: snapshot.leads.length,
         finding_count: snapshot.findings.length,
         confirmed_finding_count: snapshot.findings.filter(
             ({ status }) => status === FindingStatus.CONFIRMED

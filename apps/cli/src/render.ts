@@ -1,10 +1,10 @@
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
-import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import type { CapabilityRequest } from "@openlab/protocol/capabilities/capability-request.types";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
 import type { InvestigationSummary } from "@openlab/protocol/investigation-status/investigation-summary.types";
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
+import type { Lead } from "@openlab/protocol/leads/lead.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import Table from "cli-table3";
 
 function lines(items: string[]): string {
@@ -17,7 +17,7 @@ export function renderInvestigations(roster: readonly InvestigationSummary[]): s
         return 'The lab holds no investigations. Start one with "openlab new".';
     }
     const table = new Table({
-        head: ["ID", "State", "Goal", "Bets", "Findings", "Agents"],
+        head: ["ID", "State", "Goal", "Leads", "Findings", "Agents"],
         colWidths: [40, 14, 44, 8, 12, 8],
         wordWrap: true,
         style: { head: ["cyan"], border: ["gray"] }
@@ -27,7 +27,7 @@ export function renderInvestigations(roster: readonly InvestigationSummary[]): s
             investigation.id,
             investigation.state,
             investigation.goal,
-            String(investigation.assumption_count),
+            String(investigation.lead_count),
             `${investigation.confirmed_finding_count} of ${investigation.finding_count}`,
             String(investigation.active_run_count)
         ]);
@@ -41,8 +41,8 @@ export function renderStatus(status: StatusSnapshot): string {
         wordWrap: true,
         style: { head: ["cyan"], border: ["gray"] }
     });
-    const live = status.assumptions.filter(
-        ({ status: bet }) => bet === AssumptionStatus.OPEN || bet === AssumptionStatus.RESEARCHING
+    const live = status.leads.filter(
+        ({ status: lead }) => lead === LeadStatus.OPEN || lead === LeadStatus.RESEARCHING
     ).length;
     const confirmed = status.findings.filter(
         ({ status: finding }) => finding === FindingStatus.CONFIRMED
@@ -51,7 +51,7 @@ export function renderStatus(status: StatusSnapshot): string {
         ["State", status.investigation.state],
         ["Investigation", status.investigation.id],
         ["Goal", status.investigation.goal],
-        ["Bets", `${live} live of ${status.assumptions.length}`],
+        ["Leads", `${live} live of ${status.leads.length}`],
         [
             "Agents",
             `${status.runs.filter((run) => run.status === AgentRunStatus.RUNNING).length} running`
@@ -69,23 +69,18 @@ export function renderStatus(status: StatusSnapshot): string {
     return table.toString();
 }
 
-export function renderAssumptions(assumptions: Assumption[]): string {
-    if (assumptions.length === 0) {
-        return "No bets placed yet.";
+export function renderLeads(leads: Lead[]): string {
+    if (leads.length === 0) {
+        return "No leads opened yet.";
     }
     const table = new Table({
-        head: ["Bet", "Status", "Why it was worth taking", "What came back"],
+        head: ["Lead", "Status", "Why it was worth taking", "What came back"],
         colWidths: [30, 18, 26, 26],
         wordWrap: true,
         style: { head: ["cyan"], border: ["gray"] }
     });
-    for (const assumption of assumptions) {
-        table.push([
-            assumption.statement,
-            assumption.status,
-            assumption.rationale,
-            assumption.outcome ?? ""
-        ]);
+    for (const lead of leads) {
+        table.push([lead.statement, lead.status, lead.rationale, lead.outcome ?? ""]);
     }
     return table.toString();
 }

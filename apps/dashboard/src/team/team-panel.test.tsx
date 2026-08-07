@@ -22,7 +22,7 @@ const COMMAND = "pnpm vitest run evaluators/body_harness_validity.py --reporter 
 const RUN: AgentRun = {
     id: "run-researcher-9f0c",
     role: AgentRole.RESEARCHER,
-    assumption_id: "assumption-landmarks",
+    lead_id: "lead-landmarks",
     objective: "Measure indexed lookup against the baseline",
     status: AgentRunStatus.RUNNING,
     cwd: "/tmp/lab/researcher-000",

@@ -1,89 +1,89 @@
 import { randomUUID } from "node:crypto";
-import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import type { Finding } from "@openlab/protocol/findings/finding.types";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import type { Lead } from "@openlab/protocol/leads/lead.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import type { Verdict } from "@openlab/protocol/verdicts/verdict.types";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { requiredById } from "#src/investigation-workspace/snapshot-entities";
-import type { AssumptionCandidate } from "#src/research-contract/research-contract";
+import type { LeadCandidate } from "#src/research-contract/research-contract";
 import type { RecordFindingInput } from "#src/research-cycle/research-journal.types";
 
-export async function recordAssumptions(
+export async function recordLeads(
     workspace: InvestigationWorkspace,
     cycle: number,
-    candidates: readonly AssumptionCandidate[]
-): Promise<Assumption[]> {
+    candidates: readonly LeadCandidate[]
+): Promise<Lead[]> {
     const now = new Date().toISOString();
-    const assumptions = candidates.map(
-        (candidate): Assumption => ({
-            id: `assumption-${randomUUID()}`,
+    const leads = candidates.map(
+        (candidate): Lead => ({
+            id: `lead-${randomUUID()}`,
             cycle,
             statement: candidate.statement,
             rationale: candidate.rationale,
-            status: AssumptionStatus.OPEN,
+            status: LeadStatus.OPEN,
             created_at: now,
             updated_at: now
         })
     );
     await workspace.update((draft) => {
-        draft.assumptions.push(...assumptions);
+        draft.leads.push(...leads);
     });
-    await workspace.appendEvent(EventType.ASSUMPTIONS_PROPOSED, {
+    await workspace.appendEvent(EventType.LEADS_PROPOSED, {
         cycle,
-        assumption_ids: assumptions.map(({ id }) => id)
+        lead_ids: leads.map(({ id }) => id)
     });
-    return assumptions;
+    return leads;
 }
 
-export async function startAssumptionResearch(
+export async function startLeadResearch(
     workspace: InvestigationWorkspace,
-    assumptionId: string
+    leadId: string
 ): Promise<void> {
     await workspace.update((draft) => {
-        const assumption = requiredById(draft.assumptions, assumptionId);
-        assumption.status = AssumptionStatus.RESEARCHING;
-        assumption.updated_at = new Date().toISOString();
+        const lead = requiredById(draft.leads, leadId);
+        lead.status = LeadStatus.RESEARCHING;
+        lead.updated_at = new Date().toISOString();
     });
-    await workspace.appendEvent(EventType.ASSUMPTION_RESEARCH_STARTED, {
-        assumption_id: assumptionId
+    await workspace.appendEvent(EventType.LEAD_RESEARCH_STARTED, {
+        lead_id: leadId
     });
 }
 
 /**
- * Closes a bet nothing came of. The outcome is the researcher's own account, kept because the next
- * director round reads it: a bet that ran out is the only thing the investigation knows for certain.
+ * Closes a lead nothing came of. The outcome is the researcher's own account, kept because the next
+ * director round reads it: a lead that ran out is the only thing the investigation knows for certain.
  */
-export async function exhaustAssumption(
+export async function exhaustLead(
     workspace: InvestigationWorkspace,
-    assumptionId: string,
+    leadId: string,
     outcome: string
 ): Promise<void> {
     await workspace.update((draft) => {
-        const assumption = requiredById(draft.assumptions, assumptionId);
-        assumption.status = AssumptionStatus.EXHAUSTED;
-        assumption.outcome = outcome;
-        assumption.updated_at = new Date().toISOString();
+        const lead = requiredById(draft.leads, leadId);
+        lead.status = LeadStatus.EXHAUSTED;
+        lead.outcome = outcome;
+        lead.updated_at = new Date().toISOString();
     });
-    await workspace.appendEvent(EventType.ASSUMPTION_EXHAUSTED, {
-        assumption_id: assumptionId,
+    await workspace.appendEvent(EventType.LEAD_EXHAUSTED, {
+        lead_id: leadId,
         outcome
     });
 }
 
-export async function confirmAssumption(
+export async function confirmLead(
     workspace: InvestigationWorkspace,
-    assumptionId: string,
+    leadId: string,
     outcome: string
 ): Promise<void> {
     await workspace.update((draft) => {
-        const assumption = requiredById(draft.assumptions, assumptionId);
-        assumption.status = AssumptionStatus.CONFIRMED;
-        assumption.outcome = outcome;
-        assumption.updated_at = new Date().toISOString();
+        const lead = requiredById(draft.leads, leadId);
+        lead.status = LeadStatus.CONFIRMED;
+        lead.outcome = outcome;
+        lead.updated_at = new Date().toISOString();
     });
-    await workspace.appendEvent(EventType.ASSUMPTION_CONFIRMED, { assumption_id: assumptionId });
+    await workspace.appendEvent(EventType.LEAD_CONFIRMED, { lead_id: leadId });
 }
 
 export async function recordFinding(
@@ -92,7 +92,7 @@ export async function recordFinding(
 ): Promise<Finding> {
     const finding: Finding = {
         id: `finding-${randomUUID()}`,
-        assumption_id: input.assumptionId,
+        lead_id: input.leadId,
         run_id: input.runId,
         claim: input.claim,
         work: input.work,
@@ -105,7 +105,7 @@ export async function recordFinding(
     });
     await workspace.appendEvent(EventType.FINDING_CLAIMED, {
         finding_id: finding.id,
-        assumption_id: finding.assumption_id,
+        lead_id: finding.lead_id,
         claim: finding.claim
     });
     return finding;

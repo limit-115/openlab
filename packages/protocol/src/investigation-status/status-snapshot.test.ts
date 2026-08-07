@@ -17,7 +17,7 @@ describe("StatusSnapshotSchema", () => {
     it("applies empty collection defaults", () => {
         const status = StatusSnapshotSchema.parse(RUNNING_INVESTIGATION);
 
-        expect(status.assumptions).toEqual([]);
+        expect(status.leads).toEqual([]);
         expect(status.findings).toEqual([]);
         expect(status.verdicts).toEqual([]);
         expect(status.runs).toEqual([]);

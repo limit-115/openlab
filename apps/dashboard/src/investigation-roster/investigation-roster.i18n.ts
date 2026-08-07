@@ -8,13 +8,13 @@ export const INVESTIGATION_ROSTER_EN = {
         "Every direction the lab is working on. Each one runs its own agents on its own goal.",
     emptyTitle: "The lab is idle",
     emptyDescription:
-        "Nothing is being investigated yet. Give the lab a goal and it will start placing bets on where the answer is.",
+        "Nothing is being investigated yet. Give the lab a goal and it will start opening leads on where the answer is.",
     unreachable: "The lab daemon did not answer.",
     answered: "The lab answered {{status}}.",
     recents: "Recents",
 
     /** The card's readings: what an operator checks before deciding to open one. */
-    bets: "Bets",
+    leads: "Leads",
     findings: "Findings confirmed",
     agents: "Agents working",
     blocked: "Waiting on you",
@@ -28,7 +28,7 @@ export const INVESTIGATION_ROSTER_EN = {
         "The lab starts working the moment you hand it a goal. Everything below the goal is optional.",
     goalLabel: "Goal",
     goalPlaceholder: "Find a faster route-planning heuristic than contraction hierarchies",
-    goalHint: "One sentence. The director turns it into the bets researchers take.",
+    goalHint: "One sentence. The director turns it into the leads researchers take.",
     contextLabel: "Context",
     contextPlaceholder: "One thing the agents should know per line",
     contextHint: "Optional. What you already know, one line each.",
@@ -48,12 +48,12 @@ export const INVESTIGATION_ROSTER_RU = {
         "Все направления, над которыми работает лаборатория. У каждого свои агенты и своя цель.",
     emptyTitle: "Лаборатория простаивает",
     emptyDescription:
-        "Пока ничего не исследуется. Дайте лаборатории цель, и она начнёт делать ставки на то, где искать ответ.",
+        "Пока ничего не исследуется. Дайте лаборатории цель, и она начнёт намечать зацепки — где искать ответ.",
     unreachable: "Демон лаборатории не ответил.",
     answered: "Лаборатория ответила {{status}}.",
     recents: "Недавние",
 
-    bets: "Ставки",
+    leads: "Зацепки",
     findings: "Подтверждённые находки",
     agents: "Агентов в работе",
     blocked: "Ждёт вас",
@@ -66,7 +66,7 @@ export const INVESTIGATION_ROSTER_RU = {
         "Лаборатория начинает работу, как только вы дадите ей цель. Всё, что ниже цели, необязательно.",
     goalLabel: "Цель",
     goalPlaceholder: "Найти эвристику планирования маршрутов быстрее contraction hierarchies",
-    goalHint: "Одно предложение. Директор превратит его в ставки, которые возьмут исследователи.",
+    goalHint: "Одно предложение. Директор превратит его в зацепки, которые возьмут исследователи.",
     contextLabel: "Контекст",
     contextPlaceholder: "По одному факту для агентов в строке",
     contextHint: "Необязательно. То, что вы уже знаете, по строке на пункт.",

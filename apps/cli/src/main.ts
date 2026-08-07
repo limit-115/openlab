@@ -24,10 +24,9 @@ import {
     renderUninstallOutcome
 } from "#src/lab-installation/render-installation";
 import { uninstallLab } from "#src/lab-installation/uninstall-lab";
-import { hideControlKeyEcho } from "#src/lab-start/control-key-echo";
 import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
-import { stopLabOnSignal } from "#src/lab-start/stop-lab";
+import { stopLabWhenAsked } from "#src/lab-start/stop-lab";
 import { renderUpdateOutcome } from "#src/lab-update/render-update";
 import { reportUpdateToTerminal } from "#src/lab-update/report-update";
 import { UpdateError } from "#src/lab-update/update-error";
@@ -36,12 +35,7 @@ import { UpdateResult } from "#src/lab-update/update-lab.const";
 import { noticeOfNewerRelease } from "#src/lab-update/update-notice";
 import type { UpdateNotice } from "#src/lab-update/update-notice.types";
 import { LAB_VERSION } from "#src/lab-version";
-import {
-    renderAssumptions,
-    renderCapabilities,
-    renderInvestigations,
-    renderStatus
-} from "#src/render";
+import { renderCapabilities, renderInvestigations, renderLeads, renderStatus } from "#src/render";
 import { resolvePurgeConfig } from "#src/run-purge/purge-config";
 
 interface GlobalOptions {
@@ -197,9 +191,7 @@ program
                 }
             }
         );
-        /** What Ctrl+C did is on the line below it, so the terminal need not print the key too. */
-        hideControlKeyEcho();
-        stopLabOnSignal(() => daemon.close());
+        stopLabWhenAsked(() => daemon.close());
         const shown = options.open === false ? false : await openDashboard(daemon.url);
         /**
          * The block stays open for as long as the lab is up: what is on screen is a lab running,
@@ -324,16 +316,16 @@ program
     });
 
 program
-    .command("bets")
+    .command("leads")
     .description("show where the director thinks the goal might be reachable")
     .action(async (_options, command: Command) => {
-        const assumptions = await client(command).assumptions(await selectInvestigation(command));
-        print(assumptions, globals(command).json, () => renderAssumptions(assumptions));
+        const leads = await client(command).leads(await selectInvestigation(command));
+        print(leads, globals(command).json, () => renderLeads(leads));
     });
 
 program
     .command("inspect")
-    .description("inspect a bet, finding, verdict, or run")
+    .description("inspect a lead, finding, verdict, or run")
     .argument("<id>")
     .action(async (id: string, _options, command: Command) => {
         print(await client(command).inspect(await selectInvestigation(command), id), true);

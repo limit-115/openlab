@@ -13,7 +13,7 @@ export interface StructuredAgentRunInput<Output> {
     readonly activity: AgentActivityHub;
     readonly harness: AgentHarness;
     readonly runId: string;
-    readonly assumptionId?: string;
+    readonly leadId?: string;
     readonly agentWorkspace: AgentWorkspace;
     readonly prompt: string;
     readonly schema: z.ZodType<Output>;

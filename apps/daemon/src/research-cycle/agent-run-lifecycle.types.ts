@@ -4,8 +4,8 @@ import type { AgentRole } from "@openlab/protocol/agents/agent-role.const";
 export interface StartAgentRunInput {
     readonly id: string;
     readonly role: AgentRole;
-    /** Absent on a director run, which answers to the goal rather than to one bet. */
-    readonly assumptionId?: string;
+    /** Absent on a director run, which answers to the goal rather than to one lead. */
+    readonly leadId?: string;
     readonly objective: string;
     readonly cwd: string;
 }

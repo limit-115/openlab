@@ -59,7 +59,7 @@ describe("InvestigationShell", () => {
         vi.stubGlobal("EventSource", FakeEventSource);
     });
 
-    it("renders the bets, what was claimed under them and what is blocked", async () => {
+    it("renders the leads, what was claimed under them and what is blocked", async () => {
         respondWith(statusFixture);
         renderDashboard();
 
@@ -67,11 +67,9 @@ describe("InvestigationShell", () => {
             await screen.findByRole("heading", { name: statusFixture.investigation.goal })
         ).toBeInTheDocument();
         expect(
-            screen.getByText(statusFixture.assumptions[0]?.statement ?? "missing")
+            screen.getByText(statusFixture.leads[0]?.statement ?? "missing")
         ).toBeInTheDocument();
-        expect(
-            screen.getByText(statusFixture.assumptions[1]?.outcome ?? "missing")
-        ).toBeInTheDocument();
+        expect(screen.getByText(statusFixture.leads[1]?.outcome ?? "missing")).toBeInTheDocument();
         expect(screen.getByText(statusFixture.findings[0]?.claim ?? "missing")).toBeInTheDocument();
         expect(screen.getByText("Independent road-network benchmark dataset")).toBeInTheDocument();
         expect(
@@ -144,7 +142,7 @@ describe("InvestigationShell", () => {
     it("shows useful empty states while the investigation is still mapping the goal", async () => {
         respondWith({
             ...statusFixture,
-            assumptions: [],
+            leads: [],
             runs: [],
             findings: [],
             verdicts: [],
@@ -153,7 +151,7 @@ describe("InvestigationShell", () => {
         });
         renderDashboard();
 
-        expect(await screen.findByText("No bets placed yet")).toBeInTheDocument();
+        expect(await screen.findByText("No leads opened yet")).toBeInTheDocument();
     });
 
     it("spends no room on capability requests while the investigation is not blocked", async () => {

@@ -225,9 +225,8 @@ export function createStatusServer(
     );
 
     app.get<{ Params: InvestigationParams }>(
-        InvestigationRoute.ASSUMPTIONS,
-        async (request, reply) =>
-            held(request.params.id, reply)?.workspace.getSnapshot().assumptions
+        InvestigationRoute.LEADS,
+        async (request, reply) => held(request.params.id, reply)?.workspace.getSnapshot().leads
     );
 
     app.get<{ Params: InvestigationParams }>(

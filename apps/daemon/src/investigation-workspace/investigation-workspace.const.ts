@@ -7,7 +7,7 @@ export const WorkspaceFile = {
     INPUT: "investigation.json",
     STATUS: "status.json",
     EVENTS: "events.json",
-    ASSUMPTIONS: "assumptions.json",
+    LEADS: "leads.json",
     RESULT: "result.json",
     REPORT: "report.md"
 } as const;

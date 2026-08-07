@@ -1,7 +1,6 @@
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
 import { domainValues } from "@openlab/protocol/finite-domain/finite-domain-values";
@@ -10,6 +9,7 @@ import type { InvestigationInput } from "@openlab/protocol/investigation-input/i
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import type { LabSettings } from "@openlab/protocol/lab-settings/lab-settings.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import type { NotificationSettings } from "@openlab/protocol/operator-notifications/notification-settings.types";
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
@@ -46,9 +46,9 @@ export const investigations = sqliteTable(
     (table) => [index("labs_state_idx").on(table.state)]
 );
 
-/** A director's bet on where the goal might be reachable. One researcher takes one bet. */
-export const assumptions = sqliteTable(
-    "assumptions",
+/** A director's lead on where the goal might be reachable. One researcher takes one lead. */
+export const leads = sqliteTable(
+    "leads",
     {
         id: text("id").primaryKey(),
         investigationId: text("investigation_id")
@@ -57,15 +57,13 @@ export const assumptions = sqliteTable(
         cycle: integer("cycle").notNull().default(0),
         statement: text("statement").notNull(),
         rationale: text("rationale").notNull(),
-        status: text("status", { enum: domainValues(AssumptionStatus) })
+        status: text("status", { enum: domainValues(LeadStatus) })
             .notNull()
-            .default(AssumptionStatus.OPEN),
+            .default(LeadStatus.OPEN),
         outcome: text("outcome"),
         ...timestamps
     },
-    (table) => [
-        index("assumptions_investigation_status_idx").on(table.investigationId, table.status)
-    ]
+    (table) => [index("leads_investigation_status_idx").on(table.investigationId, table.status)]
 );
 
 /** One agent session. Replaces the agent, task, attempt and experiment records it used to take. */
@@ -76,7 +74,7 @@ export const agentRuns = sqliteTable(
         investigationId: text("investigation_id")
             .notNull()
             .references(() => investigations.id, { onDelete: "cascade" }),
-        assumptionId: text("assumption_id").references(() => assumptions.id, {
+        leadId: text("lead_id").references(() => leads.id, {
             onDelete: "cascade"
         }),
         role: text("role", { enum: domainValues(AgentRole) }).notNull(),
@@ -97,7 +95,7 @@ export const agentRuns = sqliteTable(
     },
     (table) => [
         index("agent_runs_investigation_status_idx").on(table.investigationId, table.status),
-        index("agent_runs_assumption_idx").on(table.assumptionId)
+        index("agent_runs_lead_idx").on(table.leadId)
     ]
 );
 
@@ -109,9 +107,9 @@ export const findings = sqliteTable(
         investigationId: text("investigation_id")
             .notNull()
             .references(() => investigations.id, { onDelete: "cascade" }),
-        assumptionId: text("assumption_id")
+        leadId: text("lead_id")
             .notNull()
-            .references(() => assumptions.id, { onDelete: "cascade" }),
+            .references(() => leads.id, { onDelete: "cascade" }),
         runId: text("run_id")
             .notNull()
             .references(() => agentRuns.id, { onDelete: "cascade" }),
@@ -211,7 +209,7 @@ export const capabilityRequests = sqliteTable(
         investigationId: text("investigation_id")
             .notNull()
             .references(() => investigations.id, { onDelete: "cascade" }),
-        assumptionId: text("assumption_id").references(() => assumptions.id, {
+        leadId: text("lead_id").references(() => leads.id, {
             onDelete: "set null"
         }),
         need: text("need").notNull(),

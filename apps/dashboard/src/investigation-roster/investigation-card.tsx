@@ -59,7 +59,7 @@ export function InvestigationCard({ investigation, discard, discarding }: Invest
             </header>
 
             <dl className={CARD_READINGS}>
-                <Reading label={t("bets")} value={String(investigation.assumption_count)} />
+                <Reading label={t("leads")} value={String(investigation.lead_count)} />
                 <Reading
                     label={t("findings")}
                     value={t("ofTotal", {

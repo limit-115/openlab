@@ -23,7 +23,7 @@ export async function startAgentRun(
         draft.runs.push({
             id: input.id,
             role: input.role,
-            ...(input.assumptionId === undefined ? {} : { assumption_id: input.assumptionId }),
+            ...(input.leadId === undefined ? {} : { lead_id: input.leadId }),
             objective: input.objective,
             status: AgentRunStatus.RUNNING,
             cwd: input.cwd,
@@ -33,7 +33,7 @@ export async function startAgentRun(
     await workspace.appendEvent(EventType.RUN_STARTED, {
         run_id: input.id,
         role: input.role,
-        ...(input.assumptionId === undefined ? {} : { assumption_id: input.assumptionId })
+        ...(input.leadId === undefined ? {} : { lead_id: input.leadId })
     });
 }
 

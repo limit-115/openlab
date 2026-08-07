@@ -191,7 +191,7 @@ export class InvestigationWorkspace {
     inspect(id: string): unknown | undefined {
         const snapshot = this.snapshot;
         return (
-            snapshot.assumptions.find((assumption) => assumption.id === id) ??
+            snapshot.leads.find((lead) => lead.id === id) ??
             snapshot.findings.find((finding) => finding.id === id) ??
             snapshot.verdicts.find((verdict) => verdict.id === id) ??
             snapshot.runs.find((run) => run.id === id)
@@ -304,7 +304,7 @@ export class InvestigationWorkspace {
     }
 
     /**
-     * Puts the investigation to sleep once its bets are spent, or once nothing can run it. A wait
+     * Puts the investigation to sleep once its leads are spent, or once nothing can run it. A wait
      * that has a stated end — a subscription window that resets — carries the moment it comes back,
      * and the investigation takes itself up again then; a sleep nobody can date waits for a person.
      */
@@ -590,16 +590,16 @@ export class InvestigationWorkspace {
         await Promise.all([
             this.writeJson(WorkspaceFile.STATUS, this.snapshot),
             this.writeJson(WorkspaceFile.EVENTS, this.events),
-            this.writeJson(WorkspaceFile.ASSUMPTIONS, this.researchJournal())
+            this.writeJson(WorkspaceFile.LEADS, this.researchJournal())
         ]);
     }
 
-    /** The run's readable history: each bet with what was claimed under it and what came back. */
+    /** The run's readable history: each lead with what was claimed under it and what came back. */
     private researchJournal(): unknown {
-        return this.snapshot.assumptions.map((assumption) => ({
-            ...assumption,
+        return this.snapshot.leads.map((lead) => ({
+            ...lead,
             findings: this.snapshot.findings
-                .filter(({ assumption_id }) => assumption_id === assumption.id)
+                .filter(({ lead_id }) => lead_id === lead.id)
                 .map((finding) => ({
                     ...finding,
                     verdict: this.snapshot.verdicts.find(

@@ -1,10 +1,10 @@
 import type { HarnessExecutionProfile } from "@openlab/harness/agent-harness.const";
 import type { AgentHarness, HarnessPreflight } from "@openlab/harness/agent-harness.types";
 import type { AgentRole } from "@openlab/protocol/agents/agent-role.const";
-import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
 import type { CapabilityRequest } from "@openlab/protocol/capabilities/capability-request.types";
 import type { Finding } from "@openlab/protocol/findings/finding.types";
 import type { InvestigationInput } from "@openlab/protocol/investigation-input/investigation-input.types";
+import type { Lead } from "@openlab/protocol/leads/lead.types";
 import type { z } from "zod";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
@@ -62,11 +62,11 @@ export interface ResearchCycleResult {
     readonly issues: readonly string[];
 }
 
-export interface AssumptionResearchInput {
+export interface LeadResearchInput {
     readonly workspace: InvestigationWorkspace;
     readonly activity: AgentActivityHub;
     readonly task: InvestigationInput;
-    readonly assumption: Assumption;
+    readonly lead: Lead;
     readonly available: readonly AvailableHarness[];
     readonly subscriptions?: SubscriptionAllowanceReadings;
     /** The settings in force, already resolved by the loop for every stage of a cycle. */
@@ -76,7 +76,7 @@ export interface AssumptionResearchInput {
     readonly signal?: AbortSignal;
 }
 
-export interface AssumptionResearchResult {
+export interface LeadResearchResult {
     readonly confirmed?: Finding;
     readonly issues: readonly string[];
 }
@@ -90,7 +90,7 @@ export interface AgentDispatchInput<Output> {
     readonly settings: LabSettingsReader;
     readonly preferredIndex: number;
     readonly role: AgentRole;
-    readonly assumptionId?: string;
+    readonly leadId?: string;
     readonly objective: string;
     readonly createAgentWorkspace: CreateAgentWorkspace;
     readonly prompt: string;

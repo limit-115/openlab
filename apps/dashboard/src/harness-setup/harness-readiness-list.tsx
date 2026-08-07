@@ -10,7 +10,7 @@ import {
 } from "#src/harness-setup/harness-setup.const";
 import { HARNESS_SETUP_NAMESPACE } from "#src/harness-setup/harness-setup.i18n";
 
-/** Whether anything on this machine could take a research bet right now. */
+/** Whether anything on this machine could take a research lead right now. */
 export function hasReadyHarness(roster: HarnessReadinessRoster | undefined): boolean {
     return roster?.some(({ state }) => state === HarnessReadinessState.READY) ?? false;
 }

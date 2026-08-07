@@ -14,7 +14,7 @@ export const RUN_ID = "run-researcher-9f0c" as const;
 export function watchedActivity(overrides: Partial<AgentActivity> = {}): AgentActivity {
     return {
         run_id: RUN_ID,
-        assumption_id: "assumption-landmarks",
+        lead_id: "lead-landmarks",
         role: AgentRole.RESEARCHER,
         execution: {
             harness: AgentHarnessKind.CLAUDE,

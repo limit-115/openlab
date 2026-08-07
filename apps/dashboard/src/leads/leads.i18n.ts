@@ -1,11 +1,11 @@
 import type { Translated } from "#src/interface-language/translation-catalog.types";
 
-export const ASSUMPTIONS_NAMESPACE = "assumptions" as const;
+export const LEADS_NAMESPACE = "leads" as const;
 
-export const ASSUMPTIONS_EN = {
-    title: "Bets",
+export const LEADS_EN = {
+    title: "Leads",
     description: "Where the director thinks the goal might be reachable",
-    emptyTitle: "No bets placed yet",
+    emptyTitle: "No leads opened yet",
     emptyDescription: "The director is still working out where this goal might be reachable.",
 
     /** What the disclosure says about a claim before it is opened. */
@@ -18,8 +18,8 @@ export const ASSUMPTIONS_EN = {
     artifacts: "Files it left behind"
 };
 
-export const ASSUMPTIONS_RU = {
-    title: "Ставки",
+export const LEADS_RU = {
+    title: "Зацепки",
     description: "Где, по мнению директора, цель может оказаться достижимой",
     emptyTitle: "Ставок пока нет",
     emptyDescription: "Директор ещё определяет, где эта цель может оказаться достижимой.",
@@ -31,4 +31,4 @@ export const ASSUMPTIONS_RU = {
     researcher: "Как исследователь к этому пришёл",
     verifier: "Что сделал проверяющий",
     artifacts: "Оставленные файлы"
-} satisfies Translated<typeof ASSUMPTIONS_EN>;
+} satisfies Translated<typeof LEADS_EN>;

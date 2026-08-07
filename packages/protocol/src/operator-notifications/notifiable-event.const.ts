@@ -9,7 +9,7 @@ export const NOTIFIABLE_EVENT_TYPES = [
     EventType.BREAKTHROUGH_RECORDED,
     EventType.CAPABILITY_REQUESTED,
     EventType.INVESTIGATION_FAILED,
-    /** How an investigation stops of its own accord: its bets are spent or nothing can run it. */
+    /** How an investigation stops of its own accord: its leads are spent or nothing can run it. */
     EventType.INVESTIGATION_HIBERNATED,
     EventType.HARNESS_PREFLIGHT_FAILED
 ] as const;

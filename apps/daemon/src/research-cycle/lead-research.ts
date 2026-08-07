@@ -7,27 +7,25 @@ import {
 import { runAgentWithFallback } from "#src/research-cycle/agent-dispatch";
 import { preferredDifferentHarnessIndex } from "#src/research-cycle/harness-roster";
 import {
-    confirmAssumption,
-    exhaustAssumption,
+    confirmLead,
+    exhaustLead,
     recordFinding,
     recordVerdict,
-    startAssumptionResearch
+    startLeadResearch
 } from "#src/research-cycle/research-journal";
 import type {
-    AssumptionResearchInput,
-    AssumptionResearchResult
+    LeadResearchInput,
+    LeadResearchResult
 } from "#src/research-cycle/research-loop.types";
 import { researcherPrompt, verifierPrompt } from "#src/research-prompts/research-prompts";
 
 /**
- * Spends one bet. A researcher works on it with complete freedom; only if it comes back claiming
+ * Spends one lead. A researcher works on it with complete freedom; only if it comes back claiming
  * something does a verifier get involved, because there is nothing to verify otherwise.
  */
-export async function researchAssumption(
-    input: AssumptionResearchInput
-): Promise<AssumptionResearchResult> {
-    const { workspace, task, assumption, signal } = input;
-    await startAssumptionResearch(workspace, assumption.id);
+export async function researchLead(input: LeadResearchInput): Promise<LeadResearchResult> {
+    const { workspace, task, lead, signal } = input;
+    await startLeadResearch(workspace, lead.id);
 
     const research = await runAgentWithFallback({
         workspace,
@@ -37,10 +35,10 @@ export async function researchAssumption(
         settings: input.settings,
         preferredIndex: input.preferredHarnessIndex,
         role: AgentRole.RESEARCHER,
-        assumptionId: assumption.id,
-        objective: assumption.statement,
+        leadId: lead.id,
+        objective: lead.statement,
         createAgentWorkspace: input.createAgentWorkspace,
-        prompt: researcherPrompt(task, assumption),
+        prompt: researcherPrompt(task, lead),
         schema: ResearchResultSchema,
         ...(signal === undefined ? {} : { signal })
     });
@@ -53,12 +51,12 @@ export async function researchAssumption(
         };
     }
     if (!research.value.found || research.value.claim === undefined) {
-        await exhaustAssumption(workspace, assumption.id, research.value.work);
+        await exhaustLead(workspace, lead.id, research.value.work);
         return { issues: [] };
     }
 
     const finding = await recordFinding(workspace, {
-        assumptionId: assumption.id,
+        leadId: lead.id,
         runId: research.runId,
         claim: research.value.claim,
         work: research.value.work,
@@ -74,10 +72,10 @@ export async function researchAssumption(
         settings: input.settings,
         preferredIndex: preferredDifferentHarnessIndex(input.available, research.harness),
         role: AgentRole.VERIFIER,
-        assumptionId: assumption.id,
+        leadId: lead.id,
         objective: `Check independently: ${finding.claim}`,
         createAgentWorkspace: input.createAgentWorkspace,
-        prompt: verifierPrompt(task, assumption, finding),
+        prompt: verifierPrompt(task, lead, finding),
         schema: VerificationResultSchema,
         ...(signal === undefined ? {} : { signal })
     });
@@ -95,14 +93,14 @@ export async function researchAssumption(
         reasoning: verification.value.reasoning
     });
     if (!verdict.confirmed) {
-        await exhaustAssumption(workspace, assumption.id, verdict.reasoning);
+        await exhaustLead(workspace, lead.id, verdict.reasoning);
         return { issues: [`Verifier refuted: ${finding.claim}`] };
     }
     if (!verification.value.meets_goal) {
-        await exhaustAssumption(workspace, assumption.id, verdict.reasoning);
+        await exhaustLead(workspace, lead.id, verdict.reasoning);
         return { issues: [`Verifier confirmed but off-goal: ${finding.claim}`] };
     }
 
-    await confirmAssumption(workspace, assumption.id, verdict.reasoning);
+    await confirmLead(workspace, lead.id, verdict.reasoning);
     return { confirmed: finding, issues: [] };
 }

@@ -1,7 +1,7 @@
 {
     "version": "6",
     "dialect": "sqlite",
-    "id": "ed4b946d-8600-4358-8786-b78b1f0e0d77",
+    "id": "aed66d1f-ecbf-4d0d-acb9-6092e5a65073",
     "prevId": "00000000-0000-0000-0000-000000000000",
     "tables": {
         "agent_runs": {
@@ -21,8 +21,8 @@
                     "notNull": true,
                     "autoincrement": false
                 },
-                "assumption_id": {
-                    "name": "assumption_id",
+                "lead_id": {
+                    "name": "lead_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": false,
@@ -137,9 +137,9 @@
                     "columns": ["investigation_id", "status"],
                     "isUnique": false
                 },
-                "agent_runs_assumption_idx": {
-                    "name": "agent_runs_assumption_idx",
-                    "columns": ["assumption_id"],
+                "agent_runs_lead_idx": {
+                    "name": "agent_runs_lead_idx",
+                    "columns": ["lead_id"],
                     "isUnique": false
                 }
             },
@@ -153,104 +153,11 @@
                     "onDelete": "cascade",
                     "onUpdate": "no action"
                 },
-                "agent_runs_assumption_id_assumptions_id_fk": {
-                    "name": "agent_runs_assumption_id_assumptions_id_fk",
+                "agent_runs_lead_id_leads_id_fk": {
+                    "name": "agent_runs_lead_id_leads_id_fk",
                     "tableFrom": "agent_runs",
-                    "tableTo": "assumptions",
-                    "columnsFrom": ["assumption_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "checkConstraints": {}
-        },
-        "assumptions": {
-            "name": "assumptions",
-            "columns": {
-                "id": {
-                    "name": "id",
-                    "type": "text",
-                    "primaryKey": true,
-                    "notNull": true,
-                    "autoincrement": false
-                },
-                "investigation_id": {
-                    "name": "investigation_id",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "autoincrement": false
-                },
-                "cycle": {
-                    "name": "cycle",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "autoincrement": false,
-                    "default": 0
-                },
-                "statement": {
-                    "name": "statement",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "autoincrement": false
-                },
-                "rationale": {
-                    "name": "rationale",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "autoincrement": false
-                },
-                "status": {
-                    "name": "status",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "autoincrement": false,
-                    "default": "'open'"
-                },
-                "outcome": {
-                    "name": "outcome",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false,
-                    "autoincrement": false
-                },
-                "created_at": {
-                    "name": "created_at",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "autoincrement": false,
-                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
-                },
-                "updated_at": {
-                    "name": "updated_at",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "autoincrement": false,
-                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
-                }
-            },
-            "indexes": {
-                "assumptions_investigation_status_idx": {
-                    "name": "assumptions_investigation_status_idx",
-                    "columns": ["investigation_id", "status"],
-                    "isUnique": false
-                }
-            },
-            "foreignKeys": {
-                "assumptions_investigation_id_investigations_id_fk": {
-                    "name": "assumptions_investigation_id_investigations_id_fk",
-                    "tableFrom": "assumptions",
-                    "tableTo": "investigations",
-                    "columnsFrom": ["investigation_id"],
+                    "tableTo": "leads",
+                    "columnsFrom": ["lead_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -277,8 +184,8 @@
                     "notNull": true,
                     "autoincrement": false
                 },
-                "assumption_id": {
-                    "name": "assumption_id",
+                "lead_id": {
+                    "name": "lead_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": false,
@@ -376,11 +283,11 @@
                     "onDelete": "cascade",
                     "onUpdate": "no action"
                 },
-                "capability_requests_assumption_id_assumptions_id_fk": {
-                    "name": "capability_requests_assumption_id_assumptions_id_fk",
+                "capability_requests_lead_id_leads_id_fk": {
+                    "name": "capability_requests_lead_id_leads_id_fk",
                     "tableFrom": "capability_requests",
-                    "tableTo": "assumptions",
-                    "columnsFrom": ["assumption_id"],
+                    "tableTo": "leads",
+                    "columnsFrom": ["lead_id"],
                     "columnsTo": ["id"],
                     "onDelete": "set null",
                     "onUpdate": "no action"
@@ -481,8 +388,8 @@
                     "notNull": true,
                     "autoincrement": false
                 },
-                "assumption_id": {
-                    "name": "assumption_id",
+                "lead_id": {
+                    "name": "lead_id",
                     "type": "text",
                     "primaryKey": false,
                     "notNull": true,
@@ -551,11 +458,11 @@
                     "onDelete": "cascade",
                     "onUpdate": "no action"
                 },
-                "findings_assumption_id_assumptions_id_fk": {
-                    "name": "findings_assumption_id_assumptions_id_fk",
+                "findings_lead_id_leads_id_fk": {
+                    "name": "findings_lead_id_leads_id_fk",
                     "tableFrom": "findings",
-                    "tableTo": "assumptions",
-                    "columnsFrom": ["assumption_id"],
+                    "tableTo": "leads",
+                    "columnsFrom": ["lead_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
@@ -714,6 +621,99 @@
             },
             "indexes": {},
             "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "leads": {
+            "name": "leads",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "cycle": {
+                    "name": "cycle",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": 0
+                },
+                "statement": {
+                    "name": "statement",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "rationale": {
+                    "name": "rationale",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'open'"
+                },
+                "outcome": {
+                    "name": "outcome",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "leads_investigation_status_idx": {
+                    "name": "leads_investigation_status_idx",
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "leads_investigation_id_investigations_id_fk": {
+                    "name": "leads_investigation_id_investigations_id_fk",
+                    "tableFrom": "leads",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
             "checkConstraints": {}

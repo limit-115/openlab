@@ -1,8 +1,8 @@
-import type { Assumption } from "@openlab/protocol/assumptions/assumption.types";
 import type { CapabilityRequest } from "@openlab/protocol/capabilities/capability-request.types";
 import type { InvestigationRequest } from "@openlab/protocol/investigation-input/investigation-input.types";
 import type { InvestigationSummary } from "@openlab/protocol/investigation-status/investigation-summary.types";
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
+import type { Lead } from "@openlab/protocol/leads/lead.types";
 
 export class LabApiError extends Error {
     readonly status: number;
@@ -43,8 +43,8 @@ export class LabApiClient {
         return this.request<StatusSnapshot>(`${this.investigationPath(investigationId)}/status`);
     }
 
-    assumptions(investigationId: string): Promise<Assumption[]> {
-        return this.request<Assumption[]>(`${this.investigationPath(investigationId)}/assumptions`);
+    leads(investigationId: string): Promise<Lead[]> {
+        return this.request<Lead[]>(`${this.investigationPath(investigationId)}/leads`);
     }
 
     inspect(investigationId: string, entityId: string): Promise<unknown> {

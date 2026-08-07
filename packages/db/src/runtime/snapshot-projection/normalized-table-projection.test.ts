@@ -1,15 +1,15 @@
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
     agentRuns,
-    assumptions,
     capabilityRequests,
     findings,
+    leads,
     verdicts
 } from "#src/lab-database/lab-schema";
 import { openTestDatabase, type TestDatabase } from "#src/lab-database/test-database";
@@ -38,13 +38,13 @@ describe("Runtime snapshot normalized table projection", () => {
     it("projects checkpoint state into normalized tables and removes stale rows", async () => {
         const input = makeInput();
         const snapshot = makeSnapshot(testInvestigationId("projection"), input);
-        const abandonedAssumptionId = `${snapshot.investigation.id}-assumption-abandoned`;
-        snapshot.assumptions.push({
-            id: abandonedAssumptionId,
+        const abandonedLeadId = `${snapshot.investigation.id}-lead-abandoned`;
+        snapshot.leads.push({
+            id: abandonedLeadId,
             cycle: 0,
             statement: "The bottleneck is lock contention",
             rationale: "The profile shows time in the scheduler",
-            status: AssumptionStatus.OPEN,
+            status: LeadStatus.OPEN,
             created_at: snapshot.investigation.started_at,
             updated_at: snapshot.investigation.updated_at
         });
@@ -56,8 +56,8 @@ describe("Runtime snapshot normalized table projection", () => {
         });
 
         expect(
-            await database.db.query.assumptions.findMany({
-                where: eq(assumptions.investigationId, snapshot.investigation.id)
+            await database.db.query.leads.findMany({
+                where: eq(leads.investigationId, snapshot.investigation.id)
             })
         ).toHaveLength(2);
         expect(
@@ -79,24 +79,22 @@ describe("Runtime snapshot normalized table projection", () => {
 
         const updated = structuredClone(snapshot);
         updated.investigation.updated_at = "2026-08-02T00:10:00.000Z";
-        updated.assumptions = updated.assumptions.filter(({ id }) => id !== abandonedAssumptionId);
-        const researchedAssumption = updated.assumptions[0];
+        updated.leads = updated.leads.filter(({ id }) => id !== abandonedLeadId);
+        const researchedLead = updated.leads[0];
         const finding = updated.findings[0];
         const verifierRun = updated.runs[2];
         const capability = updated.capability_requests[0];
         if (
-            researchedAssumption === undefined ||
+            researchedLead === undefined ||
             finding === undefined ||
             verifierRun === undefined ||
             capability === undefined
         ) {
-            throw new Error(
-                "Projection fixture must carry an assumption, finding, run and request"
-            );
+            throw new Error("Projection fixture must carry an lead, finding, run and request");
         }
         finding.status = FindingStatus.CONFIRMED;
-        researchedAssumption.status = AssumptionStatus.CONFIRMED;
-        researchedAssumption.updated_at = updated.investigation.updated_at;
+        researchedLead.status = LeadStatus.CONFIRMED;
+        researchedLead.updated_at = updated.investigation.updated_at;
         verifierRun.status = AgentRunStatus.SUCCEEDED;
         verifierRun.finished_at = updated.investigation.updated_at;
         updated.verdicts = [
@@ -117,8 +115,8 @@ describe("Runtime snapshot normalized table projection", () => {
         const committed = await persistence.commit({ snapshot: updated, expectedRevision: 1 });
         expect(committed.revision).toBe(2);
         expect(
-            await database.db.query.assumptions.findMany({
-                where: eq(assumptions.investigationId, snapshot.investigation.id)
+            await database.db.query.leads.findMany({
+                where: eq(leads.investigationId, snapshot.investigation.id)
             })
         ).toHaveLength(1);
         expect(
@@ -154,7 +152,7 @@ describe("Runtime snapshot normalized table projection", () => {
         if (orphanedFinding === undefined) {
             throw new Error("Projection fixture must carry a finding");
         }
-        orphanedFinding.assumption_id = `${snapshot.investigation.id}-missing-assumption`;
+        orphanedFinding.lead_id = `${snapshot.investigation.id}-missing-lead`;
         orphanedFinding.status = FindingStatus.REFUTED;
         invalid.investigation.updated_at = "2026-08-02T00:11:00.000Z";
         await expect(
@@ -168,7 +166,7 @@ describe("Runtime snapshot normalized table projection", () => {
                     invalid.investigation.updated_at
                 )
             })
-        ).rejects.toThrow(`references missing assumption ${orphanedFinding.assumption_id}`);
+        ).rejects.toThrow(`references missing lead ${orphanedFinding.lead_id}`);
 
         expect((await persistence.load(snapshot.investigation.id))?.checkpoint.revision).toBe(2);
         expect(

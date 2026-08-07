@@ -17,7 +17,7 @@ export const InvestigationSummarySchema = z.object({
     updated_at: z.iso.datetime(),
     uptime_ms: z.number().nonnegative(),
     harness_kinds: z.array(z.enum(AgentHarnessKind)).nonempty(),
-    assumption_count: z.number().int().nonnegative(),
+    lead_count: z.number().int().nonnegative(),
     finding_count: z.number().int().nonnegative(),
     confirmed_finding_count: z.number().int().nonnegative(),
     open_capability_count: z.number().int().nonnegative(),

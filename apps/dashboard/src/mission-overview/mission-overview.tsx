@@ -1,5 +1,5 @@
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import { useTranslation } from "react-i18next";
 import {
     GOAL_REASON,
@@ -18,8 +18,8 @@ interface MissionOverviewProps {
 
 export function MissionOverview({ snapshot }: MissionOverviewProps) {
     const { t } = useTranslation(MISSION_OVERVIEW_NAMESPACE);
-    const liveBets = snapshot.assumptions.filter(
-        ({ status }) => status === AssumptionStatus.OPEN || status === AssumptionStatus.RESEARCHING
+    const liveBets = snapshot.leads.filter(
+        ({ status }) => status === LeadStatus.OPEN || status === LeadStatus.RESEARCHING
     ).length;
 
     return (
@@ -32,11 +32,11 @@ export function MissionOverview({ snapshot }: MissionOverviewProps) {
                     <p className={GOAL_REASON}>{snapshot.investigation.reason}</p>
                 ) : null}
                 <p className={MISSION_META}>
-                    {snapshot.assumptions.length > 0 ? (
+                    {snapshot.leads.length > 0 ? (
                         <span>
-                            {t("betsLive", {
+                            {t("leadsLive", {
                                 live: liveBets,
-                                count: snapshot.assumptions.length
+                                count: snapshot.leads.length
                             })}
                         </span>
                     ) : null}

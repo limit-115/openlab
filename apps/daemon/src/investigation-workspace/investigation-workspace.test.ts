@@ -5,7 +5,6 @@ import { WakeTrigger } from "@openlab/core/investigation-lifecycle/wake-trigger.
 import type { PersistedRuntime } from "@openlab/db/runtime/runtime-persistence.types";
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
 import type { Finding } from "@openlab/protocol/findings/finding.types";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
@@ -13,6 +12,7 @@ import { EventType } from "@openlab/protocol/investigation-events/event-type.con
 import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
 import type { InvestigationInput } from "@openlab/protocol/investigation-input/investigation-input.types";
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import { afterEach, describe, expect, it } from "vitest";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { WorkspaceFile } from "#src/investigation-workspace/investigation-workspace.const";
@@ -34,7 +34,7 @@ function workspaceRootOf(workspace: InvestigationWorkspace): string {
     return path.dirname(path.dirname(workspace.runDirectory));
 }
 
-/** Fills a workspace with the bet, run and claim a verdict needs something to point at. */
+/** Fills a workspace with the lead, run and claim a verdict needs something to point at. */
 async function claimFinding(
     workspace: InvestigationWorkspace,
     confirmed: boolean
@@ -42,7 +42,7 @@ async function claimFinding(
     const timestamp = new Date().toISOString();
     const finding: Finding = {
         id: "finding-1",
-        assumption_id: "assumption-1",
+        lead_id: "lead-1",
         run_id: "run-researcher-1",
         claim: "Reordering eviction by recency removes the stall",
         work: "Patched the allocator and measured the workload forty times",
@@ -51,12 +51,12 @@ async function claimFinding(
         created_at: timestamp
     };
     await workspace.update((draft) => {
-        draft.assumptions.push({
-            id: "assumption-1",
+        draft.leads.push({
+            id: "lead-1",
             cycle: 0,
             statement: "The eviction order is the bottleneck",
             rationale: "Nobody measures eviction under this access pattern",
-            status: AssumptionStatus.RESEARCHING,
+            status: LeadStatus.RESEARCHING,
             created_at: timestamp,
             updated_at: timestamp
         });
@@ -64,8 +64,8 @@ async function claimFinding(
             {
                 id: "run-researcher-1",
                 role: AgentRole.RESEARCHER,
-                assumption_id: "assumption-1",
-                objective: "Spend the eviction bet",
+                lead_id: "lead-1",
+                objective: "Spend the eviction lead",
                 status: AgentRunStatus.SUCCEEDED,
                 cwd: "/tmp/researcher",
                 started_at: timestamp
@@ -73,7 +73,7 @@ async function claimFinding(
             {
                 id: "run-verifier-1",
                 role: AgentRole.VERIFIER,
-                assumption_id: "assumption-1",
+                lead_id: "lead-1",
                 objective: "Check the eviction claim",
                 status: AgentRunStatus.SUCCEEDED,
                 cwd: "/tmp/verifier",
@@ -101,7 +101,7 @@ describe("InvestigationWorkspace", () => {
 
         expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         const journal = JSON.parse(
-            await readFile(path.join(workspace.runDirectory, WorkspaceFile.ASSUMPTIONS), "utf8")
+            await readFile(path.join(workspace.runDirectory, WorkspaceFile.LEADS), "utf8")
         );
         expect(journal).toEqual([]);
     });
@@ -218,7 +218,7 @@ describe("InvestigationWorkspace", () => {
         const workspace = await createWorkspace();
         const request = await workspace.requestCapability({
             need: "A licensed corpus",
-            reason: "The bet is blocked on an operator-held resource",
+            reason: "The lead is blocked on an operator-held resource",
             provisioningHint: "Point the run at a local copy",
             selfProvisioningAttempt: "Searched the public mirrors and found only redistributions",
             blocking: true
@@ -285,16 +285,16 @@ describe("InvestigationWorkspace", () => {
         ).toBe(CapabilityStatus.OPEN);
     });
 
-    it("writes a report of the spent bets before hibernating", async () => {
+    it("writes a report of the spent leads before hibernating", async () => {
         const workspace = await createWorkspace();
         await claimFinding(workspace, false);
         await workspace.update((draft) => {
-            const [assumption] = draft.assumptions;
-            if (assumption === undefined) {
-                throw new Error("Expected the seeded assumption");
+            const [lead] = draft.leads;
+            if (lead === undefined) {
+                throw new Error("Expected the seeded lead");
             }
-            assumption.status = AssumptionStatus.EXHAUSTED;
-            assumption.outcome = "Eviction order made no difference under any load";
+            lead.status = LeadStatus.EXHAUSTED;
+            lead.outcome = "Eviction order made no difference under any load";
         });
 
         await workspace.hibernate("The director has nowhere else to look");

@@ -3,10 +3,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { InvestigationRepository } from "#src/investigations/investigation-repository";
 import {
     agentRuns,
-    assumptions,
     capabilityRequests,
     events,
     findings,
+    leads,
     runtimeCheckpoints
 } from "#src/lab-database/lab-schema";
 import { openTestDatabase, type TestDatabase } from "#src/lab-database/test-database";
@@ -33,7 +33,7 @@ describe("InvestigationRepository", () => {
         await database.close();
     });
 
-    /** An investigation with everything that hangs off it: bets, runs, findings, requests, events. */
+    /** An investigation with everything that hangs off it: leads, runs, findings, requests, events. */
     async function open(name: string): Promise<string> {
         const input = makeInput();
         const snapshot = makeSnapshot(testInvestigationId(name), input);
@@ -51,8 +51,8 @@ describe("InvestigationRepository", () => {
     }
 
     async function history(): Promise<Record<string, number>> {
-        const [bets, runs, claims, requests, log, checkpoints] = await Promise.all([
-            database.db.select().from(assumptions),
+        const [leadRows, runs, claims, requests, log, checkpoints] = await Promise.all([
+            database.db.select().from(leads),
             database.db.select().from(agentRuns),
             database.db.select().from(findings),
             database.db.select().from(capabilityRequests),
@@ -60,7 +60,7 @@ describe("InvestigationRepository", () => {
             database.db.select().from(runtimeCheckpoints)
         ]);
         return {
-            assumptions: bets.length,
+            leads: leadRows.length,
             runs: runs.length,
             findings: claims.length,
             capabilityRequests: requests.length,
@@ -76,7 +76,7 @@ describe("InvestigationRepository", () => {
         expect(await repository.delete(investigationId)).toBe(true);
 
         expect(await history()).toEqual({
-            assumptions: 0,
+            leads: 0,
             runs: 0,
             findings: 0,
             capabilityRequests: 0,
@@ -100,7 +100,7 @@ describe("InvestigationRepository", () => {
 
         expect(await repository.listIds()).toEqual([kept]);
         expect(await history()).toEqual({
-            assumptions: 1,
+            leads: 1,
             runs: 3,
             findings: 1,
             capabilityRequests: 1,

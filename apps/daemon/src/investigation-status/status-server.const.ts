@@ -21,7 +21,7 @@ export const LabRoute = {
 export const InvestigationRoute = {
     ONE: "/api/investigations/:id",
     STATUS: "/api/investigations/:id/status",
-    ASSUMPTIONS: "/api/investigations/:id/assumptions",
+    LEADS: "/api/investigations/:id/leads",
     CAPABILITIES: "/api/investigations/:id/capabilities",
     ANSWER_CAPABILITY: "/api/investigations/:id/capabilities/:capabilityId/answer",
     INSPECT: "/api/investigations/:id/inspect/:entityId",

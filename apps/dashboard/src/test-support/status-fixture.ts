@@ -1,7 +1,6 @@
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { AgentEffortLevel, AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import {
     CapabilityRequestType,
     CapabilityStatus
@@ -10,6 +9,7 @@ import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 
 const now = "2026-08-02T10:00:00.000Z";
 
@@ -22,22 +22,22 @@ export const statusFixture: StatusSnapshot = {
         updated_at: now,
         uptime_ms: 3_600_000
     },
-    assumptions: [
+    leads: [
         {
-            id: "assumption-landmarks",
+            id: "lead-landmarks",
             cycle: 0,
             statement: "Sparse landmarks are the part nobody has measured properly",
             rationale: "Every published comparison uses dense landmarks and stops there",
-            status: AssumptionStatus.RESEARCHING,
+            status: LeadStatus.RESEARCHING,
             created_at: now,
             updated_at: now
         },
         {
-            id: "assumption-contraction",
+            id: "lead-contraction",
             cycle: 0,
             statement: "Contraction hierarchies hide the real cost in preprocessing",
             rationale: "Preprocessing time is reported separately and never counted",
-            status: AssumptionStatus.EXHAUSTED,
+            status: LeadStatus.EXHAUSTED,
             outcome: "Preprocessing was already counted; the reported totals hold up",
             created_at: now,
             updated_at: now
@@ -47,7 +47,7 @@ export const statusFixture: StatusSnapshot = {
         {
             id: "run-researcher-landmarks",
             role: AgentRole.RESEARCHER,
-            assumption_id: "assumption-landmarks",
+            lead_id: "lead-landmarks",
             objective: "Reach the goal through sparse landmarks",
             status: AgentRunStatus.RUNNING,
             cwd: "/tmp/investigation-alpha/researcher-000",
@@ -62,7 +62,7 @@ export const statusFixture: StatusSnapshot = {
     findings: [
         {
             id: "finding-landmarks",
-            assumption_id: "assumption-landmarks",
+            lead_id: "lead-landmarks",
             run_id: "run-researcher-landmarks",
             claim: "Sparse landmarks cut node expansions by 42% while staying admissible",
             work: "Implemented the heuristic, ran it over held-out maps, and checked optimality on every route",

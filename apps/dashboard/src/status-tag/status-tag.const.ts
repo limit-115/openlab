@@ -1,7 +1,7 @@
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import type { BadgeVariant, TaggedStatus } from "#src/status-tag/status-tag.types";
 
 /**
@@ -20,10 +20,10 @@ export const STATUS_TAG_TONE: Record<TaggedStatus, BadgeVariant> = {
     [AgentRunStatus.TIMED_OUT]: ADVERSE_TONE,
     [AgentRunStatus.CANCELLED]: ADVERSE_TONE,
     [AgentRunStatus.BLOCKED]: PENDING_TONE,
-    [AssumptionStatus.OPEN]: PENDING_TONE,
-    [AssumptionStatus.RESEARCHING]: RUNNING_TONE,
-    [AssumptionStatus.EXHAUSTED]: ADVERSE_TONE,
-    [AssumptionStatus.CONFIRMED]: SETTLED_TONE,
+    [LeadStatus.OPEN]: PENDING_TONE,
+    [LeadStatus.RESEARCHING]: RUNNING_TONE,
+    [LeadStatus.EXHAUSTED]: ADVERSE_TONE,
+    [LeadStatus.CONFIRMED]: SETTLED_TONE,
     [FindingStatus.UNVERIFIED]: PENDING_TONE,
     [FindingStatus.REFUTED]: ADVERSE_TONE,
     [CapabilityStatus.ANSWERED]: SETTLED_TONE

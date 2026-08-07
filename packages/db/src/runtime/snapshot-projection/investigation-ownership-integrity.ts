@@ -2,9 +2,9 @@ import type { StatusSnapshot } from "@openlab/protocol/investigation-status/stat
 import { inArray } from "drizzle-orm";
 import {
     agentRuns,
-    assumptions,
     capabilityRequests,
     findings,
+    leads,
     verdicts
 } from "#src/lab-database/lab-schema";
 import { idsOf } from "#src/runtime/snapshot-projection/projected-entity-record";
@@ -18,19 +18,19 @@ export async function assertEntityOwnership(
     database: RuntimeProjectionDatabase,
     snapshot: StatusSnapshot
 ): Promise<void> {
-    const assumptionIds = idsOf(snapshot.assumptions);
+    const leadIds = idsOf(snapshot.leads);
     const runIds = idsOf(snapshot.runs);
     const findingIds = idsOf(snapshot.findings);
     const verdictIds = idsOf(snapshot.verdicts);
     const capabilityIds = idsOf(snapshot.capability_requests);
-    const [ownedAssumptions, ownedRuns, ownedFindings, ownedVerdicts, ownedCapabilities] =
+    const [ownedLeads, ownedRuns, ownedFindings, ownedVerdicts, ownedCapabilities] =
         await Promise.all([
-            assumptionIds.length === 0
+            leadIds.length === 0
                 ? []
                 : database
-                      .select({ id: assumptions.id, investigationId: assumptions.investigationId })
-                      .from(assumptions)
-                      .where(inArray(assumptions.id, assumptionIds)),
+                      .select({ id: leads.id, investigationId: leads.investigationId })
+                      .from(leads)
+                      .where(inArray(leads.id, leadIds)),
             runIds.length === 0
                 ? []
                 : database
@@ -60,7 +60,7 @@ export async function assertEntityOwnership(
                       .where(inArray(capabilityRequests.id, capabilityIds))
         ]);
     const foreign = [
-        ...ownedAssumptions,
+        ...ownedLeads,
         ...ownedRuns,
         ...ownedFindings,
         ...ownedVerdicts,

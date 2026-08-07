@@ -2,18 +2,18 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { agentRuns, assumptions } from "@openlab/db/lab-database/lab-schema";
+import { agentRuns, leads } from "@openlab/db/lab-database/lab-schema";
 import { openTestDatabase, type TestDatabase } from "@openlab/db/lab-database/test-database";
 import { RuntimePersistence } from "@openlab/db/runtime/runtime-persistence";
 import { RuntimeRevisionConflictError } from "@openlab/db/runtime/runtime-revision-conflict";
 import { AgentRunStatus } from "@openlab/protocol/agent-runs/agent-run-status.const";
 import { AgentRole } from "@openlab/protocol/agents/agent-role.const";
-import { AssumptionStatus } from "@openlab/protocol/assumptions/assumption-status.const";
 import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-request.const";
 import { FindingStatus } from "@openlab/protocol/findings/finding-status.const";
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
 import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/investigation-state.const";
+import { LeadStatus } from "@openlab/protocol/leads/lead-status.const";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import { WorkspaceFile } from "#src/investigation-workspace/investigation-workspace.const";
@@ -38,24 +38,24 @@ async function reopen(
     return InvestigationWorkspace.open(workspaceRoot, persisted, persistence);
 }
 
-/** Seeds one bet and the run that took it, which is the smallest projectable research state. */
+/** Seeds one lead and the run that took it, which is the smallest projectable research state. */
 async function seedBet(workspace: InvestigationWorkspace, statement: string): Promise<string> {
-    const id = `assumption-${randomUUID()}`;
+    const id = `lead-${randomUUID()}`;
     await workspace.update((draft) => {
         const timestamp = draft.investigation.updated_at;
-        draft.assumptions.push({
+        draft.leads.push({
             id,
             cycle: 0,
             statement,
             rationale: "Recorded by an integration test",
-            status: AssumptionStatus.RESEARCHING,
+            status: LeadStatus.RESEARCHING,
             created_at: timestamp,
             updated_at: timestamp
         });
         draft.runs.push({
             id: `run-${id}`,
             role: AgentRole.RESEARCHER,
-            assumption_id: id,
+            lead_id: id,
             objective: statement,
             status: AgentRunStatus.RUNNING,
             cwd: workspace.runDirectory,
@@ -101,11 +101,11 @@ describe("InvestigationWorkspace recovery", () => {
         expect(
             new Set([first.investigationId, second.investigationId, repeated.investigationId]).size
         ).toBe(3);
-        await seedBet(first, "The first investigation bets here");
-        await seedBet(repeated, "The rerun bets somewhere else");
-        const projectedAssumptions = await database.db.select().from(assumptions);
+        await seedBet(first, "The first investigation leads here");
+        await seedBet(repeated, "The rerun leads somewhere else");
+        const projectedLeads = await database.db.select().from(leads);
         const projectedRuns = await database.db.select().from(agentRuns);
-        expect(projectedAssumptions.map(({ investigationId }) => investigationId).sort()).toEqual(
+        expect(projectedLeads.map(({ investigationId }) => investigationId).sort()).toEqual(
             [first.investigationId, repeated.investigationId].sort()
         );
         expect(projectedRuns.map(({ investigationId }) => investigationId).sort()).toEqual(
@@ -169,12 +169,12 @@ describe("InvestigationWorkspace recovery", () => {
             Date.parse(externalSnapshot.investigation.updated_at) + 1_000
         ).toISOString();
         externalSnapshot.investigation.updated_at = externalTimestamp;
-        externalSnapshot.assumptions.push({
-            id: "assumption-concurrent-writer",
+        externalSnapshot.leads.push({
+            id: "lead-concurrent-writer",
             cycle: 0,
             statement: "A concurrent writer committed first",
             rationale: "Recorded by another process",
-            status: AssumptionStatus.OPEN,
+            status: LeadStatus.OPEN,
             created_at: externalTimestamp,
             updated_at: externalTimestamp
         });
@@ -197,9 +197,9 @@ describe("InvestigationWorkspace recovery", () => {
         ).resolves.toEqual([beforeStatusFile, beforeEventsFile]);
         const persisted = await persistence.load(workspace.investigationId);
         expect(persisted?.checkpoint.revision).toBe(externalCommit.revision);
-        expect(
-            persisted?.checkpoint.snapshot.assumptions.map(({ statement }) => statement)
-        ).toContain("A concurrent writer committed first");
+        expect(persisted?.checkpoint.snapshot.leads.map(({ statement }) => statement)).toContain(
+            "A concurrent writer committed first"
+        );
         expect(persisted?.checkpoint.snapshot.investigation.state).toBe(InvestigationState.RUNNING);
         expect(await persistence.eventsAfter(workspace.investigationId)).toEqual([]);
     });
@@ -216,13 +216,13 @@ describe("InvestigationWorkspace recovery", () => {
         await workspace.appendEvent(EventType.INVESTIGATION_STARTED, {
             source: "integration-test"
         });
-        const assumptionId = await seedBet(workspace, "PostgreSQL checkpoint survived");
+        const leadId = await seedBet(workspace, "PostgreSQL checkpoint survived");
         await workspace.update((draft) => {
             const timestamp = draft.investigation.updated_at;
             draft.findings.push({
                 id: "finding-durable",
-                assumption_id: assumptionId,
-                run_id: `run-${assumptionId}`,
+                lead_id: leadId,
+                run_id: `run-${leadId}`,
                 claim: "PostgreSQL preserves what the researcher claimed",
                 work: "Wrote the claim, restarted the runtime, read it back",
                 artifact_paths: [],
@@ -233,14 +233,14 @@ describe("InvestigationWorkspace recovery", () => {
         await Promise.all([
             writeFile(path.join(workspace.runDirectory, WorkspaceFile.STATUS), "corrupt"),
             writeFile(path.join(workspace.runDirectory, WorkspaceFile.EVENTS), "corrupt"),
-            writeFile(path.join(workspace.runDirectory, WorkspaceFile.ASSUMPTIONS), "corrupt")
+            writeFile(path.join(workspace.runDirectory, WorkspaceFile.LEADS), "corrupt")
         ]);
 
         const recovered = await reopen(workspaceRoot, persistence, workspace.investigationId);
 
         expect(recovered.recovered).toBe(true);
         expect(recovered.investigationId).toBe(workspace.investigationId);
-        expect(recovered.getSnapshot().assumptions.map(({ statement }) => statement)).toContain(
+        expect(recovered.getSnapshot().leads.map(({ statement }) => statement)).toContain(
             "PostgreSQL checkpoint survived"
         );
         expect(recovered.getSnapshot().findings.map(({ id }) => id)).toEqual(["finding-durable"]);
@@ -253,17 +253,17 @@ describe("InvestigationWorkspace recovery", () => {
             )
         ).resolves.toMatchObject({ investigation: { id: workspace.investigationId } });
         await expect(
-            readFile(path.join(workspace.runDirectory, WorkspaceFile.ASSUMPTIONS), "utf8").then(
+            readFile(path.join(workspace.runDirectory, WorkspaceFile.LEADS), "utf8").then(
                 JSON.parse
             )
-        ).resolves.toMatchObject([{ id: assumptionId, findings: [{ id: "finding-durable" }] }]);
+        ).resolves.toMatchObject([{ id: leadId, findings: [{ id: "finding-durable" }] }]);
         expect(
             await database.db.query.findings.findFirst({
                 where: (finding, { eq }) => eq(finding.id, "finding-durable")
             })
         ).toMatchObject({
             investigationId: workspace.investigationId,
-            assumptionId,
+            leadId,
             status: FindingStatus.UNVERIFIED
         });
 

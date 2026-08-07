@@ -54,7 +54,7 @@ export async function runStructuredAgent<Output>(
 
     const activityRun = activity.startRun({
         run_id: runId,
-        ...(input.assumptionId === undefined ? {} : { assumption_id: input.assumptionId }),
+        ...(input.leadId === undefined ? {} : { lead_id: input.leadId }),
         role: agentWorkspace.role,
         execution,
         artifact_directory: agentWorkspace.artifactDirectory,

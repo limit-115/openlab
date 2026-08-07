@@ -34,7 +34,7 @@ export const LAB_MAINTENANCE_EN = {
     purging: "Purging",
     purgeTitle: "Purge every investigation?",
     purgeConsequence:
-        "Every investigation stops, and its bets, findings, verdicts and directory are deleted along with every directory left behind. This cannot be undone.",
+        "Every investigation stops, and its leads, findings, verdicts and directory are deleted along with every directory left behind. This cannot be undone.",
     purgeConfirm: "Purge it all",
     purgeCancel: "Keep the lab",
     purgeFailure: "The lab could not be purged."
@@ -68,7 +68,7 @@ export const LAB_MAINTENANCE_RU = {
     purging: "Очистка",
     purgeTitle: "Очистить все исследования?",
     purgeConsequence:
-        "Все исследования останавливаются, их ставки, находки, вердикты и каталоги удаляются вместе со всеми оставшимися каталогами. Это необратимо.",
+        "Все исследования останавливаются, их зацепки, находки, вердикты и каталоги удаляются вместе со всеми оставшимися каталогами. Это необратимо.",
     purgeConfirm: "Очистить всё",
     purgeCancel: "Оставить как есть",
     purgeFailure: "Лабораторию не удалось очистить."

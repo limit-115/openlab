@@ -62,7 +62,7 @@ describe("RuntimePersistence", () => {
             },
             persistedAt: snapshot.investigation.updated_at
         });
-        expect(recovered?.checkpoint.snapshot.assumptions).toEqual(snapshot.assumptions);
+        expect(recovered?.checkpoint.snapshot.leads).toEqual(snapshot.leads);
         expect(recovered?.checkpoint.snapshot.runs).toEqual(snapshot.runs);
         expect(recovered?.checkpoint.snapshot.findings).toEqual(snapshot.findings);
         expect(recovered?.checkpoint.snapshot.result).toEqual(snapshot.result);
@@ -83,7 +83,7 @@ describe("RuntimePersistence", () => {
         });
         const updated = structuredClone(snapshot);
         updated.investigation.state = InvestigationState.HIBERNATING;
-        updated.investigation.reason = "The director has no further bets to place";
+        updated.investigation.reason = "The director has no further leads to open";
         updated.investigation.updated_at = "2026-08-02T00:05:00.000Z";
         const hibernated = makeEvent(
             EventType.INVESTIGATION_HIBERNATED,
@@ -106,7 +106,7 @@ describe("RuntimePersistence", () => {
         ]);
 
         const ghost = makeEvent(
-            EventType.ASSUMPTION_EXHAUSTED,
+            EventType.LEAD_EXHAUSTED,
             snapshot.investigation.id,
             "event-ghost",
             "2026-08-02T00:06:00.000Z"

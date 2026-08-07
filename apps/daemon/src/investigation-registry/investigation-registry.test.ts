@@ -202,7 +202,7 @@ describe("InvestigationRegistry", () => {
                     goal: "Summarise this investigation",
                     state: InvestigationState.RUNNING,
                     open_capability_count: 1,
-                    assumption_count: 0,
+                    lead_count: 0,
                     finding_count: 0
                 })
             ]);

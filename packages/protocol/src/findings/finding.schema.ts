@@ -12,7 +12,7 @@ export const FindingStatusSchema = z.enum(FindingStatus);
  */
 export const FindingSchema = z.object({
     id: IdentifierSchema,
-    assumption_id: IdentifierSchema,
+    lead_id: IdentifierSchema,
     run_id: IdentifierSchema,
     claim: z.string().trim().min(1),
     work: z.string().trim().min(1),

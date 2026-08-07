@@ -2,35 +2,23 @@ import type { StatusSnapshot } from "@openlab/protocol/investigation-status/stat
 import { idsOf } from "#src/runtime/snapshot-projection/projected-entity-record";
 
 export function assertProjectionRelationships(snapshot: StatusSnapshot): void {
-    assertUniqueIds("assumption", idsOf(snapshot.assumptions));
+    assertUniqueIds("lead", idsOf(snapshot.leads));
     assertUniqueIds("agent run", idsOf(snapshot.runs));
     assertUniqueIds("finding", idsOf(snapshot.findings));
     assertUniqueIds("verdict", idsOf(snapshot.verdicts));
     assertUniqueIds("capability request", idsOf(snapshot.capability_requests));
 
-    const assumptionIds = new Set(idsOf(snapshot.assumptions));
+    const leadIds = new Set(idsOf(snapshot.leads));
     const runIds = new Set(idsOf(snapshot.runs));
     const findingIds = new Set(idsOf(snapshot.findings));
 
     for (const run of snapshot.runs) {
-        if (run.assumption_id !== undefined) {
-            assertRelatedEntity(
-                "agent run",
-                run.id,
-                "assumption",
-                run.assumption_id,
-                assumptionIds
-            );
+        if (run.lead_id !== undefined) {
+            assertRelatedEntity("agent run", run.id, "lead", run.lead_id, leadIds);
         }
     }
     for (const finding of snapshot.findings) {
-        assertRelatedEntity(
-            "finding",
-            finding.id,
-            "assumption",
-            finding.assumption_id,
-            assumptionIds
-        );
+        assertRelatedEntity("finding", finding.id, "lead", finding.lead_id, leadIds);
         assertRelatedEntity("finding", finding.id, "agent run", finding.run_id, runIds);
     }
     for (const verdict of snapshot.verdicts) {

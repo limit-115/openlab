@@ -3,6 +3,11 @@ import type { Verdict } from "@openlab/protocol/verdicts/verdict.types";
 import { ChevronRightIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger
+} from "#src/design-system/collapsible";
+import {
     FINDING_ARTIFACTS,
     FINDING_CLAIM,
     FINDING_DISCLOSURE,
@@ -11,13 +16,8 @@ import {
     FINDING_ENTRY,
     FINDING_PROSE,
     FINDING_SECTION_LABEL
-} from "#src/assumptions/assumption-card.const";
-import { type ASSUMPTIONS_EN, ASSUMPTIONS_NAMESPACE } from "#src/assumptions/assumptions.i18n";
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger
-} from "#src/design-system/collapsible";
+} from "#src/leads/lead-card.const";
+import { type LEADS_EN, LEADS_NAMESPACE } from "#src/leads/leads.i18n";
 import { StatusTag } from "#src/status-tag/status-tag";
 
 interface FindingEntryProps {
@@ -30,7 +30,7 @@ interface FindingEntryProps {
  * in full, so the disclosure holds them whole rather than trimming either to a preview.
  */
 export function FindingEntry({ finding, verdict }: FindingEntryProps) {
-    const { t } = useTranslation(ASSUMPTIONS_NAMESPACE);
+    const { t } = useTranslation(LEADS_NAMESPACE);
 
     return (
         <Collapsible asChild>
@@ -72,7 +72,7 @@ export function FindingEntry({ finding, verdict }: FindingEntryProps) {
 }
 
 /** Which of the three things the disclosure has to say, before it is said in any language. */
-function verdictSummary(verdict: Verdict | undefined): keyof typeof ASSUMPTIONS_EN {
+function verdictSummary(verdict: Verdict | undefined): keyof typeof LEADS_EN {
     if (verdict === undefined) {
         return "verdictPending";
     }

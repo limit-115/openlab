@@ -9,26 +9,26 @@ export const CapabilityRequestCandidateSchema = z.object({
 
 const CapabilityRequestCandidatesSchema = z.array(CapabilityRequestCandidateSchema).default([]);
 
-const AssumptionCandidateSchema = z.object({
+const LeadCandidateSchema = z.object({
     statement: z.string().trim().min(1),
     rationale: z.string().trim().min(1)
 });
 
 /**
  * What the director comes back with. `reconnaissance` is its own account of what it looked at
- * before betting, kept because the next director round reads it. The bets themselves carry no
+ * before opening any leads, kept because the next director round reads it. The leads themselves carry no
  * evaluator, no success contract and no falsification test: a researcher decides what testing its
- * bet means.
+ * lead means.
  */
 export const DirectorPlanSchema = z.object({
     reconnaissance: z.string().trim().min(1),
-    assumptions: z.array(AssumptionCandidateSchema).min(1),
+    leads: z.array(LeadCandidateSchema).min(1),
     capability_requests: CapabilityRequestCandidatesSchema
 });
 
 /**
  * What a researcher comes back with. Either it found something, and then it says what it claims and
- * how it got there, or it did not, and the bet is closed on the strength of `work` alone.
+ * how it got there, or it did not, and the lead is closed on the strength of `work` alone.
  */
 export const ResearchResultSchema = z
     .object({
@@ -88,6 +88,6 @@ export const VerificationResultSchema = z
 
 export type CapabilityRequestCandidate = z.infer<typeof CapabilityRequestCandidateSchema>;
 export type DirectorPlan = z.infer<typeof DirectorPlanSchema>;
-export type AssumptionCandidate = z.infer<typeof AssumptionCandidateSchema>;
+export type LeadCandidate = z.infer<typeof LeadCandidateSchema>;
 export type ResearchResult = z.infer<typeof ResearchResultSchema>;
 export type VerificationResult = z.infer<typeof VerificationResultSchema>;
