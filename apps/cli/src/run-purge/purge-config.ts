@@ -4,6 +4,7 @@ import { z } from "zod";
 
 export interface PurgeConfig {
     readonly workspaceRoot: string;
+    readonly environment: Readonly<NodeJS.ProcessEnv>;
 }
 
 /** Which lab home a purge is about. Its database is inside it, so there is nothing else to find. */
@@ -18,6 +19,7 @@ export function resolvePurgeConfig(): PurgeConfig {
     });
 
     return {
-        workspaceRoot: resolveLabHome(environment)
+        workspaceRoot: resolveLabHome(environment),
+        environment: process.env
     };
 }

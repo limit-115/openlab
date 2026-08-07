@@ -426,6 +426,12 @@ program
         }
 
         const result = await purgeRuns(config);
+        if (result.retainedCliHistory.length > 0) {
+            note(
+                result.retainedCliHistory.join("\n"),
+                "Each agent CLI keeps its own record of what it ran, beside your interactive sessions. The lab does not delete these"
+            );
+        }
         outro(
             `Purged ${result.purgedDirectoryCount} run director${result.purgedDirectoryCount === 1 ? "y" : "ies"} and ${result.purgedInvestigationRowCount} investigation row(s)`
         );
