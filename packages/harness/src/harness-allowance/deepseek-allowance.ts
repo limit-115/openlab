@@ -25,7 +25,7 @@ export async function readDeepseekAllowance(
     return {
         kind: HarnessKinds.DEEPSEEK,
         plan: null,
-        balance: wallet.balance,
+        balances: wallet.balances,
         spent: !wallet.available,
         windows: []
     };

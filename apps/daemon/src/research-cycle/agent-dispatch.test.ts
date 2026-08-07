@@ -19,6 +19,7 @@ import { CapabilityStatus } from "@openlab/protocol/capabilities/capability-requ
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import { InvestigationInputSchema } from "@openlab/protocol/investigation-input/investigation-input.schema";
 import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
+import { SpendCapKinds } from "@openlab/protocol/spend-caps/spend-cap.const";
 import { describe, expect, it } from "vitest";
 import { harnessEvents, harnessRunResult } from "#src/agent-activity/agent-activity.fixture";
 import { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
@@ -99,7 +100,7 @@ function readings(spent: readonly HarnessKind[]): HarnessAllowanceReadings {
         read: async (kind): Promise<HarnessAllowanceReading> => ({
             kind,
             plan: "max",
-            balance: null,
+            balances: [],
             spent: false,
             windows: [
                 {
@@ -118,7 +119,7 @@ function partlySpentReadings(usedPercent: number): HarnessAllowanceReadings {
         read: async (kind): Promise<HarnessAllowanceReading> => ({
             kind,
             plan: "max",
-            balance: null,
+            balances: [],
             spent: false,
             windows: [
                 {
@@ -134,6 +135,7 @@ function partlySpentReadings(usedPercent: number): HarnessAllowanceReadings {
 function cappedSettings(...harnesses: readonly AgentHarnessKind[]): LabSettingsReader {
     const settings = LabSettingsSchema.parse({
         spend_caps: harnesses.map((harness) => ({
+            kind: SpendCapKinds.WINDOW_PERCENT,
             harness,
             window_minutes: WEEKLY_WINDOW_MINUTES,
             max_used_percent: WEEKLY_CAP_PERCENT

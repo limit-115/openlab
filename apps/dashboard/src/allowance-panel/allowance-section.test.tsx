@@ -2,6 +2,7 @@ import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const
 import { HarnessAllowanceState } from "@openlab/protocol/harness-allowance/harness-allowance.const";
 import type { HarnessAllowanceRoster } from "@openlab/protocol/harness-allowance/harness-allowance.types";
 import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
+import { SpendCapKinds } from "@openlab/protocol/spend-caps/spend-cap.const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -21,8 +22,17 @@ function roster(readAt: string, usedPercent: number): HarnessAllowanceRoster {
             harness: AgentHarnessKind.GLM,
             state: HarnessAllowanceState.AVAILABLE,
             plan: "pro",
-            balance: null,
             windows: [{ duration_minutes: 300, used_percent: usedPercent, resets_at: null }],
+            balances: [],
+            error: null,
+            read_at: readAt
+        },
+        {
+            harness: AgentHarnessKind.DEEPSEEK,
+            state: HarnessAllowanceState.AVAILABLE,
+            plan: null,
+            windows: [],
+            balances: [{ currency: "USD", amount: "42.50" }],
             error: null,
             read_at: readAt
         }
@@ -163,8 +173,98 @@ describe("HarnessAllowanceSection", () => {
         await userEvent.click(screen.getByRole("button", { name: HARNESS_ALLOWANCE_EN.capSave }));
 
         expect(savedCaps(request)).toEqual([
-            { harness: AgentHarnessKind.GLM, window_minutes: 300, max_used_percent: 98 }
+            {
+                kind: SpendCapKinds.WINDOW_PERCENT,
+                harness: AgentHarnessKind.GLM,
+                window_minutes: 300,
+                max_used_percent: 98
+            }
         ]);
+    });
+
+    it("hands the lab the floor the operator typed under a wallet", async () => {
+        const request = respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(HARNESS_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5.00");
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_ALLOWANCE_EN.capSave }));
+
+        expect(savedCaps(request)).toEqual([
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.DEEPSEEK,
+                currency: "USD",
+                minimum_balance: "5.00"
+            }
+        ]);
+    });
+
+    /**
+     * Half a dollar, typed the way it is said. The save is what it costs to get this wrong: the
+     * document would be refused over a schema the operator never saw, with nothing on the page
+     * looking any different from a floor that saved.
+     */
+    it("hands the lab nought point five from a floor typed as .5", async () => {
+        const request = respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(HARNESS_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, ".5");
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_ALLOWANCE_EN.capSave }));
+
+        expect(savedCaps(request)).toEqual([
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.DEEPSEEK,
+                currency: "USD",
+                minimum_balance: "0.5"
+            }
+        ]);
+    });
+
+    /** The operator meant five and left the cents for later, which is five however long they leave it. */
+    it("hands the lab five from a floor left standing at 5.", async () => {
+        const request = respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(HARNESS_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5.");
+        await userEvent.click(screen.getByRole("button", { name: HARNESS_ALLOWANCE_EN.capSave }));
+
+        expect(savedCaps(request)).toEqual([
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.DEEPSEEK,
+                currency: "USD",
+                minimum_balance: "5"
+            }
+        ]);
+    });
+
+    /** Typing the cents has to stay possible, which is the whole reason the draft keeps the point. */
+    it("keeps the point on screen while the cents are still being typed", async () => {
+        respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(HARNESS_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5.25");
+
+        expect(field).toHaveValue("5.25");
+    });
+
+    /**
+     * The field holds the number the lab will compare against a balance, so anything it could not
+     * compare never reaches the draft — and the operator is not told about a schema after the fact.
+     */
+    it("refuses a floor that is not money as it is typed", async () => {
+        respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(HARNESS_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5 dollars");
+
+        expect(field).toHaveValue("5");
     });
 
     it("stands the limiters where the lab is holding, not where they were dragged", async () => {
@@ -172,7 +272,12 @@ describe("HarnessAllowanceSection", () => {
             LabSettingsSchema.parse({}),
             LabSettingsSchema.parse({
                 spend_caps: [
-                    { harness: AgentHarnessKind.GLM, window_minutes: 300, max_used_percent: 45 }
+                    {
+                        kind: SpendCapKinds.WINDOW_PERCENT,
+                        harness: AgentHarnessKind.GLM,
+                        window_minutes: 300,
+                        max_used_percent: 45
+                    }
                 ]
             })
         );

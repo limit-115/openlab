@@ -1,6 +1,7 @@
 import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { HarnessAllowanceState } from "@openlab/protocol/harness-allowance/harness-allowance.const";
 import type { HarnessAllowanceRoster } from "@openlab/protocol/harness-allowance/harness-allowance.types";
+import { SpendCapKinds } from "@openlab/protocol/spend-caps/spend-cap.const";
 import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -11,11 +12,11 @@ const ROSTER: HarnessAllowanceRoster = [
         harness: AgentHarnessKind.CLAUDE,
         state: HarnessAllowanceState.AVAILABLE,
         plan: "max",
-        balance: null,
         windows: [
             { duration_minutes: 300, used_percent: 41, resets_at: "2026-08-03T17:40:00.000Z" },
             { duration_minutes: 10_080, used_percent: 28, resets_at: "2026-08-08T07:00:00.000Z" }
         ],
+        balances: [],
         error: null,
         read_at: "2026-08-03T12:00:00.000Z"
     },
@@ -23,10 +24,10 @@ const ROSTER: HarnessAllowanceRoster = [
         harness: AgentHarnessKind.CODEX,
         state: HarnessAllowanceState.EXHAUSTED,
         plan: "plus",
-        balance: null,
         windows: [
             { duration_minutes: 10_080, used_percent: 100, resets_at: "2026-08-09T13:50:53.000Z" }
         ],
+        balances: [],
         error: null,
         read_at: "2026-08-03T12:00:00.000Z"
     },
@@ -34,8 +35,8 @@ const ROSTER: HarnessAllowanceRoster = [
         harness: AgentHarnessKind.GLM,
         state: HarnessAllowanceState.UNREADABLE,
         plan: null,
-        balance: null,
         windows: [],
+        balances: [],
         error: "No ZCode login store at /Users/operator/.zcode/v2/config.json",
         read_at: "2026-08-03T12:00:00.000Z"
     },
@@ -43,15 +44,29 @@ const ROSTER: HarnessAllowanceRoster = [
         harness: AgentHarnessKind.DEEPSEEK,
         state: HarnessAllowanceState.AVAILABLE,
         plan: null,
-        balance: "4.21 USD",
         windows: [],
+        balances: [{ currency: "USD", amount: "42.50" }],
         error: null,
         read_at: "2026-08-03T12:00:00.000Z"
     }
 ];
 
-const CLAUDE_SESSION_CAP = [
-    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+const CLAUDE_SESSION_CAP: SpendCaps = [
+    {
+        kind: SpendCapKinds.WINDOW_PERCENT,
+        harness: AgentHarnessKind.CLAUDE,
+        window_minutes: 300,
+        max_used_percent: 40
+    }
+];
+
+const DEEPSEEK_FLOOR: SpendCaps = [
+    {
+        kind: SpendCapKinds.WALLET_FLOOR,
+        harness: AgentHarnessKind.DEEPSEEK,
+        currency: "USD",
+        minimum_balance: "50.00"
+    }
 ];
 
 function renderList(caps: SpendCaps = [], heldBy: SpendCaps = caps) {
@@ -61,6 +76,7 @@ function renderList(caps: SpendCaps = [], heldBy: SpendCaps = caps) {
             caps={caps}
             heldBy={heldBy}
             setCap={() => undefined}
+            setFloor={() => undefined}
         />
     );
 }
@@ -76,14 +92,14 @@ describe("HarnessAllowanceList", () => {
         expect(week.map((meter) => meter.value)).toEqual([28, 100]);
     });
 
-    it("marks the harness the lab will pass over", () => {
+    it("marks the subscription the lab will pass over", () => {
         renderList();
 
         expect(screen.getByText("No allowance left")).toBeInTheDocument();
         expect(screen.getByText("Plus")).toBeInTheDocument();
     });
 
-    it("gives the vendor's reason in full when a harness could not be read", () => {
+    it("gives the vendor's reason in full when a subscription could not be read", () => {
         renderList();
 
         expect(
@@ -105,7 +121,7 @@ describe("HarnessAllowanceList", () => {
         ).toBe("100");
     });
 
-    it("says which harness the lab is holding back at the operator's own cap", () => {
+    it("says which subscription the lab is holding back at the operator's own cap", () => {
         renderList(CLAUDE_SESSION_CAP);
 
         expect(screen.getByText("Held at your cap")).toBeInTheDocument();
@@ -118,21 +134,45 @@ describe("HarnessAllowanceList", () => {
         expect(screen.queryByText("Held at your cap")).not.toBeInTheDocument();
     });
 
-    /**
-     * A wallet reading carries no windows, so without its balance a token-billed harness would sit
-     * on the page as a name and nothing else — which is how it used to reach here before money and
-     * plan tiers became separate readings.
-     */
-    it("states what a token-billed harness has left, which is all it has to report", () => {
-        renderList();
-
-        expect(screen.getByText("4.21 USD")).toBeInTheDocument();
-    });
-
     it("meters without a limiter where the caps are not the page's to move", () => {
         render(<HarnessAllowanceList allowances={ROSTER} caps={[]} heldBy={[]} />);
 
         expect(screen.queryByRole("slider")).not.toBeInTheDocument();
         expect(screen.getByLabelText("5 hours window")).toBeInTheDocument();
+    });
+
+    it("shows what a wallet holds and offers a floor to keep money in it", () => {
+        renderList();
+
+        expect(screen.getByText("42.50 USD left")).toBeInTheDocument();
+        expect(screen.getByText("no floor")).toBeInTheDocument();
+        expect(screen.getByLabelText("Keep at least")).toHaveValue("");
+    });
+
+    it("stands the wallet field at the floor the operator set, and says where it stops", () => {
+        renderList(DEEPSEEK_FLOOR);
+
+        expect(screen.getByLabelText("Keep at least")).toHaveValue("50.00");
+        expect(screen.getByText("stops at 50.00 USD")).toBeInTheDocument();
+    });
+
+    it("says which wallet the lab is holding back at the floor under it", () => {
+        renderList(DEEPSEEK_FLOOR);
+
+        expect(screen.getByText("Held at your cap")).toBeInTheDocument();
+    });
+
+    /** A wallet has no full to be a share of, so there is money and a field and no meter at all. */
+    it("draws no meter over a wallet", () => {
+        renderList();
+
+        expect(screen.queryByLabelText("USD window")).not.toBeInTheDocument();
+    });
+
+    it("shows the money without a field where the caps are not the page's to move", () => {
+        render(<HarnessAllowanceList allowances={ROSTER} caps={[]} heldBy={[]} />);
+
+        expect(screen.getByText("42.50 USD left")).toBeInTheDocument();
+        expect(screen.queryByLabelText("Keep at least")).not.toBeInTheDocument();
     });
 });

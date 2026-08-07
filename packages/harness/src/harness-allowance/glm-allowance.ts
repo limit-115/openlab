@@ -36,7 +36,7 @@ export function glmAllowanceFromQuota(payload: unknown): HarnessAllowanceReading
     return {
         kind: HarnessKinds.GLM,
         plan: quota.level ?? null,
-        balance: null,
+        balances: [],
         spent: false,
         windows: quota.limits
             .filter((limit) => SPENDING_LIMIT_TYPES.includes(limit.type))

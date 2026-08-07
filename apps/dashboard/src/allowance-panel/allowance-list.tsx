@@ -4,7 +4,12 @@ import type {
     HarnessAllowance,
     HarnessAllowanceRoster
 } from "@openlab/protocol/harness-allowance/harness-allowance.types";
-import { windowSpendCap, withheldWindows } from "@openlab/protocol/spend-caps/spend-cap";
+import {
+    walletSpendFloor,
+    windowSpendCap,
+    withheldBalances,
+    withheldWindows
+} from "@openlab/protocol/spend-caps/spend-cap";
 import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
 import { useTranslation } from "react-i18next";
 import { HARNESS_NAME } from "#src/agent-harness/harness-name.const";
@@ -23,29 +28,33 @@ import {
 import { HARNESS_ALLOWANCE_NAMESPACE } from "#src/allowance-panel/allowance-panel.i18n";
 import { allowanceWindowName } from "#src/allowance-panel/allowance-window-label";
 import { SpendCapMeter } from "#src/allowance-panel/spend-cap-meter";
+import { WalletFloorField } from "#src/allowance-panel/wallet-floor-field";
 import { Badge } from "#src/design-system/badge";
 import { cn } from "#src/design-system/class-names";
 
 interface HarnessAllowanceListProps {
     allowances: HarnessAllowanceRoster;
-    /** Where the limiters stand on the page, which is where the operator has dragged them. */
+    /** Where the limiters stand on the page, which is where the operator has dragged or typed them. */
     caps: SpendCaps;
     /** The caps the lab has actually been given, which decide what it is doing right now. */
     heldBy: SpendCaps;
     /** Absent where the runtime serves no settings: the caps are then not the page's to move. */
     setCap?: (harness: AgentHarnessKind, windowMinutes: number, percent: number) => void;
+    setFloor?: (harness: AgentHarnessKind, currency: string, floor: string) => void;
 }
 
 /**
- * One card per subscription: what each of its windows has left, and the point the lab stops
- * spending it. The readings are drawn as a plain list under the block's heading rather than boxed
- * in a card that would repeat it.
+ * One card per account: what each of its meters has left, and the point the lab stops spending it.
+ * A vendor that sells a subscription meters windows and a vendor that sells tokens meters money, so
+ * a card carries whichever of the two answered — and an account that meters neither says that in
+ * words, because a card with nothing on it reads as a reading that failed.
  */
 export function HarnessAllowanceList({
     allowances,
     caps,
     heldBy,
-    setCap
+    setCap,
+    setFloor
 }: HarnessAllowanceListProps) {
     const { t } = useTranslation(HARNESS_ALLOWANCE_NAMESPACE);
     const windowLabel = (durationMinutes: number): string => {
@@ -57,20 +66,36 @@ export function HarnessAllowanceList({
         <ul className={ALLOWANCE_LIST} aria-label={t("title")}>
             {allowances.map((allowance) => {
                 const held = withheldWindows(allowance, heldBy);
+                const drained = withheldBalances(allowance, heldBy);
+                const meters = allowance.windows.length + allowance.balances.length;
                 return (
                     <li
                         key={allowance.harness}
                         className={cn(
                             ALLOWANCE_CARD,
                             (allowance.state === HarnessAllowanceState.EXHAUSTED ||
-                                held.length > 0) &&
+                                held.length > 0 ||
+                                drained.length > 0) &&
                                 ALLOWANCE_CARD_SPENT
                         )}
                     >
-                        <AllowanceHeader allowance={allowance} withheld={held.length > 0} />
+                        <AllowanceHeader
+                            allowance={allowance}
+                            withheld={held.length > 0 || drained.length > 0}
+                        />
                         {allowance.state === HarnessAllowanceState.UNREADABLE ? (
                             <p className={ALLOWANCE_ERROR}>{allowance.error}</p>
-                        ) : (
+                        ) : null}
+                        {/**
+                         * A reading that succeeded and found neither meter. Saying so is the whole
+                         * point: an empty card reads as a reading that failed, and an operator
+                         * deciding whether to leave an investigation running overnight has to be
+                         * told that this vendor publishes nothing rather than left to infer it.
+                         */}
+                        {allowance.state !== HarnessAllowanceState.UNREADABLE && meters === 0 ? (
+                            <p className={ALLOWANCE_ERROR}>{t("unmetered")}</p>
+                        ) : null}
+                        {meters === 0 ? null : (
                             <ul className={ALLOWANCE_WINDOW_LIST}>
                                 {allowance.windows.map((window) => (
                                     <li key={window.duration_minutes} className={ALLOWANCE_WINDOW}>
@@ -91,6 +116,29 @@ export function HarnessAllowanceList({
                                                               allowance.harness,
                                                               window.duration_minutes,
                                                               percent
+                                                          )
+                                                  })}
+                                        />
+                                    </li>
+                                ))}
+                                {allowance.balances.map((balance) => (
+                                    <li key={balance.currency} className={ALLOWANCE_WINDOW}>
+                                        <WalletFloorField
+                                            balance={balance}
+                                            floor={walletSpendFloor(
+                                                caps,
+                                                allowance.harness,
+                                                balance.currency
+                                            )}
+                                            withheld={drained.includes(balance)}
+                                            {...(setFloor === undefined
+                                                ? {}
+                                                : {
+                                                      setFloor: (floor: string) =>
+                                                          setFloor(
+                                                              allowance.harness,
+                                                              balance.currency,
+                                                              floor
                                                           )
                                                   })}
                                         />
@@ -121,13 +169,6 @@ function AllowanceHeader({
                 <Badge variant="outline" className={ALLOWANCE_PLAN_NAME}>
                     {subscriptionPlanName(allowance.plan)}
                 </Badge>
-            )}
-            {/**
-             * A balance is money and stays in the vendor's own spelling: capitalizing it the way a
-             * plan tier is capitalized would present a wallet as a plan the operator had bought.
-             */}
-            {allowance.balance === null ? null : (
-                <Badge variant="outline">{allowance.balance}</Badge>
             )}
             {allowance.state === HarnessAllowanceState.EXHAUSTED ? (
                 <Badge variant="destructive">{t("exhausted")}</Badge>

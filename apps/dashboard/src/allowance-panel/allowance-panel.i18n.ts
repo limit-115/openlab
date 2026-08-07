@@ -3,13 +3,13 @@ import type { Translated } from "#src/interface-language/translation-catalog.typ
 export const HARNESS_ALLOWANCE_NAMESPACE = "harness-allowance" as const;
 
 export const HARNESS_ALLOWANCE_EN = {
-    title: "Allowances",
+    title: "Subscriptions",
     description:
-        "What each harness has left, and how far into it the lab may spend. Drag a limiter to stop the lab dispatching before a window runs out; a run already under way still finishes, and an investigation can be told to spend past the caps. A harness billed by the token carries no window, so it states a balance and takes no limiter.",
+        "What each account has left, and how far into it the lab may spend. Drag a limiter to stop the lab dispatching before a subscription window runs out, or floor a wallet to stop it before the money does; a run already under way still finishes, and an investigation can be told to spend past both.",
     pending: "Asking the vendors what is left",
-    emptyTitle: "No allowance readings",
+    emptyTitle: "No subscription readings",
     emptyDescription:
-        "The local runtime is not reporting what the harnesses have left, so the lab is dispatching without seeing their allowance.",
+        "The local runtime is not reporting what the subscriptions have left, so the lab is dispatching without seeing their allowance.",
 
     readAt: "Read at",
     autoRefresh_one: "Refreshes on its own every minute",
@@ -19,6 +19,8 @@ export const HARNESS_ALLOWANCE_EN = {
 
     exhausted: "No allowance left",
     withheld: "Held at your cap",
+    unmetered:
+        "This vendor publishes no meter for the account, so there is nothing to read and no cap to set. It is billed by the token after the fact.",
     used: "{{window}} · {{percent}}% used",
     resets: "resets {{at}}",
     meter: "{{window}} window",
@@ -26,6 +28,10 @@ export const HARNESS_ALLOWANCE_EN = {
     capStops: "stops at {{percent}}%",
     capNone: "no cap",
     capMeter: "{{window}} spend cap",
+    walletLeft: "{{amount}} {{currency}} left",
+    floorStops: "stops at {{amount}} {{currency}}",
+    floorNone: "no floor",
+    floorKeep: "Keep at least",
     capSave: "Save the caps",
     capSaving: "Saving",
     capSaved: "The lab is dispatching by these",
@@ -45,13 +51,13 @@ export const HARNESS_ALLOWANCE_EN = {
 };
 
 export const HARNESS_ALLOWANCE_RU = {
-    title: "Лимиты",
+    title: "Подписки",
     description:
-        "Сколько осталось у каждой оболочки и до какой отметки лаборатория может это тратить. Перетащите ограничитель, чтобы она перестала отправлять работу раньше, чем окно закончится: уже запущенный агент доработает, а отдельному исследованию можно разрешить тратить дальше ограничителя. У оболочки с оплатой по токенам окна нет — она показывает баланс и ограничителя не принимает.",
+        "Сколько осталось у каждого аккаунта и до какой отметки лаборатория может его тратить. Перетащите ограничитель, чтобы она перестала отправлять работу раньше, чем закончится окно подписки, или поставьте кошельку нижнюю границу, чтобы она остановилась раньше, чем закончатся деньги: уже запущенный агент доработает, а отдельному исследованию можно разрешить тратить дальше обоих.",
     pending: "Спрашиваем у вендоров, сколько осталось",
-    emptyTitle: "Нет данных по лимитам",
+    emptyTitle: "Нет данных по подпискам",
     emptyDescription:
-        "Локальная среда не сообщает, сколько осталось у оболочек, поэтому лаборатория отправляет работу, не видя их лимитов.",
+        "Локальная среда не сообщает, сколько осталось у подписок, поэтому лаборатория отправляет работу, не видя их лимитов.",
 
     readAt: "Считано",
     autoRefresh_one: "Обновляется само каждую минуту",
@@ -63,6 +69,8 @@ export const HARNESS_ALLOWANCE_RU = {
 
     exhausted: "Лимит исчерпан",
     withheld: "Придержана ограничителем",
+    unmetered:
+        "Вендор не публикует счётчик для этого аккаунта: читать нечего и ограничитель поставить не на что. Счёт выставляется по токенам постфактум.",
     used: "{{window}} · использовано {{percent}}%",
     resets: "сброс {{at}}",
     meter: "Окно {{window}}",
@@ -70,6 +78,10 @@ export const HARNESS_ALLOWANCE_RU = {
     capStops: "останов на {{percent}}%",
     capNone: "без ограничителя",
     capMeter: "Ограничитель расхода, окно {{window}}",
+    walletLeft: "осталось {{amount}} {{currency}}",
+    floorStops: "останов на {{amount}} {{currency}}",
+    floorNone: "без нижней границы",
+    floorKeep: "Оставлять не меньше",
     capSave: "Сохранить ограничители",
     capSaving: "Сохранение",
     capSaved: "Лаборатория работает с этими",

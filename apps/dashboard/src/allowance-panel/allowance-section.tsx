@@ -22,7 +22,12 @@ import {
     CAPS_FAILURE,
     CAPS_SAVED
 } from "#src/allowance-panel/allowance-section.const";
-import { hasCapEdits, withWindowCap } from "#src/allowance-panel/spend-cap-draft";
+import {
+    hasCapEdits,
+    settledCaps,
+    withWalletFloor,
+    withWindowCap
+} from "#src/allowance-panel/spend-cap-draft";
 import { Button } from "#src/design-system/button";
 import { Spinner } from "#src/design-system/spinner";
 import {
@@ -40,7 +45,7 @@ interface SpendCapEdit {
 }
 
 /**
- * What every harness the lab can run on has left, and how far into each one the lab may spend.
+ * What every subscription the lab can run on has left, and how far into each one the lab may spend.
  * The two belong on one block because neither is worth much alone: a cap is a mark on a reading,
  * and a reading with no cap on it does not say what the lab will actually do with the allowance.
  */
@@ -106,6 +111,17 @@ export function HarnessAllowanceSection() {
         save.reset();
     }
 
+    function moveFloor(harness: AgentHarnessKind, currency: string, floor: string): void {
+        if (edited === undefined) {
+            return;
+        }
+        setEdited({
+            saved: edited.saved,
+            draft: withWalletFloor(edited.draft, harness, currency, floor)
+        });
+        save.reset();
+    }
+
     const unsaved = edited !== undefined && hasCapEdits(edited.draft, edited.saved.spend_caps);
 
     return (
@@ -118,7 +134,7 @@ export function HarnessAllowanceSection() {
                 failed={refresh.isError}
                 caps={edited?.draft ?? []}
                 heldBy={edited?.saved.spend_caps ?? []}
-                {...(edited === undefined ? {} : { setCap: moveCap })}
+                {...(edited === undefined ? {} : { setCap: moveCap, setFloor: moveFloor })}
             />
 
             {unsaved ? (
@@ -132,7 +148,10 @@ export function HarnessAllowanceSection() {
                         type="button"
                         disabled={save.isPending}
                         onClick={() =>
-                            save.mutate({ ...edited.saved, spend_caps: [...edited.draft] })
+                            save.mutate({
+                                ...edited.saved,
+                                spend_caps: settledCaps(edited.draft)
+                            })
                         }
                     >
                         {save.isPending ? <Spinner aria-hidden="true" /> : null}
@@ -161,6 +180,7 @@ interface AllowanceReadingsProps {
     caps: SpendCaps;
     heldBy: SpendCaps;
     setCap?: (harness: AgentHarnessKind, windowMinutes: number, percent: number) => void;
+    setFloor?: (harness: AgentHarnessKind, currency: string, floor: string) => void;
 }
 
 /**
@@ -175,7 +195,8 @@ function AllowanceReadings({
     failed,
     caps,
     heldBy,
-    setCap
+    setCap,
+    setFloor
 }: AllowanceReadingsProps) {
     const { t } = useTranslation(HARNESS_ALLOWANCE_NAMESPACE);
 
@@ -203,6 +224,7 @@ function AllowanceReadings({
                 caps={caps}
                 heldBy={heldBy}
                 {...(setCap === undefined ? {} : { setCap })}
+                {...(setFloor === undefined ? {} : { setFloor })}
             />
         </>
     );

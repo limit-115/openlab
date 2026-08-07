@@ -4,6 +4,7 @@ import { AgentRole } from "#src/agents/agent-role.const";
 import { DEFAULT_HARNESS_KINDS } from "#src/investigation-input/investigation-input.const";
 import { DEFAULT_ROLE_EFFORT } from "#src/lab-settings/lab-settings.const";
 import { LabSettingsSchema } from "#src/lab-settings/lab-settings.schema";
+import { SpendCapKinds } from "#src/spend-caps/spend-cap.const";
 
 describe("LabSettingsSchema", () => {
     it("reads an unconfigured lab as the shipped roster with every role on its harness default", () => {
@@ -26,12 +27,44 @@ describe("LabSettingsSchema", () => {
     it("keeps the cap the operator set on one subscription window", () => {
         const settings = LabSettingsSchema.parse({
             spend_caps: [
-                { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 80 }
+                {
+                    kind: SpendCapKinds.WINDOW_PERCENT,
+                    harness: AgentHarnessKind.CLAUDE,
+                    window_minutes: 300,
+                    max_used_percent: 80
+                }
             ]
         });
 
         expect(settings.spend_caps).toEqual([
-            { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 80 }
+            {
+                kind: SpendCapKinds.WINDOW_PERCENT,
+                harness: AgentHarnessKind.CLAUDE,
+                window_minutes: 300,
+                max_used_percent: 80
+            }
+        ]);
+    });
+
+    it("keeps the floor the operator set under one wallet currency", () => {
+        const settings = LabSettingsSchema.parse({
+            spend_caps: [
+                {
+                    kind: SpendCapKinds.WALLET_FLOOR,
+                    harness: AgentHarnessKind.DEEPSEEK,
+                    currency: "USD",
+                    minimum_balance: "5.00"
+                }
+            ]
+        });
+
+        expect(settings.spend_caps).toEqual([
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.DEEPSEEK,
+                currency: "USD",
+                minimum_balance: "5.00"
+            }
         ]);
     });
 
@@ -39,8 +72,18 @@ describe("LabSettingsSchema", () => {
         expect(() =>
             LabSettingsSchema.parse({
                 spend_caps: [
-                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 80 },
-                    { harness: AgentHarnessKind.CLAUDE, window_minutes: 300, max_used_percent: 40 }
+                    {
+                        kind: SpendCapKinds.WINDOW_PERCENT,
+                        harness: AgentHarnessKind.CLAUDE,
+                        window_minutes: 300,
+                        max_used_percent: 80
+                    },
+                    {
+                        kind: SpendCapKinds.WINDOW_PERCENT,
+                        harness: AgentHarnessKind.CLAUDE,
+                        window_minutes: 300,
+                        max_used_percent: 40
+                    }
                 ]
             })
         ).toThrow();

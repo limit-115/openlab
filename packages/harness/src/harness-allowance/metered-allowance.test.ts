@@ -6,21 +6,44 @@ import { readMuseAllowance } from "#src/harness-allowance/muse-allowance";
 /**
  * The two token-billed harnesses answer in money, and money used to be reported in the field a plan
  * tier goes in — so the page rendered a wallet balance as though it named a plan the operator had
- * bought, styled and capitalised like one. A tier and an amount are separate readings now.
+ * bought, styled and capitalised like one. A tier and money are separate readings now.
  */
 describe("allowance readings for a token-billed harness", () => {
-    it("reports a DeepSeek wallet as a balance and names no plan", async () => {
+    it("reports a DeepSeek wallet as money per currency and names no plan", async () => {
         const allowance = await readDeepseekAllowance(undefined, () =>
-            Promise.resolve({ apiKey: "sk-test", available: true, balance: "4.21 USD" })
+            Promise.resolve({
+                apiKey: "sk-test",
+                available: true,
+                balances: [{ currency: "USD", amount: "4.21" }]
+            })
         );
 
         expect(allowance).toEqual({
             kind: HarnessKinds.DEEPSEEK,
             plan: null,
-            balance: "4.21 USD",
+            balances: [{ currency: "USD", amount: "4.21" }],
             spent: false,
             windows: []
         });
+    });
+
+    /**
+     * Every currency, because a floor is set under one of them. Folding a wallet into a single line
+     * would leave the operator unable to say which money the lab must stop short of.
+     */
+    it("carries each currency a wallet pays in rather than one line for all of them", async () => {
+        const allowance = await readDeepseekAllowance(undefined, () =>
+            Promise.resolve({
+                apiKey: "sk-test",
+                available: true,
+                balances: [
+                    { currency: "USD", amount: "4.21" },
+                    { currency: "CNY", amount: "30.00" }
+                ]
+            })
+        );
+
+        expect(allowance.balances.map(({ currency }) => currency)).toEqual(["USD", "CNY"]);
     });
 
     /**
@@ -30,18 +53,22 @@ describe("allowance readings for a token-billed harness", () => {
      */
     it("carries DeepSeek's own verdict that a wallet can no longer be spent", async () => {
         const allowance = await readDeepseekAllowance(undefined, () =>
-            Promise.resolve({ apiKey: "sk-test", available: false, balance: "0.00 USD" })
+            Promise.resolve({
+                apiKey: "sk-test",
+                available: false,
+                balances: [{ currency: "USD", amount: "0.00" }]
+            })
         );
 
         expect(allowance.spent).toBe(true);
     });
 
-    /** Meta states nothing, so the balance says that in words and no window can be capped. */
-    it("reports Muse Code as a balance Meta does not publish", async () => {
+    /** Meta meters neither way, so both meters come back empty and no window can be capped. */
+    it("reports Muse Code as an account with neither meter to read", async () => {
         const allowance = await readMuseAllowance();
 
         expect(allowance.plan).toBeNull();
-        expect(allowance.balance).toMatch(/no balance/iu);
+        expect(allowance.balances).toEqual([]);
         expect(allowance.windows).toEqual([]);
     });
 });

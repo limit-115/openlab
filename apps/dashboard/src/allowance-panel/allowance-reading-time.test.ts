@@ -9,8 +9,8 @@ function readAt(harness: AgentHarnessKind, read_at: string): HarnessAllowanceRos
         harness,
         state: HarnessAllowanceState.AVAILABLE,
         plan: "max",
-        balance: null,
         windows: [],
+        balances: [],
         error: null,
         read_at
     };

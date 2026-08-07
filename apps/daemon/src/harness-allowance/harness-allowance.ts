@@ -37,8 +37,14 @@ export function allowanceFromReading(
                 ? HarnessAllowanceState.EXHAUSTED
                 : HarnessAllowanceState.AVAILABLE,
         plan: reading.plan,
-        balance: reading.balance,
         windows,
+        /**
+         * Money the vendor stated, carried across unchanged. A wallet is never read as exhausted
+         * here however low it has fallen: an empty wallet is the vendor's own refusal to serve, and
+         * DeepSeek says that outright at preflight, while everything above empty is the operator's
+         * to draw a line under.
+         */
+        balances: [...reading.balances],
         error: null,
         read_at: readAt
     };
@@ -57,8 +63,8 @@ export function unreadableAllowance(
         harness: kind,
         state: HarnessAllowanceState.UNREADABLE,
         plan: null,
-        balance: null,
         windows: [],
+        balances: [],
         error: cause instanceof Error ? cause.message : String(cause),
         read_at: readAt
     };

@@ -8,7 +8,7 @@ import { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowan
 const TTL_MILLISECONDS = 60_000;
 
 function reading(windows: HarnessAllowanceReading["windows"]): HarnessAllowanceReading {
-    return { kind: HarnessKinds.CLAUDE, plan: "max", balance: null, spent: false, windows };
+    return { kind: HarnessKinds.CLAUDE, plan: "max", balances: [], spent: false, windows };
 }
 
 describe("HarnessAllowanceReadings", () => {
@@ -37,7 +37,7 @@ describe("HarnessAllowanceReadings", () => {
             read: async (kind): Promise<HarnessAllowanceReading> => ({
                 kind,
                 plan: null,
-                balance: "0.00 USD",
+                balances: [{ currency: "USD", amount: "0.00" }],
                 spent: true,
                 windows: []
             })
@@ -174,7 +174,7 @@ describe("HarnessAllowanceReadings", () => {
         const readings = new HarnessAllowanceReadings({
             read: async (kind) => {
                 asked += 1;
-                return { kind, plan: "max", balance: null, spent: false, windows: [] };
+                return { kind, plan: "max", balances: [], spent: false, windows: [] };
             },
             ttlMs: TTL_MILLISECONDS,
             now: () => 0
@@ -192,7 +192,7 @@ describe("HarnessAllowanceReadings", () => {
                 if (kind === HarnessKinds.CODEX) {
                     throw new Error("codex CLI is not installed");
                 }
-                return { kind, plan: "pro", balance: null, spent: false, windows: [] };
+                return { kind, plan: "pro", balances: [], spent: false, windows: [] };
             }
         });
 

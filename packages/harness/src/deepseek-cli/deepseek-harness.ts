@@ -29,7 +29,7 @@ import {
     DeepseekReasoningEfforts,
     DeepseekSessionDefaults
 } from "#src/deepseek-cli/deepseek-cli.const";
-import { resolveDeepseekWallet } from "#src/deepseek-cli/deepseek-credential";
+import { resolveDeepseekWallet, walletBalanceSummary } from "#src/deepseek-cli/deepseek-credential";
 import type {
     DeepseekWallet,
     ResolveDeepseekWallet
@@ -39,9 +39,10 @@ import type { SessionStore } from "#src/session-transcript/session-transcript.ty
 
 /**
  * DeepSeek driven through the Codex CLI, which speaks the Responses API that DeepSeek serves. It is
- * the one harness the lab runs that is not paid for by a subscription: the wallet behind the key is
- * spent by the token, so an investigation left running costs money for as long as it runs. Nothing
- * here caps that, and the setup page says so where the operator hands the key over.
+ * paid for by the wallet behind the key rather than by a subscription, so an investigation left
+ * running costs money for as long as it runs. What stops it is the floor the operator sets under the
+ * wallet: the balance is read before each dispatch, and the lab passes DeepSeek over while the money
+ * is down to what they asked to keep.
  */
 export class DeepseekHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.DEEPSEEK;
@@ -103,10 +104,11 @@ export class DeepseekHarness extends CliAgentHarness {
      */
     protected async parseAuthentication(): Promise<HarnessAuthentication> {
         const wallet = await this.#wallet();
+        const summary = walletBalanceSummary(wallet.balances);
         if (!wallet.available) {
             throw this.#unusableWallet(
                 new Error(
-                    `DeepSeek reports this wallet cannot be spent (${wallet.balance ?? "no balance stated"})`
+                    `DeepSeek reports this wallet cannot be spent (${summary ?? "no balance stated"})`
                 )
             );
         }
@@ -114,7 +116,7 @@ export class DeepseekHarness extends CliAgentHarness {
         return {
             method: HarnessAuthenticationMethods.DEEPSEEK_API_KEY,
             subscription: null,
-            wallet: wallet.balance
+            wallet: summary
         };
     }
 

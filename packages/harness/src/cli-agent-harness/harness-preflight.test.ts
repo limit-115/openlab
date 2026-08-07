@@ -62,7 +62,11 @@ describe("runHarnessPreflight", () => {
             ]),
             environment: testEnvironment(),
             resolveWallet: () =>
-                Promise.resolve({ apiKey: "sk-test", available: true, balance: "1.00 USD" })
+                Promise.resolve({
+                    apiKey: "sk-test",
+                    available: true,
+                    balances: [{ currency: "USD", amount: "1.00" }]
+                })
         });
 
         const refusal = await harness.preflight().then(

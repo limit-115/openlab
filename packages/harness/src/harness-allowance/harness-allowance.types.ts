@@ -13,18 +13,31 @@ export interface AllowanceWindow {
 }
 
 /**
- * What one vendor answered when asked what is left of the operator's account. A tier and an amount
- * are separate fields because they are separate facts, and the same split the preflight already
- * reports: a vendor that sells tiers names one and states no balance, a vendor that sells tokens
- * states a balance and has no tier. Putting money in `plan` would have the page render a wallet as
- * though it were a subscription the operator had bought.
+ * What one currency of a wallet holds. The amount stays a decimal string the whole way through: it
+ * is money, and a float would round the one number an operator sets a floor against.
+ */
+export interface WalletBalance {
+    readonly currency: string;
+    readonly amount: string;
+}
+
+/**
+ * What one vendor answered when asked what is left of the operator's account. A tier and money are
+ * separate fields because they are separate facts, and the same split the preflight already reports:
+ * a vendor that sells tiers names one and states no money, a vendor that sells tokens states money
+ * and has no tier. Putting money in `plan` would have the page render a wallet as though it were a
+ * subscription the operator had bought.
+ *
+ * A vendor fills whichever meter it sells by — a subscription reports windows, a wallet reports
+ * balances — and one that meters by neither answers with both empty, which is a reading that
+ * succeeded and found nothing to meter rather than a reading that failed.
  */
 export interface HarnessAllowanceReading {
     readonly kind: HarnessKind;
     /** The plan tier the vendor named. Null for a vendor that sells no tier. */
     readonly plan: string | null;
-    /** What a token-billed account has left to spend. Null for a subscription. */
-    readonly balance: string | null;
+    /** What a token-billed account has left, per currency. Empty for a subscription. */
+    readonly balances: readonly WalletBalance[];
     /**
      * The vendor has stopped serving this account, said outright rather than read off a meter. A
      * subscription says it through a window at its ceiling and leaves this false; a wallet has no

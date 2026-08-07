@@ -9,6 +9,7 @@ import {
     DeepseekCredentialStore
 } from "#src/deepseek-cli/deepseek-cli.const";
 import type { DeepseekWallet } from "#src/deepseek-cli/deepseek-credential.types";
+import type { WalletBalance } from "#src/harness-allowance/harness-allowance.types";
 
 const StoredCredentialSchema = z.looseObject({
     api_key: z.string().trim().min(1)
@@ -91,15 +92,23 @@ export async function resolveDeepseekWallet(signal?: AbortSignal): Promise<Deeps
     }
 
     const balance = BalanceSchema.parse(await response.json());
-    /**
-     * A wallet can hold more than one currency, and DeepSeek says whether it may be spent across all
-     * of them at once. Naming only the first would show an operator less money than they have, or
-     * none at all while another currency still pays, so every entry is stated.
-     */
-    const balances = balance.balance_infos.map((info) => `${info.total_balance} ${info.currency}`);
     return {
         apiKey,
         available: balance.is_available,
-        balance: balances.length === 0 ? null : balances.join(" · ")
+        balances: balance.balance_infos.map((info) => ({
+            currency: info.currency,
+            amount: info.total_balance
+        }))
     };
+}
+
+/**
+ * The wallet as one line, for the places that show an operator what is paying rather than compare it
+ * against anything. A wallet DeepSeek reported no currency for reads as nothing rather than as zero:
+ * the lab was told what the account holds and it was not a number.
+ */
+export function walletBalanceSummary(balances: readonly WalletBalance[]): string | null {
+    return balances.length === 0
+        ? null
+        : balances.map(({ amount, currency }) => `${amount} ${currency}`).join(" · ");
 }

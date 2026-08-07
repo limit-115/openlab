@@ -28,7 +28,7 @@ export function codexAllowanceFromRateLimits(payload: unknown): HarnessAllowance
     return {
         kind: HarnessKinds.CODEX,
         plan: limits.planType ?? null,
-        balance: null,
+        balances: [],
         spent: false,
         windows: [limits.primary, limits.secondary]
             .filter((window) => window !== null && window !== undefined)
