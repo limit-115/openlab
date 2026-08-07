@@ -5,8 +5,6 @@ on:
         branches: [main]
     pull_request:
 
-# A newer push makes an older run pointless, so the older one stops rather than finishing into a
-# result nobody will read.
 concurrency:
     group: ci-${{ github.ref }}
     cancel-in-progress: true
@@ -17,8 +15,6 @@ permissions:
 jobs:
     check:
         runs-on: blacksmith-4vcpu-ubuntu-2404
-        # Long enough for a slow runner, short enough that a hung test fails within the hour
-        # instead of holding a runner for the six that GitHub would otherwise allow it.
         timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
@@ -38,17 +34,11 @@ jobs:
 
             - run: pnpm install --frozen-lockfile
 
-            # The same command a developer runs: formatting, types, every test, every build.
             - run: pnpm check
 
-            # The installers are the lab's front door and nothing else reads them. POSIX sh is easy
-            # to get subtly wrong, and getting it wrong here means an operator who cannot install.
             - name: Lint the shell scripts
               run: shellcheck --shell=sh apps/landing/public/install.sh release/verify-release.sh
 
-    # Every platform is cross-compiled from one machine, which is how a release is cut, so this is
-    # built the same way rather than once per runner. Windows in particular cannot build its own:
-    # its archive is a zip, and `zip` is not a thing a Windows runner has.
     build:
         runs-on: blacksmith-4vcpu-ubuntu-2404
         timeout-minutes: 25
@@ -70,8 +60,6 @@ jobs:
 
             - run: pnpm install --frozen-lockfile
 
-            # The four targets that have a runner to be run on. A release builds all five; the one
-            # left out is darwin-x64, for which the hosted macOS images are no longer Intel.
             - run: pnpm release linux-x64 linux-arm64 darwin-arm64 windows-x64
 
             - uses: actions/upload-artifact@v7
@@ -80,17 +68,9 @@ jobs:
                   path: release/dist/
                   retention-days: 3
 
-    # A compiled lab can break while the sources still pass, because the runtime a release carries
-    # is not the one the tests ran on — and it breaks per platform. Until this ran, four of the five
-    # binaries a release publishes had never been started by anyone before an operator started them.
-    #
-    # darwin-x64 is the one still in that position: the hosted macOS images are arm64, so it is
-    # cross-compiled the same way as the four below and published unstarted.
     verify:
         needs: build
         strategy:
-            # One platform failing is a fact about that platform, and stopping the others hides
-            # whether it is the only one.
             fail-fast: false
             matrix:
                 include:
@@ -114,8 +94,6 @@ jobs:
                   name: release
                   path: release/dist
 
-            # Git Bash is on the Windows runner, so one script drives all three platforms rather
-            # than one script per shell that would then differ in what it checks.
             - name: Install, update and run the release
               shell: bash
               run: sh release/verify-release.sh ${{ matrix.target }}

@@ -1,13 +1,7 @@
 version: 2
 
-# Every version in this repository is pinned exactly, which is what makes a build reproducible and
-# what guarantees nothing tells you when to move. This is the half that tells you.
-#
-# Only actions are watched here. Dependabot's npm support does not update `pnpm-lock.yaml` for a
-# dependency held by a workspace package rather than by the root, so it would open pull requests
-# whose lockfile no longer matches their manifests, and every one of them would fail
-# `pnpm install --frozen-lockfile` in CI. A weekly pull request that cannot merge is worse than no
-# pull request. The npm half stays manual until it can be automated into something that passes.
+# Only actions are watched. Dependabot cannot update pnpm-lock.yaml for a dependency held by a
+# workspace package, so its npm pull requests fail --frozen-lockfile and cannot merge.
 updates:
     - package-ecosystem: github-actions
       directory: /
