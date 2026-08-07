@@ -21,7 +21,14 @@ we may close it without merging it, or never review it.
 
 ## UI Changes
 
-<!-- If this PR changes UI, include clear before/after screenshots.
+<!-- If this PR changes UI, include clear screenshots.
+
+     A "before" only exists where something was there before. If this PR adds a
+     new screen, block, or control, show the new state alone — a screenshot of
+     the empty page it used to be proves nothing, and staging one is worse than
+     omitting it. Pair before with after only when the surface already existed
+     and this PR changes or removes it.
+
      If the change involves motion or interaction, include a short video.
 
      This applies to agents too. Being an agent is not an exemption: run the
@@ -36,5 +43,5 @@ we may close it without merging it, or never review it.
 
 - [ ] This PR is small and focused
 - [ ] I explained what changed and why
-- [ ] I included before/after screenshots for any UI changes
+- [ ] I included screenshots for any UI changes, with a before only where one existed
 - [ ] I included a video for animation/interaction changes
