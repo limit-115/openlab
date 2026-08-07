@@ -377,6 +377,19 @@ describe("SpendCapsSchema", () => {
         ).toHaveLength(2);
     });
 
+    /**
+     * A lab that was already capped stays capped across the change that gave caps kinds. Dropping the
+     * entry would leave the operator's own instruction gone and the vendor's whole ceiling in force,
+     * with nothing on screen to say it had happened.
+     */
+    it("reads a cap stored before caps had kinds as the window cap it was", () => {
+        const stored = SpendCapsSchema.parse([
+            { harness: AgentHarnessKind.CLAUDE, window_minutes: SEVEN_DAYS, max_used_percent: 80 }
+        ]);
+
+        expect(windowSpendCap(stored, AgentHarnessKind.CLAUDE, SEVEN_DAYS)).toBe(80);
+    });
+
     it("refuses a floor that is not money, which nothing could be compared against", () => {
         expect(() =>
             SpendCapsSchema.parse([

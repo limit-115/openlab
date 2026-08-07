@@ -45,12 +45,29 @@ export const SpendCapSchema = z.discriminatedUnion("kind", [
  * down at the point that changes nothing: the absence is what says the lab may spend the whole of it.
  */
 export const SpendCapsSchema = z
-    .array(SpendCapSchema)
+    .preprocess(namedKinds, z.array(SpendCapSchema))
     .refine(
         (caps) => distinct(caps, SpendCapKinds.WINDOW_PERCENT),
         SpendCapRefusal.DUPLICATE_WINDOW
     )
     .refine((caps) => distinct(caps, SpendCapKinds.WALLET_FLOOR), SpendCapRefusal.DUPLICATE_WALLET);
+
+/**
+ * A cap stored before caps had kinds is a window cap: it was the only kind there was. Naming it on
+ * the way in keeps a lab that was already capped capped, because a cap dropped for want of a
+ * discriminator would hand the vendor's whole ceiling back without telling anyone — which is the one
+ * thing this setting exists to prevent.
+ */
+function namedKinds(caps: unknown): unknown {
+    if (!Array.isArray(caps)) {
+        return caps;
+    }
+    return caps.map((cap) =>
+        typeof cap === "object" && cap !== null && !("kind" in cap)
+            ? { ...cap, kind: SpendCapKinds.WINDOW_PERCENT }
+            : cap
+    );
+}
 
 /**
  * Whether one kind of cap names each of its meters once. Two caps on one meter name no point to stop
