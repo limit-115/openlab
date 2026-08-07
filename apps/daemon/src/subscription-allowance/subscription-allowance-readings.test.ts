@@ -2,6 +2,7 @@ import { HarnessKinds } from "@openlab/harness/agent-harness.const";
 import type { SubscriptionAllowance as HarnessAllowance } from "@openlab/harness/subscription-allowance.types";
 import { SubscriptionAllowanceState } from "@openlab/protocol/subscription-allowance/subscription-allowance.const";
 import { describe, expect, it } from "vitest";
+import { EVERY_HARNESS_KIND } from "#src/agent-harness/harness-factory";
 import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 const TTL_MILLISECONDS = 60_000;
@@ -161,7 +162,7 @@ describe("SubscriptionAllowanceReadings", () => {
         await readings.readAll();
         await readings.refreshAll();
 
-        expect(asked).toBe(6);
+        expect(asked).toBe(EVERY_HARNESS_KIND.length * 2);
     });
 
     it("reads every subscription the lab can run on, not only the ones that answered", async () => {
@@ -176,11 +177,7 @@ describe("SubscriptionAllowanceReadings", () => {
 
         const roster = await readings.readAll();
 
-        expect(roster.map((allowance) => allowance.harness)).toEqual([
-            HarnessKinds.CODEX,
-            HarnessKinds.CLAUDE,
-            HarnessKinds.GLM
-        ]);
+        expect(roster.map((allowance) => allowance.harness)).toEqual([...EVERY_HARNESS_KIND]);
         expect(roster[0]?.state).toBe(SubscriptionAllowanceState.UNREADABLE);
     });
 });

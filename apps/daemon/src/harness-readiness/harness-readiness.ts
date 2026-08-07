@@ -25,6 +25,7 @@ export function readyHarness(preflight: HarnessPreflight, checkedAt: string): Ha
         state: HarnessReadinessState.READY,
         cli_version: preflight.cliVersion,
         plan: preflight.authentication.subscription,
+        balance: preflight.authentication.wallet,
         error: null,
         checked_at: checkedAt
     };
@@ -48,6 +49,7 @@ export function unreadyHarness(
                 : HarnessReadinessState.UNREADABLE,
         cli_version: null,
         plan: null,
+        balance: null,
         error: failure instanceof Error ? failure.message : String(failure),
         checked_at: checkedAt
     };

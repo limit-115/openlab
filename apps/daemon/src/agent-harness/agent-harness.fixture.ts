@@ -48,7 +48,11 @@ export function harnessSignedIn(
         Promise.resolve({
             kind,
             cliVersion,
-            authentication: { method: HarnessAuthenticationMethods.CHATGPT, subscription: plan }
+            authentication: {
+                method: HarnessAuthenticationMethods.CHATGPT,
+                subscription: plan,
+                wallet: null
+            }
         })
     );
 }

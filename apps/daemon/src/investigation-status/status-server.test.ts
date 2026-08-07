@@ -13,6 +13,7 @@ import { LabStorageSchema } from "@openlab/protocol/lab-storage/lab-storage.sche
 import { SubscriptionAllowanceRosterSchema } from "@openlab/protocol/subscription-allowance/subscription-allowance.schema";
 import { describe, expect, it } from "vitest";
 import { harnessNotInstalled } from "#src/agent-harness/agent-harness.fixture";
+import { EVERY_HARNESS_KIND } from "#src/agent-harness/harness-factory";
 import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
@@ -353,7 +354,9 @@ describe("status server", () => {
         const response = await lab.server.inject({ method: "GET", url: "/api/subscriptions" });
 
         expect(response.statusCode).toBe(200);
-        expect(SubscriptionAllowanceRosterSchema.parse(response.json())).toHaveLength(3);
+        expect(SubscriptionAllowanceRosterSchema.parse(response.json())).toHaveLength(
+            EVERY_HARNESS_KIND.length
+        );
         await lab.server.close();
     });
 
@@ -376,8 +379,8 @@ describe("status server", () => {
             url: "/api/subscriptions?fresh=1"
         });
 
-        expect(polled).toBe(3);
-        expect(asked).toBe(6);
+        expect(polled).toBe(EVERY_HARNESS_KIND.length);
+        expect(asked).toBe(EVERY_HARNESS_KIND.length * 2);
         expect(refreshed.statusCode).toBe(200);
         await lab.server.close();
     });
@@ -390,7 +393,9 @@ describe("status server", () => {
         const response = await lab.server.inject({ method: "GET", url: "/api/harnesses" });
 
         expect(response.statusCode).toBe(200);
-        expect(HarnessReadinessRosterSchema.parse(response.json())).toHaveLength(3);
+        expect(HarnessReadinessRosterSchema.parse(response.json())).toHaveLength(
+            EVERY_HARNESS_KIND.length
+        );
         await lab.server.close();
     });
 
