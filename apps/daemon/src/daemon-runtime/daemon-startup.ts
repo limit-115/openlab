@@ -10,6 +10,7 @@ import { PromiseSettlementStatus } from "#src/daemon-runtime/daemon-startup.cons
 import type { DaemonDependencies, RunningDaemon } from "#src/daemon-runtime/daemon-startup.types";
 import { DaemonStartupStep } from "#src/daemon-runtime/daemon-startup-progress.const";
 import type { DaemonStartupProgress } from "#src/daemon-runtime/daemon-startup-progress.types";
+import { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowance-readings";
 import { HarnessReadinessChecks } from "#src/harness-readiness/harness-readiness-checks";
 import { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import { createStatusServer } from "#src/investigation-status/status-server";
@@ -18,7 +19,6 @@ import { investigationsAnswering } from "#src/operator-answers/answering-investi
 import { OperatorAnswers } from "#src/operator-answers/operator-answers";
 import { NotificationDispatch } from "#src/operator-notifications/notification-dispatch";
 import { NotificationSettingsStore } from "#src/operator-notifications/notification-settings-store";
-import { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 /**
  * Brings up the lab: the database it keeps its investigations in, the registry that holds them,
@@ -46,7 +46,7 @@ export async function startDaemon(
                 ? at(DaemonStartupStep.DASHBOARD_MISSING, config.dashboardRoot)
                 : at(DaemonStartupStep.DASHBOARD, dashboardRoot)
         );
-        const subscriptions = new SubscriptionAllowanceReadings();
+        const allowances = new HarnessAllowanceReadings();
         const harnesses = new HarnessReadinessChecks();
         const settings = new LabSettingsStore(database.settings);
         const notificationSettings = new NotificationSettingsStore(database.notifications);
@@ -76,14 +76,14 @@ export async function startDaemon(
             workspaceRoot: config.workspaceRoot,
             persistence: database.persistence,
             investigations: database.investigations,
-            subscriptions,
+            allowances,
             settings,
             ...(dependencies.researchLoop === undefined
                 ? {}
                 : { researchLoop: dependencies.researchLoop })
         });
         app = createStatusServer(registry, {
-            subscriptions,
+            allowances,
             harnesses,
             settings,
             notifications: { settings: notificationSettings, dispatch },

@@ -1,7 +1,7 @@
+import { HARNESS_ALLOWANCE_NAMESPACE } from "#src/allowance-panel/allowance-panel.i18n";
 import { HARNESS_SETTINGS_NAMESPACE } from "#src/harness-settings/harness-settings.i18n";
 import { LAB_MAINTENANCE_NAMESPACE } from "#src/lab-maintenance/lab-maintenance.i18n";
 import { OPERATOR_NOTIFICATIONS_NAMESPACE } from "#src/operator-notifications/operator-notifications.i18n";
-import { SUBSCRIPTION_ALLOWANCE_NAMESPACE } from "#src/subscription-allowance/subscription-allowance.i18n";
 
 /**
  * The blocks the lab itself is read and set through. They are panels of one page rather than
@@ -10,7 +10,7 @@ import { SUBSCRIPTION_ALLOWANCE_NAMESPACE } from "#src/subscription-allowance/su
  */
 export const SettingsSection = {
     HARNESSES: "harnesses",
-    SUBSCRIPTIONS: "subscriptions",
+    ALLOWANCES: "allowances",
     NOTIFICATIONS: "notifications",
     STORAGE: "storage"
 } as const;
@@ -22,7 +22,7 @@ export type SettingsSection = (typeof SettingsSection)[keyof typeof SettingsSect
  */
 export const SETTINGS_SECTIONS = [
     { section: SettingsSection.HARNESSES, title: `${HARNESS_SETTINGS_NAMESPACE}:title` },
-    { section: SettingsSection.SUBSCRIPTIONS, title: `${SUBSCRIPTION_ALLOWANCE_NAMESPACE}:title` },
+    { section: SettingsSection.ALLOWANCES, title: `${HARNESS_ALLOWANCE_NAMESPACE}:title` },
     {
         section: SettingsSection.NOTIFICATIONS,
         title: `${OPERATOR_NOTIFICATIONS_NAMESPACE}:title`
@@ -33,7 +33,7 @@ export const SETTINGS_SECTIONS = [
 /** The vocabularies the tab strip reads from, which are the ones its blocks are written in. */
 export const SETTINGS_NAMESPACES = [
     HARNESS_SETTINGS_NAMESPACE,
-    SUBSCRIPTION_ALLOWANCE_NAMESPACE,
+    HARNESS_ALLOWANCE_NAMESPACE,
     OPERATOR_NOTIFICATIONS_NAMESPACE,
     LAB_MAINTENANCE_NAMESPACE
 ] as const;

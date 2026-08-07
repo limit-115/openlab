@@ -2,7 +2,7 @@ import type { AgentHarness } from "@openlab/harness/agent-harness.types";
 import { HarnessCapabilityError } from "@openlab/harness/harness-error";
 import { EventType } from "@openlab/protocol/investigation-events/event-type.const";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
-import { requestSubscriptionCapability } from "#src/research-cycle/agent-dispatch";
+import { requestHarnessCapability } from "#src/research-cycle/agent-dispatch";
 import type { AvailableHarness } from "#src/research-cycle/research-loop.types";
 
 export async function preflightHarnesses(
@@ -30,7 +30,7 @@ export async function preflightHarnesses(
                     error: error instanceof Error ? error.message : String(error)
                 });
                 if (error instanceof HarnessCapabilityError) {
-                    await requestSubscriptionCapability(workspace, error.capabilityRequest);
+                    await requestHarnessCapability(workspace, error.capabilityRequest);
                 }
                 return undefined;
             }
@@ -45,7 +45,7 @@ export function selectHarness(
 ): AvailableHarness {
     const selected = available[index % available.length];
     if (selected === undefined) {
-        throw new Error("No subscription-authenticated harness is available");
+        throw new Error("No authenticated agent CLI harness is available");
     }
     return selected;
 }

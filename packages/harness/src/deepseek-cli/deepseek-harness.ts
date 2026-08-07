@@ -7,6 +7,11 @@ import type {
 } from "#src/agent-harness/agent-harness.types";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
+import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
+import type {
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/cli-agent-harness/cli-agent-harness.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { CodexEventParser } from "#src/codex-cli/codex-event-parser";
@@ -31,11 +36,6 @@ import type {
 } from "#src/deepseek-cli/deepseek-credential.types";
 import type { DeepseekHarnessOptions } from "#src/deepseek-cli/deepseek-harness.types";
 import type { SessionStore } from "#src/session-transcript/session-transcript.types";
-import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type {
-    HarnessCommand,
-    HarnessRunPaths
-} from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
 /**
  * DeepSeek driven through the Codex CLI, which speaks the Responses API that DeepSeek serves. It is
@@ -43,7 +43,7 @@ import type {
  * spent by the token, so an investigation left running costs money for as long as it runs. Nothing
  * here caps that, and the setup page says so where the operator hands the key over.
  */
-export class DeepseekHarness extends SubscriptionCliHarness {
+export class DeepseekHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.DEEPSEEK;
     readonly #resolveWallet: ResolveDeepseekWallet;
     #held: Promise<DeepseekWallet> | undefined;
@@ -163,7 +163,7 @@ export class DeepseekHarness extends SubscriptionCliHarness {
     #unusableWallet(cause: unknown): HarnessCapabilityError {
         return new HarnessCapabilityError(
             this.kind,
-            HarnessCapabilityGaps.SUBSCRIPTION,
+            HarnessCapabilityGaps.CREDENTIAL,
             "The lab holds no DeepSeek key it can spend",
             {
                 need: "A DeepSeek API key with a wallet DeepSeek will still serve",

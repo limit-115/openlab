@@ -1,10 +1,13 @@
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { claudeSessionStore } from "#src/claude-cli/claude-session-store";
+import { HARNESS_ARTIFACT_FILE_MODE } from "#src/cli-agent-harness/harness-run-artifacts.const";
 import { museSessionStore } from "#src/muse-cli/muse-session-store";
 import {
     removeSessionStores,
     sessionStoreRootDirectory,
+    writeClaudeSession,
     writeMuseSession
 } from "#src/session-transcript/session-store.fixture";
 import { collectSessionTranscript } from "#src/session-transcript/session-transcript";
@@ -13,7 +16,6 @@ import {
     SessionTranscriptGaps
 } from "#src/session-transcript/session-transcript.const";
 import type { SessionStore } from "#src/session-transcript/session-transcript.types";
-import { HARNESS_ARTIFACT_FILE_MODE } from "#src/subscription-cli-harness/harness-run-artifacts.const";
 
 afterEach(removeSessionStores);
 
@@ -34,15 +36,21 @@ async function collectMuseSession(subagentIds: readonly string[]) {
     return { artifactDirectory, transcript };
 }
 
+/** Where the copy of a Muse session lands: under the day the CLI filed it, as the CLI had it. */
+function museSessionCopy(artifactDirectory: string): string {
+    return join(
+        artifactDirectory,
+        SESSION_TRANSCRIPT_DIRECTORY,
+        "sessions",
+        ...DAY,
+        "wanted-session"
+    );
+}
+
 describe("session transcript collection", () => {
     it("copies every subagent transcript the stream never carried", async () => {
         const { artifactDirectory, transcript } = await collectMuseSession(["sub-a", "sub-b"]);
-        const session = join(
-            artifactDirectory,
-            SESSION_TRANSCRIPT_DIRECTORY,
-            "wanted-session",
-            "subagent"
-        );
+        const session = join(museSessionCopy(artifactDirectory), "subagent");
 
         expect(transcript.gap).toBeUndefined();
         await expect(readFile(join(session, "sub-a", "session.jsonl"), "utf8")).resolves.toBe(
@@ -66,14 +74,37 @@ describe("session transcript collection", () => {
         });
     });
 
+    /**
+     * The Claude CLI files a session under the directory it was run from, so a session resumed
+     * elsewhere is written under two projects under the one id. Both are the run's record and both
+     * are kept: taken by name alone the second would land on the first, and the manifest would list
+     * one transcript with nothing to say it had ever held two.
+     */
+    it("keeps both transcripts when two projects hold the session under one id", async () => {
+        const storeRoot = await sessionStoreRootDirectory();
+        const artifactDirectory = await sessionStoreRootDirectory();
+        await writeClaudeSession(storeRoot, "-Users-crew-lab", "wanted-session");
+        await writeClaudeSession(storeRoot, "-Users-crew-notes", "wanted-session");
+
+        const transcript = await collectSessionTranscript({
+            artifactDirectory,
+            sessionId: "wanted-session",
+            store: claudeSessionStore({ CLAUDE_CONFIG_DIR: storeRoot })
+        });
+
+        const kept = join(artifactDirectory, SESSION_TRANSCRIPT_DIRECTORY, "projects");
+        await expect(
+            readFile(join(kept, "-Users-crew-lab", "wanted-session.jsonl"), "utf8")
+        ).resolves.toBe('{"type":"assistant"}\n');
+        await expect(
+            readFile(join(kept, "-Users-crew-notes", "wanted-session.jsonl"), "utf8")
+        ).resolves.toBe('{"type":"assistant"}\n');
+        expect(transcript.files).toHaveLength(6);
+    });
+
     it("keeps a copied transcript as unreadable to others as the lab's own artifacts", async () => {
         const { artifactDirectory } = await collectMuseSession(["sub-a"]);
-        const copied = join(
-            artifactDirectory,
-            SESSION_TRANSCRIPT_DIRECTORY,
-            "wanted-session",
-            "session.jsonl"
-        );
+        const copied = join(museSessionCopy(artifactDirectory), "session.jsonl");
 
         const mode = (await stat(copied)).mode & 0o777;
         expect(mode).toBe(HARNESS_ARTIFACT_FILE_MODE);

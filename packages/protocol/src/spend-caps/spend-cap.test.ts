@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { AgentHarnessKind } from "#src/agents/agent-execution.const";
-import { isSpendCapLoosened, windowSpendCap, withheldWindows } from "#src/spend-caps/spend-cap";
-import { SpendCapsSchema } from "#src/spend-caps/spend-cap.schema";
-import { SubscriptionAllowanceState } from "#src/subscription-allowance/subscription-allowance.const";
+import { HarnessAllowanceState } from "#src/harness-allowance/harness-allowance.const";
 import type {
     AllowanceWindow,
-    SubscriptionAllowance
-} from "#src/subscription-allowance/subscription-allowance.types";
+    HarnessAllowance
+} from "#src/harness-allowance/harness-allowance.types";
+import { isSpendCapLoosened, windowSpendCap, withheldWindows } from "#src/spend-caps/spend-cap";
+import { SpendCapsSchema } from "#src/spend-caps/spend-cap.schema";
 
 const FIVE_HOURS = 300;
 const SEVEN_DAYS = 10_080;
@@ -16,11 +16,12 @@ const CAPS = SpendCapsSchema.parse([
     { harness: AgentHarnessKind.CLAUDE, window_minutes: SEVEN_DAYS, max_used_percent: 60 }
 ]);
 
-function claudeAllowance(windows: readonly AllowanceWindow[]): SubscriptionAllowance {
+function claudeAllowance(windows: readonly AllowanceWindow[]): HarnessAllowance {
     return {
         harness: AgentHarnessKind.CLAUDE,
-        state: SubscriptionAllowanceState.AVAILABLE,
+        state: HarnessAllowanceState.AVAILABLE,
         plan: "max",
+        balance: null,
         windows: [...windows],
         error: null,
         read_at: "2026-08-05T09:00:00.000Z"
@@ -68,10 +69,11 @@ describe("withheldWindows", () => {
     });
 
     it("withholds nothing when the vendor could not be read, so broken monitoring never parks the lab", () => {
-        const unreadable: SubscriptionAllowance = {
+        const unreadable: HarnessAllowance = {
             harness: AgentHarnessKind.CLAUDE,
-            state: SubscriptionAllowanceState.UNREADABLE,
+            state: HarnessAllowanceState.UNREADABLE,
             plan: null,
+            balance: null,
             windows: [],
             error: "No Keychain entry",
             read_at: "2026-08-05T09:00:00.000Z"

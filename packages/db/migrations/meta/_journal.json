@@ -8,6 +8,13 @@
             "when": 1786093603310,
             "tag": "0000_silky_sleeper",
             "breakpoints": true
+        },
+        {
+            "idx": 1,
+            "version": "6",
+            "when": 1786113901730,
+            "tag": "0001_spooky_shocker",
+            "breakpoints": true
         }
     ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE `agent_runs` ADD `manifest_sha256` text;

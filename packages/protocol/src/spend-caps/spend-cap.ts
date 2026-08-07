@@ -1,10 +1,10 @@
 import type { AgentHarnessKind } from "#src/agents/agent-execution.const";
-import { NO_SPEND_CAP_PERCENT } from "#src/spend-caps/spend-cap.const";
-import type { SpendCaps } from "#src/spend-caps/spend-cap.types";
 import type {
     AllowanceWindow,
-    SubscriptionAllowance
-} from "#src/subscription-allowance/subscription-allowance.types";
+    HarnessAllowance
+} from "#src/harness-allowance/harness-allowance.types";
+import { NO_SPEND_CAP_PERCENT } from "#src/spend-caps/spend-cap.const";
+import type { SpendCaps } from "#src/spend-caps/spend-cap.types";
 
 /** How far into one window the lab may spend: the whole of it until an operator asks for less. */
 export function windowSpendCap(
@@ -47,10 +47,7 @@ export function isSpendCapLoosened(before: SpendCaps, after: SpendCaps): boolean
  * subscription: the lab keeps dispatching and learns the limit from the vendor, as it did before
  * caps existed.
  */
-export function withheldWindows(
-    allowance: SubscriptionAllowance,
-    caps: SpendCaps
-): AllowanceWindow[] {
+export function withheldWindows(allowance: HarnessAllowance, caps: SpendCaps): AllowanceWindow[] {
     return allowance.windows.filter((window) => {
         const cap = windowSpendCap(caps, allowance.harness, window.duration_minutes);
         return isCapped(cap) && window.used_percent >= cap;

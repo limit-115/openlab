@@ -15,7 +15,7 @@ import type { HarnessReadiness } from "@openlab/protocol/harness-readiness/harne
  */
 const READINESS_FOR_GAP: Record<HarnessCapabilityGap, HarnessReadinessState> = {
     [HarnessCapabilityGaps.INSTALLATION]: HarnessReadinessState.NOT_INSTALLED,
-    [HarnessCapabilityGaps.SUBSCRIPTION]: HarnessReadinessState.NOT_SIGNED_IN,
+    [HarnessCapabilityGaps.CREDENTIAL]: HarnessReadinessState.NOT_SIGNED_IN,
     [HarnessCapabilityGaps.ALLOWANCE]: HarnessReadinessState.UNREADABLE
 };
 
