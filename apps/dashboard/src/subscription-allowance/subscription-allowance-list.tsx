@@ -122,6 +122,13 @@ function SubscriptionHeader({
                     {subscriptionPlanName(allowance.plan)}
                 </Badge>
             )}
+            {/**
+             * A balance is money and stays in the vendor's own spelling: capitalizing it the way a
+             * plan tier is capitalized would present a wallet as a plan the operator had bought.
+             */}
+            {allowance.balance === null ? null : (
+                <Badge variant="outline">{allowance.balance}</Badge>
+            )}
             {allowance.state === SubscriptionAllowanceState.EXHAUSTED ? (
                 <Badge variant="destructive">{t("exhausted")}</Badge>
             ) : null}

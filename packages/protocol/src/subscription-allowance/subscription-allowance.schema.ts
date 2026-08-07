@@ -15,18 +15,20 @@ export const AllowanceWindowSchema = z.object({
 });
 
 /**
- * What one subscription had left when it was last read. `windows` is empty whenever the state is
+ * What one harness account had left when it was last read. `windows` is empty whenever the state is
  * `unreadable`, so a viewer never renders a meter built from a failed reading.
  */
 export const SubscriptionAllowanceSchema = z.object({
     harness: z.enum(AgentHarnessKind),
     state: z.enum(SubscriptionAllowanceState),
-    /**
-     * What the vendor said the account is worth: a plan tier from a vendor that sells tiers, and the
-     * balance left from one that sells tokens. Either way it is the sentence that tells the operator
-     * which account answered and how much of it is left.
-     */
+    /** The plan tier the vendor named. Null for a vendor that sells no tier. */
     plan: z.string().min(1).nullable(),
+    /**
+     * What a token-billed account has left to spend, in the vendor's own words. Null for a
+     * subscription: a plan the operator already bought has no balance to run down, and showing money
+     * beside one would invent a number the vendor never stated.
+     */
+    balance: z.string().min(1).nullable(),
     windows: z.array(AllowanceWindowSchema),
     error: z.string().min(1).nullable(),
     read_at: z.iso.datetime()

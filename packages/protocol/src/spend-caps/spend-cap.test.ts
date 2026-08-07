@@ -21,6 +21,7 @@ function claudeAllowance(windows: readonly AllowanceWindow[]): SubscriptionAllow
         harness: AgentHarnessKind.CLAUDE,
         state: SubscriptionAllowanceState.AVAILABLE,
         plan: "max",
+        balance: null,
         windows: [...windows],
         error: null,
         read_at: "2026-08-05T09:00:00.000Z"
@@ -72,6 +73,7 @@ describe("withheldWindows", () => {
             harness: AgentHarnessKind.CLAUDE,
             state: SubscriptionAllowanceState.UNREADABLE,
             plan: null,
+            balance: null,
             windows: [],
             error: "No Keychain entry",
             read_at: "2026-08-05T09:00:00.000Z"

@@ -36,6 +36,7 @@ export function glmAllowanceFromQuota(payload: unknown): SubscriptionAllowance {
     return {
         kind: HarnessKinds.GLM,
         plan: quota.level ?? null,
+        balance: null,
         windows: quota.limits
             .filter((limit) => SPENDING_LIMIT_TYPES.includes(limit.type))
             .map(glmWindow)

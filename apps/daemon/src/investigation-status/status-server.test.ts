@@ -346,6 +346,7 @@ describe("status server", () => {
                 read: async (kind) => ({
                     kind,
                     plan: "max",
+                    balance: null,
                     windows: [{ durationMinutes: 300, usedPercent: 41, resetsAt: null }]
                 })
             })
@@ -366,7 +367,7 @@ describe("status server", () => {
             subscriptions: new SubscriptionAllowanceReadings({
                 read: async (kind) => {
                     asked += 1;
-                    return { kind, plan: "max", windows: [] };
+                    return { kind, plan: "max", balance: null, windows: [] };
                 }
             })
         });

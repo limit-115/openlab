@@ -32,6 +32,7 @@ export function allowanceFromReading(
             ? SubscriptionAllowanceState.EXHAUSTED
             : SubscriptionAllowanceState.AVAILABLE,
         plan: reading.plan,
+        balance: reading.balance,
         windows,
         error: null,
         read_at: readAt
@@ -51,6 +52,7 @@ export function unreadableAllowance(
         harness: kind,
         state: SubscriptionAllowanceState.UNREADABLE,
         plan: null,
+        balance: null,
         windows: [],
         error: cause instanceof Error ? cause.message : String(cause),
         read_at: readAt

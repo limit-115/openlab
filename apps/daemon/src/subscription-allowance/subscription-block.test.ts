@@ -19,6 +19,7 @@ function readings(usedPercent: number, resetsAt: string | null = RESETS_AT) {
         read: async (kind): Promise<HarnessAllowance> => ({
             kind,
             plan: "max",
+            balance: null,
             windows: [{ durationMinutes: WEEKLY_MINUTES, usedPercent, resetsAt }]
         })
     });

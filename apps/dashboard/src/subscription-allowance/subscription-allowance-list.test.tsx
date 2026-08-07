@@ -11,6 +11,7 @@ const ROSTER: SubscriptionAllowanceRoster = [
         harness: AgentHarnessKind.CLAUDE,
         state: SubscriptionAllowanceState.AVAILABLE,
         plan: "max",
+        balance: null,
         windows: [
             { duration_minutes: 300, used_percent: 41, resets_at: "2026-08-03T17:40:00.000Z" },
             { duration_minutes: 10_080, used_percent: 28, resets_at: "2026-08-08T07:00:00.000Z" }
@@ -22,6 +23,7 @@ const ROSTER: SubscriptionAllowanceRoster = [
         harness: AgentHarnessKind.CODEX,
         state: SubscriptionAllowanceState.EXHAUSTED,
         plan: "plus",
+        balance: null,
         windows: [
             { duration_minutes: 10_080, used_percent: 100, resets_at: "2026-08-09T13:50:53.000Z" }
         ],
@@ -32,8 +34,18 @@ const ROSTER: SubscriptionAllowanceRoster = [
         harness: AgentHarnessKind.GLM,
         state: SubscriptionAllowanceState.UNREADABLE,
         plan: null,
+        balance: null,
         windows: [],
         error: "No ZCode login store at /Users/operator/.zcode/v2/config.json",
+        read_at: "2026-08-03T12:00:00.000Z"
+    },
+    {
+        harness: AgentHarnessKind.DEEPSEEK,
+        state: SubscriptionAllowanceState.AVAILABLE,
+        plan: null,
+        balance: "4.21 USD",
+        windows: [],
+        error: null,
         read_at: "2026-08-03T12:00:00.000Z"
     }
 ];
@@ -104,6 +116,17 @@ describe("SubscriptionAllowanceList", () => {
         renderList(CLAUDE_SESSION_CAP, []);
 
         expect(screen.queryByText("Held at your cap")).not.toBeInTheDocument();
+    });
+
+    /**
+     * A wallet reading carries no windows, so without its balance a token-billed harness would sit
+     * on the page as a name and nothing else — which is how it used to reach here before money and
+     * plan tiers became separate readings.
+     */
+    it("states what a token-billed harness has left, which is all it has to report", () => {
+        renderList();
+
+        expect(screen.getByText("4.21 USD")).toBeInTheDocument();
     });
 
     it("meters without a limiter where the caps are not the page's to move", () => {

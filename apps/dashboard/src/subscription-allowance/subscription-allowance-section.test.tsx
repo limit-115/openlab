@@ -21,6 +21,7 @@ function roster(readAt: string, usedPercent: number): SubscriptionAllowanceRoste
             harness: AgentHarnessKind.GLM,
             state: SubscriptionAllowanceState.AVAILABLE,
             plan: "pro",
+            balance: null,
             windows: [{ duration_minutes: 300, used_percent: usedPercent, resets_at: null }],
             error: null,
             read_at: readAt

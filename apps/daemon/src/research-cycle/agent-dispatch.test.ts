@@ -99,6 +99,7 @@ function readings(spent: readonly HarnessKind[]): SubscriptionAllowanceReadings 
         read: async (kind): Promise<HarnessAllowance> => ({
             kind,
             plan: "max",
+            balance: null,
             windows: [
                 {
                     durationMinutes: 10_080,
@@ -116,6 +117,7 @@ function partlySpentReadings(usedPercent: number): SubscriptionAllowanceReadings
         read: async (kind): Promise<HarnessAllowance> => ({
             kind,
             plan: "max",
+            balance: null,
             windows: [
                 {
                     durationMinutes: WEEKLY_WINDOW_MINUTES,

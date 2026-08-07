@@ -53,6 +53,7 @@ export function claudeAllowanceFromUsage(
     return {
         kind: HarnessKinds.CLAUDE,
         plan,
+        balance: null,
         windows: windows.filter((window): window is AllowanceWindow => window !== undefined)
     };
 }

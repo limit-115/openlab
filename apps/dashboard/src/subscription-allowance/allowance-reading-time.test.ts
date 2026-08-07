@@ -9,6 +9,7 @@ function readAt(harness: AgentHarnessKind, read_at: string): SubscriptionAllowan
         harness,
         state: SubscriptionAllowanceState.AVAILABLE,
         plan: "max",
+        balance: null,
         windows: [],
         error: null,
         read_at
