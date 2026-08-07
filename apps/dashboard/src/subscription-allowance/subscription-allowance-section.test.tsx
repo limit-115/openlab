@@ -213,6 +213,63 @@ describe("SubscriptionAllowanceSection", () => {
     });
 
     /**
+     * Half a dollar, typed the way it is said. The save is what it costs to get this wrong: the
+     * document would be refused over a schema the operator never saw, with nothing on the page
+     * looking any different from a floor that saved.
+     */
+    it("hands the lab nought point five from a floor typed as .5", async () => {
+        const request = respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(SUBSCRIPTION_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, ".5");
+        await userEvent.click(
+            screen.getByRole("button", { name: SUBSCRIPTION_ALLOWANCE_EN.capSave })
+        );
+
+        expect(savedCaps(request)).toEqual([
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.DEEPSEEK,
+                currency: "USD",
+                minimum_balance: "0.5"
+            }
+        ]);
+    });
+
+    /** The operator meant five and left the cents for later, which is five however long they leave it. */
+    it("hands the lab five from a floor left standing at 5.", async () => {
+        const request = respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(SUBSCRIPTION_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5.");
+        await userEvent.click(
+            screen.getByRole("button", { name: SUBSCRIPTION_ALLOWANCE_EN.capSave })
+        );
+
+        expect(savedCaps(request)).toEqual([
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.DEEPSEEK,
+                currency: "USD",
+                minimum_balance: "5"
+            }
+        ]);
+    });
+
+    /** Typing the cents has to stay possible, which is the whole reason the draft keeps the point. */
+    it("keeps the point on screen while the cents are still being typed", async () => {
+        respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(SUBSCRIPTION_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5.25");
+
+        expect(field).toHaveValue("5.25");
+    });
+
+    /**
      * The field holds the number the lab will compare against a balance, so anything it could not
      * compare never reaches the draft — and the operator is not told about a schema after the fact.
      */

@@ -1,10 +1,12 @@
 import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { walletSpendFloor, windowSpendCap } from "@openlab/protocol/spend-caps/spend-cap";
 import { SpendCapKinds } from "@openlab/protocol/spend-caps/spend-cap.const";
+import { SpendCapsSchema } from "@openlab/protocol/spend-caps/spend-cap.schema";
 import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
 import { describe, expect, it } from "vitest";
 import {
     hasCapEdits,
+    settledCaps,
     withWalletFloor,
     withWindowCap
 } from "#src/subscription-allowance/spend-cap-draft";
@@ -86,6 +88,39 @@ describe("withWalletFloor", () => {
         const floored = withWalletFloor(CAPS, AgentHarnessKind.CLAUDE, "USD", "5");
 
         expect(windowSpendCap(floored, AgentHarnessKind.CLAUDE, FIVE_HOURS)).toBe(80);
+    });
+});
+
+describe("settledCaps", () => {
+    function floored(typed: string): SpendCaps {
+        return settledCaps(withWalletFloor([], AgentHarnessKind.DEEPSEEK, "USD", typed));
+    }
+
+    /**
+     * The protocol is the judge here rather than a string comparison: the point of settling is that
+     * what the operator half typed is money the lab will actually take.
+     */
+    it.each(["5.", ".5", "0.", ".05", "5.00"])(
+        "hands the lab money it takes from a floor typed as %s",
+        (typed) => {
+            expect(() => SpendCapsSchema.parse(floored(typed))).not.toThrow();
+        }
+    );
+
+    it("reads a floor typed as .5 as nought point five rather than as five", () => {
+        expect(walletSpendFloor(floored(".5"), AgentHarnessKind.DEEPSEEK, "USD")).toBe("0.5");
+    });
+
+    it("reads a floor left at 5. as five, cents and all still to come", () => {
+        expect(walletSpendFloor(floored("5."), AgentHarnessKind.DEEPSEEK, "USD")).toBe("5");
+    });
+
+    it("lifts a floor that got no further than a point, which names no figure at all", () => {
+        expect(floored(".")).toEqual([]);
+    });
+
+    it("leaves a window cap as it stands, having no half-typed form to settle", () => {
+        expect(settledCaps(CAPS)).toEqual(CAPS);
     });
 });
 

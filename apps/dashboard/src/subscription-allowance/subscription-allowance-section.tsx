@@ -19,6 +19,7 @@ import { AllowanceReadingHeader } from "#src/subscription-allowance/allowance-re
 import { allowanceReadingTime } from "#src/subscription-allowance/allowance-reading-time";
 import {
     hasCapEdits,
+    settledCaps,
     withWalletFloor,
     withWindowCap
 } from "#src/subscription-allowance/spend-cap-draft";
@@ -147,7 +148,10 @@ export function SubscriptionAllowanceSection() {
                         type="button"
                         disabled={save.isPending}
                         onClick={() =>
-                            save.mutate({ ...edited.saved, spend_caps: [...edited.draft] })
+                            save.mutate({
+                                ...edited.saved,
+                                spend_caps: settledCaps(edited.draft)
+                            })
                         }
                     >
                         {save.isPending ? <Spinner aria-hidden="true" /> : null}

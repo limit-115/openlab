@@ -57,9 +57,12 @@ export function WalletFloorField({ balance, floor, withheld, setFloor }: WalletF
                         value={floor ?? ""}
                         aria-invalid={withheld}
                         /**
-                         * A keystroke that would leave something the lab cannot compare against a
-                         * balance is refused here rather than on save: the operator would get a
-                         * rejection naming a schema, and the field they typed into knows better.
+                         * A keystroke that could never be money is refused here rather than on
+                         * save: the operator would get a rejection naming a schema, and the field
+                         * they typed into knows better. What is money half typed — a point with no
+                         * cents after it yet — is kept as they typed it and settled when the caps
+                         * are handed over, because a field that tidied it up mid-number would take
+                         * the point away as they reached for the cents.
                          */
                         onChange={(event) => {
                             if (WALLET_FLOOR_PATTERN.test(event.target.value)) {
