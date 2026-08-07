@@ -6,10 +6,15 @@ import {
     PathEntryMarker,
     ShellStartupFile
 } from "#src/lab-installation/path-entry.const";
+import {
+    putOnWindowsPath,
+    takeOffWindowsPath
+} from "#src/lab-installation/windows-environment-path";
+import { WINDOWS_ENVIRONMENT_KEY } from "#src/lab-installation/windows-environment-path.const";
 
-/** What changing an operator's shell startup came to, which is what an uninstall has to undo. */
+/** What putting the launcher within reach came to, which is what an uninstall has to undo. */
 export interface PathEntryOutcome {
-    /** The files a block was written into or refreshed in. */
+    /** Where the entry was written: a startup file of the operator's, or the registry on Windows. */
     readonly written: readonly string[];
     /** True when the directory was already reachable and nothing had to be written at all. */
     readonly alreadyOnPath: boolean;
@@ -29,6 +34,16 @@ export async function ensureOnPath(
 ): Promise<PathEntryOutcome> {
     if (isOnPath(binDirectory, environment)) {
         return { written: [], alreadyOnPath: true };
+    }
+
+    /**
+     * Windows keeps a user's environment in the registry, and no shell there reads a startup file
+     * on the way up. Written the way everything below is written, the entry would land in a file
+     * cmd.exe and PowerShell never open, and the operator would be told their `PATH` was seen to.
+     */
+    if (process.platform === "win32") {
+        const changed = await putOnWindowsPath(binDirectory);
+        return { written: changed ? [WINDOWS_ENVIRONMENT_KEY] : [], alreadyOnPath: !changed };
     }
 
     const written: string[] = [];
@@ -54,8 +69,15 @@ export async function ensureOnPath(
     return { written, alreadyOnPath: false };
 }
 
-/** Takes the lab's block back out of every startup file that has one, leaving the rest untouched. */
-export async function removeFromPath(home = homedir()): Promise<readonly string[]> {
+/** Takes the lab's entry back out of wherever the install put it, leaving the rest untouched. */
+export async function removeFromPath(
+    binDirectory: string,
+    home = homedir()
+): Promise<readonly string[]> {
+    if (process.platform === "win32") {
+        return (await takeOffWindowsPath(binDirectory)) ? [WINDOWS_ENVIRONMENT_KEY] : [];
+    }
+
     const cleared: string[] = [];
     const candidates = [
         ...Object.values(ShellStartupFile).map((file) => path.join(home, file)),
@@ -74,9 +96,29 @@ export async function removeFromPath(home = homedir()): Promise<readonly string[
 }
 
 /** Whether a directory is already somewhere the shell would find the launcher. */
-export function isOnPath(binDirectory: string, environment = process.env): boolean {
+export function isOnPath(
+    binDirectory: string,
+    environment = process.env,
+    platform: NodeJS.Platform = process.platform
+): boolean {
     const entries = (environment.PATH ?? "").split(path.delimiter).filter((entry) => entry !== "");
-    return entries.some((entry) => path.resolve(entry) === path.resolve(binDirectory));
+    const wanted = comparably(binDirectory, platform);
+
+    return entries.some((entry) => comparably(entry, platform) === wanted);
+}
+
+/**
+ * An entry in the form two of them can be compared in.
+ *
+ * Windows finds a file whatever case its path was asked for in, so a `PATH` holding
+ * `C:\\Users\\Ada\\.local\\bin` already reaches a launcher installed at
+ * `c:\\users\\ada\\.local\\bin`. Comparing those exactly would have an install write the directory
+ * into the registry a second time and tell the operator to open a new terminal for something that
+ * already worked. Nowhere else does two cases mean one directory.
+ */
+function comparably(entry: string, platform: NodeJS.Platform): string {
+    const resolved = path.resolve(entry);
+    return platform === "win32" ? resolved.toLowerCase() : resolved;
 }
 
 /**

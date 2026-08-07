@@ -92,7 +92,7 @@ describe("taking the launcher's directory back off PATH", () => {
         await writeFile(path.join(home, ShellStartupFile.ZSH_RC), own, "utf8");
         await ensureOnPath(BIN, ELSEWHERE, home);
 
-        const cleared = await removeFromPath(home);
+        const cleared = await removeFromPath(BIN, home);
 
         expect(cleared).toEqual([path.join(home, ShellStartupFile.ZSH_RC)]);
         expect(await readFile(path.join(home, ShellStartupFile.ZSH_RC), "utf8")).toBe(own);
@@ -101,7 +101,7 @@ describe("taking the launcher's directory back off PATH", () => {
     it("passes over a file the lab never wrote into", async () => {
         await writeFile(path.join(home, ShellStartupFile.BASH_RC), "# mine\n", "utf8");
 
-        expect(await removeFromPath(home)).toEqual([]);
+        expect(await removeFromPath(BIN, home)).toEqual([]);
     });
 });
 
@@ -112,5 +112,17 @@ describe("isOnPath", () => {
 
     it("does not mistake a directory that merely starts the same way", () => {
         expect(isOnPath("/opt/lab/bin", { PATH: "/opt/lab/bin-old" })).toBe(false);
+    });
+
+    /**
+     * Windows reaches a directory whatever case it was written in, so an operator whose PATH
+     * already holds it must not have it written into the registry a second time and be sent to
+     * open a new terminal for something that already worked.
+     */
+    it("reads two cases as one directory on Windows and as two anywhere else", () => {
+        const differentlyCased = { PATH: "/Users/Ada/.local/bin" };
+
+        expect(isOnPath("/users/ada/.local/bin", differentlyCased, "win32")).toBe(true);
+        expect(isOnPath("/users/ada/.local/bin", differentlyCased, "linux")).toBe(false);
     });
 });

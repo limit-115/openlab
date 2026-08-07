@@ -58,10 +58,18 @@ main() {
     unpack "$DIST/$archive" "$workspace/unpacked"
     [ -f "$workspace/unpacked/$executable" ] || fail "The archive holds no $executable."
 
+    # Installed the way an operator installs, which includes being put within reach of the next
+    # shell they open. That step writes somewhere different on every platform and had never run
+    # here, so until now it was the one part of an install nothing had ever executed.
     say "install"
-    "$workspace/unpacked/$executable" install --no-modify-path
+    "$workspace/unpacked/$executable" install
     installed="$(installed_launcher "$launcher")"
     check "the installed lab answers" "$version" "$("$installed" --version)"
+
+    if [ "${TARGET#windows-}" != "$TARGET" ]; then
+        say "the launcher is where the next shell will look"
+        on_windows_path
+    fi
 
     say "update --check"
     "$installed" update --check
@@ -176,6 +184,29 @@ clean_up() {
     fi
     rm -rf "${workspace:-}"
     exit "$status"
+}
+
+# Whether the install left the launcher's directory on the PATH a new terminal will be given.
+#
+# Only Windows is asked. Its environment lives in the registry and nothing else reads it, so an
+# install that wrote a startup file there reported success and left the operator with no `openlab`
+# on any PATH — which is what this exists to catch. Everywhere else the runner already has the
+# directory on PATH, so the answer would be yes whatever the install did, and a check that cannot
+# fail is not one. Running the install without `--no-modify-path` still exercises that step on every
+# platform; only the question afterwards is Windows-only.
+#
+# Read unexpanded, because that is the form it was written in: an entry holding `%USERPROFILE%` is
+# not the string the expanded value would be compared against.
+on_windows_path() {
+    directory="$(cygpath -w "$(dirname "$installed")")"
+    powershell -NoProfile -NonInteractive -Command \
+        "[Console]::Out.Write([Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment').GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames))" \
+        >"$workspace/user-path" 2>&1 ||
+        fail "Could not read the user's PATH out of the registry."
+
+    grep -qiF "$directory" "$workspace/user-path" ||
+        fail "The install left $directory off the user's PATH, which holds: $(cat "$workspace/user-path")"
+    printf '  ok    the registry names %s\n' "$directory"
 }
 
 # Where the install put the launcher, which is the directory the lab itself decided on.

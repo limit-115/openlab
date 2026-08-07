@@ -57,10 +57,11 @@ which of them it can find.
 Nothing else is needed. Node, pnpm and a toolchain are not requirements: a release is one executable
 with its runtime inside it, and the dashboard and migrations installed beside it.
 
-The installer needs no administrator rights and touches two places — `~/.openlab` for the program
-and one line in a shell startup file so that `openlab` is on your `PATH`. Set `OPENLAB_INSTALL_DIR`
-to put the command somewhere else, or pass `--no-modify-path` to be left alone entirely. Your lab's
-own data lives elsewhere again, under `OPENLAB_HOME`, and no install or uninstall ever touches it.
+The installer needs no administrator rights and touches two places — `~/.openlab` for the program,
+and wherever your platform keeps `PATH` so that `openlab` is on it: one line in a shell startup file
+on macOS and Linux, your own environment in the registry on Windows. Set `OPENLAB_INSTALL_DIR` to
+put the command somewhere else, or pass `--no-modify-path` to be left alone entirely. Your lab's own
+data lives elsewhere again, under `OPENLAB_HOME`, and no install or uninstall ever touches it.
 
 ```bash
 openlab uninstall   # takes the program back out, leaves your lab where it is
