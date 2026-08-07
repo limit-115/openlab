@@ -107,6 +107,15 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
     }
 
     /**
+     * The text the CLI is given. A CLI that has no structured-output flag has to be asked for its
+     * schema in the prompt itself, so the harness that knows this rewrites the request here, once,
+     * before the prompt is written down — and what is written down is then what the model read.
+     */
+    protected promptFor(request: HarnessRunRequest): string {
+        return request.prompt;
+    }
+
+    /**
      * The environment the CLI runs with, once every inherited provider credential has been stripped.
      * A harness whose subscription credential lives outside the CLI's own login adds it back here,
      * and nowhere else, so the run can never inherit a stray endpoint from the operator's shell.
@@ -161,7 +170,8 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
             this.#sourceEnvironment
         );
         const session = this.resolveSession(request);
-        const files = await createRunFiles(this.kind, request);
+        const prompt = this.promptFor(request);
+        const files = await createRunFiles(this.kind, request, prompt);
         const inputSource = this.inputSource();
         const command = this.buildCommand(request, session, {
             prompt: files.prompt.path,
@@ -207,7 +217,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 args: command.args,
                 cwd: resolve(request.cwd),
                 environment,
-                ...(inputSource === HarnessInputSources.PROMPT ? { input: request.prompt } : {}),
+                ...(inputSource === HarnessInputSources.PROMPT ? { input: prompt } : {}),
                 signal: watchdog.signal
             });
             processCompleted = child.completed;
