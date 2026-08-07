@@ -6,13 +6,18 @@ import {
 } from "#src/agent-harness/agent-harness.const";
 import { ClaudeApiProviders } from "#src/claude-cli/claude-cli.const";
 import {
+    harnessRequest,
+    lastCompleted,
+    removeHarnessRunDirectories
+} from "#src/cli-agent-harness/harness-run.fixture";
+import {
     captureSuccess,
     FakeHarnessProcessRunner,
     streamSuccess
 } from "#src/cli-execution/cli-process-runner.fixture";
+import { ForbiddenEnvironmentVariable } from "#src/cli-execution/harness-environment.const";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
-import { ForbiddenEnvironmentVariable } from "#src/cli-execution/subscription-environment.const";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import {
     ClaudeReportedAuthMethods,
     GlmSessionDefaults,
@@ -20,11 +25,6 @@ import {
 } from "#src/glm-cli/glm-cli.const";
 import { GlmHarness } from "#src/glm-cli/glm-harness";
 import type { ZaiCodingPlan } from "#src/glm-cli/zai-coding-plan.types";
-import {
-    harnessRequest,
-    lastCompleted,
-    removeHarnessRunDirectories
-} from "#src/subscription-cli-harness/harness-run.fixture";
 
 const GlmTestNativeEventTypes = {
     SYSTEM: "system",

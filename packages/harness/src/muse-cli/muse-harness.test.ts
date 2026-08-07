@@ -9,12 +9,18 @@ import {
 } from "#src/agent-harness/agent-harness.const";
 import { HarnessDiagnosticLevels, HarnessEventTypes } from "#src/agent-harness/harness-event.const";
 import {
+    answerSchema,
+    harnessRequest,
+    lastCompleted,
+    removeHarnessRunDirectories
+} from "#src/cli-agent-harness/harness-run.fixture";
+import {
     captureSuccess,
     FakeHarnessProcessRunner,
     streamSuccess
 } from "#src/cli-execution/cli-process-runner.fixture";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import { museCredentialPath } from "#src/muse-cli/muse-account";
 import type { MuseAccount } from "#src/muse-cli/muse-account.types";
 import {
@@ -28,12 +34,6 @@ import {
 } from "#src/muse-cli/muse-cli.const";
 import { MuseTestValues, museRecord, museRunStream } from "#src/muse-cli/muse-cli.fixture";
 import { MuseHarness } from "#src/muse-cli/muse-harness";
-import {
-    answerSchema,
-    harnessRequest,
-    lastCompleted,
-    removeHarnessRunDirectories
-} from "#src/subscription-cli-harness/harness-run.fixture";
 
 const MuseTestAccount: MuseAccount = {
     email: MuseTestValues.EMAIL,

@@ -5,7 +5,7 @@ export const HARNESS_SETUP_NAMESPACE = "harness-setup" as const;
 
 export const HARNESS_SETUP_EN = {
     title: "Give the lab something to think with",
-    lead: "The lab has no model of its own. It drives the coding CLIs you already pay for, on this machine, under your own subscription.",
+    lead: "The lab has no model of its own. It drives the coding CLIs you already pay for, on this machine, under your own account.",
     noKeys: "Subscriptions are the way to run this. A plan you already bought costs the same whether the lab works for ten minutes or all night. Two harnesses do not work that way — DeepSeek and Muse Code are billed by the token, and their cards say so.",
     enough: "One is enough to start. A second is what lets the lab check its own work — a claim only counts once a different vendor reproduces it.",
 
@@ -60,7 +60,7 @@ export const HARNESS_SETUP_EN = {
 
 export const HARNESS_SETUP_RU = {
     title: "Дай лаборатории, чем думать",
-    lead: "У лаборатории нет своей модели. Она запускает те CLI, за которые ты уже платишь, — на этой машине и по твоей подписке.",
+    lead: "У лаборатории нет своей модели. Она запускает те CLI, за которые ты уже платишь, — на этой машине и под твоей учётной записью.",
     noKeys: "Правильный способ — подписки. План, который уже куплен, стоит одинаково, работает лаборатория десять минут или всю ночь. Иначе устроены две оболочки: DeepSeek и Muse Code платят по токенам, и на их карточках это написано.",
     enough: "Чтобы начать, хватит одного. Второй нужен, чтобы лаборатория проверяла саму себя: заявление засчитывается, только когда его воспроизводит другой вендор.",
 

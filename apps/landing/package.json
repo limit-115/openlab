@@ -17,6 +17,7 @@
         "format": "biome format --write ."
     },
     "dependencies": {
+        "@openlab/protocol": "workspace:*",
         "astro": "7.1.6"
     },
     "devDependencies": {

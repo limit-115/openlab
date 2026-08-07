@@ -64,7 +64,8 @@ export function renderInstallationReport(report: InstallationReport): string {
         lines.push(
             "",
             "The lab dispatches every agent to one of these CLIs and cannot research without one.",
-            "Install one and authenticate it with your own subscription."
+            "Install one and give it a credential of your own — a subscription for codex, claude or",
+            "glm, a key or a Meta login for deepseek and muse."
         );
     }
 

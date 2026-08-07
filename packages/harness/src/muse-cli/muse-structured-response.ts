@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { responseJsonSchema } from "#src/subscription-cli-harness/response-schema";
+import { responseJsonSchema } from "#src/cli-agent-harness/response-schema";
 
 const JSON_FENCE = /^```(?:json)?\s*\n([\s\S]*?)\n?```$/;
 

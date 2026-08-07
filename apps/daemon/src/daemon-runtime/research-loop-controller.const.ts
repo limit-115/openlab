@@ -6,4 +6,4 @@
 export const RESUME_STEP_MS = 3_600_000;
 
 /** Why the investigation is awake, written where an operator reads its history rather than its logs. */
-export const RESUME_REASON = "The subscriptions this investigation was waiting on are back";
+export const RESUME_REASON = "The allowances this investigation was waiting on are back";

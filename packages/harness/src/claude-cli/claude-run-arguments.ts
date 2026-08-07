@@ -1,7 +1,7 @@
 import { HarnessExecutionProfiles } from "#src/agent-harness/agent-harness.const";
 import type { HarnessRunRequest, HarnessSession } from "#src/agent-harness/agent-harness.types";
 import { ClaudeOutputFormats, ClaudePermissionModes } from "#src/claude-cli/claude-cli.const";
-import { responseJsonSchema } from "#src/subscription-cli-harness/response-schema";
+import { responseJsonSchema } from "#src/cli-agent-harness/response-schema";
 
 /**
  * The headless command line for one Claude CLI run. Every harness that drives this binary shares it,

@@ -127,6 +127,14 @@ export function streamUntilAbort(
         }
         request.signal?.addEventListener("abort", reject, { once: true });
     });
+    /**
+     * The run awaits this promise, but only after the events above have been written to disk, so the
+     * watchdog can reject it a macrotask before anything is watching. Node reports that window as an
+     * unhandled rejection and the test run fails on it even though the run went on to handle it. This
+     * marks the rejection as observed at the moment it can first happen; the run still awaits the same
+     * promise and still sees the same rejection.
+     */
+    completed.catch(() => {});
     return {
         stdout: Readable.from(events.map((event) => `${JSON.stringify(event)}\n`)),
         completed
