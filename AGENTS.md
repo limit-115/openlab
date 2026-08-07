@@ -75,3 +75,36 @@
 - Never write a test whose only purpose is to record that something was removed, renamed or restyled.
   A test earns its place by protecting behaviour someone depends on, not by narrating the last diff.
 - Make a conventional commit after every coherent block. Stage only files owned by that block.
+
+## Pull requests
+
+- Never make a PR unless the developer explicitly asks you to do so.
+- Conventional commit titles, plain language: `fix(web): new threads no longer spike CPU`.
+- Body: the problem in a sentence or two, then how you fixed it. End with the model and harness that
+  did the work.
+- **Rebase onto latest main before opening.** Stale branches conflict and burn a review round.
+- UI changes need images. Pair before with after when the surface already existed; show the new
+  state alone when the PR creates it, because an empty page is not a before. Motion or timing needs a
+  short video. A paragraph describing a screen is never a substitute for the screen.
+- Upload an image to GitHub's attachment store and reference the URL it answers with. Never commit a
+  screenshot to the repository and never push one to a branch of its own: the picture belongs to the
+  conversation, not to the source tree. The endpoint is undocumented but takes an ordinary token, and
+  what it stores renders in a private repository exactly as a drag-and-drop does.
+
+    ```bash
+    curl -s "https://uploads.github.com/user-attachments/assets?name=$FILE&content_type=$MIME&repository_id=$(gh api "repos/$REPO" --jq .id)" \
+        -X POST -H "Authorization: Bearer $(gh auth token)" \
+        -H "Accept: application/json" --data-binary "@$FILE"
+    ```
+
+    It answers `{"url": "..."}`, which goes straight into an `<img>` tag in the body.
+- Shoot the dashboard from a lab that is actually running, never from a mock. Start the daemon with
+  `OPENLAB_HOME` pointed somewhere disposable so the operator's own lab is untouched, then capture the
+  page with `chrome --headless --screenshot`. A shot taken from real preflight output states what this
+  machine answered, which is the only thing a reviewer can check.
+- Never tick a checklist box for work that was not done. An unticked box beside the reason is a fact a
+  reviewer can act on; a ticked one the text below then contradicts is a claim they have to catch.
+- One concern per PR. If the description says "also", split it.
+- When babysitting: poll checks and comments newer than the last push, verify each bot finding against
+  the source, fix real ones, dismiss false positives with a written reason. Stay quiet when nothing is
+  new. Stop when the bots are green on the latest commit.
