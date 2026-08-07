@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { HarnessKinds } from "#src/agent-harness/agent-harness.const";
+import { parseStructuredOutput, responseJsonSchema } from "#src/cli-agent-harness/response-schema";
 import { HarnessProtocolError } from "#src/cli-execution/harness-error";
-import {
-    parseStructuredOutput,
-    responseJsonSchema
-} from "#src/subscription-cli-harness/response-schema";
 
 const SourcesSchema = z.object({
     sources: z.array(z.object({ url: z.url() }))

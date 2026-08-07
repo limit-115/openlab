@@ -5,7 +5,7 @@ import type {
     HarnessProcessRunner
 } from "#src/cli-execution/cli-process-runner.types";
 
-export interface SubscriptionPreflightRequest {
+export interface HarnessPreflightRequest {
     readonly kind: HarnessKind;
     readonly binary: string;
     readonly runner: HarnessProcessRunner;

@@ -11,13 +11,19 @@ import {
 import { HarnessEventTypes } from "#src/agent-harness/harness-event.const";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import {
+    answerSchema,
+    harnessRequest,
+    lastCompleted,
+    removeHarnessRunDirectories
+} from "#src/cli-agent-harness/harness-run.fixture";
+import {
     captureSuccess,
     FakeHarnessProcessRunner,
     streamFailure,
     streamSuccess
 } from "#src/cli-execution/cli-process-runner.fixture";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import { HarnessErrorCodes } from "#src/cli-execution/harness-error.const";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import {
     CodexColorModes,
     CodexPermissionModes,
@@ -31,12 +37,6 @@ import {
     CodexTestUsageLimitMessage
 } from "#src/codex-cli/codex-cli.fixture";
 import { CodexHarness } from "#src/codex-cli/codex-harness";
-import {
-    answerSchema,
-    harnessRequest,
-    lastCompleted,
-    removeHarnessRunDirectories
-} from "#src/subscription-cli-harness/harness-run.fixture";
 
 afterEach(removeHarnessRunDirectories);
 
@@ -229,7 +229,7 @@ describe("CodexHarness", () => {
         const harness = new CodexHarness({ runner, environment: testEnvironment() });
 
         await expect(harness.preflight()).rejects.toMatchObject({
-            code: HarnessErrorCodes.SUBSCRIPTION_AUTH_REQUIRED,
+            code: HarnessErrorCodes.CAPABILITY_REQUIRED,
             harness: HarnessKinds.CODEX,
             capabilityRequest: {
                 need: expect.stringContaining("ChatGPT")
@@ -266,7 +266,7 @@ describe("CodexHarness", () => {
         };
 
         await expect(drain()).rejects.toMatchObject({
-            code: HarnessErrorCodes.SUBSCRIPTION_AUTH_REQUIRED,
+            code: HarnessErrorCodes.CAPABILITY_REQUIRED,
             harness: HarnessKinds.CODEX,
             capabilityRequest: { reason: CodexTestUsageLimitMessage }
         });

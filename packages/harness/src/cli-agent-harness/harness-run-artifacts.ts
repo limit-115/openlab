@@ -4,16 +4,16 @@ import { mkdir, open, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { HarnessKind } from "#src/agent-harness/agent-harness.const";
 import type { HarnessArtifact, HarnessRunRequest } from "#src/agent-harness/agent-harness.types";
-import { HarnessRequestError } from "#src/cli-execution/harness-error";
 import {
     HARNESS_ARTIFACT_FILE_MODE,
     HarnessArtifactFiles
-} from "#src/subscription-cli-harness/harness-run-artifacts.const";
+} from "#src/cli-agent-harness/harness-run-artifacts.const";
 import type {
     HarnessRunFiles,
     NonManifestArtifacts
-} from "#src/subscription-cli-harness/harness-run-artifacts.types";
-import { responseJsonSchema } from "#src/subscription-cli-harness/response-schema";
+} from "#src/cli-agent-harness/harness-run-artifacts.types";
+import { responseJsonSchema } from "#src/cli-agent-harness/response-schema";
+import { HarnessRequestError } from "#src/cli-execution/harness-error";
 
 /**
  * `promptText` is what the CLI will actually be given, which is not always what the caller wrote: a

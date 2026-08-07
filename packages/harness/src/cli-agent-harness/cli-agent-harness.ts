@@ -18,6 +18,36 @@ import type {
 import { HarnessDiagnosticLevels, HarnessEventTypes } from "#src/agent-harness/harness-event.const";
 import type { HarnessCompletedEvent, HarnessEvent } from "#src/agent-harness/harness-event.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
+import type {
+    CliHarnessOptions,
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/cli-agent-harness/cli-agent-harness.types";
+import { runHarnessPreflight } from "#src/cli-agent-harness/harness-preflight";
+import {
+    closeRunFiles,
+    collectArtifacts,
+    createRunFiles,
+    writeStderrArtifact
+} from "#src/cli-agent-harness/harness-run-artifacts";
+import {
+    appendEvent,
+    appendNativeEventLine,
+    parseNativeEvent,
+    stampEvent
+} from "#src/cli-agent-harness/harness-run-events";
+import {
+    writeFinishedRunManifest,
+    writeStartedRunManifest
+} from "#src/cli-agent-harness/harness-run-manifest";
+import type { FinishedRunManifest } from "#src/cli-agent-harness/harness-run-manifest.types";
+import { validateHarnessRunRequest } from "#src/cli-agent-harness/harness-run-request-validation";
+import { determineRunStatus } from "#src/cli-agent-harness/harness-run-status";
+import {
+    createWatchdogSignal,
+    validateTimeoutMilliseconds
+} from "#src/cli-agent-harness/harness-run-watchdog";
+import { parseStructuredOutput } from "#src/cli-agent-harness/response-schema";
 import { ExecaHarnessProcessRunner } from "#src/cli-execution/cli-process-runner";
 import type {
     HarnessCaptureResult,
@@ -25,55 +55,25 @@ import type {
     HarnessProcessRunner
 } from "#src/cli-execution/cli-process-runner.types";
 import {
+    removedHarnessEnvironmentVariables,
+    sanitizeHarnessEnvironment
+} from "#src/cli-execution/harness-environment";
+import {
     HarnessCapabilityError,
     HarnessProtocolError,
     HarnessTimeoutError
 } from "#src/cli-execution/harness-error";
 import { HarnessTimeoutPhases } from "#src/cli-execution/harness-error.const";
-import {
-    removedHarnessEnvironmentVariables,
-    sanitizeHarnessEnvironment
-} from "#src/cli-execution/subscription-environment";
 import { spentAllowanceError, spentAllowanceMessage } from "#src/spent-allowance/spent-allowance";
-import {
-    closeRunFiles,
-    collectArtifacts,
-    createRunFiles,
-    writeStderrArtifact
-} from "#src/subscription-cli-harness/harness-run-artifacts";
-import {
-    appendEvent,
-    appendNativeEventLine,
-    parseNativeEvent,
-    stampEvent
-} from "#src/subscription-cli-harness/harness-run-events";
-import {
-    writeFinishedRunManifest,
-    writeStartedRunManifest
-} from "#src/subscription-cli-harness/harness-run-manifest";
-import type { FinishedRunManifest } from "#src/subscription-cli-harness/harness-run-manifest.types";
-import { validateHarnessRunRequest } from "#src/subscription-cli-harness/harness-run-request-validation";
-import { determineRunStatus } from "#src/subscription-cli-harness/harness-run-status";
-import {
-    createWatchdogSignal,
-    validateTimeoutMilliseconds
-} from "#src/subscription-cli-harness/harness-run-watchdog";
-import { parseStructuredOutput } from "#src/subscription-cli-harness/response-schema";
-import type {
-    HarnessCommand,
-    HarnessRunPaths,
-    SubscriptionHarnessOptions
-} from "#src/subscription-cli-harness/subscription-cli-harness.types";
-import { runSubscriptionPreflight } from "#src/subscription-cli-harness/subscription-preflight";
 
-export abstract class SubscriptionCliHarness implements AgentHarness {
+export abstract class CliAgentHarness implements AgentHarness {
     abstract readonly kind: HarnessKind;
     readonly #binary: string;
     readonly #runner: HarnessProcessRunner;
     readonly #sourceEnvironment: Readonly<NodeJS.ProcessEnv>;
     readonly #preflightTimeoutMs: number;
 
-    protected constructor(defaultBinary: string, options: SubscriptionHarnessOptions) {
+    protected constructor(defaultBinary: string, options: CliHarnessOptions) {
         this.#binary = options.binary ?? defaultBinary;
         this.#runner = options.runner ?? new ExecaHarnessProcessRunner();
         this.#sourceEnvironment = options.environment ?? process.env;
@@ -114,7 +114,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
 
     /**
      * The environment the CLI runs with, once every inherited provider credential has been stripped.
-     * A harness whose subscription credential lives outside the CLI's own login adds it back here,
+     * A harness whose credential lives outside the CLI's own login adds it back here,
      * and nowhere else, so the run can never inherit a stray endpoint from the operator's shell.
      */
     protected extendEnvironment(
@@ -143,7 +143,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         cwd: string,
         signal?: AbortSignal
     ): Promise<HarnessPreflight> {
-        return runSubscriptionPreflight(
+        return runHarnessPreflight(
             {
                 kind: this.kind,
                 binary: this.#binary,

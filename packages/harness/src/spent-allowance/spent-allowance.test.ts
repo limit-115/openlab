@@ -21,7 +21,7 @@ describe("spent allowance", () => {
     it("tells a subscription operator to wait, keeping the reset time the vendor named", () => {
         const error = spentAllowanceError(HarnessKinds.CODEX, CodexTestUsageLimitMessage);
 
-        expect(error.code).toBe(HarnessErrorCodes.SUBSCRIPTION_AUTH_REQUIRED);
+        expect(error.code).toBe(HarnessErrorCodes.CAPABILITY_REQUIRED);
         expect(error.gap).toBe(HarnessCapabilityGaps.ALLOWANCE);
         expect(error.capabilityRequest.reason).toContain("try again at Aug 9th, 2026 6:50 PM");
         expect(error.capabilityRequest.provisioningHint).toContain("reset");

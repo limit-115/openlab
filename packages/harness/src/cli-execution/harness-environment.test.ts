@@ -3,10 +3,10 @@ import {
     isForbiddenHarnessEnvironmentVariable,
     removedHarnessEnvironmentVariables,
     sanitizeHarnessEnvironment
-} from "#src/cli-execution/subscription-environment";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
+} from "#src/cli-execution/harness-environment";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 
-describe("subscription environment isolation", () => {
+describe("harness environment isolation", () => {
     it("strips model API credentials and billing routes while retaining local CLI auth state", () => {
         const environment = testEnvironment();
         const sanitized = sanitizeHarnessEnvironment(environment);

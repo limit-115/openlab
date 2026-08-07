@@ -5,6 +5,12 @@ import { HarnessRunStatuses } from "#src/agent-harness/agent-harness.const";
 import { HarnessEventTypes } from "#src/agent-harness/harness-event.const";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import {
+    harnessRequest,
+    lastCompleted,
+    removeHarnessRunDirectories,
+    TestTimeoutMilliseconds
+} from "#src/cli-agent-harness/harness-run.fixture";
+import {
     captureCancellationOnAbort,
     captureSuccess,
     FakeHarnessProcessRunner,
@@ -13,25 +19,19 @@ import {
     TestProcessSignals
 } from "#src/cli-execution/cli-process-runner.fixture";
 import type { HarnessProcessExit } from "#src/cli-execution/cli-process-runner.types";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import { HarnessAbortedError } from "#src/cli-execution/harness-error";
 import { HarnessErrorCodes, HarnessTimeoutPhases } from "#src/cli-execution/harness-error.const";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import {
     CodexTestCliValues,
     CodexTestLoginMarkers,
     CodexTestNativeEventTypes
 } from "#src/codex-cli/codex-cli.fixture";
 import { CodexHarness } from "#src/codex-cli/codex-harness";
-import {
-    harnessRequest,
-    lastCompleted,
-    removeHarnessRunDirectories,
-    TestTimeoutMilliseconds
-} from "#src/subscription-cli-harness/harness-run.fixture";
 
 afterEach(removeHarnessRunDirectories);
 
-describe("subscription CLI harness run lifecycle", () => {
+describe("CLI agent harness run lifecycle", () => {
     it("honors an already-aborted signal before invoking a CLI", async () => {
         const runner = new FakeHarnessProcessRunner([]);
         const harness = new CodexHarness({ runner, environment: testEnvironment() });

@@ -1,7 +1,7 @@
 import {
     ForbiddenEnvironmentPrefix,
     ForbiddenEnvironmentVariable
-} from "#src/cli-execution/subscription-environment.const";
+} from "#src/cli-execution/harness-environment.const";
 
 const forbiddenEnvironmentVariables: ReadonlySet<string> = new Set(
     Object.values(ForbiddenEnvironmentVariable)

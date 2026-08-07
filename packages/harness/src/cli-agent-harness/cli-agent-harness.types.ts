@@ -1,6 +1,6 @@
 import type { HarnessProcessRunner } from "#src/cli-execution/cli-process-runner.types";
 
-export interface SubscriptionHarnessOptions {
+export interface CliHarnessOptions {
     readonly binary?: string;
     readonly runner?: HarnessProcessRunner;
     readonly environment?: Readonly<NodeJS.ProcessEnv>;

@@ -9,26 +9,26 @@ import {
     HarnessTimeoutMilliseconds
 } from "#src/agent-harness/agent-harness.const";
 import {
+    harnessRequest,
+    lastCompleted,
+    removeHarnessRunDirectories,
+    TestTimeoutMilliseconds
+} from "#src/cli-agent-harness/harness-run.fixture";
+import { HarnessArtifactFiles } from "#src/cli-agent-harness/harness-run-artifacts.const";
+import { writeStartedRunManifest } from "#src/cli-agent-harness/harness-run-manifest";
+import { readFinishedRunOutcome } from "#src/cli-agent-harness/harness-run-outcome";
+import {
     captureSuccess,
     FakeHarnessProcessRunner,
     streamUntilAbort
 } from "#src/cli-execution/cli-process-runner.fixture";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import {
     CodexTestCliValues,
     CodexTestLoginMarkers,
     CodexTestNativeEventTypes
 } from "#src/codex-cli/codex-cli.fixture";
 import { CodexHarness } from "#src/codex-cli/codex-harness";
-import {
-    harnessRequest,
-    lastCompleted,
-    removeHarnessRunDirectories,
-    TestTimeoutMilliseconds
-} from "#src/subscription-cli-harness/harness-run.fixture";
-import { HarnessArtifactFiles } from "#src/subscription-cli-harness/harness-run-artifacts.const";
-import { writeStartedRunManifest } from "#src/subscription-cli-harness/harness-run-manifest";
-import { readFinishedRunOutcome } from "#src/subscription-cli-harness/harness-run-outcome";
 
 afterEach(removeHarnessRunDirectories);
 

@@ -12,6 +12,11 @@ import type {
 } from "#src/agent-harness/agent-harness.types";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
+import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
+import type {
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/cli-agent-harness/cli-agent-harness.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { resolveMuseAccount } from "#src/muse-cli/muse-account";
@@ -28,11 +33,6 @@ import { MuseEventParser } from "#src/muse-cli/muse-event-parser";
 import type { MuseHarnessOptions } from "#src/muse-cli/muse-harness.types";
 import { museRunArguments } from "#src/muse-cli/muse-run-arguments";
 import { museStructuredPrompt } from "#src/muse-cli/muse-structured-response";
-import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type {
-    HarnessCommand,
-    HarnessRunPaths
-} from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
 /**
  * Meta's Muse Code, driven headless through `muse exec`.
@@ -44,7 +44,7 @@ import type {
  * preflight says the run is metered, the harness setup card says it before the operator picks the
  * harness, and no spend cap can be set against it because there is no window to take a fraction of.
  */
-export class MuseHarness extends SubscriptionCliHarness {
+export class MuseHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.MUSE;
     readonly #resolveAccount: ResolveMuseAccount;
     readonly #environment: Readonly<NodeJS.ProcessEnv>;
@@ -173,7 +173,7 @@ export class MuseHarness extends SubscriptionCliHarness {
     #unusableCredential(cause: unknown): HarnessCapabilityError {
         return new HarnessCapabilityError(
             this.kind,
-            HarnessCapabilityGaps.SUBSCRIPTION,
+            HarnessCapabilityGaps.CREDENTIAL,
             "Muse Code is not signed in to a Meta account the lab can name",
             {
                 need: "Muse Code signed in with `muse login` against Meta's own host",

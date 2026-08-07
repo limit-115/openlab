@@ -1,13 +1,13 @@
 import writeFileAtomic from "write-file-atomic";
 import { HarnessRunStatuses } from "#src/agent-harness/agent-harness.const";
 import type { HarnessArtifact } from "#src/agent-harness/agent-harness.types";
-import { hashArtifact } from "#src/subscription-cli-harness/harness-run-artifacts";
-import { HARNESS_ARTIFACT_FILE_MODE } from "#src/subscription-cli-harness/harness-run-artifacts.const";
-import { HARNESS_MANIFEST_SCHEMA_VERSION } from "#src/subscription-cli-harness/harness-run-manifest.const";
+import { hashArtifact } from "#src/cli-agent-harness/harness-run-artifacts";
+import { HARNESS_ARTIFACT_FILE_MODE } from "#src/cli-agent-harness/harness-run-artifacts.const";
+import { HARNESS_MANIFEST_SCHEMA_VERSION } from "#src/cli-agent-harness/harness-run-manifest.const";
 import type {
     FinishedRunManifest,
     StartedRunManifest
-} from "#src/subscription-cli-harness/harness-run-manifest.types";
+} from "#src/cli-agent-harness/harness-run-manifest.types";
 
 export async function writeStartedRunManifest(
     manifestPath: string,

@@ -3,9 +3,9 @@ import {
     captureSuccess,
     FakeHarnessProcessRunner
 } from "#src/cli-execution/cli-process-runner.fixture";
+import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
-import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import { CodexTestCliValues, CodexTestLoginMarkers } from "#src/codex-cli/codex-cli.fixture";
 import { CodexHarness } from "#src/codex-cli/codex-harness";
 import { DeepseekHarness } from "#src/deepseek-cli/deepseek-harness";
@@ -26,7 +26,7 @@ function preflightRefusal(...captures: readonly ReturnType<typeof captureSuccess
  * the only place that can tell them apart: it has seen whether the CLI answered before it asked the
  * CLI who it is signed in as.
  */
-describe("runSubscriptionPreflight", () => {
+describe("runHarnessPreflight", () => {
     it("reports a CLI that is not there as a missing installation", async () => {
         const refusal = await preflightRefusal({
             ...captureSuccess(""),
@@ -46,7 +46,7 @@ describe("runSubscriptionPreflight", () => {
         });
 
         expect(refusal).toBeInstanceOf(HarnessCapabilityError);
-        expect(refusal).toMatchObject({ gap: HarnessCapabilityGaps.SUBSCRIPTION });
+        expect(refusal).toMatchObject({ gap: HarnessCapabilityGaps.CREDENTIAL });
     });
 
     /**

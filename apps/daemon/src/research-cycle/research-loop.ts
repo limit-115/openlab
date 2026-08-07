@@ -150,10 +150,10 @@ async function hibernateOnBlockedDispatch(
     const reason = blockedDispatchReason(blocks);
     if (!heldBySpendCaps(blocks) && workspace.getSnapshot().capability_requests.length === 0) {
         await workspace.requestCapability({
-            need: "A responsive Codex, Claude or GLM CLI with an active product subscription",
+            need: "A responsive agent CLI harness this investigation can dispatch to",
             reason,
             provisioningHint:
-                "Restore a local product-subscription CLI session and retry; API billing is forbidden",
+                "Sign a harness back in on the setup page, or give the lab a credential it can spend, then retry",
             blocking: true
         });
     }

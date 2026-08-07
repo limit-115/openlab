@@ -1,5 +1,5 @@
-import { MAXIMUM_TIMEOUT_MILLISECONDS } from "#src/subscription-cli-harness/harness-run-watchdog.const";
-import type { WatchdogSignal } from "#src/subscription-cli-harness/harness-run-watchdog.types";
+import { MAXIMUM_TIMEOUT_MILLISECONDS } from "#src/cli-agent-harness/harness-run-watchdog.const";
+import type { WatchdogSignal } from "#src/cli-agent-harness/harness-run-watchdog.types";
 
 export function createWatchdogSignal(
     timeoutMs: number,

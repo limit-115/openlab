@@ -1,5 +1,8 @@
 import type { HarnessKind } from "#src/agent-harness/agent-harness.const";
 import type { HarnessPreflight } from "#src/agent-harness/agent-harness.types";
+import type { HarnessPreflightRequest } from "#src/cli-agent-harness/harness-preflight.types";
+import { createWatchdogSignal } from "#src/cli-agent-harness/harness-run-watchdog";
+import type { WatchdogSignal } from "#src/cli-agent-harness/harness-run-watchdog.types";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import {
     HarnessAbortedError,
@@ -10,12 +13,9 @@ import {
     HarnessCapabilityGaps,
     HarnessTimeoutPhases
 } from "#src/cli-execution/harness-error.const";
-import { createWatchdogSignal } from "#src/subscription-cli-harness/harness-run-watchdog";
-import type { WatchdogSignal } from "#src/subscription-cli-harness/harness-run-watchdog.types";
-import type { SubscriptionPreflightRequest } from "#src/subscription-cli-harness/subscription-preflight.types";
 
-export async function runSubscriptionPreflight(
-    request: SubscriptionPreflightRequest,
+export async function runHarnessPreflight(
+    request: HarnessPreflightRequest,
     signal?: AbortSignal
 ): Promise<HarnessPreflight> {
     throwIfAborted(request.kind, signal);
@@ -83,7 +83,7 @@ function throwIfAborted(
 }
 
 function throwIfPreflightStopped(
-    request: SubscriptionPreflightRequest,
+    request: HarnessPreflightRequest,
     watchdog: WatchdogSignal,
     signal: AbortSignal | undefined,
     result: HarnessCaptureResult

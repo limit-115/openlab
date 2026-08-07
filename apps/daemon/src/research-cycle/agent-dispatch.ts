@@ -41,7 +41,7 @@ export class DispatchBlockedError extends Error {
     readonly blocks: readonly SubscriptionBlock[];
 
     constructor(role: string, blocks: readonly SubscriptionBlock[]) {
-        super(`No subscription could take the ${role} work`);
+        super(`No agent CLI harness could take the ${role} work`);
         this.name = "DispatchBlockedError";
         this.blocks = blocks;
     }
@@ -131,14 +131,14 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
             }
             if (error instanceof HarnessCapabilityError) {
                 blocks.push(unavailableBlock(harness.kind, error.message));
-                await requestSubscriptionCapability(input.workspace, error.capabilityRequest);
+                await requestHarnessCapability(input.workspace, error.capabilityRequest);
             }
         }
     }
     if (blocks.length === input.available.length) {
         throw new DispatchBlockedError(input.role, blocks);
     }
-    throw lastError ?? new Error("All subscription CLI harness attempts failed");
+    throw lastError ?? new Error("All agent CLI harness attempts failed");
 }
 
 /**
@@ -151,7 +151,7 @@ async function recordSubscriptionBlock(
     block: SubscriptionBlock
 ): Promise<void> {
     if (block.capabilityError !== undefined) {
-        await requestSubscriptionCapability(workspace, block.capabilityError.capabilityRequest);
+        await requestHarnessCapability(workspace, block.capabilityError.capabilityRequest);
         return;
     }
     await workspace.appendEvent(EventType.HARNESS_WITHHELD, {
@@ -203,10 +203,10 @@ export async function persistAgentCapabilityRequests(
 }
 
 /**
- * A harness that cannot reach its product subscription genuinely stops the investigation: no agent runs at
- * all until the operator restores the session, so this is the one request the daemon raises itself.
+ * A harness that cannot reach the account it spends genuinely stops the investigation: no agent runs
+ * at all until the operator restores it, so this is the one request the daemon raises itself.
  */
-export function requestSubscriptionCapability(
+export function requestHarnessCapability(
     workspace: InvestigationWorkspace,
     request: HarnessCapabilityRequest
 ): Promise<CapabilityRequest> {

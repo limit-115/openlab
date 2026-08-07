@@ -1,6 +1,6 @@
+import type { CliHarnessOptions } from "#src/cli-agent-harness/cli-agent-harness.types";
 import type { ResolveZaiCodingPlan } from "#src/glm-cli/zai-coding-plan.types";
-import type { SubscriptionHarnessOptions } from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
-export interface GlmHarnessOptions extends SubscriptionHarnessOptions {
+export interface GlmHarnessOptions extends CliHarnessOptions {
     readonly resolveCodingPlan?: ResolveZaiCodingPlan;
 }

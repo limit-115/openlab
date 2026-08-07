@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { z } from "zod";
 import { HarnessRunStatuses } from "#src/agent-harness/agent-harness.const";
-import { HarnessArtifactFiles } from "#src/subscription-cli-harness/harness-run-artifacts.const";
-import type { FinishedRunOutcome } from "#src/subscription-cli-harness/harness-run-outcome.types";
+import { HarnessArtifactFiles } from "#src/cli-agent-harness/harness-run-artifacts.const";
+import type { FinishedRunOutcome } from "#src/cli-agent-harness/harness-run-outcome.types";
 
 /** The fields both the started and the finished manifest share, plus the two only an end has. */
 const RunManifestOutcomeSchema = z.object({

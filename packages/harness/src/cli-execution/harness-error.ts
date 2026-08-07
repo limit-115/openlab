@@ -41,7 +41,7 @@ export class HarnessCapabilityError extends HarnessError {
         capabilityRequest: HarnessCapabilityRequest,
         options?: ErrorOptions
     ) {
-        super(harness, HarnessErrorCodes.SUBSCRIPTION_AUTH_REQUIRED, message, options);
+        super(harness, HarnessErrorCodes.CAPABILITY_REQUIRED, message, options);
         this.name = "HarnessCapabilityError";
         this.gap = gap;
         this.capabilityRequest = capabilityRequest;

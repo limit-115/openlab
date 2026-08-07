@@ -3,8 +3,8 @@ import {
     HarnessTimeoutMilliseconds
 } from "#src/agent-harness/agent-harness.const";
 import type { HarnessRunRequest } from "#src/agent-harness/agent-harness.types";
+import { validateTimeoutMilliseconds } from "#src/cli-agent-harness/harness-run-watchdog";
 import { HarnessRequestError } from "#src/cli-execution/harness-error";
-import { validateTimeoutMilliseconds } from "#src/subscription-cli-harness/harness-run-watchdog";
 
 export function validateHarnessRunRequest(kind: HarnessKind, request: HarnessRunRequest): void {
     if (!request.prompt.trim()) {

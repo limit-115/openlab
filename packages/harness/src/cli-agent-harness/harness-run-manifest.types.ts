@@ -5,7 +5,7 @@ import type {
     HarnessCommandRecord,
     HarnessSession
 } from "#src/agent-harness/agent-harness.types";
-import type { NonManifestArtifacts } from "#src/subscription-cli-harness/harness-run-artifacts.types";
+import type { NonManifestArtifacts } from "#src/cli-agent-harness/harness-run-artifacts.types";
 
 export interface StartedRunManifest {
     readonly kind: HarnessKind;
