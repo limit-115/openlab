@@ -69,9 +69,6 @@
 - Pin every model endpoint a harness talks to. Vendors serve subscription quota and pay-as-you-go
   billing from the same credential on different hosts or paths, so a configurable base URL is a silent
   path to the wrong bill.
-- Never put a credential on a command line. Arguments are written into the run manifest and are
-  readable in the process table, so a key belongs in the environment the harness builds and nowhere
-  else.
 - Define every finite domain value set (events, statuses, states, roles, lanes, result kinds) as a
   named `const` object with `as const`, and infer its union type from that object. Zod schemas and all
   comparisons must use those constants. Do not use TypeScript `enum` or domain magic strings.
