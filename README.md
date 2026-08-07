@@ -65,6 +65,30 @@ own data lives elsewhere again, under `OPENLAB_HOME`, and no install or uninstal
 openlab uninstall   # takes the program back out, leaves your lab where it is
 ```
 
+## Update
+
+```bash
+openlab update            # move to the release published now
+openlab update --check    # say what is published and install nothing
+openlab update 0.1.0      # go back to a version you name
+```
+
+A lab that is already running is not disturbed. Each version installs into a directory of its own
+and the command you type is a launcher pointing at one of them, so an update lands beside the
+version that is answering and moves the launcher; whatever is running keeps running the release it
+started on until you restart it.
+
+The version an update replaced stays on disk, which is what makes going back a command rather than
+a download — `openlab update <version>` on a release still installed needs no network at all.
+Anything older than that is deleted, and `--no-prune` keeps it.
+
+Starting a lab asks the release channel at most once a day and says one line if there is something
+newer. It installs nothing on its own: a lab that researches for hours is not a lab to change
+underneath, so when to take an update is yours to decide.
+
+Set `OPENLAB_RELEASES_URL` to update from a mirror rather than from GitHub. Its manifest has to be
+signed by a key the lab trusts, so name yours in `OPENLAB_RELEASES_KEY`.
+
 Every archive is verified against a digest published in the release manifest before anything is
 unpacked, and a mismatch stops the install rather than warning about it. Releases are built by
 GitHub Actions and attested, so what you downloaded can be traced back to the workflow that built it:
