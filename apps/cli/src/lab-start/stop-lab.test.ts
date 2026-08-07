@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stopLab, stopLabOnSignal } from "#src/lab-start/stop-lab";
-import { ShutdownSignal } from "#src/lab-start/stop-lab.const";
+import { FORCED_STOP_EXIT_CODE, ShutdownSignal } from "#src/lab-start/stop-lab.const";
 
 const exitCodeBeforeTests = process.exitCode;
 const listenersBeforeTests = new Map(
@@ -28,6 +28,11 @@ function terminal(): () => string {
         return true;
     });
     return () => written.join("");
+}
+
+/** Long enough for a timer set for now, without holding the test to a real wait. */
+function settle(): Promise<void> {
+    return new Promise((done) => setTimeout(done, 5));
 }
 
 describe("stopLab", () => {
@@ -79,24 +84,6 @@ describe("stopLabOnSignal", () => {
         expect(close).toHaveBeenCalledOnce();
     });
 
-    /**
-     * The interrupt a script runner forwards lands while the lab is still going down, and Node
-     * kills whatever is left of a process holding no listener for it.
-     */
-    it("stays under the signal while it is stopping, so a second one cannot kill the stop", () => {
-        terminal();
-        const close = vi.fn(async () => undefined);
-
-        stopLabOnSignal(close);
-        process.emit(ShutdownSignal.INTERRUPT);
-
-        expect(process.listenerCount(ShutdownSignal.INTERRUPT)).toBeGreaterThan(0);
-
-        process.emit(ShutdownSignal.INTERRUPT);
-
-        expect(close).toHaveBeenCalledOnce();
-    });
-
     it("stops a lab a service manager takes down the same way it stops one an operator does", () => {
         terminal();
         const close = vi.fn(async () => undefined);
@@ -105,5 +92,71 @@ describe("stopLabOnSignal", () => {
         process.emit(ShutdownSignal.TERMINATE);
 
         expect(close).toHaveBeenCalledOnce();
+    });
+
+    /**
+     * The interrupt a script runner forwards lands while the lab is still going down, and Node
+     * kills whatever is left of a process holding no listener for it.
+     */
+    it("stays under the signal while it is stopping, so a second one cannot kill the stop", () => {
+        terminal();
+        const close = vi.fn(async () => undefined);
+        const quit = vi.fn();
+
+        stopLabOnSignal(close, { quit, interactive: true });
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(process.listenerCount(ShutdownSignal.INTERRUPT)).toBeGreaterThan(0);
+
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(close).toHaveBeenCalledOnce();
+        expect(quit).not.toHaveBeenCalled();
+    });
+
+    it("offers the way out of a stop that drags, and takes the next interrupt as taking it", async () => {
+        const read = terminal();
+        const quit = vi.fn();
+
+        stopLabOnSignal(() => new Promise(() => undefined), {
+            quit,
+            interactive: true,
+            quitOfferAfterMs: 0
+        });
+        process.emit(ShutdownSignal.INTERRUPT);
+        await settle();
+
+        expect(read()).toContain("Ctrl+C again");
+
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(quit).toHaveBeenCalledWith(FORCED_STOP_EXIT_CODE);
+    });
+
+    it("says nothing about a wait to a stop that did not have one", async () => {
+        const read = terminal();
+
+        stopLabOnSignal(async () => undefined, { interactive: true, quitOfferAfterMs: 0 });
+        process.emit(ShutdownSignal.INTERRUPT);
+        await settle();
+
+        expect(read()).toContain("See you soon");
+        expect(read()).not.toContain("Ctrl+C again");
+    });
+
+    /** A service manager reads what the lab did; it cannot press anything. */
+    it("keeps what to press out of a run nobody is watching", async () => {
+        const read = terminal();
+
+        stopLabOnSignal(() => new Promise(() => undefined), {
+            quit: vi.fn(),
+            interactive: false,
+            quitOfferAfterMs: 0
+        });
+        process.emit(ShutdownSignal.INTERRUPT);
+        await settle();
+
+        expect(read()).toContain("Stopping the lab");
+        expect(read()).not.toContain("Ctrl+C");
     });
 });

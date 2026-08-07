@@ -165,7 +165,10 @@ program
                 ? `Lab running at ${daemon.url}, opened in your browser`
                 : `Lab running at ${daemon.url}`
         );
-        log.message("Press Ctrl+C to stop the lab");
+        /** What the lab did is written down for whoever reads it; what to press is for whoever can. */
+        if (isTTY(process.stdout)) {
+            log.message("Press Ctrl+C to stop the lab");
+        }
     });
 
 program
