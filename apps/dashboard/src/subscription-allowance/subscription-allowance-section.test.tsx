@@ -1,5 +1,6 @@
 import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { LabSettingsSchema } from "@openlab/protocol/lab-settings/lab-settings.schema";
+import { SpendCapKinds } from "@openlab/protocol/spend-caps/spend-cap.const";
 import { SubscriptionAllowanceState } from "@openlab/protocol/subscription-allowance/subscription-allowance.const";
 import type { SubscriptionAllowanceRoster } from "@openlab/protocol/subscription-allowance/subscription-allowance.types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -22,6 +23,16 @@ function roster(readAt: string, usedPercent: number): SubscriptionAllowanceRoste
             state: SubscriptionAllowanceState.AVAILABLE,
             plan: "pro",
             windows: [{ duration_minutes: 300, used_percent: usedPercent, resets_at: null }],
+            balances: [],
+            error: null,
+            read_at: readAt
+        },
+        {
+            harness: AgentHarnessKind.DEEPSEEK,
+            state: SubscriptionAllowanceState.AVAILABLE,
+            plan: null,
+            windows: [],
+            balances: [{ currency: "USD", amount: "42.50" }],
             error: null,
             read_at: readAt
         }
@@ -172,8 +183,47 @@ describe("SubscriptionAllowanceSection", () => {
         );
 
         expect(savedCaps(request)).toEqual([
-            { harness: AgentHarnessKind.GLM, window_minutes: 300, max_used_percent: 98 }
+            {
+                kind: SpendCapKinds.WINDOW_PERCENT,
+                harness: AgentHarnessKind.GLM,
+                window_minutes: 300,
+                max_used_percent: 98
+            }
         ]);
+    });
+
+    it("hands the lab the floor the operator typed under a wallet", async () => {
+        const request = respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(SUBSCRIPTION_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5.00");
+        await userEvent.click(
+            screen.getByRole("button", { name: SUBSCRIPTION_ALLOWANCE_EN.capSave })
+        );
+
+        expect(savedCaps(request)).toEqual([
+            {
+                kind: SpendCapKinds.WALLET_FLOOR,
+                harness: AgentHarnessKind.DEEPSEEK,
+                currency: "USD",
+                minimum_balance: "5.00"
+            }
+        ]);
+    });
+
+    /**
+     * The field holds the number the lab will compare against a balance, so anything it could not
+     * compare never reaches the draft — and the operator is not told about a schema after the fact.
+     */
+    it("refuses a floor that is not money as it is typed", async () => {
+        respondAsLab(LabSettingsSchema.parse({}));
+        renderView();
+        const field = await screen.findByLabelText(SUBSCRIPTION_ALLOWANCE_EN.floorKeep);
+
+        await userEvent.type(field, "5 dollars");
+
+        expect(field).toHaveValue("5");
     });
 
     it("stands the limiters where the lab is holding, not where they were dragged", async () => {
@@ -181,7 +231,12 @@ describe("SubscriptionAllowanceSection", () => {
             LabSettingsSchema.parse({}),
             LabSettingsSchema.parse({
                 spend_caps: [
-                    { harness: AgentHarnessKind.GLM, window_minutes: 300, max_used_percent: 45 }
+                    {
+                        kind: SpendCapKinds.WINDOW_PERCENT,
+                        harness: AgentHarnessKind.GLM,
+                        window_minutes: 300,
+                        max_used_percent: 45
+                    }
                 ]
             })
         );

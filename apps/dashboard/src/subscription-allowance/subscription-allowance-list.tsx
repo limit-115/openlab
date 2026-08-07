@@ -1,5 +1,10 @@
 import type { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
-import { windowSpendCap, withheldWindows } from "@openlab/protocol/spend-caps/spend-cap";
+import {
+    walletSpendFloor,
+    windowSpendCap,
+    withheldBalances,
+    withheldWindows
+} from "@openlab/protocol/spend-caps/spend-cap";
 import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
 import { SubscriptionAllowanceState } from "@openlab/protocol/subscription-allowance/subscription-allowance.const";
 import type {
@@ -25,27 +30,31 @@ import {
     ALLOWANCE_WINDOW,
     ALLOWANCE_WINDOW_LIST
 } from "#src/subscription-allowance/subscription-allowance-list.const";
+import { WalletFloorField } from "#src/subscription-allowance/wallet-floor-field";
 
 interface SubscriptionAllowanceListProps {
     allowances: SubscriptionAllowanceRoster;
-    /** Where the limiters stand on the page, which is where the operator has dragged them. */
+    /** Where the limiters stand on the page, which is where the operator has dragged or typed them. */
     caps: SpendCaps;
     /** The caps the lab has actually been given, which decide what it is doing right now. */
     heldBy: SpendCaps;
     /** Absent where the runtime serves no settings: the caps are then not the page's to move. */
     setCap?: (harness: AgentHarnessKind, windowMinutes: number, percent: number) => void;
+    setFloor?: (harness: AgentHarnessKind, currency: string, floor: string) => void;
 }
 
 /**
- * One card per subscription: what each of its windows has left, and the point the lab stops
- * spending it. The readings are drawn as a plain list under the block's heading rather than boxed
- * in a card that would repeat it.
+ * One card per account: what each of its meters has left, and the point the lab stops spending it.
+ * A vendor that sells a subscription meters windows and a vendor that sells tokens meters money, so
+ * a card carries whichever of the two answered — and an account that meters neither carries its name
+ * and the plan line that says so.
  */
 export function SubscriptionAllowanceList({
     allowances,
     caps,
     heldBy,
-    setCap
+    setCap,
+    setFloor
 }: SubscriptionAllowanceListProps) {
     const { t } = useTranslation(SUBSCRIPTION_ALLOWANCE_NAMESPACE);
     const windowLabel = (durationMinutes: number): string => {
@@ -57,20 +66,27 @@ export function SubscriptionAllowanceList({
         <ul className={ALLOWANCE_LIST} aria-label={t("title")}>
             {allowances.map((allowance) => {
                 const held = withheldWindows(allowance, heldBy);
+                const drained = withheldBalances(allowance, heldBy);
+                const meters = allowance.windows.length + allowance.balances.length;
                 return (
                     <li
                         key={allowance.harness}
                         className={cn(
                             ALLOWANCE_CARD,
                             (allowance.state === SubscriptionAllowanceState.EXHAUSTED ||
-                                held.length > 0) &&
+                                held.length > 0 ||
+                                drained.length > 0) &&
                                 ALLOWANCE_CARD_SPENT
                         )}
                     >
-                        <SubscriptionHeader allowance={allowance} withheld={held.length > 0} />
+                        <SubscriptionHeader
+                            allowance={allowance}
+                            withheld={held.length > 0 || drained.length > 0}
+                        />
                         {allowance.state === SubscriptionAllowanceState.UNREADABLE ? (
                             <p className={ALLOWANCE_ERROR}>{allowance.error}</p>
-                        ) : (
+                        ) : null}
+                        {meters === 0 ? null : (
                             <ul className={ALLOWANCE_WINDOW_LIST}>
                                 {allowance.windows.map((window) => (
                                     <li key={window.duration_minutes} className={ALLOWANCE_WINDOW}>
@@ -91,6 +107,29 @@ export function SubscriptionAllowanceList({
                                                               allowance.harness,
                                                               window.duration_minutes,
                                                               percent
+                                                          )
+                                                  })}
+                                        />
+                                    </li>
+                                ))}
+                                {allowance.balances.map((balance) => (
+                                    <li key={balance.currency} className={ALLOWANCE_WINDOW}>
+                                        <WalletFloorField
+                                            balance={balance}
+                                            floor={walletSpendFloor(
+                                                caps,
+                                                allowance.harness,
+                                                balance.currency
+                                            )}
+                                            withheld={drained.includes(balance)}
+                                            {...(setFloor === undefined
+                                                ? {}
+                                                : {
+                                                      setFloor: (floor: string) =>
+                                                          setFloor(
+                                                              allowance.harness,
+                                                              balance.currency,
+                                                              floor
                                                           )
                                                   })}
                                         />

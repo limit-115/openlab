@@ -17,7 +17,11 @@ import { Panel } from "#src/panel/panel";
 import { PanelEmptyState } from "#src/panel/panel-empty-state";
 import { AllowanceReadingHeader } from "#src/subscription-allowance/allowance-reading-header";
 import { allowanceReadingTime } from "#src/subscription-allowance/allowance-reading-time";
-import { hasCapEdits, withWindowCap } from "#src/subscription-allowance/spend-cap-draft";
+import {
+    hasCapEdits,
+    withWalletFloor,
+    withWindowCap
+} from "#src/subscription-allowance/spend-cap-draft";
 import { SUBSCRIPTION_ALLOWANCE_NAMESPACE } from "#src/subscription-allowance/subscription-allowance.i18n";
 import {
     fetchSubscriptionAllowance,
@@ -106,6 +110,17 @@ export function SubscriptionAllowanceSection() {
         save.reset();
     }
 
+    function moveFloor(harness: AgentHarnessKind, currency: string, floor: string): void {
+        if (edited === undefined) {
+            return;
+        }
+        setEdited({
+            saved: edited.saved,
+            draft: withWalletFloor(edited.draft, harness, currency, floor)
+        });
+        save.reset();
+    }
+
     const unsaved = edited !== undefined && hasCapEdits(edited.draft, edited.saved.spend_caps);
 
     return (
@@ -118,7 +133,7 @@ export function SubscriptionAllowanceSection() {
                 failed={refresh.isError}
                 caps={edited?.draft ?? []}
                 heldBy={edited?.saved.spend_caps ?? []}
-                {...(edited === undefined ? {} : { setCap: moveCap })}
+                {...(edited === undefined ? {} : { setCap: moveCap, setFloor: moveFloor })}
             />
 
             {unsaved ? (
@@ -161,6 +176,7 @@ interface AllowanceReadingsProps {
     caps: SpendCaps;
     heldBy: SpendCaps;
     setCap?: (harness: AgentHarnessKind, windowMinutes: number, percent: number) => void;
+    setFloor?: (harness: AgentHarnessKind, currency: string, floor: string) => void;
 }
 
 /**
@@ -175,7 +191,8 @@ function AllowanceReadings({
     failed,
     caps,
     heldBy,
-    setCap
+    setCap,
+    setFloor
 }: AllowanceReadingsProps) {
     const { t } = useTranslation(SUBSCRIPTION_ALLOWANCE_NAMESPACE);
 
@@ -203,6 +220,7 @@ function AllowanceReadings({
                 caps={caps}
                 heldBy={heldBy}
                 {...(setCap === undefined ? {} : { setCap })}
+                {...(setFloor === undefined ? {} : { setFloor })}
             />
         </>
     );

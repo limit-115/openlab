@@ -11,11 +11,11 @@ export const HARNESS_SETUP_EN = {
 
     billingUsage: "BILLING USAGE",
     billingUsageNote:
-        "This one spends money while it runs. There is no cap: an investigation left working overnight bills every token it writes. Stopping the investigation is what stops the spending.",
+        "This one spends money while it runs: an investigation left working overnight bills every token it writes.",
     billingUsageDeepseek:
-        "An agent already running was handed the key and keeps it, so forgetting the key only holds back the runs that have not started.",
+        "DeepSeek states a balance, so the lab can be told to leave money where it is: put a floor under the wallet on the subscriptions page and it stops dispatching here before the balance falls through it. An agent already running was handed the key and keeps it, so a floor holds back the runs that have not started rather than the one under way.",
     billingUsageMuse:
-        "Meta publishes no balance and the CLI reports no token counts, so the lab cannot show you what a run has cost while it is running — only Meta's billing can, afterwards. The lab runs the tier Meta does not train on; the cheaper tier is paid for with your prompts and your code.",
+        "Meta publishes no balance, and nothing here yet meters a Muse run: the CLI records the tokens of every model call in its own session log and the lab does not read it, so this harness is the one you cannot watch spend. The lab runs the tier Meta does not train on; the cheaper tier is paid for with your prompts and your code.",
 
     [HarnessReadinessState.READY]: "Ready",
     [HarnessReadinessState.NOT_INSTALLED]: "Not installed",
@@ -66,11 +66,11 @@ export const HARNESS_SETUP_RU = {
 
     billingUsage: "BILLING USAGE",
     billingUsageNote:
-        "Эта оболочка тратит деньги, пока работает. Потолка нет: исследование, оставленное на ночь, оплачивает каждый написанный токен. Трата прекращается тогда, когда останавливают само исследование.",
+        "Эта оболочка тратит деньги, пока работает: исследование, оставленное на ночь, оплачивает каждый написанный токен.",
     billingUsageDeepseek:
-        "Уже запущенный агент получил ключ и держит его, так что забрать ключ значит лишь не дать начаться следующим прогонам.",
+        "DeepSeek сообщает баланс, поэтому лаборатории можно велеть не трогать часть денег: поставь кошельку нижнюю границу на странице подписок, и она перестанет отправлять сюда работу раньше, чем баланс упадёт ниже. Уже запущенный агент получил ключ и держит его, так что граница удерживает те прогоны, которые ещё не начались, а не идущий сейчас.",
     billingUsageMuse:
-        "Meta не публикует баланс, а CLI не сообщает количество токенов, так что лаборатория не может показать стоимость прогона, пока он идёт, — это скажет только счёт Meta, потом. Лаборатория запускает тот тариф, на котором Meta не обучается; дешёвый оплачивается твоими промптами и твоим кодом.",
+        "Meta не публикует баланс, и прогон Muse здесь пока ничем не измеряется: CLI записывает токены каждого вызова модели в собственный журнал сессии, а лаборатория его не читает, — это единственная оболочка, чью трату не видно. Лаборатория запускает тот тариф, на котором Meta не обучается; дешёвый оплачивается твоими промптами и твоим кодом.",
 
     [HarnessReadinessState.READY]: "Готов",
     [HarnessReadinessState.NOT_INSTALLED]: "Не установлен",

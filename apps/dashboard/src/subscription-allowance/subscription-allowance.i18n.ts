@@ -5,7 +5,7 @@ export const SUBSCRIPTION_ALLOWANCE_NAMESPACE = "subscription-allowance" as cons
 export const SUBSCRIPTION_ALLOWANCE_EN = {
     title: "Subscriptions",
     description:
-        "What each subscription has left, and how far into it the lab may spend. Drag a limiter to stop the lab dispatching before a window runs out; a run already under way still finishes, and an investigation can be told to spend past the caps.",
+        "What each account has left, and how far into it the lab may spend. Drag a limiter to stop the lab dispatching before a subscription window runs out, or floor a wallet to stop it before the money does; a run already under way still finishes, and an investigation can be told to spend past both.",
     pending: "Asking the vendors what is left",
     emptyTitle: "No subscription readings",
     emptyDescription:
@@ -26,6 +26,10 @@ export const SUBSCRIPTION_ALLOWANCE_EN = {
     capStops: "stops at {{percent}}%",
     capNone: "no cap",
     capMeter: "{{window}} spend cap",
+    walletLeft: "{{amount}} {{currency}} left",
+    floorStops: "stops at {{amount}} {{currency}}",
+    floorNone: "no floor",
+    floorKeep: "Keep at least",
     capSave: "Save the caps",
     capSaving: "Saving",
     capSaved: "The lab is dispatching by these",
@@ -47,7 +51,7 @@ export const SUBSCRIPTION_ALLOWANCE_EN = {
 export const SUBSCRIPTION_ALLOWANCE_RU = {
     title: "Подписки",
     description:
-        "Сколько осталось у каждой подписки и до какой отметки лаборатория может её тратить. Перетащите ограничитель, чтобы она перестала отправлять работу раньше, чем окно закончится: уже запущенный агент доработает, а отдельному исследованию можно разрешить тратить дальше ограничителя.",
+        "Сколько осталось у каждого аккаунта и до какой отметки лаборатория может его тратить. Перетащите ограничитель, чтобы она перестала отправлять работу раньше, чем закончится окно подписки, или поставьте кошельку нижнюю границу, чтобы она остановилась раньше, чем закончатся деньги: уже запущенный агент доработает, а отдельному исследованию можно разрешить тратить дальше обоих.",
     pending: "Спрашиваем у вендоров, сколько осталось",
     emptyTitle: "Нет данных по подпискам",
     emptyDescription:
@@ -70,6 +74,10 @@ export const SUBSCRIPTION_ALLOWANCE_RU = {
     capStops: "останов на {{percent}}%",
     capNone: "без ограничителя",
     capMeter: "Ограничитель расхода, окно {{window}}",
+    walletLeft: "осталось {{amount}} {{currency}}",
+    floorStops: "останов на {{amount}} {{currency}}",
+    floorNone: "без нижней границы",
+    floorKeep: "Оставлять не меньше",
     capSave: "Сохранить ограничители",
     capSaving: "Сохранение",
     capSaved: "Лаборатория работает с этими",
