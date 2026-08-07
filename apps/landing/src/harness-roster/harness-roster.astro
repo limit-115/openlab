@@ -38,7 +38,9 @@ const stripRoster = Array.from({ length: HARNESS_STRIP_REPEATS }, () => HARNESS)
 
     <SectionMarker label="Harnesses" />
 
-    <div class="grid gap-8 px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16">
+    <div
+        class="grid gap-8 px-6 py-12 motion-safe:enter-on-scroll sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16"
+    >
         <h2 class="text-3xl leading-tight font-[780] text-balance sm:text-5xl">
             It thinks with the CLI you already pay for.
         </h2>

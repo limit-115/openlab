@@ -13,7 +13,9 @@ import { RESEARCH_PAUSE, RESEARCH_STAGE } from "#src/research-loop/research-loop
 <section id="loop" class="border-t border-border">
     <SectionMarker label="How a lab works" />
 
-    <div class="grid gap-8 px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16">
+    <div
+        class="grid gap-8 px-6 py-12 motion-safe:enter-on-scroll sm:px-10 sm:py-16 lg:grid-cols-2 lg:gap-16"
+    >
         <h2 class="text-3xl leading-tight font-[780] text-balance sm:text-5xl">
             One goal. Its own agents. Its own directory.
         </h2>
@@ -59,7 +61,7 @@ import { RESEARCH_PAUSE, RESEARCH_STAGE } from "#src/research-loop/research-loop
     </div>
 
     <div class="border-t border-border px-6 py-8 sm:px-10">
-        <p class="max-w-3xl text-pretty text-muted-foreground">
+        <p class="max-w-3xl text-pretty text-muted-foreground motion-safe:enter-on-scroll">
             Then it turns again, on what the last turn spent and what it ruled out. Two things stop
             it, and it tells you which:
         </p>

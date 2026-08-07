@@ -11,20 +11,22 @@ import { LICENSE_URL, REPOSITORY_URL } from "#src/site-metadata/site-metadata.co
 
 <section class="dot-matrix-inverse border-t border-border bg-brand px-6 py-20 sm:px-10 sm:py-28">
     <h2
-        class="max-w-4xl text-5xl leading-[1.02] font-[840] text-balance text-brand-foreground sm:text-7xl lg:text-8xl"
+        class="max-w-4xl text-5xl leading-[1.02] font-[840] text-balance text-brand-foreground motion-safe:enter-on-scroll sm:text-7xl lg:text-8xl"
     >
         Start a lab.
     </h2>
-    <p class="mt-7 max-w-xl text-lg text-pretty text-brand-foreground/80 sm:text-xl">
+    <p
+        class="mt-7 max-w-xl text-lg text-pretty text-brand-foreground/80 motion-safe:enter-on-scroll sm:text-xl"
+    >
         One command, on the plan you already hold. Nothing to sign up for, nothing to configure
         before it can tell you what it is missing.
     </p>
 
-    <div class="mt-12 max-w-3xl">
+    <div class="mt-12 max-w-3xl motion-safe:enter-on-scroll">
         <InstallCommand class="shadow-[10px_10px_0_0_var(--brand-foreground)]" />
     </div>
 
-    <div class="mt-12 flex flex-wrap items-center gap-3">
+    <div class="mt-12 flex flex-wrap items-center gap-3 motion-safe:enter-on-scroll">
         <a
             href={REPOSITORY_URL}
             target="_blank"

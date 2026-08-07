@@ -7,20 +7,28 @@ import { CLAIM_PROOF } from "#src/lab-claim/lab-claim.const";
  * The opening plate: what the lab is, and the line that installs it, inside the mark's own crop
  * marks blown up to the size of the page. The install command is here rather than further down on
  * purpose — a reader who already knows what this is should never have to scroll to act on it.
+ *
+ * This is the one plate that arrives on the clock rather than on the scroll, because it is already
+ * on screen when the page opens. It arrives the way a page is printed: the crop marks register
+ * first and the content inks in under them, top to bottom, one short beat apart. The ladder is
+ * written out on each line rather than derived, so what a reader sees is the order the file reads
+ * in, and a line moved is a line whose beat moves with it.
  */
 ---
 
 <section id="top" class="border-b border-border px-6 py-12 sm:px-10 sm:py-16">
     <div class="relative px-4 py-10 sm:px-8 sm:py-14">
-        <CropMarks />
+        <CropMarks class="motion-safe:animate-enter" />
 
-        <p class="flex items-center gap-2.5 text-sm text-muted-foreground uppercase">
+        <p
+            class="flex items-center gap-2.5 text-sm text-muted-foreground uppercase motion-safe:animate-enter [--enter-delay:70ms]"
+        >
             <span class="size-2 shrink-0 rounded-full bg-brand motion-safe:animate-pulse"></span>
             Local autonomous research runtime
         </p>
 
         <h1
-            class="mt-7 max-w-5xl text-5xl leading-[1.1] font-[820] text-balance sm:text-7xl lg:text-8xl"
+            class="mt-7 max-w-5xl text-5xl leading-[1.1] font-[820] text-balance motion-safe:animate-enter [--enter-delay:140ms] sm:text-7xl lg:text-8xl"
         >
             A research lab that runs on <span
                 class="box-decoration-clone bg-brand px-3 py-1 text-brand-foreground"
@@ -28,16 +36,23 @@ import { CLAIM_PROOF } from "#src/lab-claim/lab-claim.const";
             >
         </h1>
 
-        <p class="mt-8 max-w-2xl text-lg text-pretty text-muted-foreground sm:text-xl">
+        <p
+            class="mt-8 max-w-2xl text-lg text-pretty text-muted-foreground motion-safe:animate-enter [--enter-delay:210ms] sm:text-xl"
+        >
             One goal, its own agents, its own run directory. It reaches models through the agent CLI
             you are already signed in to — Codex or Claude Code — so nothing here resells you tokens.
         </p>
 
-        <div id="install" class="mt-10 max-w-3xl">
+        <div
+            id="install"
+            class="mt-10 max-w-3xl motion-safe:animate-enter [--enter-delay:280ms]"
+        >
             <InstallCommand />
         </div>
 
-        <ul class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <ul
+            class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 motion-safe:animate-enter [--enter-delay:350ms]"
+        >
             {
                 CLAIM_PROOF.map((proof) => (
                     <li class="flex items-center gap-2.5 text-sm text-muted-foreground">

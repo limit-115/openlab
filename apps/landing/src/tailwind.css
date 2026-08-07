@@ -55,6 +55,57 @@
 }
 
 /**
+ * The one movement this page has: a short rise and an ink-in, no overshoot and no second thought. It
+ * is written once and driven two ways — by the clock for the plate a reader lands on, by the scroll
+ * for every plate below it — so the opening of the page and a section met halfway down cannot arrive
+ * in two different manners. It is kept out of the theme entry below because it belongs to both
+ * drivers rather than to either.
+ */
+@keyframes enter {
+    from {
+        opacity: 0;
+        transform: translateY(0.75rem);
+    }
+}
+
+/**
+ * A beat in that arrival is asked for by setting `--enter-delay` on the element, never by setting
+ * `animation-delay` beside this utility: `animation` is a shorthand and resets the delay to nothing,
+ * and which of the two lands last in the sheet is not something markup can see. Read through a
+ * variable, the beat survives the shorthand whatever order they are written in.
+ */
+@theme {
+    --animate-enter: enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) var(--enter-delay, 0s) both;
+}
+
+/**
+ * The same arrival, scrubbed by the scroll that brings the element into view rather than by a clock,
+ * so nothing on this page needs a script watching the viewport to know when a section has been
+ * reached.
+ *
+ * The range is measured in the element's own entry rather than against the viewport, which is the
+ * whole reason it is safe: every element has fully entered by the time the page has nowhere left to
+ * scroll, so nothing can be stranded half-inked at the bottom of the sheet — a promise a range
+ * written in viewport terms cannot make for the last plate. Markup asks for this through
+ * `motion-safe:` and the gate below answers for browsers with no scroll timelines, so in both cases
+ * what is left is content that is simply there.
+ *
+ * It belongs on what sits on the sheet itself, never on a cell of a hairline grid. Those grids draw
+ * their rules by showing a border-coloured parent through a one-pixel gap, so a cell faded down does
+ * not reveal the page — it reveals a pale rectangle the size of the card, and a cell moved off its
+ * gap widens the rule it was supposed to sit on.
+ */
+@utility enter-on-scroll {
+    @supports (animation-timeline: view()) {
+        animation-name: enter;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 50%;
+    }
+}
+
+/**
  * Which installer a reader is shown is decided by an attribute on the document, so the choice is
  * one assignment and the page needs no framework to act on it. Before the script runs there is no
  * attribute and the markup's own default stands, which is why nothing moves once it does run.
