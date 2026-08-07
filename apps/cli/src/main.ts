@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { cancel, confirm, intro, isCancel, isTTY, note, outro, text } from "@clack/prompts";
+import { cancel, confirm, intro, isCancel, isTTY, log, note, outro, text } from "@clack/prompts";
 import { DaemonLogLevel } from "@openlab/daemon/daemon-runtime/daemon-config.const";
 import { planPurge, purgeRuns } from "@openlab/daemon/run-purge/run-purge";
 import { startDaemon } from "@openlab/daemon/server";
@@ -25,6 +25,8 @@ import {
 import { uninstallLab } from "#src/lab-installation/uninstall-lab";
 import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
+import { stopLab } from "#src/lab-start/stop-lab";
+import { ShutdownSignal } from "#src/lab-start/stop-lab.const";
 import {
     renderAssumptions,
     renderCapabilities,
@@ -59,16 +61,6 @@ interface NewOptions {
     harness?: readonly AgentHarnessKind[];
     file?: string;
 }
-
-const ShutdownSignal = {
-    INTERRUPT: "SIGINT",
-    TERMINATE: "SIGTERM"
-} as const;
-
-const ShutdownExitCode = {
-    [ShutdownSignal.INTERRUPT]: 130,
-    [ShutdownSignal.TERMINATE]: 143
-} as const;
 
 const cliConfig = resolveCliConfig();
 
@@ -165,23 +157,33 @@ program
             },
             { reportStartup: reportStartupToTerminal }
         );
-        let closing = false;
+        /**
+         * The first signal stops the lab and every later one is the same request arriving again:
+         * Ctrl+C reaches a lab started through a script runner twice, once from the terminal and
+         * once forwarded by the runner, and a stop that let the second one through would be killed
+         * halfway rather than finished.
+         */
+        let stopping = false;
         for (const signal of Object.values(ShutdownSignal)) {
-            process.once(signal, async () => {
-                if (closing) {
+            process.on(signal, () => {
+                if (stopping) {
                     return;
                 }
-                closing = true;
-                process.exitCode = ShutdownExitCode[signal];
-                await daemon.close();
+                stopping = true;
+                void stopLab(() => daemon.close());
             });
         }
         const shown = options.open === false ? false : await openDashboard(daemon.url);
-        outro(
+        /**
+         * The block stays open for as long as the lab is up: what is on screen is a lab running,
+         * and the outro under it is the lab stopping.
+         */
+        log.success(
             shown
                 ? `Lab running at ${daemon.url}, opened in your browser`
                 : `Lab running at ${daemon.url}`
         );
+        log.message("Press Ctrl+C to stop the lab");
     });
 
 program
