@@ -1,7 +1,8 @@
 #!/bin/sh
-# Drives a built release the way an operator does: unpack it, install it, update it, ask it what it
-# is. It is run on every platform a release is built for, because a compiled lab can break while the
-# sources still pass — the runtime a release carries is not the one the tests ran on.
+# Drives a built release the way an operator does: install it with the script the site hands them,
+# update it, ask it what it is. It is run on every platform a release is built for, because a
+# compiled lab can break while the sources still pass — the runtime a release carries is not the one
+# the tests ran on, and neither is the installer that puts it there.
 #
 #   release/verify-release.sh <target> [dist directory]
 #
@@ -14,6 +15,9 @@ set -eu
 
 TARGET="${1:?Usage: verify-release.sh <target> [dist directory]}"
 DIST="${2:-release/dist}"
+# The installers as the working tree holds them, which is the same file a release publishes and the
+# site serves. Reading them from here is what makes this a check of what is about to ship.
+INSTALLERS="apps/landing/public"
 NEXT_VERSION="9.9.9"
 PORT="8799"
 
@@ -26,11 +30,12 @@ main() {
     [ "$archive" != "null" ] || fail "The manifest has no build for $TARGET."
 
     case "$TARGET" in
-        windows-*) launcher="openlab.cmd"; executable="openlab.exe" ;;
-        *) launcher="openlab"; executable="openlab" ;;
+        windows-*) launcher="openlab.cmd" ;;
+        *) launcher="openlab" ;;
     esac
 
     workspace="$(mktemp -d)"
+    channel="$workspace/channel"
     trap clean_up EXIT INT TERM
 
     # A lab installs only from a channel signed by a key it trusts, and this channel is invented
@@ -41,8 +46,8 @@ main() {
     OPENLAB_RELEASES_KEY="$(openssl pkey -in "$workspace/channel-key.pem" -pubout)"
     export OPENLAB_RELEASES_KEY
 
-    publish "$workspace/channel" "$version" "$archive"
-    (cd "$workspace/channel" && exec "$(python_command)" -m http.server -b 127.0.0.1 "$PORT" \
+    publish "$channel" "$version" "$archive"
+    (cd "$channel" && exec "$(python_command)" -m http.server -b 127.0.0.1 "$PORT" \
         >"$workspace/server.log" 2>&1) &
     server=$!
     await_channel
@@ -53,16 +58,12 @@ main() {
     OPENLAB_API_URL="http://127.0.0.1:9"
     export OPENLAB_API_URL
 
-    say "unpacking $archive"
-    mkdir -p "$workspace/unpacked"
-    unpack "$DIST/$archive" "$workspace/unpacked"
-    [ -f "$workspace/unpacked/$executable" ] || fail "The archive holds no $executable."
-
-    # Installed the way an operator installs, which includes being put within reach of the next
-    # shell they open. That step writes somewhere different on every platform and had never run
-    # here, so until now it was the one part of an install nothing had ever executed.
+    # Installed through the script an operator actually pastes, against the channel served above.
+    # It works the platform out, reads the manifest, checks the archive against the digest stated
+    # there, unpacks it and hands over to the lab's own `install` — including putting the launcher
+    # within reach of the next shell, which writes somewhere different on every platform.
     say "install"
-    "$workspace/unpacked/$executable" install
+    install_from_channel
     installed="$(installed_launcher "$launcher")"
     check "the installed lab answers" "$version" "$("$installed" --version)"
 
@@ -70,6 +71,8 @@ main() {
         say "the launcher is where the next shell will look"
         on_windows_path
     fi
+
+    offer_next
 
     say "update --check"
     "$installed" update --check
@@ -144,12 +147,25 @@ publish() {
         --argjson z "$(wc -c <"$DIST/$archive" | tr -d ' ')" \
         '.version = $v | .artifacts = {($t): {file: $f, sha256: $s, size: $z}}' \
         "$DIST/manifest.json" >"$channel/download/v$NEXT_VERSION/manifest.json"
-    cp "$channel/download/v$NEXT_VERSION/manifest.json" "$channel/latest/download/manifest.json"
+
+    # The channel offers the release being installed, not the one after it. An installer asked for
+    # whatever is current has to be handed the build this run is about, which is the same thing an
+    # operator's first install is handed.
+    cp "$DIST/manifest.json" "$channel/latest/download/manifest.json"
 
     for manifest in "$channel/download/v$version/manifest.json" \
         "$channel/download/v$NEXT_VERSION/manifest.json" \
         "$channel/latest/download/manifest.json"; do
         sign "$manifest"
+    done
+}
+
+# Moves the channel on to the release after this one, which is what gives `update` something to
+# install. It happens here rather than at publish time so that the install above met a channel
+# offering the release it was meant to install, and the update below meets one that has moved.
+offer_next() {
+    for file in manifest.json manifest.json.sig; do
+        cp "$channel/download/v$NEXT_VERSION/$file" "$channel/latest/download/$file"
     done
 }
 
@@ -186,6 +202,24 @@ clean_up() {
     exit "$status"
 }
 
+# Installs the way the site tells an operator to, through the script for this platform.
+#
+# Until this ran, install.sh had only ever been passed to shellcheck and install.ps1 had not been
+# read by anything at all — and between them they are the one piece of this product that every
+# operator executes. Everything they do before handing over to the lab is theirs alone: working out
+# the platform, reading the manifest, refusing an archive whose digest does not match, unpacking it.
+install_from_channel() {
+    case "$TARGET" in
+        windows-*)
+            powershell -NoProfile -ExecutionPolicy Bypass -File "$INSTALLERS/install.ps1" ||
+                fail "install.ps1 did not install the release."
+            ;;
+        *)
+            sh "$INSTALLERS/install.sh" || fail "install.sh did not install the release."
+            ;;
+    esac
+}
+
 # Whether the install left the launcher's directory on the PATH a new terminal will be given.
 #
 # Only Windows is asked. Its environment lives in the registry and nothing else reads it, so an
@@ -218,17 +252,6 @@ installed_launcher() {
         fi
     done
     fail "The install left no $1 anywhere this knows to look."
-}
-
-# Gets the first archive out, which is the one nobody has installed a lab with yet. A zip is left to
-# Python rather than to `tar`, because this runs on Windows through Git Bash, whose `tar` is GNU tar
-# and reads no zip. What the lab itself unpacks with is the lab's own business and is what `update`
-# below goes on to exercise.
-unpack() {
-    case "$1" in
-        *.zip) "$(python_command)" -m zipfile -e "$1" "$2" ;;
-        *) tar -xf "$1" -C "$2" ;;
-    esac
 }
 
 # Windows names it `python`; everything else that has it at all names it `python3`.
