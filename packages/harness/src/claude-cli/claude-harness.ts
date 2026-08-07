@@ -16,6 +16,7 @@ import {
     claudeAuthenticationCommand,
     claudeRunArguments
 } from "#src/claude-cli/claude-run-arguments";
+import { claudeSessionStore } from "#src/claude-cli/claude-session-store";
 import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
 import type {
     CliHarnessOptions,
@@ -25,6 +26,7 @@ import type {
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 
 const ClaudeAuthStatusSchema = z.looseObject({
     loggedIn: z.literal(true),
@@ -84,5 +86,9 @@ export class ClaudeHarness extends CliAgentHarness {
 
     protected createEventParser(): HarnessEventParser {
         return new ClaudeEventParser();
+    }
+
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return claudeSessionStore(environment);
     }
 }

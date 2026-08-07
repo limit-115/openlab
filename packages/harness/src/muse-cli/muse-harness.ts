@@ -32,7 +32,9 @@ import {
 import { MuseEventParser } from "#src/muse-cli/muse-event-parser";
 import type { MuseHarnessOptions } from "#src/muse-cli/muse-harness.types";
 import { museRunArguments } from "#src/muse-cli/muse-run-arguments";
+import { museSessionStore } from "#src/muse-cli/muse-session-store";
 import { museStructuredPrompt } from "#src/muse-cli/muse-structured-response";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 
 /**
  * Meta's Muse Code, driven headless through `muse exec`.
@@ -159,6 +161,10 @@ export class MuseHarness extends CliAgentHarness {
 
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
         return new MuseEventParser(request.responseSchema !== undefined);
+    }
+
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return museSessionStore(environment);
     }
 
     async #account(): Promise<MuseAccount> {

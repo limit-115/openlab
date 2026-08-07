@@ -85,7 +85,8 @@ export function harnessRunResult(overrides: Partial<HarnessRunResult> = {}): Har
             nativeEvents: artifact,
             events: artifact,
             stderr: artifact,
-            manifest: artifact
+            manifest: artifact,
+            session: { source: "/home/operator/.claude", files: [artifact] }
         },
         ...overrides
     };

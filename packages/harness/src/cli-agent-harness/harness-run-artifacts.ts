@@ -14,6 +14,7 @@ import type {
 } from "#src/cli-agent-harness/harness-run-artifacts.types";
 import { responseJsonSchema } from "#src/cli-agent-harness/response-schema";
 import { HarnessRequestError } from "#src/cli-execution/harness-error";
+import type { SessionTranscript } from "#src/session-transcript/session-transcript.types";
 
 /**
  * `promptText` is what the CLI will actually be given, which is not always what the caller wrote: a
@@ -93,7 +94,10 @@ export async function closeRunFiles(files: HarnessRunFiles): Promise<void> {
     await Promise.all([files.nativeEventsHandle.close(), files.eventsHandle.close()]);
 }
 
-export async function collectArtifacts(files: HarnessRunFiles): Promise<NonManifestArtifacts> {
+export async function collectArtifacts(
+    files: HarnessRunFiles,
+    session: SessionTranscript
+): Promise<NonManifestArtifacts> {
     const [nativeEvents, events, stderr] = await Promise.all([
         hashArtifact(files.nativeEventsPath),
         hashArtifact(files.eventsPath),
@@ -104,6 +108,7 @@ export async function collectArtifacts(files: HarnessRunFiles): Promise<NonManif
         nativeEvents,
         events,
         stderr,
+        session,
         ...(files.responseSchema === undefined ? {} : { responseSchema: files.responseSchema })
     };
 }

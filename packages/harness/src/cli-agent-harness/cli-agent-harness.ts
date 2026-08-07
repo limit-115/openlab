@@ -64,6 +64,8 @@ import {
     HarnessTimeoutError
 } from "#src/cli-execution/harness-error";
 import { HarnessTimeoutPhases } from "#src/cli-execution/harness-error.const";
+import { collectSessionTranscript } from "#src/session-transcript/session-transcript";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 import { spentAllowanceError, spentAllowanceMessage } from "#src/spent-allowance/spent-allowance";
 
 export abstract class CliAgentHarness implements AgentHarness {
@@ -93,6 +95,14 @@ export abstract class CliAgentHarness implements AgentHarness {
         paths: HarnessRunPaths
     ): HarnessCommand;
     protected abstract createEventParser(request: HarnessRunRequest): HarnessEventParser;
+
+    /**
+     * Where this CLI keeps its own account of the session it just ran. Every harness has to answer,
+     * because what the lab reads on stdout is the parent thread alone: a CLI that delegates writes
+     * each subagent's transcript to its store and nowhere else, and a harness that had no answer
+     * would lose them without anything saying so.
+     */
+    protected abstract sessionStore(environment: Readonly<Record<string, string>>): SessionStore;
 
     /**
      * Where the CLI expects to find the prompt. Overridden by a harness whose CLI does not read stdin
@@ -347,6 +357,11 @@ export abstract class CliAgentHarness implements AgentHarness {
 
             await writeStderrArtifact(files.stderrPath, processExit.stderr);
             await closeRunFiles(files);
+            const sessionTranscript = await collectSessionTranscript({
+                artifactDirectory: files.artifactDirectory,
+                sessionId: parser.sessionId,
+                store: this.sessionStore(environment)
+            });
 
             const status = determineRunStatus(
                 processExit,
@@ -356,7 +371,7 @@ export abstract class CliAgentHarness implements AgentHarness {
                 watchdog.timedOut()
             );
             const finishedAt = new Date().toISOString();
-            const artifacts = await collectArtifacts(files);
+            const artifacts = await collectArtifacts(files, sessionTranscript);
             const error = semanticError?.message ?? processExit.error;
             const finishedManifest: FinishedRunManifest = {
                 kind: this.kind,

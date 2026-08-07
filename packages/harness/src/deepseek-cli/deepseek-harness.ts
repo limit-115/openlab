@@ -20,6 +20,7 @@ import {
     codexReasoningEffortOverride,
     codexRunArguments
 } from "#src/codex-cli/codex-run-arguments";
+import { codexSessionStore } from "#src/codex-cli/codex-session-store";
 import {
     DEEPSEEK_API_KEY_VARIABLE,
     DEEPSEEK_BASE_URL,
@@ -34,6 +35,7 @@ import type {
     ResolveDeepseekWallet
 } from "#src/deepseek-cli/deepseek-credential.types";
 import type { DeepseekHarnessOptions } from "#src/deepseek-cli/deepseek-harness.types";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 
 /**
  * DeepSeek driven through the Codex CLI, which speaks the Responses API that DeepSeek serves. It is
@@ -143,6 +145,10 @@ export class DeepseekHarness extends CliAgentHarness {
 
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
         return new CodexEventParser(request.responseSchema !== undefined);
+    }
+
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return codexSessionStore(environment);
     }
 
     async #wallet(): Promise<DeepseekWallet> {

@@ -1,5 +1,6 @@
 import type { FileHandle } from "node:fs/promises";
 import type { HarnessArtifact } from "#src/agent-harness/agent-harness.types";
+import type { SessionTranscript } from "#src/session-transcript/session-transcript.types";
 
 export interface HarnessRunFiles {
     readonly artifactDirectory: string;
@@ -18,5 +19,7 @@ export interface NonManifestArtifacts {
     readonly nativeEvents: HarnessArtifact;
     readonly events: HarnessArtifact;
     readonly stderr: HarnessArtifact;
+    /** The lab's copy of what the CLI itself recorded, subagent transcripts above all. */
+    readonly session: SessionTranscript;
     readonly responseSchema?: HarnessArtifact;
 }

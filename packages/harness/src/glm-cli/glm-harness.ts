@@ -12,6 +12,7 @@ import {
     claudeAuthenticationCommand,
     claudeRunArguments
 } from "#src/claude-cli/claude-run-arguments";
+import { claudeSessionStore } from "#src/claude-cli/claude-session-store";
 import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
 import type {
     HarnessCommand,
@@ -30,6 +31,7 @@ import {
 import type { GlmHarnessOptions } from "#src/glm-cli/glm-harness.types";
 import { resolveZaiCodingPlan } from "#src/glm-cli/zai-coding-plan";
 import type { ResolveZaiCodingPlan, ZaiCodingPlan } from "#src/glm-cli/zai-coding-plan.types";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 
 /**
  * A CLI that reported anything else ignored the injected coding-plan token and fell back to its own
@@ -99,6 +101,10 @@ export class GlmHarness extends CliAgentHarness {
 
     protected createEventParser(): HarnessEventParser {
         return new ClaudeEventParser();
+    }
+
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return claudeSessionStore(environment);
     }
 
     async #codingPlan(): Promise<ZaiCodingPlan> {

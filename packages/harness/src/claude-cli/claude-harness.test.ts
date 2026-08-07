@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import {
     HarnessAuthenticationMethods,
@@ -23,6 +24,12 @@ import {
 } from "#src/cli-execution/cli-process-runner.fixture";
 import { testEnvironment } from "#src/cli-execution/harness-environment.fixture";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
+import {
+    removeSessionStores,
+    sessionStoreRootDirectory,
+    writeClaudeSession
+} from "#src/session-transcript/session-store.fixture";
+import { SessionTranscriptGaps } from "#src/session-transcript/session-transcript.const";
 
 const ClaudeTestNativeEventTypes = {
     SYSTEM: "system",
@@ -65,6 +72,7 @@ const ClaudeTestCliValues = {
 } as const;
 
 afterEach(removeHarnessRunDirectories);
+afterEach(removeSessionStores);
 
 describe("ClaudeHarness", () => {
     it("requires claude.ai auth, builds stream-json, and parses structured output", async () => {
@@ -339,4 +347,83 @@ describe("ClaudeHarness", () => {
         );
         expect(args).not.toContain(ClaudeSessionDefaults.MODEL);
     });
+
+    /**
+     * The whole point of the collection: a delegated agent's working record reaches the stream only
+     * in part, and which part differs from one run to the next. The manifest is what an operator
+     * reads a finished run out of, so it has to name the transcript rather than the stream alone.
+     */
+    it("records the subagent transcripts the stream never carried in the manifest", async () => {
+        const storeRoot = await sessionStoreRootDirectory();
+        await writeClaudeSession(storeRoot, "-openlab-workspaces-cycle-1", "delegating-session");
+        const harness = new ClaudeHarness({
+            runner: subagentRunner(),
+            environment: { ...testEnvironment(), CLAUDE_CONFIG_DIR: storeRoot }
+        });
+
+        const events = await Array.fromAsync(
+            harness.run(await harnessRequest("claude-delegating"))
+        );
+        const { artifacts } = lastCompleted(events).result;
+        const manifest = JSON.parse(await readFile(artifacts.manifest.path, "utf8"));
+
+        expect(artifacts.session.source).toBe(storeRoot);
+        expect(artifacts.session.files.map((file) => file.path)).toEqual(
+            manifest.artifacts.session.files.map((file: { path: string }) => file.path)
+        );
+        expect(
+            artifacts.session.files.filter((file) => file.path.includes("subagents"))
+        ).toHaveLength(2);
+    });
+
+    /**
+     * A store the run cannot be found in is a fact about the run, not an empty field. An operator
+     * reading a manifest has to be able to tell "this CLI delegated to nobody" from "the lab lost
+     * what it delegated to", and only one of those is something to go and fix.
+     */
+    it("states why a run holds no transcript rather than leaving the field empty", async () => {
+        const harness = new ClaudeHarness({
+            runner: subagentRunner(),
+            environment: {
+                ...testEnvironment(),
+                CLAUDE_CONFIG_DIR: await sessionStoreRootDirectory()
+            }
+        });
+
+        const events = await Array.fromAsync(harness.run(await harnessRequest("claude-no-store")));
+
+        expect(lastCompleted(events).result.artifacts.session).toMatchObject({
+            gap: SessionTranscriptGaps.NOT_FOUND,
+            files: []
+        });
+    });
 });
+
+/** A CLI that reports a session and finishes, which is all a transcript collection needs of it. */
+function subagentRunner(): FakeHarnessProcessRunner {
+    const runner = new FakeHarnessProcessRunner([
+        captureSuccess(ClaudeTestCliValues.VERSION),
+        captureSuccess(
+            JSON.stringify({
+                loggedIn: true,
+                authMethod: HarnessAuthenticationMethods.CLAUDE_AI,
+                apiProvider: ClaudeTestApiProviders.FIRST_PARTY,
+                subscriptionType: ClaudeTestSubscriptionTypes.MAX
+            })
+        )
+    ]);
+    runner.nextStream = streamSuccess([
+        {
+            type: ClaudeTestNativeEventTypes.SYSTEM,
+            subtype: ClaudeTestNativeSubtypes.INIT,
+            session_id: "delegating-session"
+        },
+        {
+            type: ClaudeTestNativeEventTypes.RESULT,
+            subtype: ClaudeTestResultSubtypes.SUCCESS,
+            is_error: false,
+            session_id: "delegating-session"
+        }
+    ]);
+    return runner;
+}

@@ -8,6 +8,7 @@ import type {
     HarnessRunStatus
 } from "#src/agent-harness/agent-harness.const";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
+import type { SessionTranscript } from "#src/session-transcript/session-transcript.types";
 
 /**
  * What paid for a run, as the vendor stated it. A subscription names a tier and a wallet names an
@@ -64,6 +65,8 @@ export interface HarnessArtifacts {
     readonly events: HarnessArtifact;
     readonly stderr: HarnessArtifact;
     readonly manifest: HarnessArtifact;
+    /** The lab's copy of what the CLI itself recorded, subagent transcripts above all. */
+    readonly session: SessionTranscript;
     readonly responseSchema?: HarnessArtifact;
 }
 

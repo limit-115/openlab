@@ -24,6 +24,8 @@ import {
     codexReasoningEffortOverride,
     codexRunArguments
 } from "#src/codex-cli/codex-run-arguments";
+import { codexSessionStore } from "#src/codex-cli/codex-session-store";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 
 export class CodexHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.CODEX;
@@ -82,5 +84,9 @@ export class CodexHarness extends CliAgentHarness {
 
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
         return new CodexEventParser(request.responseSchema !== undefined);
+    }
+
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return codexSessionStore(environment);
     }
 }
