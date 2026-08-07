@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { stopLab, stopLabOnSignal } from "#src/lab-start/stop-lab";
+import { ControlKey } from "#src/lab-start/control-keys.const";
+import type { KeyboardStream } from "#src/lab-start/control-keys.types";
+import { stopLab, stopLabWhenAsked } from "#src/lab-start/stop-lab";
 import { FORCED_STOP_EXIT_CODE, ShutdownSignal } from "#src/lab-start/stop-lab.const";
+import type { StopLabOptions } from "#src/lab-start/stop-lab.types";
 
 const exitCodeBeforeTests = process.exitCode;
 const listenersBeforeTests = new Map(
@@ -33,6 +36,40 @@ function terminal(): () => string {
 /** Long enough for a timer set for now, without holding the test to a real wait. */
 function settle(): Promise<void> {
     return new Promise((done) => setTimeout(done, 5));
+}
+
+/** A keyboard, and the keys pressed on it, for the tests about what the operator presses. */
+function keyboard(isTTY = true) {
+    const pressed = new Set<(key: Buffer) => void>();
+    const stream: KeyboardStream = {
+        isTTY,
+        setRawMode: () => undefined,
+        on: (_event, listener) => {
+            pressed.add(listener);
+        },
+        off: (_event, listener) => {
+            pressed.delete(listener);
+        },
+        resume: () => undefined,
+        pause: () => undefined
+    };
+    return {
+        stream,
+        press: (key: ControlKey) => {
+            for (const listener of [...pressed]) {
+                listener(Buffer.from([key]));
+            }
+        },
+        listening: () => pressed.size > 0
+    };
+}
+
+/**
+ * A lab under the signals alone. The terminal these tests describe is the one the operator reads,
+ * never one whose keys are ours to take, so the run's own is left where it is.
+ */
+function labUnderSignals(close: () => Promise<void>, options: StopLabOptions = {}): void {
+    stopLabWhenAsked(close, { keyboard: keyboard(false).stream, ...options });
 }
 
 describe("stopLab", () => {
@@ -73,13 +110,57 @@ describe("stopLab", () => {
     });
 });
 
-describe("stopLabOnSignal", () => {
+describe("stopLabWhenAsked, at the keyboard", () => {
+    /** Hours of agents at work are not thrown away by whichever key the operator hit last. */
+    it("asks before taking the lab down, and leaves it up until the question is answered", () => {
+        const read = terminal();
+        const close = vi.fn(async () => undefined);
+        const operator = keyboard();
+
+        stopLabWhenAsked(close, { interactive: true, keyboard: operator.stream });
+        operator.press(ControlKey.INTERRUPT);
+
+        expect(read()).toContain("Press Ctrl+C again to stop the lab");
+        expect(close).not.toHaveBeenCalled();
+    });
+
+    /**
+     * A key is pressed once and read once. Nothing forwards a keystroke the way a script runner
+     * forwards a signal, so the second press is the operator answering however fast they were.
+     */
+    it("stops on the second press, however close behind the first it lands", () => {
+        terminal();
+        const close = vi.fn(async () => undefined);
+        const operator = keyboard();
+
+        stopLabWhenAsked(close, { interactive: true, keyboard: operator.stream });
+        operator.press(ControlKey.INTERRUPT);
+        operator.press(ControlKey.INTERRUPT);
+
+        expect(close).toHaveBeenCalledOnce();
+    });
+
+    /** A keyboard still being read holds the process open long after the lab is down. */
+    it("hands the terminal back once the lab is down", async () => {
+        terminal();
+        const operator = keyboard();
+
+        stopLabWhenAsked(async () => undefined, { interactive: true, keyboard: operator.stream });
+        operator.press(ControlKey.INTERRUPT);
+        operator.press(ControlKey.INTERRUPT);
+        await settle();
+
+        expect(operator.listening()).toBe(false);
+    });
+});
+
+describe("stopLabWhenAsked, on a signal", () => {
     /** Hours of agents at work are not thrown away by whichever key the operator hit last. */
     it("asks before taking down a lab somebody is watching, and leaves it up until answered", () => {
         const read = terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close, { interactive: true });
+        labUnderSignals(close, { interactive: true });
         process.emit(ShutdownSignal.INTERRUPT);
 
         expect(read()).toContain("Press Ctrl+C again to stop the lab");
@@ -90,7 +171,7 @@ describe("stopLabOnSignal", () => {
         terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close, { interactive: true, samePressWithinMs: 0 });
+        labUnderSignals(close, { interactive: true, samePressWithinMs: 0 });
         process.emit(ShutdownSignal.INTERRUPT);
         process.emit(ShutdownSignal.INTERRUPT);
 
@@ -105,7 +186,7 @@ describe("stopLabOnSignal", () => {
         terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close, { interactive: true });
+        labUnderSignals(close, { interactive: true });
         process.emit(ShutdownSignal.INTERRUPT);
         process.emit(ShutdownSignal.INTERRUPT);
 
@@ -117,7 +198,7 @@ describe("stopLabOnSignal", () => {
         const read = terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close, { interactive: true, samePressWithinMs: 0, confirmWithinMs: 1 });
+        labUnderSignals(close, { interactive: true, samePressWithinMs: 0, confirmWithinMs: 1 });
         process.emit(ShutdownSignal.INTERRUPT);
         await settle();
         process.emit(ShutdownSignal.INTERRUPT);
@@ -131,7 +212,7 @@ describe("stopLabOnSignal", () => {
         terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close, { interactive: true });
+        labUnderSignals(close, { interactive: true });
         process.emit(ShutdownSignal.TERMINATE);
 
         expect(close).toHaveBeenCalledOnce();
@@ -141,7 +222,7 @@ describe("stopLabOnSignal", () => {
         terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close, { interactive: false });
+        labUnderSignals(close, { interactive: false });
         process.emit(ShutdownSignal.INTERRUPT);
 
         expect(close).toHaveBeenCalledOnce();
@@ -156,7 +237,7 @@ describe("stopLabOnSignal", () => {
         const close = vi.fn(async () => undefined);
         const quit = vi.fn();
 
-        stopLabOnSignal(close, { quit, interactive: true, samePressWithinMs: 0 });
+        labUnderSignals(close, { quit, interactive: true, samePressWithinMs: 0 });
         process.emit(ShutdownSignal.INTERRUPT);
         process.emit(ShutdownSignal.INTERRUPT);
 
@@ -172,7 +253,7 @@ describe("stopLabOnSignal", () => {
         const read = terminal();
         const quit = vi.fn();
 
-        stopLabOnSignal(() => new Promise(() => undefined), {
+        labUnderSignals(() => new Promise(() => undefined), {
             quit,
             interactive: true,
             samePressWithinMs: 0,
@@ -192,7 +273,7 @@ describe("stopLabOnSignal", () => {
     it("says nothing about a wait to a stop that did not have one", async () => {
         const read = terminal();
 
-        stopLabOnSignal(async () => undefined, {
+        labUnderSignals(async () => undefined, {
             interactive: true,
             samePressWithinMs: 0,
             quitOfferAfterMs: 0
@@ -209,7 +290,7 @@ describe("stopLabOnSignal", () => {
     it("keeps what to press out of a run nobody is watching", async () => {
         const read = terminal();
 
-        stopLabOnSignal(() => new Promise(() => undefined), {
+        labUnderSignals(() => new Promise(() => undefined), {
             quit: vi.fn(),
             interactive: false,
             quitOfferAfterMs: 0

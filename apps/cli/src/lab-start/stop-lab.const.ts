@@ -10,10 +10,10 @@ export const ShutdownSignal = {
 export type ShutdownSignal = (typeof ShutdownSignal)[keyof typeof ShutdownSignal];
 
 /**
- * How soon after an interrupt another one is that same interrupt arriving again rather than the
- * operator pressing twice. Ctrl+C reaches a lab started through a script runner twice — once from
- * the terminal and once forwarded by the runner — and the two land within milliseconds of each
- * other, so anything this close together is one press.
+ * How soon after an interrupt signal another one is that same press arriving again rather than the
+ * operator pressing twice. A lab whose keys are its own never sees this, because a keystroke is
+ * read once; a lab reached by signal does, because a terminal interrupts every process in the
+ * foreground and a script runner forwards its own copy on top, milliseconds behind.
  */
 export const SAME_PRESS_WITHIN_MS = 1_000;
 

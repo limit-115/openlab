@@ -1,4 +1,5 @@
 import { cancel, isTTY, log, outro } from "@clack/prompts";
+import { readControlKeys } from "#src/lab-start/control-keys";
 import {
     CONFIRM_STOP_WITHIN_MS,
     FORCED_STOP_EXIT_CODE,
@@ -9,7 +10,8 @@ import {
 import type { StopLabOptions } from "#src/lab-start/stop-lab.types";
 
 /**
- * Puts a running lab under the signals that stop it.
+ * Puts a running lab under everything that can ask it to stop: the keys of the operator watching
+ * it, and the signals of everything that has no keyboard.
  *
  * Ctrl+C at a terminal somebody is watching asks first. What it takes down is hours of agents at
  * work, so a key pressed by mistake, or meant for whatever the operator thought was in front of
@@ -19,19 +21,20 @@ import type { StopLabOptions } from "#src/lab-start/stop-lab.types";
  * signal cannot answer, and neither can a terminal nobody is reading, so both take the lab down at
  * the first word.
  *
- * The interrupt a script runner forwards is what makes any of this delicate. Ctrl+C reaches a lab
- * started through one twice, once from the terminal and once forwarded, and the copy landing
- * milliseconds later would answer the question the original just asked — so a repeat that close is
- * read as the one press it is.
+ * A press read as a key is one press and unmistakably so. A press that arrives as a signal is not:
+ * a lab whose input was redirected away from the terminal is still interrupted by it, and a script
+ * runner forwards that interrupt on top of the one the terminal already sent, milliseconds later.
+ * That copy would answer the question the original just asked, so on the signal path a repeat that
+ * close is read as the one press it is.
  *
- * Once the lab is going down the repeats are held instead, because a stop that let the forwarded
- * signal through to Node would be killed halfway rather than finished. A stop that drags is the
- * last case: the operator is waiting on agents being let go, and once they have waited, pressing
- * again means it — so the way out is offered, again no sooner than a forwarded signal could arrive.
- * Taking it abandons a stop half done, which is an interrupted process rather than a stopped lab,
- * and it ends as one.
+ * Once the lab is going down, repeats are held instead, because a stop that let a forwarded signal
+ * through to Node would be killed halfway rather than finished. A stop that drags is the last case:
+ * the operator is waiting on agents being let go, and once they have waited, pressing again means
+ * it — so the way out is offered, again no sooner than a forwarded signal could arrive. Taking it
+ * abandons a stop half done, which is an interrupted process rather than a stopped lab, and it ends
+ * as one.
  */
-export function stopLabOnSignal(close: () => Promise<void>, options: StopLabOptions = {}): void {
+export function stopLabWhenAsked(close: () => Promise<void>, options: StopLabOptions = {}): void {
     const quit = options.quit ?? ((code: number) => process.exit(code));
     const watched = options.interactive ?? isTTY(process.stdout);
     const samePressWithinMs = options.samePressWithinMs ?? SAME_PRESS_WITHIN_MS;
@@ -40,6 +43,7 @@ export function stopLabOnSignal(close: () => Promise<void>, options: StopLabOpti
     let offered = false;
     /** When the question on screen was put, for as long as it is the question on screen. */
     let askedAt: number | undefined;
+    let releaseKeyboard: () => void = () => undefined;
 
     const beginStop = () => {
         stopping = true;
@@ -51,10 +55,18 @@ export function stopLabOnSignal(close: () => Promise<void>, options: StopLabOpti
         }, options.quitOfferAfterMs ?? QUIT_OFFER_AFTER_MS);
         /** A lab already down is not kept up by the offer it never had to make. */
         offer.unref();
-        void stopLab(close).finally(() => clearTimeout(offer));
+        void stopLab(close).finally(() => {
+            clearTimeout(offer);
+            /** A keyboard still being read would hold open a process with nothing left to do. */
+            releaseKeyboard();
+        });
     };
 
-    const onSignal = (signal: ShutdownSignal) => {
+    /**
+     * An operator asking for the lab to stop, whether the asking arrived as a key or as a signal.
+     * Only a signal can be the same press twice.
+     */
+    const onInterrupt = (repeatCouldBeOnePress: boolean) => {
         if (stopping) {
             if (offered) {
                 cancel("Quit. The lab was still stopping");
@@ -62,24 +74,38 @@ export function stopLabOnSignal(close: () => Promise<void>, options: StopLabOpti
             }
             return;
         }
-        if (signal !== ShutdownSignal.INTERRUPT || !watched) {
+        if (!watched) {
             beginStop();
             return;
         }
         const since = askedAt === undefined ? undefined : Date.now() - askedAt;
-        if (since !== undefined && since < samePressWithinMs) {
+        if (since === undefined || since > confirmWithinMs) {
+            askedAt = Date.now();
+            log.warn("Press Ctrl+C again to stop the lab — the agents it is running go with it");
             return;
         }
-        if (since !== undefined && since <= confirmWithinMs) {
-            beginStop();
+        if (repeatCouldBeOnePress && since < samePressWithinMs) {
             return;
         }
-        askedAt = Date.now();
-        log.warn("Press Ctrl+C again to stop the lab — the agents it is running go with it");
+        beginStop();
+    };
+
+    const onSignal = (signal: ShutdownSignal) => {
+        if (stopping || signal === ShutdownSignal.INTERRUPT) {
+            onInterrupt(true);
+            return;
+        }
+        /** A service manager cannot be asked anything, and will not wait to be. */
+        beginStop();
     };
 
     for (const signal of Object.values(ShutdownSignal)) {
         process.on(signal, () => onSignal(signal));
+    }
+    if (watched) {
+        releaseKeyboard = readControlKeys(() => onInterrupt(false), {
+            keyboard: options.keyboard
+        });
     }
 }
 
