@@ -1,10 +1,8 @@
-import { RefreshCwIcon, TerminalIcon, TriangleAlertIcon } from "lucide-react";
+import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
     CENTER_STATE,
-    CENTER_STATE_MARK_ERROR,
-    COMMAND_HINT,
-    COMMAND_HINT_CODE
+    CENTER_STATE_MARK_ERROR
 } from "#src/connection-screen/connection-screen.const";
 import { CONNECTION_SCREEN_NAMESPACE } from "#src/connection-screen/connection-screen.i18n";
 import { Button } from "#src/design-system/button";
@@ -38,10 +36,6 @@ export function ErrorDashboard({ error, retry, retrying }: ErrorDashboardProps) 
                     <EmptyDescription>{error.message}</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
-                    <span className={COMMAND_HINT}>
-                        <TerminalIcon className="size-4 flex-none" aria-hidden="true" />
-                        <code className={COMMAND_HINT_CODE}>openlab start task.json</code>
-                    </span>
                     <Button type="button" onClick={retry} disabled={retrying}>
                         {retrying ? (
                             <Spinner data-icon="inline-start" />
