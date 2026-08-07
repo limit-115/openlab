@@ -28,7 +28,8 @@ import {
     HARNESS_INSTALL_COMMAND,
     HARNESS_INSTALL_NOTE,
     HARNESS_SIGN_IN_COMMAND,
-    HARNESS_SIGN_IN_NOTE
+    HARNESS_SIGN_IN_NOTE,
+    HARNESS_USAGE_NOTE
 } from "#src/harness-setup/harness-setup.const";
 import { HARNESS_SETUP_NAMESPACE } from "#src/harness-setup/harness-setup.i18n";
 
@@ -40,6 +41,9 @@ import { HARNESS_SETUP_NAMESPACE } from "#src/harness-setup/harness-setup.i18n";
 export function HarnessReadinessCard({ harness }: { harness: HarnessReadiness }) {
     const { t } = useTranslation(HARNESS_SETUP_NAMESPACE);
     const ready = harness.state === HarnessReadinessState.READY;
+    const metered = HARNESS_BILLING[harness.harness] === AgentHarnessBilling.USAGE;
+    /** What this harness in particular leaves the operator able to watch the spending with. */
+    const usageNote = metered ? HARNESS_USAGE_NOTE[harness.harness] : null;
 
     return (
         <li className={cn(HARNESS_CARD, ready && HARNESS_CARD_READY)}>
@@ -47,9 +51,7 @@ export function HarnessReadinessCard({ harness }: { harness: HarnessReadiness })
                 {STATE_ICON[harness.state]}
                 <span className={HARNESS_CARD_NAME}>{HARNESS_NAME[harness.harness]}</span>
                 <Badge variant={ready ? "default" : "secondary"}>{t(harness.state)}</Badge>
-                {HARNESS_BILLING[harness.harness] === AgentHarnessBilling.USAGE ? (
-                    <Badge variant="destructive">{t("billingUsage")}</Badge>
-                ) : null}
+                {metered ? <Badge variant="destructive">{t("billingUsage")}</Badge> : null}
                 {harness.plan === null ? null : (
                     <Badge variant="outline">{subscriptionPlanName(harness.plan)}</Badge>
                 )}
@@ -61,9 +63,8 @@ export function HarnessReadinessCard({ harness }: { harness: HarnessReadiness })
                 )}
             </div>
 
-            {HARNESS_BILLING[harness.harness] === AgentHarnessBilling.USAGE ? (
-                <p className={HARNESS_BILLING_WARNING}>{t("billingUsageNote")}</p>
-            ) : null}
+            {metered ? <p className={HARNESS_BILLING_WARNING}>{t("billingUsageNote")}</p> : null}
+            {usageNote === null ? null : <p className={HARNESS_BILLING_WARNING}>{t(usageNote)}</p>}
             <HarnessNextStep harness={harness} />
             {/**
              * The key field stays after the harness is ready, because taking the key back is how the

@@ -2,21 +2,24 @@ export const HarnessKinds = {
     CODEX: "codex",
     CLAUDE: "claude",
     GLM: "glm",
-    DEEPSEEK: "deepseek"
+    DEEPSEEK: "deepseek",
+    MUSE: "muse"
 } as const;
 
 export type HarnessKind = (typeof HarnessKinds)[keyof typeof HarnessKinds];
 
 /**
- * What a harness proved before it was allowed to run. Three of these name a subscription the vendor
- * bills by the month; `DEEPSEEK_API_KEY` names a wallet the vendor bills by the token, and it is
- * spelled differently precisely so a run manifest never reads as a subscription run.
+ * What a harness proved before it was allowed to run. The first three name a subscription the vendor
+ * bills by the month. The last two name accounts the vendor bills by the token — DeepSeek against a
+ * wallet that states a balance, Meta against one that states nothing at all — and both are spelled
+ * differently from the subscriptions precisely so a run manifest never reads as a subscription run.
  */
 export const HarnessAuthenticationMethods = {
     CHATGPT: "chatgpt",
     CLAUDE_AI: "claude.ai",
     ZAI_CODING_PLAN: "zai-coding-plan",
-    DEEPSEEK_API_KEY: "deepseek-api-key"
+    DEEPSEEK_API_KEY: "deepseek-api-key",
+    META_ACCOUNT: "meta-account"
 } as const;
 
 export type HarnessAuthenticationMethod =
@@ -46,8 +49,15 @@ export const HarnessTimeoutMilliseconds = {
     RUN: 21_600_000
 } as const;
 
+/**
+ * How the prompt reached the CLI. Most of them read it on stdin, which leaves nothing on disk for the
+ * run to disagree with. A CLI that refuses stdin is handed the prompt artifact itself rather than a
+ * copy, so the bytes the model read are the bytes the manifest hashed, and the manifest says which of
+ * the two happened instead of leaving a reader to assume.
+ */
 export const HarnessInputSources = {
-    PROMPT: "prompt"
+    PROMPT: "prompt",
+    PROMPT_FILE: "prompt_file"
 } as const;
 
 export type HarnessInputSource = (typeof HarnessInputSources)[keyof typeof HarnessInputSources];

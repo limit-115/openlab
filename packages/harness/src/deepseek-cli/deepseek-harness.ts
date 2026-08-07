@@ -30,7 +30,10 @@ import type {
 } from "#src/deepseek-cli/deepseek-credential.types";
 import type { DeepseekHarnessOptions } from "#src/deepseek-cli/deepseek-harness.types";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type { HarnessCommand } from "#src/subscription-cli-harness/subscription-cli-harness.types";
+import type {
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
 /**
  * DeepSeek driven through the Codex CLI, which speaks the Responses API that DeepSeek serves. It is
@@ -120,11 +123,11 @@ export class DeepseekHarness extends SubscriptionCliHarness {
     protected buildCommand(
         request: HarnessRunRequest,
         session: HarnessSession,
-        responseSchemaPath: string | undefined
+        paths: HarnessRunPaths
     ): HarnessCommand {
         return {
             args: [
-                ...codexRunArguments(request, session, responseSchemaPath, [
+                ...codexRunArguments(request, session, paths.responseSchema, [
                     ...codexReasoningEffortOverride(DeepseekReasoningEfforts[session.effort]),
                     ...codexModelProviderOverrides({
                         id: DeepseekProvider.ID,

@@ -54,5 +54,13 @@ export const ZaiSpendingLimitType = {
 } as const;
 export type ZaiSpendingLimitType = (typeof ZaiSpendingLimitType)[keyof typeof ZaiSpendingLimitType];
 
+/**
+ * What stands where a plan tier goes for Muse Code, which sells no tier. It is a sentence rather than
+ * a blank because a blank reads as a reading that failed, and this one succeeded: there is nothing to
+ * report, and an operator deciding whether to leave an investigation running overnight has to be told
+ * that rather than left to infer it from an empty field.
+ */
+export const MUSE_METERED_PLAN = "Metered — Meta publishes no balance";
+
 /** A reading is monitoring, not work: it may never outlast the preflight it rides alongside. */
 export const ALLOWANCE_TIMEOUT_MILLISECONDS = 15_000;

@@ -20,7 +20,8 @@ export const HARNESS_INSTALL_COMMAND: Record<AgentHarnessKind, string> = {
     [AgentHarnessKind.CODEX]: "npm install -g @openai/codex",
     [AgentHarnessKind.CLAUDE]: "npm install -g @anthropic-ai/claude-code",
     [AgentHarnessKind.GLM]: "npm install -g @anthropic-ai/claude-code",
-    [AgentHarnessKind.DEEPSEEK]: "npm install -g @openai/codex"
+    [AgentHarnessKind.DEEPSEEK]: "npm install -g @openai/codex",
+    [AgentHarnessKind.MUSE]: "curl -fsSL https://dev.meta.ai/install.sh | bash"
 };
 
 /**
@@ -32,7 +33,8 @@ export const HARNESS_SIGN_IN_COMMAND: Record<AgentHarnessKind, string | null> = 
     [AgentHarnessKind.CODEX]: "codex login",
     [AgentHarnessKind.CLAUDE]: "claude auth login",
     [AgentHarnessKind.GLM]: null,
-    [AgentHarnessKind.DEEPSEEK]: null
+    [AgentHarnessKind.DEEPSEEK]: null,
+    [AgentHarnessKind.MUSE]: "muse login"
 };
 
 /** The sentence under a card that is not installed, in the words that harness needs. */
@@ -40,15 +42,30 @@ export const HARNESS_INSTALL_NOTE = {
     [AgentHarnessKind.CODEX]: "installCodex",
     [AgentHarnessKind.CLAUDE]: "installClaude",
     [AgentHarnessKind.GLM]: "installGlm",
-    [AgentHarnessKind.DEEPSEEK]: "installDeepseek"
+    [AgentHarnessKind.DEEPSEEK]: "installDeepseek",
+    [AgentHarnessKind.MUSE]: "installMuse"
 } as const satisfies Record<AgentHarnessKind, string>;
 
 export const HARNESS_SIGN_IN_NOTE = {
     [AgentHarnessKind.CODEX]: "signInCodex",
     [AgentHarnessKind.CLAUDE]: "signInClaude",
     [AgentHarnessKind.GLM]: "signInGlm",
-    [AgentHarnessKind.DEEPSEEK]: "signInDeepseek"
+    [AgentHarnessKind.DEEPSEEK]: "signInDeepseek",
+    [AgentHarnessKind.MUSE]: "signInMuse"
 } as const satisfies Record<AgentHarnessKind, string>;
+
+/**
+ * What being billed by the token means for this harness in particular. The shared warning says the
+ * spending has no cap; this says what the operator can and cannot watch it with, and the two usage
+ * harnesses differ there — DeepSeek states a balance, Muse Code states nothing at all.
+ */
+export const HARNESS_USAGE_NOTE = {
+    [AgentHarnessKind.CODEX]: null,
+    [AgentHarnessKind.CLAUDE]: null,
+    [AgentHarnessKind.GLM]: null,
+    [AgentHarnessKind.DEEPSEEK]: "billingUsageDeepseek",
+    [AgentHarnessKind.MUSE]: "billingUsageMuse"
+} as const satisfies Record<AgentHarnessKind, string | null>;
 
 export const HARNESS_LIST = "grid gap-3" as const;
 export const HARNESS_CARD = "flex flex-col gap-2 rounded-xl border p-4" as const;

@@ -19,7 +19,8 @@ export const SnapshotHarnessKind: Record<HarnessKind, AgentHarnessKind> = {
     [HarnessKinds.CODEX]: AgentHarnessKinds.CODEX,
     [HarnessKinds.CLAUDE]: AgentHarnessKinds.CLAUDE,
     [HarnessKinds.GLM]: AgentHarnessKinds.GLM,
-    [HarnessKinds.DEEPSEEK]: AgentHarnessKinds.DEEPSEEK
+    [HarnessKinds.DEEPSEEK]: AgentHarnessKinds.DEEPSEEK,
+    [HarnessKinds.MUSE]: AgentHarnessKinds.MUSE
 };
 
 export const SnapshotEffortLevel: Record<HarnessEffortLevel, AgentEffortLevel> = {

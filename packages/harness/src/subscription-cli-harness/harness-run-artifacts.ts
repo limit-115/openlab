@@ -15,9 +15,15 @@ import type {
 } from "#src/subscription-cli-harness/harness-run-artifacts.types";
 import { responseJsonSchema } from "#src/subscription-cli-harness/response-schema";
 
+/**
+ * `promptText` is what the CLI will actually be given, which is not always what the caller wrote: a
+ * CLI with no structured-output flag has to be asked for its schema in words. The artifact records
+ * the sent text rather than the requested one, so the hash beside a run answers what the model read.
+ */
 export async function createRunFiles(
     kind: HarnessKind,
-    request: HarnessRunRequest
+    request: HarnessRunRequest,
+    promptText: string
 ): Promise<HarnessRunFiles> {
     const artifactDirectory = resolve(request.artifactDirectory);
     await mkdir(dirname(artifactDirectory), { recursive: true });
@@ -32,7 +38,7 @@ export async function createRunFiles(
     }
 
     const promptPath = resolve(artifactDirectory, HarnessArtifactFiles.PROMPT);
-    await writeFile(promptPath, request.prompt, {
+    await writeFile(promptPath, promptText, {
         encoding: "utf8",
         flag: "wx",
         mode: HARNESS_ARTIFACT_FILE_MODE

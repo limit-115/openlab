@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import {
+    type HarnessInputSource,
     HarnessInputSources,
     type HarnessKind,
     HarnessTimeoutMilliseconds
@@ -59,6 +60,7 @@ import {
 import { parseStructuredOutput } from "#src/subscription-cli-harness/response-schema";
 import type {
     HarnessCommand,
+    HarnessRunPaths,
     SubscriptionHarnessOptions
 } from "#src/subscription-cli-harness/subscription-cli-harness.types";
 import { runSubscriptionPreflight } from "#src/subscription-cli-harness/subscription-preflight";
@@ -91,9 +93,27 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
     protected abstract buildCommand(
         request: HarnessRunRequest,
         session: HarnessSession,
-        responseSchemaPath: string | undefined
+        paths: HarnessRunPaths
     ): HarnessCommand;
     protected abstract createEventParser(request: HarnessRunRequest): HarnessEventParser;
+
+    /**
+     * Where the CLI expects to find the prompt. Overridden by a harness whose CLI does not read stdin
+     * at all: writing a prompt into a pipe nothing reads ends in a binary that exits complaining it
+     * was given no prompt, so the choice belongs to the harness that knows its CLI rather than here.
+     */
+    protected inputSource(): HarnessInputSource {
+        return HarnessInputSources.PROMPT;
+    }
+
+    /**
+     * The text the CLI is given. A CLI that has no structured-output flag has to be asked for its
+     * schema in the prompt itself, so the harness that knows this rewrites the request here, once,
+     * before the prompt is written down — and what is written down is then what the model read.
+     */
+    protected promptFor(request: HarnessRunRequest): string {
+        return request.prompt;
+    }
 
     /**
      * The environment the CLI runs with, once every inherited provider credential has been stripped.
@@ -150,13 +170,18 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
             this.#sourceEnvironment
         );
         const session = this.resolveSession(request);
-        const files = await createRunFiles(this.kind, request);
-        const command = this.buildCommand(request, session, files.responseSchema?.path);
+        const prompt = this.promptFor(request);
+        const files = await createRunFiles(this.kind, request, prompt);
+        const inputSource = this.inputSource();
+        const command = this.buildCommand(request, session, {
+            prompt: files.prompt.path,
+            responseSchema: files.responseSchema?.path
+        });
         const commandRecord: HarnessCommandRecord = {
             file: this.#binary,
             args: [...command.args],
             cwd: resolve(request.cwd),
-            stdin: HarnessInputSources.PROMPT,
+            stdin: inputSource,
             removedEnvironmentVariables
         };
         const startedAt = new Date().toISOString();
@@ -192,7 +217,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 args: command.args,
                 cwd: resolve(request.cwd),
                 environment,
-                input: request.prompt,
+                ...(inputSource === HarnessInputSources.PROMPT ? { input: prompt } : {}),
                 signal: watchdog.signal
             });
             processCompleted = child.completed;

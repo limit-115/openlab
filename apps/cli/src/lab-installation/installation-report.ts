@@ -30,7 +30,8 @@ const HARNESS_COMMAND = {
     [AgentHarnessKind.CODEX]: "codex",
     [AgentHarnessKind.CLAUDE]: "claude",
     [AgentHarnessKind.GLM]: "claude",
-    [AgentHarnessKind.DEEPSEEK]: "codex"
+    [AgentHarnessKind.DEEPSEEK]: "codex",
+    [AgentHarnessKind.MUSE]: "muse"
 } as const satisfies Record<AgentHarnessKind, string>;
 
 /**

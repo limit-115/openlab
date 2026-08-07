@@ -22,6 +22,7 @@ import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
 import type {
     HarnessCommand,
+    HarnessRunPaths,
     SubscriptionHarnessOptions
 } from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
@@ -76,7 +77,7 @@ export class ClaudeHarness extends SubscriptionCliHarness {
     protected buildCommand(
         request: HarnessRunRequest,
         session: HarnessSession,
-        _responseSchemaPath: string | undefined
+        _paths: HarnessRunPaths
     ): HarnessCommand {
         return { args: claudeRunArguments(request, session) };
     }
