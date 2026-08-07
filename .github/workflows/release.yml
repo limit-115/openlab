@@ -1,13 +1,13 @@
 name: Release
 
-# A release is cut by pushing a tag. Everything below runs on one machine, because Bun
+# A release is cut by pushing a tag. Everything is compiled on one machine, because Bun
 # cross-compiles every platform the lab is built for, including Windows.
 on:
     push:
         tags:
             - "v*"
-    # Run by hand to build every artifact without publishing any of them, which is how a release is
-    # rehearsed. Only a tag publishes.
+    # Run by hand to build and verify every artifact without publishing any of them, which is how a
+    # release is rehearsed. Only a tag publishes.
     workflow_dispatch:
 
 # Two tags pushed in quick succession must not race each other into the same release page. Unlike
@@ -21,20 +21,17 @@ permissions:
     contents: read
 
 jobs:
-    release:
+    build:
         runs-on: ubuntu-latest
         # Five platforms and the full suite, so this is roomier than CI, and still bounded.
         timeout-minutes: 40
         permissions:
-            contents: write
+            contents: read
             # What signs the provenance attestation binding these artifacts to this workflow.
             id-token: write
             attestations: write
         steps:
-            # The whole history, because the release notes are written from it.
             - uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
 
             # The version is read from the manifest rather than from the tag, so a tag that says
             # something else would publish artifacts named after a version nobody asked for. They
@@ -82,13 +79,67 @@ jobs:
               with:
                   subject-path: release/dist/openlab-*
 
-            - name: Check the release installs and runs
-              run: |
-                  mkdir -p /tmp/release-check
-                  tar -xzf release/dist/openlab-*-linux-x64.tar.gz -C /tmp/release-check
-                  test "$(/tmp/release-check/openlab --version)" = "$(jq -r .version release/dist/manifest.json)"
-                  HOME=/tmp/release-home /tmp/release-check/openlab install --no-modify-path
-                  HOME=/tmp/release-home /tmp/release-check/openlab doctor
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: release
+                  path: release/dist/
+                  retention-days: 7
+
+    # Nothing is published that has not been started. This is the same script CI runs, so a release
+    # is checked the way every pull request was and not by a second, weaker copy of the idea.
+    #
+    # darwin-x64 is the one target with no runner to be run on: the hosted macOS images are arm64.
+    # It is cross-compiled the same way as the four below and published unstarted, and saying so
+    # here is the only honest way to leave it.
+    verify:
+        needs: build
+        strategy:
+            # One platform failing is a fact about that platform, and stopping the others hides
+            # whether it is the only one.
+            fail-fast: false
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      target: linux-x64
+                    - os: ubuntu-24.04-arm
+                      target: linux-arm64
+                    - os: macos-latest
+                      target: darwin-arm64
+                    - os: windows-latest
+                      target: windows-x64
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/download-artifact@v7
+              with:
+                  name: release
+                  path: release/dist
+
+            # Git Bash is on the Windows runner, so one script drives all four platforms rather
+            # than one script per shell that would then differ in what it checks.
+            - name: Install, update and run the release
+              shell: bash
+              run: sh release/verify-release.sh ${{ matrix.target }}
+
+    publish:
+        needs: verify
+        if: startsWith(github.ref, 'refs/tags/v')
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: write
+        steps:
+            # The whole history, because the release notes are written from it.
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - uses: actions/download-artifact@v7
+              with:
+                  name: release
+                  path: release/dist
 
             # Written from the conventional commits since the last tag, grouped by what each change
             # was, rather than from raw subject lines in the order they happened.
@@ -102,7 +153,6 @@ jobs:
                   OUTPUT: release-notes.md
 
             - name: Publish
-              if: startsWith(github.ref, 'refs/tags/v')
               env:
                   GH_TOKEN: ${{ github.token }}
               run: |
@@ -114,14 +164,3 @@ jobs:
                       apps/landing/public/install.sh \
                       apps/landing/public/install.ps1 \
                       apps/landing/public/install.cmd
-
-            # A rehearsal publishes nothing, so without this it leaves nothing behind but a green
-            # tick. Attaching the archives to the run is what makes it a rehearsal rather than a
-            # compile check: they can be downloaded and installed from exactly as they are.
-            - name: Keep what the rehearsal built
-              if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-              uses: actions/upload-artifact@v7
-              with:
-                  name: rehearsal
-                  path: release/dist/
-                  retention-days: 7

@@ -66,9 +66,9 @@ jobs:
 
             - run: pnpm install --frozen-lockfile
 
-            # The three targets that have a runner to be run on. A release builds all five; the two
-            # without a runner are covered by being built the same way as the three that are.
-            - run: pnpm release linux-x64 darwin-arm64 windows-x64
+            # The four targets that have a runner to be run on. A release builds all five; the one
+            # left out is darwin-x64, for which the hosted macOS images are no longer Intel.
+            - run: pnpm release linux-x64 linux-arm64 darwin-arm64 windows-x64
 
             - uses: actions/upload-artifact@v7
               with:
@@ -79,6 +79,9 @@ jobs:
     # A compiled lab can break while the sources still pass, because the runtime a release carries
     # is not the one the tests ran on — and it breaks per platform. Until this ran, four of the five
     # binaries a release publishes had never been started by anyone before an operator started them.
+    #
+    # darwin-x64 is the one still in that position: the hosted macOS images are arm64, so it is
+    # cross-compiled the same way as the four below and published unstarted.
     verify:
         needs: build
         strategy:
@@ -89,6 +92,8 @@ jobs:
                 include:
                     - os: ubuntu-latest
                       target: linux-x64
+                    - os: ubuntu-24.04-arm
+                      target: linux-arm64
                     - os: macos-latest
                       target: darwin-arm64
                     - os: windows-latest
