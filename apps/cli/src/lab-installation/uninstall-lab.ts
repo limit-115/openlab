@@ -32,7 +32,9 @@ export async function uninstallLab(home: string, labHome?: string): Promise<Unin
 
     await rm(receipt.launcher, { force: true });
     await rm(home, { recursive: true, force: true });
-    const pathFilesCleared = await removeFromPath();
+
+    /** Where the launcher was is the directory the install put within reach, not one worked out again. */
+    const pathFilesCleared = await removeFromPath(path.dirname(receipt.launcher));
 
     return {
         wasInstalled: true,

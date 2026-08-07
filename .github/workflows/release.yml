@@ -24,7 +24,7 @@ jobs:
             id-token: write
             attestations: write
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   persist-credentials: false
 
@@ -38,14 +38,14 @@ jobs:
                       exit 1
                   fi
 
-            - uses: pnpm/action-setup@v6
+            - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
-            - uses: actions/setup-node@v7
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version-file: .node-version
                   cache: pnpm
 
-            - uses: oven-sh/setup-bun@v2
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
               with:
                   bun-version-file: .bun-version
 
@@ -62,13 +62,23 @@ jobs:
                   OPENLAB_SIGNING_KEY: ${{ secrets.OPENLAB_SIGNING_KEY }}
               run: pnpm sign-release
 
+            # Attesting a private repository needs Enterprise, and this one is on a plan that has
+            # no such thing. Left ungated, the first tag dies here — after the archives were built
+            # and the manifest signed, on the one step no rehearsal ever reaches.
             - name: Attest what was built
-              if: startsWith(github.ref, 'refs/tags/v')
-              uses: actions/attest-build-provenance@v4
+              if: startsWith(github.ref, 'refs/tags/v') && !github.event.repository.private
+              uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
               with:
                   subject-path: release/dist/openlab-*
 
-            - uses: actions/upload-artifact@v7
+            # Skipping it quietly is how a release ships without provenance and nobody finds out
+            # until somebody tries to verify one.
+            - name: Say that this release carries no provenance
+              if: startsWith(github.ref, 'refs/tags/v') && github.event.repository.private
+              run: |
+                  echo "::warning title=Nothing was attested::${GITHUB_REF_NAME} was built in a private repository, where attesting needs Enterprise. gh attestation verify will find nothing for these archives."
+
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
                   name: release
                   path: release/dist/
@@ -92,11 +102,11 @@ jobs:
         runs-on: ${{ matrix.os }}
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   persist-credentials: false
 
-            - uses: actions/download-artifact@v8
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
               with:
                   name: release
                   path: release/dist
@@ -113,19 +123,19 @@ jobs:
         permissions:
             contents: write
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   fetch-depth: 0
                   persist-credentials: false
 
-            - uses: actions/download-artifact@v8
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
               with:
                   name: release
                   path: release/dist
 
             - name: Write the release notes
               id: notes
-              uses: orhun/git-cliff-action@v4
+              uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4.8.0
               with:
                   config: cliff.toml
                   args: --latest --strip all
