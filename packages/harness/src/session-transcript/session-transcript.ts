@@ -1,5 +1,5 @@
 import { chmod, cp, mkdir, readdir, stat } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { HarnessArtifact } from "#src/agent-harness/agent-harness.types";
 import {
     SESSION_TRANSCRIPT_DIRECTORY,
@@ -47,7 +47,9 @@ export async function collectSessionTranscript(
         const directory = join(resolve(request.artifactDirectory), SESSION_TRANSCRIPT_DIRECTORY);
         await mkdir(directory, { recursive: true });
         for (const source of sources) {
-            await cp(source, join(directory, basename(source)), { recursive: true });
+            const copy = keptAt(directory, store.root, source);
+            await mkdir(dirname(copy), { recursive: true });
+            await cp(source, copy, { recursive: true });
         }
         return { source: store.root, files: await hashCopiedTree(directory) };
     } catch (error) {
@@ -58,6 +60,23 @@ export async function collectSessionTranscript(
             detail: error instanceof Error ? error.message : String(error)
         };
     }
+}
+
+/**
+ * Where one located path is kept: where the CLI had it, measured from the CLI's own store. The
+ * layout is carried rather than flattened because a name is not unique across a store — a Claude
+ * session resumed from a second directory is filed under both projects under the one id, and two
+ * copies taken by name alone would land on each other, leaving the manifest listing one of them and
+ * saying nothing about the one it lost.
+ *
+ * A path from outside the store's own root is kept by name instead, because following it would walk
+ * the copy out of the artifact directory.
+ */
+function keptAt(directory: string, root: string, source: string): string {
+    const within = relative(root, source);
+    return within === "" || within.startsWith("..") || isAbsolute(within)
+        ? join(directory, basename(source))
+        : join(directory, within);
 }
 
 /**
