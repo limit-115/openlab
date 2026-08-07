@@ -18,7 +18,7 @@ NEXT_VERSION="9.9.9"
 PORT="8799"
 
 main() {
-    need jq tar openssl
+    need jq tar openssl curl
     python_command >/dev/null
 
     version="$(jq -r .version "$DIST/manifest.json")"
@@ -42,9 +42,10 @@ main() {
     export OPENLAB_RELEASES_KEY
 
     publish "$workspace/channel" "$version" "$archive"
-    (cd "$workspace/channel" && exec "$(python_command)" -m http.server "$PORT" >/dev/null 2>&1) &
+    (cd "$workspace/channel" && exec "$(python_command)" -m http.server -b 127.0.0.1 "$PORT" \
+        >"$workspace/server.log" 2>&1) &
     server=$!
-    sleep 2
+    await_channel
 
     OPENLAB_RELEASES_URL="http://127.0.0.1:$PORT"
     export OPENLAB_RELEASES_URL
@@ -142,6 +143,22 @@ publish() {
         "$channel/latest/download/manifest.json"; do
         sign "$manifest"
     done
+}
+
+# Waits until the channel answers, because the lab is asked to reach it next. A server that died
+# instead of listening gets its last words printed, so a red run names its cause.
+await_channel() {
+    tries=0
+    while [ "$tries" -lt 30 ]; do
+        if curl -sf -o /dev/null "http://127.0.0.1:$PORT/latest/download/manifest.json"; then
+            return 0
+        fi
+        kill -0 "$server" 2>/dev/null || break
+        tries=$((tries + 1))
+        sleep 0.5
+    done
+    cat "$workspace/server.log" >&2
+    fail "The channel never answered on port $PORT."
 }
 
 # The detached signature a lab checks before it reads a manifest at all.
