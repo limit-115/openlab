@@ -41,8 +41,32 @@ export async function resolveMuseAccount(
     };
 }
 
+/**
+ * Where the CLI will look, worked out from the environment the CLI is given rather than from this
+ * process. The two can disagree — a daemon started from one account's shell, a home moved for the
+ * run — and if they do, the preflight would name one account while the run spent another, which is
+ * the single thing this credential reading exists to prevent.
+ *
+ * Values are used as they were set, never trimmed: whitespace is only ever read to decide whether a
+ * variable says anything at all. A trimmed path is a different path, and the CLI would not trim it.
+ */
 export function museCredentialPath(environment: Readonly<NodeJS.ProcessEnv>): string {
-    const configHome = environment[MuseCredentialStore.XDG_VARIABLE]?.trim();
-    const root = configHome ? [configHome] : [homedir(), ...MuseCredentialStore.HOME_SEGMENTS];
+    const configHome = whenSet(environment[MuseCredentialStore.XDG_VARIABLE]);
+    const root = configHome
+        ? [configHome]
+        : [museHome(environment), ...MuseCredentialStore.HOME_SEGMENTS];
     return join(...root, ...MuseCredentialStore.DIRECTORY_SEGMENTS, MuseCredentialStore.FILE_NAME);
+}
+
+/** `homedir()` is the last resort rather than the first, for the reason above. */
+function museHome(environment: Readonly<NodeJS.ProcessEnv>): string {
+    return (
+        whenSet(environment[MuseCredentialStore.HOME_VARIABLE]) ??
+        whenSet(environment[MuseCredentialStore.WINDOWS_HOME_VARIABLE]) ??
+        homedir()
+    );
+}
+
+function whenSet(value: string | undefined): string | undefined {
+    return value !== undefined && value.trim().length > 0 ? value : undefined;
 }

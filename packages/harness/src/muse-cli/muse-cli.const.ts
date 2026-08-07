@@ -104,6 +104,8 @@ export const MuseCredentialStore = {
     DIRECTORY_SEGMENTS: ["muse"],
     FILE_NAME: "auth.json",
     XDG_VARIABLE: "XDG_CONFIG_HOME",
+    HOME_VARIABLE: "HOME",
+    WINDOWS_HOME_VARIABLE: "USERPROFILE",
     HOME_SEGMENTS: [".config"]
 } as const;
 

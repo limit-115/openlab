@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
     HarnessAuthenticationMethods,
@@ -14,6 +15,7 @@ import {
 } from "#src/cli-execution/cli-process-runner.fixture";
 import { HarnessCapabilityError, HarnessRequestError } from "#src/cli-execution/harness-error";
 import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
+import { museCredentialPath } from "#src/muse-cli/muse-account";
 import type { MuseAccount } from "#src/muse-cli/muse-account.types";
 import {
     MUSE_BASE_URL,
@@ -199,6 +201,40 @@ describe("MuseHarness", () => {
         expect(error).toBeInstanceOf(HarnessCapabilityError);
         expect((error as HarnessCapabilityError).cause).toMatchObject({
             message: expect.stringContaining("mirror.invalid")
+        });
+    });
+
+    /**
+     * The preflight reads a file the CLI will read again for itself. A daemon started from one
+     * account's shell, or a run given a home of its own, makes those two different files — and then
+     * the manifest names one account while the process spends another.
+     */
+    it("looks for the credential where the CLI will look, not where this process lives", () => {
+        expect(museCredentialPath({ HOME: "/somewhere/else" })).toBe(
+            join("/somewhere/else", ".config", "muse", "auth.json")
+        );
+    });
+
+    /** A trimmed path is a different path, and the CLI does not trim it. */
+    it("takes a config home as it was set, and only reads whitespace to see if it says anything", () => {
+        expect(museCredentialPath({ XDG_CONFIG_HOME: "/spaced dir " })).toBe(
+            join("/spaced dir ", "muse", "auth.json")
+        );
+        expect(museCredentialPath({ XDG_CONFIG_HOME: "   ", HOME: "/fallback" })).toBe(
+            join("/fallback", ".config", "muse", "auth.json")
+        );
+    });
+
+    /** A metered run has to name what it spends, and a login naming nobody fails that as surely
+     * as a pasted key does. */
+    it("refuses a login that names no account for Meta to bill", async () => {
+        const muse = harness(museRunner(), { ...MuseTestAccount, email: null });
+
+        const error = await muse.preflight().catch((reason: unknown) => reason);
+
+        expect(error).toBeInstanceOf(HarnessCapabilityError);
+        expect((error as HarnessCapabilityError).cause).toMatchObject({
+            message: expect.stringContaining("names no account")
         });
     });
 

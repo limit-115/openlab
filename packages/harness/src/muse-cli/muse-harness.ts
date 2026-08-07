@@ -128,10 +128,21 @@ export class MuseHarness extends SubscriptionCliHarness {
             );
         }
 
+        /**
+         * The gate above refuses anything but a Meta-account login on the grounds that a metered run
+         * has to name the account it spends. A login that names no account fails that test as surely
+         * as a pasted key does, so it is refused here rather than reported as an unnamed wallet.
+         */
+        if (account.email === null) {
+            throw this.#unusableCredential(
+                new Error("Muse Code's stored login names no account for Meta to bill")
+            );
+        }
+
         return {
             method: HarnessAuthenticationMethods.META_ACCOUNT,
             subscription: null,
-            wallet: account.email === null ? "metered" : `metered, billed to ${account.email}`
+            wallet: `metered, billed to ${account.email}`
         };
     }
 
