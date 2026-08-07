@@ -8,6 +8,7 @@ import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import { CodexTestCliValues, CodexTestLoginMarkers } from "#src/codex-cli/codex-cli.fixture";
 import { CodexHarness } from "#src/codex-cli/codex-harness";
+import { DeepseekHarness } from "#src/deepseek-cli/deepseek-harness";
 
 function preflightRefusal(...captures: readonly ReturnType<typeof captureSuccess>[]) {
     const harness = new CodexHarness({
@@ -46,5 +47,39 @@ describe("runSubscriptionPreflight", () => {
 
         expect(refusal).toBeInstanceOf(HarnessCapabilityError);
         expect(refusal).toMatchObject({ gap: HarnessCapabilityGaps.SUBSCRIPTION });
+    });
+
+    /**
+     * This refusal is the one sentence all five harnesses share, and two of them have no subscription
+     * to be asked for: DeepSeek authenticates with a key the operator hands over and Muse Code with a
+     * Meta login. Asking either to sign in to a product subscription sends them after something that
+     * does not exist, and the capability card shows the sentence verbatim.
+     */
+    it("asks a token-billed harness for its CLI rather than for a subscription", async () => {
+        const harness = new DeepseekHarness({
+            runner: new FakeHarnessProcessRunner([
+                { ...captureSuccess(""), failed: true, exitCode: null, error: "spawn codex ENOENT" }
+            ]),
+            environment: testEnvironment(),
+            resolveWallet: () =>
+                Promise.resolve({ apiKey: "sk-test", available: true, balance: "1.00 USD" })
+        });
+
+        const refusal = await harness.preflight().then(
+            () => undefined,
+            (error: unknown) => error
+        );
+
+        expect(refusal).toBeInstanceOf(HarnessCapabilityError);
+        const capability = (refusal as HarnessCapabilityError).capabilityRequest;
+        expect(capability.provisioningHint).toContain("Install");
+        for (const sentence of [
+            (refusal as HarnessCapabilityError).message,
+            capability.need,
+            capability.reason,
+            capability.provisioningHint
+        ]) {
+            expect(sentence).not.toMatch(/subscription/iu);
+        }
     });
 });

@@ -100,18 +100,21 @@ function throwIfPreflightStopped(
 
 /**
  * The version command is what decides whether the CLI is there at all, so everything that goes wrong
- * before the authentication check is answered is a missing installation. Whether the login behind it
- * is the right one is the authentication check's to say, and it says so with its own gap.
+ * before the authentication check is answered is a missing installation. Whether the credential
+ * behind it is the right one is the authentication check's to say, and it says so with its own gap
+ * and in its own words — which is why nothing here names a subscription. Three harnesses are signed
+ * in interactively, one is handed a key and one logs in to Meta, and this sentence is the one all
+ * five get.
  */
 function unavailableCapability(kind: HarnessKind, cause: unknown): HarnessCapabilityError {
     return new HarnessCapabilityError(
         kind,
         HarnessCapabilityGaps.INSTALLATION,
-        `${kind} CLI is unavailable or cannot report subscription authentication`,
+        `${kind} CLI is unavailable or cannot report its version`,
         {
-            need: `${kind} CLI with an active product subscription login`,
-            reason: `The ${kind} agent cannot run without proven subscription authentication`,
-            provisioningHint: `Install ${kind}, log in interactively with the product subscription, then retry`
+            need: `The ${kind} CLI on this machine`,
+            reason: `The ${kind} agent cannot run until its own CLI answers`,
+            provisioningHint: `Install the ${kind} CLI, make sure it is on PATH, then retry`
         },
         { cause }
     );

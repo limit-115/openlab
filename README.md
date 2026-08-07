@@ -114,7 +114,9 @@ Requirements:
 
 - Node.js `24.18.1` through `fnm`;
 - pnpm `11.18.0`;
-- a locally authenticated Codex CLI or Claude CLI product subscription.
+- at least one locally authenticated agent CLI harness — `codex`, `claude`, `glm`, `deepseek` or
+  `muse`. Three run on a subscription and two on a wallet billed by the token; the harness setup page
+  says which before you hand any of them a credential.
 
 ```bash
 fnm use
