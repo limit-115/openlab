@@ -60,11 +60,18 @@
 - Biome is the formatter and linter for every workspace. Use four spaces and no trailing commas. Run
   `pnpm format` and `pnpm check` before committing.
 - Prefer maintained, focused libraries over handwritten infrastructure when a quality library exists.
-- Run model agents only through a locally authenticated agent CLI harness. Subscription billing is
-  mandatory.
+- Run model agents only through a locally authenticated agent CLI harness.
+- Prefer subscription billing. A plan the operator already bought costs the same whether the lab works
+  for ten minutes or all night, which is what makes an investigation that runs unattended a reasonable
+  thing to start. A usage-billed harness is allowed where no subscription exists, and it must say so
+  itself: the interface names the billing wherever the operator sets that harness up, and the lab
+  never spends a wallet the operator did not knowingly hand over.
 - Pin every model endpoint a harness talks to. Vendors serve subscription quota and pay-as-you-go
   billing from the same credential on different hosts or paths, so a configurable base URL is a silent
-  path to usage-based billing.
+  path to the wrong bill.
+- Never put a credential on a command line. Arguments are written into the run manifest and are
+  readable in the process table, so a key belongs in the environment the harness builds and nowhere
+  else.
 - Define every finite domain value set (events, statuses, states, roles, lanes, result kinds) as a
   named `const` object with `as const`, and infer its union type from that object. Zod schemas and all
   comparisons must use those constants. Do not use TypeScript `enum` or domain magic strings.

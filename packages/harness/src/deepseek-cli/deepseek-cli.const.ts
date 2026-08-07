@@ -50,10 +50,10 @@ export const DeepseekReasoningEfforts: Record<HarnessEffortLevel, string> = {
 };
 
 /**
- * Where the key the operator typed is kept. It sits with the operator rather than in the lab's data
- * directory: it is their credential, it outlives any one lab, and every CLI on the machine keeps its
- * own the same way. The modes are the ones a credential file gets — nobody else on the machine reads
- * it.
+ * Where the key the operator typed is kept: the program's own home, beside the install receipt, and
+ * not in the lab's data directory. It is a credential rather than data — it outlives any one lab,
+ * it must not travel with an export, and every agent CLI on the machine keeps its own the same way.
+ * The modes are the ones a credential file gets: nobody else on the machine reads it.
  */
 export const DeepseekCredentialStore = {
     DIRECTORY_SEGMENTS: [".openlab"],
