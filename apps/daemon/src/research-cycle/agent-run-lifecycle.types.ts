@@ -10,6 +10,16 @@ export interface StartAgentRunInput {
     readonly cwd: string;
 }
 
+/**
+ * What a finished run leaves the lab holding of it. The manifest names every artifact with its
+ * digest; the manifest's own digest is kept here, where the run directory cannot restate it.
+ */
+export interface AgentRunOutcome {
+    readonly exitCode?: number | null;
+    readonly manifestPath?: string;
+    readonly manifestSha256?: string;
+}
+
 export interface AgentRunFailure {
     readonly status:
         | typeof AgentRunStatus.FAILED

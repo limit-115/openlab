@@ -8,6 +8,7 @@ import { requiredById } from "#src/investigation-workspace/snapshot-entities";
 import { RUN_FAILURE_EVENT } from "#src/research-cycle/agent-run-lifecycle.const";
 import type {
     AgentRunFailure,
+    AgentRunOutcome,
     StartAgentRunInput
 } from "#src/research-cycle/agent-run-lifecycle.types";
 
@@ -40,7 +41,7 @@ export async function startAgentRun(
 export async function finishAgentRun(
     workspace: InvestigationWorkspace,
     runId: string,
-    outcome: { readonly exitCode?: number | null; readonly manifestPath?: string } = {}
+    outcome: AgentRunOutcome = {}
 ): Promise<void> {
     await workspace.update((draft) => {
         const run = requiredById(draft.runs, runId);
@@ -51,6 +52,9 @@ export async function finishAgentRun(
         }
         if (outcome.manifestPath !== undefined) {
             run.manifest_path = outcome.manifestPath;
+        }
+        if (outcome.manifestSha256 !== undefined) {
+            run.manifest_sha256 = outcome.manifestSha256;
         }
     });
     await workspace.appendEvent(EventType.RUN_SUCCEEDED, { run_id: runId });
