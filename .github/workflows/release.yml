@@ -62,11 +62,21 @@ jobs:
                   OPENLAB_SIGNING_KEY: ${{ secrets.OPENLAB_SIGNING_KEY }}
               run: pnpm sign-release
 
+            # Attesting a private repository needs Enterprise, and this one is on a plan that has
+            # no such thing. Left ungated, the first tag dies here — after the archives were built
+            # and the manifest signed, on the one step no rehearsal ever reaches.
             - name: Attest what was built
-              if: startsWith(github.ref, 'refs/tags/v')
+              if: startsWith(github.ref, 'refs/tags/v') && !github.event.repository.private
               uses: actions/attest-build-provenance@v4
               with:
                   subject-path: release/dist/openlab-*
+
+            # Skipping it quietly is how a release ships without provenance and nobody finds out
+            # until somebody tries to verify one.
+            - name: Say that this release carries no provenance
+              if: startsWith(github.ref, 'refs/tags/v') && github.event.repository.private
+              run: |
+                  echo "::warning title=Nothing was attested::${GITHUB_REF_NAME} was built in a private repository, where attesting needs Enterprise. gh attestation verify will find nothing for these archives."
 
             - uses: actions/upload-artifact@v7
               with:
