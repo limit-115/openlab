@@ -427,9 +427,18 @@ program
 
         const result = await purgeRuns(config);
         if (result.retainedCliHistory.length > 0) {
+            /**
+             * A note is drawn as wide as its longest line and is never wrapped, so the sentence is
+             * broken here rather than left to run off the side of a narrow terminal.
+             */
             note(
-                result.retainedCliHistory.join("\n"),
-                "Each agent CLI keeps its own record of what it ran, beside your interactive sessions. The lab does not delete these"
+                [
+                    ...result.retainedCliHistory,
+                    "",
+                    "Each agent CLI keeps its own record of what it ran,",
+                    "beside your own sessions. The lab deletes none of it."
+                ].join("\n"),
+                "Left on this machine"
             );
         }
         outro(
