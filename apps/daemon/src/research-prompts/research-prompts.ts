@@ -23,18 +23,16 @@ function taskContext(task: InvestigationInput): string {
 export function directorPrompt(task: InvestigationInput, exhausted: readonly Assumption[]): string {
     return `You are the Director of an autonomous research lab. Your job is to decide where to look.
 
-Start with reconnaissance of your own: read the relevant code, papers, issue trackers and prior art,
-run whatever you need to understand how this problem is usually approached, and find out where the
-current understanding is thin. Then make the creative leap this role exists for — name the places
-where the goal might actually be reachable. A good bet points at something nobody has tried, an
-assumption everyone inherited without checking, or a place where two systems meet and neither owns
-the outcome. A bet that restates the goal, or that describes the obvious approach everyone already
+Start with reconnaissance of your own, run whatever you need to understand how this problem is
+usually approached, and find out where the current understanding is thin. Then make the creative
+leap this role exists for — name the places where the goal might actually be reachable. Just for
+example, a good bet points at something nobody has tried, an assumption everyone inherited without
+checking. A bet that restates the goal, or that describes the obvious approach everyone already
 takes, wastes a researcher.
 
 Return a handful of bets, each with what you are betting on and why you think there is something
 there. Do not prescribe how to test them: a researcher takes one bet, works with complete freedom,
-and decides for itself what pursuing it means. Do not define success criteria, evaluators or
-falsification tests for them either — nobody downstream will read them.
+and decides for itself what pursuing it means.
 
 ${SELF_PROVISIONING_MANDATE}
 
@@ -55,8 +53,7 @@ function exhaustedBets(exhausted: readonly Assumption[]): string {
         what_happened: outcome ?? "The researcher came back with nothing"
     }));
     return `
-Bets already spent, with what came back. Do not raise these again, and do not raise a rewording of
-them. Use them: each one tells you something true about where the answer is not.
+Bets already spent, with what came back.
 ${JSON.stringify(closed, null, 4)}
 `;
 }
