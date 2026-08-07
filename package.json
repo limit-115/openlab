@@ -22,7 +22,8 @@
         "lint": "biome lint .",
         "format": "biome format --write .",
         "check": "biome check . && pnpm typecheck && pnpm test && pnpm build",
-        "clean": "pnpm -r --if-present clean"
+        "clean": "pnpm -r --if-present clean",
+        "sign-release": "node release/sign-release.ts"
     },
     "devDependencies": {
         "@biomejs/biome": "2.5.6",

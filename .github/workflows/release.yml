@@ -69,6 +69,15 @@ jobs:
             - name: Build every platform
               run: pnpm release
 
+            # The digests inside the manifest prove an archive is the one described. This is what
+            # proves the description, and without it a substituted channel passes every check a lab
+            # makes. A rehearsal signs too, so a key that no released lab trusts fails here rather
+            # than on the machine of whoever tries to update off the release it signed.
+            - name: Sign the manifest
+              env:
+                  OPENLAB_SIGNING_KEY: ${{ secrets.OPENLAB_SIGNING_KEY }}
+              run: pnpm sign-release
+
             # The archives are built from sources this workflow checked out, and the attestation is
             # what lets anyone confirm that afterwards with `gh attestation verify`. Only a
             # published archive is worth attesting: signing a rehearsal's would put a permanent
@@ -161,6 +170,7 @@ jobs:
                       --notes-file "${{ steps.notes.outputs.changelog }}" \
                       release/dist/openlab-* \
                       release/dist/manifest.json \
+                      release/dist/manifest.json.sig \
                       apps/landing/public/install.sh \
                       apps/landing/public/install.ps1 \
                       apps/landing/public/install.cmd

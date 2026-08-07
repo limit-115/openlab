@@ -1,3 +1,4 @@
+import { generateKeyPairSync, sign } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -17,6 +18,11 @@ describe("telling an operator a release they do not have is out", () => {
     let releasesUrl: string;
     let offered: string;
     let asked: number;
+    /** The key this invented channel signs with, which a lab is told to trust for the run. */
+    const channelKey = generateKeyPairSync("ed25519");
+    const channelPublicKey = channelKey.publicKey
+        .export({ type: "spki", format: "pem" })
+        .toString();
 
     beforeEach(async () => {
         root = await mkdtemp(path.join(tmpdir(), "openlab-notice-"));
@@ -26,11 +32,15 @@ describe("telling an operator a release they do not have is out", () => {
 
         server = await new Promise<Server>((resolve) => {
             const listening = createServer((request, response) => {
-                asked += 1;
+                const body = JSON.stringify({ version: offered, artifacts: {} });
                 if (request.url === "/latest/download/manifest.json") {
-                    response
-                        .writeHead(200)
-                        .end(JSON.stringify({ version: offered, artifacts: {} }));
+                    asked += 1;
+                    response.writeHead(200).end(body);
+                    return;
+                }
+                if (request.url === "/latest/download/manifest.json.sig") {
+                    const signature = sign(null, Buffer.from(body), channelKey.privateKey);
+                    response.writeHead(200).end(`${signature.toString("base64")}\n`);
                     return;
                 }
                 response.writeHead(404).end();
@@ -47,7 +57,7 @@ describe("telling an operator a release they do not have is out", () => {
     });
 
     function environment(): NodeJS.ProcessEnv {
-        return { OPENLAB_RELEASES_URL: releasesUrl };
+        return { OPENLAB_RELEASES_URL: releasesUrl, OPENLAB_RELEASES_KEY: channelPublicKey };
     }
 
     /** Only a lab this program installed has a receipt, and only that lab can act on a notice. */

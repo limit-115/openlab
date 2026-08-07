@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync, sign } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, readlink, rm, stat, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
@@ -40,9 +40,17 @@ describe("moving an installed lab to another release", () => {
     let published: string;
     let server: Server;
     let releasesUrl: string;
-    /** What each published version's manifest says, keyed by version, newest published last. */
-    const manifests = new Map<string, ReleaseManifest>();
+    /** Each published version's manifest exactly as it is served, with the signature over it. */
+    const manifests = new Map<string, { body: string; signature: string }>();
     let latest: string | undefined;
+    /** The key this invented channel signs with, which a lab is told to trust for the run. */
+    const channelKey = generateKeyPairSync("ed25519");
+    const channelPublicKey = channelKey.publicKey
+        .export({ type: "spki", format: "pem" })
+        .toString();
+    /** Which key the channel actually signs with, and whether it publishes the signature at all. */
+    let signsWith = channelKey.privateKey;
+    let publishesSignature = true;
 
     beforeEach(async () => {
         root = await mkdtemp(path.join(tmpdir(), "openlab-update-"));
@@ -50,6 +58,8 @@ describe("moving an installed lab to another release", () => {
         await mkdir(published, { recursive: true });
         manifests.clear();
         latest = undefined;
+        signsWith = channelKey.privateKey;
+        publishesSignature = true;
 
         vi.stubEnv("HOME", path.join(root, "home"));
         server = await serve();
@@ -74,7 +84,7 @@ describe("moving an installed lab to another release", () => {
         await execa("tar", ["-czf", archive, "-C", laidOut, "."]);
 
         const bytes = await readFile(archive);
-        manifests.set(version, {
+        const manifest: ReleaseManifest = {
             version,
             artifacts: {
                 [TARGET]: {
@@ -83,31 +93,50 @@ describe("moving an installed lab to another release", () => {
                     size: (await stat(archive)).size
                 }
             }
-        });
+        };
+        served(version, JSON.stringify(manifest));
         latest = version;
     }
 
-    /** Serves what a release page serves: a manifest under its tag and under `latest`. */
+    /** Publishes one manifest, signed over the exact bytes the channel will hand back. */
+    function served(version: string, body: string): void {
+        manifests.set(version, {
+            body,
+            signature: sign(null, Buffer.from(body), signsWith).toString("base64")
+        });
+    }
+
+    /**
+     * Serves what a release page serves: a manifest under its tag and under `latest`, the detached
+     * signature beside each, and the archives themselves.
+     */
     function serve(): Promise<Server> {
         const listening = createServer((request, response) => {
             const url = request.url ?? "";
-            const latestManifest = latest === undefined ? undefined : manifests.get(latest);
+            const underLatest = /^\/latest\/download\/(.+)$/.exec(url);
+            const underTag = /^\/download\/v([^/]+)\/(.+)$/.exec(url);
 
-            if (url === "/latest/download/manifest.json" && latestManifest !== undefined) {
-                response.writeHead(200).end(JSON.stringify(latestManifest));
-                return;
-            }
-            const named = /^\/download\/v([^/]+)\/(.+)$/.exec(url);
-            const manifest = named === undefined ? undefined : manifests.get(named?.[1] ?? "");
-            if (named === null || named === undefined || manifest === undefined) {
+            const version = underLatest === null ? (underTag?.[1] ?? "") : (latest ?? "");
+            const wanted = underLatest?.[1] ?? underTag?.[2] ?? "";
+            const manifest = manifests.get(version);
+
+            if (manifest === undefined) {
                 response.writeHead(404).end();
                 return;
             }
-            if (named[2] === "manifest.json") {
-                response.writeHead(200).end(JSON.stringify(manifest));
+            if (wanted === "manifest.json") {
+                response.writeHead(200).end(manifest.body);
                 return;
             }
-            readFile(path.join(published, named[2] ?? "")).then(
+            if (wanted === "manifest.json.sig") {
+                if (!publishesSignature) {
+                    response.writeHead(404).end();
+                    return;
+                }
+                response.writeHead(200).end(`${manifest.signature}\n`);
+                return;
+            }
+            readFile(path.join(published, wanted)).then(
                 (bytes) => response.writeHead(200).end(bytes),
                 () => response.writeHead(404).end()
             );
@@ -120,6 +149,7 @@ describe("moving an installed lab to another release", () => {
     function environment(): NodeJS.ProcessEnv {
         return {
             OPENLAB_RELEASES_URL: releasesUrl,
+            OPENLAB_RELEASES_KEY: channelPublicKey,
             OPENLAB_INSTALL_DIR: path.join(root, "bin")
         };
     }
@@ -174,6 +204,30 @@ describe("moving an installed lab to another release", () => {
         ]);
         const downloads = said.filter((progress) => progress.step === UpdateStep.DOWNLOADING);
         expect(downloads.at(-1)?.received).toBe(downloads.at(-1)?.total);
+    });
+
+    /**
+     * The digests in a manifest only prove that an archive is the one the manifest described.
+     * Whoever puts a manifest in front of a lab puts their own digests in it and their own archives
+     * behind them, and every other check the lab makes then passes. This is the one that does not.
+     */
+    it("installs nothing from a manifest signed by a key it does not trust", async () => {
+        await installedAt("0.1.0");
+        signsWith = generateKeyPairSync("ed25519").privateKey;
+        await publish("0.2.0");
+
+        await expect(update("0.1.0")).rejects.toThrow(/not signed by a key this lab trusts/);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.2.0"))).toBe(false);
+    });
+
+    /** A signature nobody checks for is a signature defeated by not publishing one. */
+    it("installs nothing from a manifest published with no signature at all", async () => {
+        await installedAt("0.1.0");
+        publishesSignature = false;
+        await publish("0.2.0");
+
+        await expect(update("0.1.0")).rejects.toThrow(UpdateError);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.2.0"))).toBe(false);
     });
 
     /** An update has nothing to replace unless this program put the lab there in the first place. */
@@ -308,7 +362,8 @@ describe("moving an installed lab to another release", () => {
     it("installs nothing when the archive is not what the manifest described", async () => {
         await installedAt("0.1.0");
         await publish("0.2.0");
-        const artifact = manifests.get("0.2.0")?.artifacts[TARGET];
+        const served = JSON.parse(manifests.get("0.2.0")?.body ?? "{}") as ReleaseManifest;
+        const artifact = served.artifacts[TARGET];
         await writeFile(path.join(published, artifact?.file ?? ""), "not the release", "utf8");
 
         await expect(update("0.1.0")).rejects.toThrow(/Checksum mismatch/);

@@ -90,8 +90,17 @@ Set `OPENLAB_RELEASES_URL` to update from a mirror rather than from GitHub. Its 
 signed by a key the lab trusts, so name yours in `OPENLAB_RELEASES_KEY`.
 
 Every archive is verified against a digest published in the release manifest before anything is
-unpacked, and a mismatch stops the install rather than warning about it. Releases are built by
-GitHub Actions and attested, so what you downloaded can be traced back to the workflow that built it:
+unpacked, and a mismatch stops the install rather than warning about it.
+
+`openlab update` goes one further and checks who published the manifest. A digest only proves that
+an archive is the one the manifest described, so a channel able to put a manifest in front of your
+lab could put its own digests in it and its own archives behind them. The manifest is signed, and
+the key it is signed with is compiled into the lab: a manifest signed by anything else is refused
+and nothing is installed. The first install is the one exception — it trusts the site you fetched
+the script from, because at that point there is no lab yet to hold a key.
+
+Releases are built by GitHub Actions and attested, so what you downloaded can be traced back to the
+workflow that built it:
 
 ```bash
 gh attestation verify openlab-<version>-<platform>.tar.gz --repo dibenkobit/openlab

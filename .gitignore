@@ -10,4 +10,5 @@ coverage/
 .openlab/
 artifacts/
 release/staging/
+release/signing-key.pem
 

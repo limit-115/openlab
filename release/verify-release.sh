@@ -18,7 +18,7 @@ NEXT_VERSION="9.9.9"
 PORT="8799"
 
 main() {
-    need jq tar
+    need jq tar openssl
     python_command >/dev/null
 
     version="$(jq -r .version "$DIST/manifest.json")"
@@ -32,6 +32,14 @@ main() {
 
     workspace="$(mktemp -d)"
     trap clean_up EXIT INT TERM
+
+    # A lab installs only from a channel signed by a key it trusts, and this channel is invented
+    # here, so it is signed here. The key lasts as long as the check does and is named to the lab
+    # the way an operator names the key of a mirror of their own.
+    openssl genpkey -algorithm ed25519 -out "$workspace/channel-key.pem" 2>/dev/null ||
+        fail "This needs an OpenSSL that can make an ed25519 key."
+    OPENLAB_RELEASES_KEY="$(openssl pkey -in "$workspace/channel-key.pem" -pubout)"
+    export OPENLAB_RELEASES_KEY
 
     publish "$workspace/channel" "$version" "$archive"
     (cd "$workspace/channel" && exec "$(python_command)" -m http.server "$PORT" >/dev/null 2>&1) &
@@ -79,6 +87,19 @@ main() {
     say "doctor"
     "$installed" doctor
 
+    # The digests in a manifest only prove an archive is the one described. A channel able to put a
+    # manifest in front of a lab writes its own digests and puts its own archives behind them, so a
+    # manifest nobody trustworthy signed has to stop the update rather than be read.
+    say "a manifest nobody trustworthy signed"
+    rm -f "$workspace/channel/latest/download/manifest.json.sig"
+    if "$installed" update >"$workspace/unsigned" 2>&1; then
+        cat "$workspace/unsigned"
+        fail "A manifest with no signature was installed from."
+    fi
+    grep -q "not signed by a key this lab trusts" "$workspace/unsigned" ||
+        fail "An unsigned manifest was refused for some reason other than being unsigned."
+    printf '  ok    refused, and said why\n'
+
     # An update is the one command that reaches a network, so a channel it cannot reach has to end
     # in a sentence and a failed exit rather than in a stack trace.
     say "an unreachable channel"
@@ -115,6 +136,19 @@ publish() {
         '.version = $v | .artifacts = {($t): {file: $f, sha256: $s, size: $z}}' \
         "$DIST/manifest.json" >"$channel/download/v$NEXT_VERSION/manifest.json"
     cp "$channel/download/v$NEXT_VERSION/manifest.json" "$channel/latest/download/manifest.json"
+
+    for manifest in "$channel/download/v$version/manifest.json" \
+        "$channel/download/v$NEXT_VERSION/manifest.json" \
+        "$channel/latest/download/manifest.json"; do
+        sign "$manifest"
+    done
+}
+
+# The detached signature a lab checks before it reads a manifest at all.
+sign() {
+    openssl pkeyutl -sign -inkey "$workspace/channel-key.pem" -rawin -in "$1" |
+        openssl base64 -A >"$1.sig"
+    printf '\n' >>"$1.sig"
 }
 
 # Takes down what this left running and keeps the status that got it here, so a failure stays one.

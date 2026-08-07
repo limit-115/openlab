@@ -9,12 +9,14 @@
     ],
     "publishConfig": {
         "exports": {
-            "./lab-installation/shipped-directory": "./dist/lab-installation/shipped-directory.js",
-            "./lab-installation/shipped-directory.const": "./dist/lab-installation/shipped-directory.const.js",
             "./investigation-lifecycle/investigation-state-transitions": "./dist/investigation-lifecycle/investigation-state-transitions.js",
             "./investigation-lifecycle/investigation-state-transitions.const": "./dist/investigation-lifecycle/investigation-state-transitions.const.js",
             "./investigation-lifecycle/investigation-state-transitions.types": "./dist/investigation-lifecycle/investigation-state-transitions.types.js",
             "./investigation-lifecycle/wake-trigger.const": "./dist/investigation-lifecycle/wake-trigger.const.js",
+            "./lab-installation/shipped-directory": "./dist/lab-installation/shipped-directory.js",
+            "./lab-installation/shipped-directory.const": "./dist/lab-installation/shipped-directory.const.js",
+            "./release-channel/manifest-signature": "./dist/release-channel/manifest-signature.js",
+            "./release-channel/manifest-signature.const": "./dist/release-channel/manifest-signature.const.js",
             "./release-channel/release-manifest.schema": "./dist/release-channel/release-manifest.schema.js",
             "./release-channel/release-manifest.types": "./dist/release-channel/release-manifest.types.js",
             "./release-channel/release-target": "./dist/release-channel/release-target.js",
@@ -25,12 +27,14 @@
         }
     },
     "exports": {
-        "./lab-installation/shipped-directory": "./src/lab-installation/shipped-directory.ts",
-        "./lab-installation/shipped-directory.const": "./src/lab-installation/shipped-directory.const.ts",
         "./investigation-lifecycle/investigation-state-transitions": "./src/investigation-lifecycle/investigation-state-transitions.ts",
         "./investigation-lifecycle/investigation-state-transitions.const": "./src/investigation-lifecycle/investigation-state-transitions.const.ts",
         "./investigation-lifecycle/investigation-state-transitions.types": "./src/investigation-lifecycle/investigation-state-transitions.types.ts",
         "./investigation-lifecycle/wake-trigger.const": "./src/investigation-lifecycle/wake-trigger.const.ts",
+        "./lab-installation/shipped-directory": "./src/lab-installation/shipped-directory.ts",
+        "./lab-installation/shipped-directory.const": "./src/lab-installation/shipped-directory.const.ts",
+        "./release-channel/manifest-signature": "./src/release-channel/manifest-signature.ts",
+        "./release-channel/manifest-signature.const": "./src/release-channel/manifest-signature.const.ts",
         "./release-channel/release-manifest.schema": "./src/release-channel/release-manifest.schema.ts",
         "./release-channel/release-manifest.types": "./src/release-channel/release-manifest.types.ts",
         "./release-channel/release-target": "./src/release-channel/release-target.ts",
