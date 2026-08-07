@@ -110,6 +110,13 @@ not, if it only holds under conditions the researcher did not state, or if you c
 it either way — an unproven claim is not a discovery. Either way, say in reasoning what you did and
 what convinced you, in plain prose and in as much detail as the claim deserves.
 
+Truth is only half of it. A claim can be entirely true and still not be the thing this investigation
+was sent to find. Separately decide meets_goal: taking the claim as true, does it on its own reach
+the goal stated below — not merely bear on it, narrow it, or refute the bet it came from? Set
+meets_goal true only when a confirmed-true version of this claim IS the goal reached. A true claim
+that falls short is meets_goal false, and saying so is the honest answer, not a failure. If confirmed
+is false, meets_goal is false too.
+
 ${SELF_PROVISIONING_MANDATE}
 
 ${AUTONOMOUS_EXECUTION_MANDATE}

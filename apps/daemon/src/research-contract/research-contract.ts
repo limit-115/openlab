@@ -56,10 +56,15 @@ export const ResearchResultSchema = z
         }
     });
 
-/** What a verifier comes back with. It chose how to check, so it owes only an answer and its prose. */
+/**
+ * What a verifier comes back with. Two answers, not one: whether the claim is true, and whether that
+ * true claim on its own reaches the goal. A claim can hold and still fall short of what the
+ * investigation was sent to find, so only a finding that is both becomes a breakthrough.
+ */
 export const VerificationResultSchema = z
     .object({
         confirmed: z.boolean(),
+        meets_goal: z.boolean(),
         reasoning: z.string().trim().min(1),
         capability_requests: CapabilityRequestCandidatesSchema,
         capability_blocked: z.boolean().default(false)
@@ -70,6 +75,13 @@ export const VerificationResultSchema = z
                 code: "custom",
                 path: ["confirmed"],
                 message: "A verifier that could not run cannot confirm a finding"
+            });
+        }
+        if (result.meets_goal && !result.confirmed) {
+            context.addIssue({
+                code: "custom",
+                path: ["meets_goal"],
+                message: "A claim that is not confirmed true cannot reach the goal"
             });
         }
     });

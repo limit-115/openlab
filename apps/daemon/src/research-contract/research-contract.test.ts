@@ -69,6 +69,7 @@ describe("research structured-output contracts", () => {
     it("keeps a verifier that could not run from confirming anything", () => {
         const blocked = {
             confirmed: false,
+            meets_goal: false,
             reasoning: "Independent reproduction needs the held-out dataset",
             capability_requests: [
                 {
@@ -85,5 +86,17 @@ describe("research structured-output contracts", () => {
         expect(() => VerificationResultSchema.parse({ ...blocked, confirmed: true })).toThrow(
             /cannot confirm a finding/
         );
+    });
+
+    it("refuses to let an unconfirmed claim reach the goal", () => {
+        expect(() =>
+            VerificationResultSchema.parse({
+                confirmed: false,
+                meets_goal: true,
+                reasoning: "The claim is unproven yet marked as reaching the goal",
+                capability_requests: [],
+                capability_blocked: false
+            })
+        ).toThrow(/cannot reach the goal/);
     });
 });

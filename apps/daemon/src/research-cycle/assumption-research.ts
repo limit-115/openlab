@@ -98,6 +98,10 @@ export async function researchAssumption(
         await exhaustAssumption(workspace, assumption.id, verdict.reasoning);
         return { issues: [`Verifier refuted: ${finding.claim}`] };
     }
+    if (!verification.value.meets_goal) {
+        await exhaustAssumption(workspace, assumption.id, verdict.reasoning);
+        return { issues: [`Verifier confirmed but off-goal: ${finding.claim}`] };
+    }
 
     await confirmAssumption(workspace, assumption.id, verdict.reasoning);
     return { confirmed: finding, issues: [] };
