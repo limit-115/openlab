@@ -115,6 +115,8 @@
   functions, not to annotate every line of behavior.
 - If a rule here fights the task in front of you, say so loudly and get a human sign-off before
   breaking it.
-- Don't verify with browsers or computer use unless the user explicitly agrees or requests it.
+- Don't verify with browsers or computer use unless the user explicitly agrees or requests it. Being
+  asked to open a pull request that changes UI is such a request: capturing its before/after images
+  is part of the job, not a separate permission to seek.
 - Security is important, but should not be over-indexed on, especially for dev mode/maintainer-only
   features.
