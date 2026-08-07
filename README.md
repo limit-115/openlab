@@ -1,7 +1,7 @@
 # OpenLab
 
-Local autonomous research runtime described in
-[`OpenLab_MVP_SPEC.md`](./OpenLab_MVP_SPEC.md).
+Local autonomous research runtime. One lab, many investigations, each one a goal it pursues on its
+own through the agent CLIs already signed in on this machine.
 
 ## Repository layout
 
@@ -156,8 +156,8 @@ and your code; the lab pins the tier Meta does not train on, and warns on any ru
 ```bash
 pnpm openlab list
 pnpm openlab status
-pnpm openlab bets
-pnpm openlab inspect <bet-finding-verdict-or-run-id>
+pnpm openlab leads
+pnpm openlab inspect <lead-finding-verdict-or-run-id>
 pnpm openlab capabilities
 pnpm openlab answer <request-id> <answer>
 pnpm openlab wake
@@ -167,7 +167,7 @@ pnpm openlab rm <investigation-id>
 pnpm openlab purge
 ```
 
-`status`, `bets`, `inspect`, `capabilities`, `answer`, `wake`, `stop` and `export` are each about one
+`status`, `leads`, `inspect`, `capabilities`, `answer`, `wake`, `stop` and `export` are each about one
 investigation. With a single investigation the lab picks it; with several, name it with
 `-i/--investigation <id>`. `--json` prints any command machine-readably, and `--api-url` points the
 CLI at a daemon other than the local default.
