@@ -61,7 +61,8 @@ export function harnessRunResult(overrides: Partial<HarnessRunResult> = {}): Har
         cliVersion: "2.0.0",
         authentication: {
             method: HarnessAuthenticationMethods.CLAUDE_AI,
-            subscription: "max"
+            subscription: "max",
+            wallet: null
         },
         session: { model: "claude-opus-5", effort: HarnessEffortLevels.HIGH },
         sessionId: "session-1",

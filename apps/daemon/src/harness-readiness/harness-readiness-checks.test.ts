@@ -37,6 +37,7 @@ describe("HarnessReadinessChecks", () => {
             state: HarnessReadinessState.READY,
             cli_version: CODEX_VERSION,
             plan: CODEX_PLAN,
+            balance: null,
             error: null,
             checked_at: "2026-08-05T09:00:00.000Z"
         });
@@ -97,7 +98,8 @@ describe("HarnessReadinessChecks", () => {
             cliVersion: CODEX_VERSION,
             authentication: {
                 method: HarnessAuthenticationMethods.CHATGPT,
-                subscription: CODEX_PLAN
+                subscription: CODEX_PLAN,
+                wallet: null
             }
         });
         await Promise.all([first, second]);

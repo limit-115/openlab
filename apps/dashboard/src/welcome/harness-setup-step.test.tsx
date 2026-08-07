@@ -15,6 +15,7 @@ function stood(harness: AgentHarnessKind, state: HarnessReadinessState): Harness
         state,
         cli_version: state === HarnessReadinessState.READY ? "codex-cli 0.146.0" : null,
         plan: null,
+        balance: null,
         error: null,
         checked_at: "2026-08-05T09:00:00.000Z"
     };

@@ -1,8 +1,9 @@
-/** The subscription CLI harness an agent runs through. */
+/** The agent CLI harness an agent runs through. */
 export const AgentHarnessKind = {
     CODEX: "codex",
     CLAUDE: "claude",
-    GLM: "glm"
+    GLM: "glm",
+    DEEPSEEK: "deepseek"
 } as const;
 export type AgentHarnessKind = (typeof AgentHarnessKind)[keyof typeof AgentHarnessKind];
 

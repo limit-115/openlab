@@ -65,7 +65,8 @@ describe("readFinishedRunOutcome", () => {
             cliVersion: CodexTestCliValues.VERSION,
             authentication: {
                 method: HarnessAuthenticationMethods.CHATGPT,
-                subscription: null
+                subscription: null,
+                wallet: null
             },
             session: { model: "gpt-5", effort: HarnessEffortLevels.HIGH },
             command: {

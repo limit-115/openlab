@@ -12,37 +12,42 @@ import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const
 export const HARNESS_CHECK_INTERVAL_MS = 10_000;
 
 /**
- * What puts each CLI on the machine. Both Anthropic-served harnesses run the same binary — GLM is
- * Z.ai's coding plan spoken through the Claude CLI — so installing one installs the other, which the
- * copy beside it says outright.
+ * What puts each CLI on the machine. Harnesses share binaries — GLM is Z.ai's coding plan spoken
+ * through the Claude CLI, DeepSeek is served through the Codex CLI — so installing one installs the
+ * other, which the copy beside it says outright.
  */
 export const HARNESS_INSTALL_COMMAND: Record<AgentHarnessKind, string> = {
     [AgentHarnessKind.CODEX]: "npm install -g @openai/codex",
     [AgentHarnessKind.CLAUDE]: "npm install -g @anthropic-ai/claude-code",
-    [AgentHarnessKind.GLM]: "npm install -g @anthropic-ai/claude-code"
+    [AgentHarnessKind.GLM]: "npm install -g @anthropic-ai/claude-code",
+    [AgentHarnessKind.DEEPSEEK]: "npm install -g @openai/codex"
 };
 
 /**
- * What signs a CLI in to the subscription it bills. GLM has no command: its credential is left
- * behind by the ZCode desktop sign-in, so that card gives the operator the steps instead.
+ * What signs a CLI in to the account it bills. Two have no command: GLM's credential is left behind
+ * by the ZCode desktop sign-in, and DeepSeek's is a key the operator gives the lab on this page, so
+ * those cards give the operator what they need instead.
  */
 export const HARNESS_SIGN_IN_COMMAND: Record<AgentHarnessKind, string | null> = {
     [AgentHarnessKind.CODEX]: "codex login",
     [AgentHarnessKind.CLAUDE]: "claude auth login",
-    [AgentHarnessKind.GLM]: null
+    [AgentHarnessKind.GLM]: null,
+    [AgentHarnessKind.DEEPSEEK]: null
 };
 
 /** The sentence under a card that is not installed, in the words that harness needs. */
 export const HARNESS_INSTALL_NOTE = {
     [AgentHarnessKind.CODEX]: "installCodex",
     [AgentHarnessKind.CLAUDE]: "installClaude",
-    [AgentHarnessKind.GLM]: "installGlm"
+    [AgentHarnessKind.GLM]: "installGlm",
+    [AgentHarnessKind.DEEPSEEK]: "installDeepseek"
 } as const satisfies Record<AgentHarnessKind, string>;
 
 export const HARNESS_SIGN_IN_NOTE = {
     [AgentHarnessKind.CODEX]: "signInCodex",
     [AgentHarnessKind.CLAUDE]: "signInClaude",
-    [AgentHarnessKind.GLM]: "signInGlm"
+    [AgentHarnessKind.GLM]: "signInGlm",
+    [AgentHarnessKind.DEEPSEEK]: "signInDeepseek"
 } as const satisfies Record<AgentHarnessKind, string>;
 
 export const HARNESS_LIST = "grid gap-3" as const;
@@ -59,6 +64,11 @@ export const HARNESS_CARD_ERROR = "text-destructive text-pretty break-words" as 
 export const HARNESS_ICON_READY = "text-primary" as const;
 export const HARNESS_ICON_TODO = "text-muted-foreground" as const;
 export const HARNESS_ICON_BROKEN = "text-destructive" as const;
+export const HARNESS_KEY_FORM = "flex flex-wrap items-center gap-2" as const;
+export const HARNESS_KEY_INPUT = "min-w-64 flex-1 font-mono" as const;
+export const HARNESS_KEY_HELD = "text-muted-foreground" as const;
+export const HARNESS_BILLING_WARNING = "text-pretty" as const;
+
 export const HARNESS_SETUP_NOTE = "text-muted-foreground text-pretty" as const;
 export const HARNESS_SETUP_WARNING = "border-l-2 border-primary/40 pl-4 text-pretty" as const;
 export const HARNESS_SETUP_PENDING = "flex items-center gap-2 text-muted-foreground" as const;

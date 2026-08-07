@@ -29,7 +29,8 @@ export interface InstallationReport {
 const HARNESS_COMMAND = {
     [AgentHarnessKind.CODEX]: "codex",
     [AgentHarnessKind.CLAUDE]: "claude",
-    [AgentHarnessKind.GLM]: "claude"
+    [AgentHarnessKind.GLM]: "claude",
+    [AgentHarnessKind.DEEPSEEK]: "codex"
 } as const satisfies Record<AgentHarnessKind, string>;
 
 /**

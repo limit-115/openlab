@@ -15,6 +15,7 @@ import { NotificationTestRequestSchema } from "@openlab/protocol/operator-notifi
 import { isSpendCapLoosened } from "@openlab/protocol/spend-caps/spend-cap";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { DaemonLogLevel } from "#src/daemon-runtime/daemon-config.const";
+import { registerDeepseekKeyRoute } from "#src/deepseek-key/deepseek-key-route";
 import { HARNESS_READINESS_ROUTE } from "#src/harness-readiness/harness-readiness.const";
 import type { InvestigationRegistry } from "#src/investigation-registry/investigation-registry";
 import type { HeldInvestigation } from "#src/investigation-registry/investigation-registry.types";
@@ -160,6 +161,7 @@ export function createStatusServer(
     if (options.harnesses !== undefined) {
         const harnesses = options.harnesses;
         app.get(HARNESS_READINESS_ROUTE, async () => harnesses.checkAll());
+        registerDeepseekKeyRoute(app);
     }
 
     if (options.subscriptions !== undefined) {

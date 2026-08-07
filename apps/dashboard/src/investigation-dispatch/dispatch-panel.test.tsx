@@ -104,7 +104,7 @@ describe("DispatchPanel", () => {
         respond(HELD);
         renderPanel();
 
-        for (const harness of Object.values(AgentHarnessKind)) {
+        for (const harness of HELD.harness_kinds) {
             await userEvent.click(
                 await screen.findByRole("checkbox", { name: HARNESS_NAME[harness] })
             );

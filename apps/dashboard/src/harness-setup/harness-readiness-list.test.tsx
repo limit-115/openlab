@@ -23,6 +23,7 @@ function stood(
         state,
         cli_version: null,
         plan: null,
+        balance: null,
         error: null,
         checked_at: CHECKED_AT,
         ...rest

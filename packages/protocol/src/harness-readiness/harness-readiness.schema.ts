@@ -12,6 +12,8 @@ export const HarnessReadinessSchema = z.object({
     state: z.enum(HarnessReadinessState),
     cli_version: z.string().min(1).nullable(),
     plan: z.string().min(1).nullable(),
+    /** What a usage-billed harness has left to spend. A subscription harness carries none. */
+    balance: z.string().min(1).nullable(),
     error: z.string().min(1).nullable(),
     checked_at: z.iso.datetime()
 });

@@ -49,9 +49,10 @@ openlab doctor
 openlab start
 ```
 
-The one thing OpenLab cannot install for you is an agent to think with. It dispatches every agent
-to a locally authenticated `codex`, `claude` or `glm` CLI running on your own product subscription,
-and `openlab doctor` says which of them it can find.
+The one thing OpenLab cannot install for you is an agent to think with. It dispatches every agent to
+a locally authenticated `codex`, `claude`, `glm` or `deepseek` CLI harness — the first three on a
+product subscription you already hold, DeepSeek on a key you give it — and `openlab doctor` says
+which of them it can find.
 
 Nothing else is needed. Node, pnpm and a toolchain are not requirements: a release is one executable
 with its runtime inside it, and the dashboard and migrations installed beside it.
@@ -141,8 +142,10 @@ pnpm openlab new --file examples/investigation.example.json
 ```
 
 The daemon applies database migrations before it opens, and reopens every investigation it already
-holds. It invokes agents only through the locally installed `codex`, `claude` and `glm` CLI
-harnesses. API keys and usage-based model API fallbacks are intentionally unsupported.
+holds. It invokes agents only through the CLI harnesses installed on this machine: `codex`, `claude`,
+`glm` and `deepseek`. Three of them run on a subscription you already bought, which is the way this
+is meant to be run. DeepSeek is the exception — it bills a wallet by the token, nothing caps it, and
+its setup card says so before you hand over a key.
 
 ## Commands
 

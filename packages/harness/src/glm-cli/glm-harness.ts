@@ -77,7 +77,8 @@ export class GlmHarness extends SubscriptionCliHarness {
 
         return {
             method: HarnessAuthenticationMethods.ZAI_CODING_PLAN,
-            subscription: plan.level
+            subscription: plan.level,
+            wallet: null
         };
     }
 

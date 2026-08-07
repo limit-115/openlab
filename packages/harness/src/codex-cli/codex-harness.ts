@@ -1,9 +1,4 @@
-import {
-    HarnessAuthenticationMethods,
-    type HarnessEffortLevel,
-    HarnessExecutionProfiles,
-    HarnessKinds
-} from "#src/agent-harness/agent-harness.const";
+import { HarnessAuthenticationMethods, HarnessKinds } from "#src/agent-harness/agent-harness.const";
 import type {
     HarnessAuthentication,
     HarnessRunRequest,
@@ -15,14 +10,14 @@ import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import {
     CODEX_BINARY,
-    CodexColorModes,
-    CodexConfigKeys,
     CodexLoginMarkers,
-    CodexPermissionArguments,
-    CodexPermissionModes,
     CodexSessionDefaults
 } from "#src/codex-cli/codex-cli.const";
 import { CodexEventParser } from "#src/codex-cli/codex-event-parser";
+import {
+    codexReasoningEffortOverride,
+    codexRunArguments
+} from "#src/codex-cli/codex-run-arguments";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
 import type {
     HarnessCommand,
@@ -58,7 +53,8 @@ export class CodexHarness extends SubscriptionCliHarness {
 
         return {
             method: HarnessAuthenticationMethods.CHATGPT,
-            subscription: null
+            subscription: null,
+            wallet: null
         };
     }
 
@@ -71,37 +67,19 @@ export class CodexHarness extends SubscriptionCliHarness {
         session: HarnessSession,
         responseSchemaPath: string | undefined
     ): HarnessCommand {
-        const sharedArguments = [
-            "--json",
-            "--ignore-user-config",
-            "--skip-git-repo-check",
-            ...(request.executionProfile === HarnessExecutionProfiles.READ_ONLY
-                ? CodexPermissionArguments[CodexPermissionModes.READ_ONLY]
-                : CodexPermissionArguments[CodexPermissionModes.UNRESTRICTED]),
-            "--model",
-            session.model,
-            "--config",
-            codexReasoningEffortConfig(session.effort),
-            ...(responseSchemaPath === undefined ? [] : ["--output-schema", responseSchemaPath])
-        ];
-
-        if (request.resumeSessionId) {
-            return {
-                args: ["exec", "resume", ...sharedArguments, request.resumeSessionId, "-"]
-            };
-        }
-
         return {
-            args: ["exec", "--color", CodexColorModes.NEVER, ...sharedArguments, "-"]
+            args: [
+                ...codexRunArguments(
+                    request,
+                    session,
+                    responseSchemaPath,
+                    codexReasoningEffortOverride(session.effort)
+                )
+            ]
         };
     }
 
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
         return new CodexEventParser(request.resumeSessionId, request.responseSchema !== undefined);
     }
-}
-
-/** Codex parses an override value as TOML, so the effort has to arrive as a quoted string. */
-function codexReasoningEffortConfig(effort: HarnessEffortLevel): string {
-    return `${CodexConfigKeys.MODEL_REASONING_EFFORT}=${JSON.stringify(effort)}`;
 }

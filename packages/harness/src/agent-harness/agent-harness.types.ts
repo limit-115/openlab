@@ -9,9 +9,15 @@ import type {
 } from "#src/agent-harness/agent-harness.const";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 
+/**
+ * What paid for a run, as the vendor stated it. A subscription names a tier and a wallet names an
+ * amount, and they are different fields because they are different facts: a tier says what the
+ * operator already bought, an amount says how much longer the lab may keep working.
+ */
 export interface HarnessAuthentication {
     readonly method: HarnessAuthenticationMethod;
     readonly subscription: string | null;
+    readonly wallet: string | null;
 }
 
 export interface HarnessPreflight {

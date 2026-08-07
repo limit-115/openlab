@@ -111,7 +111,7 @@ describe("HarnessSettingsSection", () => {
         respond(SHIPPED);
         renderSection();
 
-        for (const harness of Object.values(AgentHarnessKind)) {
+        for (const harness of SHIPPED.harness_roster) {
             await userEvent.click(
                 await screen.findByRole("checkbox", { name: HARNESS_NAME[harness] })
             );
