@@ -16,7 +16,7 @@ permissions:
 
 jobs:
     check:
-        runs-on: ubuntu-latest
+        runs-on: blacksmith-4vcpu-ubuntu-2404
         # Long enough for a slow runner, short enough that a hung test fails within the hour
         # instead of holding a runner for the six that GitHub would otherwise allow it.
         timeout-minutes: 20
@@ -48,7 +48,7 @@ jobs:
     # built the same way rather than once per runner. Windows in particular cannot build its own:
     # its archive is a zip, and `zip` is not a thing a Windows runner has.
     build:
-        runs-on: ubuntu-latest
+        runs-on: blacksmith-4vcpu-ubuntu-2404
         timeout-minutes: 25
         steps:
             - uses: actions/checkout@v7
@@ -92,7 +92,7 @@ jobs:
                 include:
                     - os: ubuntu-latest
                       target: linux-x64
-                    - os: ubuntu-24.04-arm
+                    - os: blacksmith-4vcpu-ubuntu-2404-arm
                       target: linux-arm64
                     - os: macos-latest
                       target: darwin-arm64
