@@ -37,13 +37,18 @@ function renderDashboard() {
     return render(<RouterProvider router={router} />, { wrapper: wrapper() });
 }
 
+/**
+ * A fresh answer per call, because a Response body is read once: one shared between every request
+ * means whichever of the page's queries asks second gets a body somebody else already drank.
+ */
 function respondWith(payload: unknown) {
     vi.stubGlobal(
         "fetch",
-        vi.fn().mockResolvedValue(
-            new Response(JSON.stringify(payload), {
-                headers: { "Content-Type": "application/json" }
-            })
+        vi.fn(
+            async () =>
+                new Response(JSON.stringify(payload), {
+                    headers: { "Content-Type": "application/json" }
+                })
         )
     );
 }

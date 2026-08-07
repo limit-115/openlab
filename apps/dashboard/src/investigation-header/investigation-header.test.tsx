@@ -30,10 +30,15 @@ const address = investigationAddress(statusFixture.investigation.id);
 function renderInvestigation() {
     vi.stubGlobal(
         "fetch",
-        vi.fn().mockResolvedValue(
-            new Response(JSON.stringify(statusFixture), {
-                headers: { "Content-Type": "application/json" }
-            })
+        /**
+         * A fresh answer per call, because a Response body is read once: one shared between every
+         * request means whichever of the page's queries asks second gets an exhausted body.
+         */
+        vi.fn(
+            async () =>
+                new Response(JSON.stringify(statusFixture), {
+                    headers: { "Content-Type": "application/json" }
+                })
         )
     );
     const router = createMemoryRouter(dashboardRoutes, { initialEntries: [address] });
