@@ -26,7 +26,10 @@ import type { GlmHarnessOptions } from "#src/glm-cli/glm-harness.types";
 import { resolveZaiCodingPlan } from "#src/glm-cli/zai-coding-plan";
 import type { ResolveZaiCodingPlan, ZaiCodingPlan } from "#src/glm-cli/zai-coding-plan.types";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type { HarnessCommand } from "#src/subscription-cli-harness/subscription-cli-harness.types";
+import type {
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
 /**
  * A CLI that reported anything else ignored the injected coding-plan token and fell back to its own
@@ -89,7 +92,7 @@ export class GlmHarness extends SubscriptionCliHarness {
     protected buildCommand(
         request: HarnessRunRequest,
         session: HarnessSession,
-        _responseSchemaPath: string | undefined
+        _paths: HarnessRunPaths
     ): HarnessCommand {
         return { args: claudeRunArguments(request, session) };
     }

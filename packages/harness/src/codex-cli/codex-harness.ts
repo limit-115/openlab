@@ -21,6 +21,7 @@ import {
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
 import type {
     HarnessCommand,
+    HarnessRunPaths,
     SubscriptionHarnessOptions
 } from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
@@ -65,14 +66,14 @@ export class CodexHarness extends SubscriptionCliHarness {
     protected buildCommand(
         request: HarnessRunRequest,
         session: HarnessSession,
-        responseSchemaPath: string | undefined
+        paths: HarnessRunPaths
     ): HarnessCommand {
         return {
             args: [
                 ...codexRunArguments(
                     request,
                     session,
-                    responseSchemaPath,
+                    paths.responseSchema,
                     codexReasoningEffortOverride(session.effort)
                 )
             ]

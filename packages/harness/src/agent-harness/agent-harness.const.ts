@@ -46,8 +46,15 @@ export const HarnessTimeoutMilliseconds = {
     RUN: 21_600_000
 } as const;
 
+/**
+ * How the prompt reached the CLI. Most of them read it on stdin, which leaves nothing on disk for the
+ * run to disagree with. A CLI that refuses stdin is handed the prompt artifact itself rather than a
+ * copy, so the bytes the model read are the bytes the manifest hashed, and the manifest says which of
+ * the two happened instead of leaving a reader to assume.
+ */
 export const HarnessInputSources = {
-    PROMPT: "prompt"
+    PROMPT: "prompt",
+    PROMPT_FILE: "prompt_file"
 } as const;
 
 export type HarnessInputSource = (typeof HarnessInputSources)[keyof typeof HarnessInputSources];
