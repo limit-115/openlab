@@ -23,6 +23,13 @@ we may close it without merging it, or never review it.
 
 <!-- If this PR changes UI, include clear before/after screenshots.
      If the change involves motion or interaction, include a short video.
+
+     This applies to agents too. Being an agent is not an exemption: run the
+     interface in the environment it belongs to, drive it to the state this PR
+     changes, capture the screenshots yourself, and upload them here. Do not
+     describe what the UI would look like, and do not ask the human to take the
+     screenshots for you.
+
      Delete this section if not applicable. -->
 
 ## Checklist
