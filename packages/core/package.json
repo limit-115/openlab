@@ -14,7 +14,11 @@
             "./investigation-lifecycle/investigation-state-transitions": "./dist/investigation-lifecycle/investigation-state-transitions.js",
             "./investigation-lifecycle/investigation-state-transitions.const": "./dist/investigation-lifecycle/investigation-state-transitions.const.js",
             "./investigation-lifecycle/investigation-state-transitions.types": "./dist/investigation-lifecycle/investigation-state-transitions.types.js",
-            "./investigation-lifecycle/wake-trigger.const": "./dist/investigation-lifecycle/wake-trigger.const.js"
+            "./investigation-lifecycle/wake-trigger.const": "./dist/investigation-lifecycle/wake-trigger.const.js",
+            "./release-channel/release-manifest.schema": "./dist/release-channel/release-manifest.schema.js",
+            "./release-channel/release-manifest.types": "./dist/release-channel/release-manifest.types.js",
+            "./release-channel/release-target": "./dist/release-channel/release-target.js",
+            "./release-channel/release-target.const": "./dist/release-channel/release-target.const.js"
         },
         "imports": {
             "#src/*": "./dist/*.js"
@@ -26,7 +30,11 @@
         "./investigation-lifecycle/investigation-state-transitions": "./src/investigation-lifecycle/investigation-state-transitions.ts",
         "./investigation-lifecycle/investigation-state-transitions.const": "./src/investigation-lifecycle/investigation-state-transitions.const.ts",
         "./investigation-lifecycle/investigation-state-transitions.types": "./src/investigation-lifecycle/investigation-state-transitions.types.ts",
-        "./investigation-lifecycle/wake-trigger.const": "./src/investigation-lifecycle/wake-trigger.const.ts"
+        "./investigation-lifecycle/wake-trigger.const": "./src/investigation-lifecycle/wake-trigger.const.ts",
+        "./release-channel/release-manifest.schema": "./src/release-channel/release-manifest.schema.ts",
+        "./release-channel/release-manifest.types": "./src/release-channel/release-manifest.types.ts",
+        "./release-channel/release-target": "./src/release-channel/release-target.ts",
+        "./release-channel/release-target.const": "./src/release-channel/release-target.const.ts"
     },
     "imports": {
         "#src/*": "./src/*.ts"
@@ -39,6 +47,7 @@
         "format": "biome format --write ."
     },
     "dependencies": {
-        "@openlab/protocol": "workspace:*"
+        "@openlab/protocol": "workspace:*",
+        "zod": "4.4.3"
     }
 }

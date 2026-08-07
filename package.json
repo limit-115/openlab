@@ -26,6 +26,7 @@
     },
     "devDependencies": {
         "@biomejs/biome": "2.5.6",
+        "@openlab/core": "workspace:*",
         "@types/node": "24.13.3",
         "execa": "10.0.1",
         "lefthook": "2.1.10",

@@ -2,14 +2,14 @@ import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ReleaseManifestSchema } from "@openlab/core/release-channel/release-manifest.schema";
+import type {
+    ReleaseArtifact,
+    ReleaseManifest
+} from "@openlab/core/release-channel/release-manifest.types";
+import { EXECUTABLE_NAME, ReleaseTarget } from "@openlab/core/release-channel/release-target.const";
 import { execa } from "execa";
-import type { ReleaseArtifact, ReleaseManifest } from "#release/release-manifest.types";
-import {
-    BunCompileTarget,
-    EXECUTABLE_NAME,
-    ReleaseTarget,
-    WINDOWS_TARGETS
-} from "#release/release-target.const";
+import { BunCompileTarget, WINDOWS_TARGETS } from "#release/release-target.const";
 
 const REPOSITORY = fileURLToPath(new URL("..", import.meta.url));
 const OUTPUT = path.join(REPOSITORY, "release", "dist");
@@ -41,7 +41,12 @@ async function buildRelease(): Promise<void> {
         artifacts[target] = await buildTarget(target, version);
     }
 
-    const manifest: ReleaseManifest = { version, artifacts };
+    /**
+     * The manifest is written through the schema every updater reads it through, so a release
+     * whose manifest an installed lab could not parse is a release that cannot be built. The
+     * alternative is finding out from an operator whose lab has stopped being able to update.
+     */
+    const manifest: ReleaseManifest = ReleaseManifestSchema.parse({ version, artifacts });
     await writeFile(
         path.join(OUTPUT, "manifest.json"),
         `${JSON.stringify(manifest, null, 4)}\n`,

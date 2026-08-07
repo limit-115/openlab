@@ -11,6 +11,9 @@ importers:
       '@biomejs/biome':
         specifier: 2.5.6
         version: 2.5.6
+      '@openlab/core':
+        specifier: workspace:*
+        version: link:packages/core
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -237,6 +240,9 @@ importers:
       '@openlab/protocol':
         specifier: workspace:*
         version: link:../protocol
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/db:
     dependencies:

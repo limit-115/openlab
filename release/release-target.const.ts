@@ -1,18 +1,4 @@
-/**
- * The platforms a release is built for.
- *
- * Every one of them is cross-compiled from a single machine, which is why the list can be this
- * short a thing: a release does not need a runner per platform, only a name per platform.
- */
-export const ReleaseTarget = {
-    DARWIN_ARM64: "darwin-arm64",
-    DARWIN_X64: "darwin-x64",
-    LINUX_X64: "linux-x64",
-    LINUX_ARM64: "linux-arm64",
-    WINDOWS_X64: "windows-x64"
-} as const;
-
-export type ReleaseTarget = (typeof ReleaseTarget)[keyof typeof ReleaseTarget];
+import { ReleaseTarget } from "@openlab/core/release-channel/release-target.const";
 
 /** What Bun calls each platform when it is asked to compile for one. */
 export const BunCompileTarget = {
@@ -25,6 +11,3 @@ export const BunCompileTarget = {
 
 /** The one platform whose executables carry a suffix and whose archives are read by Explorer. */
 export const WINDOWS_TARGETS: readonly ReleaseTarget[] = [ReleaseTarget.WINDOWS_X64];
-
-/** What the lab is called on disk once it is installed. */
-export const EXECUTABLE_NAME = "openlab";
