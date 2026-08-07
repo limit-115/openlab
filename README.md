@@ -114,7 +114,9 @@ Requirements:
 
 - Node.js `24.18.1` through `fnm`;
 - pnpm `11.18.0`;
-- a locally authenticated Codex CLI or Claude CLI product subscription.
+- at least one locally authenticated agent CLI harness — `codex`, `claude`, `glm`, `deepseek` or
+  `muse`. Three run on a subscription and two on a wallet billed by the token; the harness setup page
+  says which before you hand any of them a credential.
 
 ```bash
 fnm use
@@ -187,9 +189,10 @@ asks the daemon for anything:
 
 - **Harnesses** — the roster a new investigation starts on, and the model and reasoning effort
   behind each of the director, researcher and verifier roles;
-- **Subscriptions** — what each authenticated subscription has left and when the reading was taken,
+- **Allowances** — what each authenticated harness has left and when the reading was taken,
   refreshed on its own and on demand, with a limiter on every window that says how far into it the
-  lab may spend;
+  lab may spend. A harness billed by the token carries no window, so it states a balance and takes
+  no limiter;
 - **Notifications** — the channels the lab reaches the operator through when nobody is watching
   this page, which moments each one reports and what language it writes in;
 - **Storage** — what each run directory takes up under `OPENLAB_HOME`, including directories left behind

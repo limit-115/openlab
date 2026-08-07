@@ -12,10 +12,16 @@ import {
     claudeAuthenticationCommand,
     claudeRunArguments
 } from "#src/claude-cli/claude-run-arguments";
+import { claudeSessionStore } from "#src/claude-cli/claude-session-store";
+import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
+import type {
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/cli-agent-harness/cli-agent-harness.types";
 import type { HarnessCaptureResult } from "#src/cli-execution/cli-process-runner.types";
+import { ForbiddenEnvironmentVariable } from "#src/cli-execution/harness-environment.const";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
-import { ForbiddenEnvironmentVariable } from "#src/cli-execution/subscription-environment.const";
 import {
     ClaudeReportedAuthMethods,
     GLM_BINARY,
@@ -25,11 +31,7 @@ import {
 import type { GlmHarnessOptions } from "#src/glm-cli/glm-harness.types";
 import { resolveZaiCodingPlan } from "#src/glm-cli/zai-coding-plan";
 import type { ResolveZaiCodingPlan, ZaiCodingPlan } from "#src/glm-cli/zai-coding-plan.types";
-import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type {
-    HarnessCommand,
-    HarnessRunPaths
-} from "#src/subscription-cli-harness/subscription-cli-harness.types";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 
 /**
  * A CLI that reported anything else ignored the injected coding-plan token and fell back to its own
@@ -41,7 +43,7 @@ const GlmAuthStatusSchema = z.looseObject({
     apiProvider: z.literal(ClaudeApiProviders.FIRST_PARTY)
 });
 
-export class GlmHarness extends SubscriptionCliHarness {
+export class GlmHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.GLM;
     readonly #resolveCodingPlan: ResolveZaiCodingPlan;
 
@@ -101,6 +103,10 @@ export class GlmHarness extends SubscriptionCliHarness {
         return new ClaudeEventParser();
     }
 
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return claudeSessionStore(environment);
+    }
+
     async #codingPlan(): Promise<ZaiCodingPlan> {
         try {
             return await this.#resolveCodingPlan();
@@ -112,7 +118,7 @@ export class GlmHarness extends SubscriptionCliHarness {
     #missingCodingPlan(cause: unknown): HarnessCapabilityError {
         return new HarnessCapabilityError(
             this.kind,
-            HarnessCapabilityGaps.SUBSCRIPTION,
+            HarnessCapabilityGaps.CREDENTIAL,
             "Claude CLI is not running on a Z.ai GLM Coding Plan subscription",
             {
                 need: "A local ZCode sign-in carrying an active GLM Coding Plan",

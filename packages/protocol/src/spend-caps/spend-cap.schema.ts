@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { AgentHarnessKind } from "#src/agents/agent-execution.const";
+import { WalletAmountSchema } from "#src/harness-allowance/harness-allowance.schema";
 import {
     NO_SPEND_CAP_PERCENT,
     type SpendCapKind,
     SpendCapKinds,
     SpendCapRefusal
 } from "#src/spend-caps/spend-cap.const";
-import { WalletAmountSchema } from "#src/subscription-allowance/subscription-allowance.schema";
 
 /**
  * How far into one rolling window the lab may spend a subscription. The window is named by how long

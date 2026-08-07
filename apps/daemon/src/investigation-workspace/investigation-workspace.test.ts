@@ -200,7 +200,7 @@ describe("InvestigationWorkspace", () => {
         await workspace.hibernate("Every subscription is at its cap", resumeAt);
         expect(workspace.getSnapshot().investigation.resume_at).toBe(resumeAt);
 
-        await workspace.wakeIfHibernating("The subscriptions are back", WakeTrigger.ALLOWANCE);
+        await workspace.wakeIfHibernating("The allowances are back", WakeTrigger.ALLOWANCE);
 
         expect(workspace.getSnapshot().investigation.state).toBe(InvestigationState.RUNNING);
         expect(workspace.getSnapshot().investigation.resume_at).toBeUndefined();

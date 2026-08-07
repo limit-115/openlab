@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { AgentHarnessKind } from "#src/agents/agent-execution.const";
+import { HarnessAllowanceState } from "#src/harness-allowance/harness-allowance.const";
+import type {
+    AllowanceBalance,
+    AllowanceWindow,
+    HarnessAllowance
+} from "#src/harness-allowance/harness-allowance.types";
 import {
     isSpendCapLoosened,
     walletSpendFloor,
@@ -9,12 +15,6 @@ import {
 } from "#src/spend-caps/spend-cap";
 import { SpendCapKinds } from "#src/spend-caps/spend-cap.const";
 import { SpendCapsSchema } from "#src/spend-caps/spend-cap.schema";
-import { SubscriptionAllowanceState } from "#src/subscription-allowance/subscription-allowance.const";
-import type {
-    AllowanceBalance,
-    AllowanceWindow,
-    SubscriptionAllowance
-} from "#src/subscription-allowance/subscription-allowance.types";
 
 const FIVE_HOURS = 300;
 const SEVEN_DAYS = 10_080;
@@ -43,10 +43,10 @@ const FLOORS = SpendCapsSchema.parse([
     }
 ]);
 
-function claudeAllowance(windows: readonly AllowanceWindow[]): SubscriptionAllowance {
+function claudeAllowance(windows: readonly AllowanceWindow[]): HarnessAllowance {
     return {
         harness: AgentHarnessKind.CLAUDE,
-        state: SubscriptionAllowanceState.AVAILABLE,
+        state: HarnessAllowanceState.AVAILABLE,
         plan: "max",
         windows: [...windows],
         balances: [],
@@ -55,10 +55,10 @@ function claudeAllowance(windows: readonly AllowanceWindow[]): SubscriptionAllow
     };
 }
 
-function deepseekWallet(balances: readonly AllowanceBalance[]): SubscriptionAllowance {
+function deepseekWallet(balances: readonly AllowanceBalance[]): HarnessAllowance {
     return {
         harness: AgentHarnessKind.DEEPSEEK,
-        state: SubscriptionAllowanceState.AVAILABLE,
+        state: HarnessAllowanceState.AVAILABLE,
         plan: null,
         windows: [],
         balances: [...balances],
@@ -133,9 +133,9 @@ describe("withheldWindows", () => {
     });
 
     it("withholds nothing when the vendor could not be read, so broken monitoring never parks the lab", () => {
-        const unreadable: SubscriptionAllowance = {
+        const unreadable: HarnessAllowance = {
             harness: AgentHarnessKind.CLAUDE,
-            state: SubscriptionAllowanceState.UNREADABLE,
+            state: HarnessAllowanceState.UNREADABLE,
             plan: null,
             windows: [],
             balances: [],

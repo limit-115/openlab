@@ -7,6 +7,11 @@ import type {
 } from "#src/agent-harness/agent-harness.types";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
+import { CliAgentHarness } from "#src/cli-agent-harness/cli-agent-harness";
+import type {
+    HarnessCommand,
+    HarnessRunPaths
+} from "#src/cli-agent-harness/cli-agent-harness.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { CodexEventParser } from "#src/codex-cli/codex-event-parser";
@@ -15,6 +20,7 @@ import {
     codexReasoningEffortOverride,
     codexRunArguments
 } from "#src/codex-cli/codex-run-arguments";
+import { codexSessionStore } from "#src/codex-cli/codex-session-store";
 import {
     DEEPSEEK_API_KEY_VARIABLE,
     DEEPSEEK_BASE_URL,
@@ -29,11 +35,7 @@ import type {
     ResolveDeepseekWallet
 } from "#src/deepseek-cli/deepseek-credential.types";
 import type { DeepseekHarnessOptions } from "#src/deepseek-cli/deepseek-harness.types";
-import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
-import type {
-    HarnessCommand,
-    HarnessRunPaths
-} from "#src/subscription-cli-harness/subscription-cli-harness.types";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 
 /**
  * DeepSeek driven through the Codex CLI, which speaks the Responses API that DeepSeek serves. It is
@@ -42,7 +44,7 @@ import type {
  * wallet: the balance is read before each dispatch, and the lab passes DeepSeek over while the money
  * is down to what they asked to keep.
  */
-export class DeepseekHarness extends SubscriptionCliHarness {
+export class DeepseekHarness extends CliAgentHarness {
     readonly kind = HarnessKinds.DEEPSEEK;
     readonly #resolveWallet: ResolveDeepseekWallet;
     #held: Promise<DeepseekWallet> | undefined;
@@ -147,6 +149,10 @@ export class DeepseekHarness extends SubscriptionCliHarness {
         return new CodexEventParser(request.responseSchema !== undefined);
     }
 
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return codexSessionStore(environment);
+    }
+
     async #wallet(): Promise<DeepseekWallet> {
         this.#held ??= this.#resolveWallet();
         try {
@@ -159,7 +165,7 @@ export class DeepseekHarness extends SubscriptionCliHarness {
     #unusableWallet(cause: unknown): HarnessCapabilityError {
         return new HarnessCapabilityError(
             this.kind,
-            HarnessCapabilityGaps.SUBSCRIPTION,
+            HarnessCapabilityGaps.CREDENTIAL,
             "The lab holds no DeepSeek key it can spend",
             {
                 need: "A DeepSeek API key with a wallet DeepSeek will still serve",

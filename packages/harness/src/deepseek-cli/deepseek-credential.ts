@@ -9,7 +9,7 @@ import {
     DeepseekCredentialStore
 } from "#src/deepseek-cli/deepseek-cli.const";
 import type { DeepseekWallet } from "#src/deepseek-cli/deepseek-credential.types";
-import type { WalletBalance } from "#src/subscription-allowance/subscription-allowance.types";
+import type { WalletBalance } from "#src/harness-allowance/harness-allowance.types";
 
 const StoredCredentialSchema = z.looseObject({
     api_key: z.string().trim().min(1)

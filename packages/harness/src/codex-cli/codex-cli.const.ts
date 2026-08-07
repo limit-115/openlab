@@ -8,6 +8,19 @@ export const CodexSessionDefaults = {
     EFFORT: HarnessEffortLevels.MEDIUM
 } as const;
 
+/**
+ * Where the Codex CLI writes its own account of a session. `CODEX_HOME` moves the whole home and the
+ * lab reads it from the environment it spawned the run with, so the two can never disagree. One
+ * rollout file holds the thread, filed under the day the CLI opened it.
+ */
+export const CodexSessionStore = {
+    HOME_VARIABLE: "CODEX_HOME",
+    HOME_SEGMENTS: [".codex"],
+    SESSIONS_DIRECTORY: "sessions",
+    ROLLOUT_PREFIX: "rollout-",
+    ROLLOUT_SUFFIX: ".jsonl"
+} as const;
+
 /** Codex takes everything but the model itself as a config override rather than as a flag. */
 export const CodexConfigKeys = {
     MODEL_REASONING_EFFORT: "model_reasoning_effort",

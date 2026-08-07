@@ -1,6 +1,6 @@
+import type { CliHarnessOptions } from "#src/cli-agent-harness/cli-agent-harness.types";
 import type { ResolveMuseAccount } from "#src/muse-cli/muse-account.types";
-import type { SubscriptionHarnessOptions } from "#src/subscription-cli-harness/subscription-cli-harness.types";
 
-export interface MuseHarnessOptions extends SubscriptionHarnessOptions {
+export interface MuseHarnessOptions extends CliHarnessOptions {
     readonly resolveAccount?: ResolveMuseAccount;
 }

@@ -5,7 +5,7 @@ export const INVESTIGATION_DISPATCH_NAMESPACE = "investigation-dispatch" as cons
 export const INVESTIGATION_DISPATCH_EN = {
     title: "Dispatch",
     description:
-        "Which subscriptions this investigation may put agents on, and whether the lab's spend caps hold it. Changing either gives up the cycle in flight and starts the next one on the answer.",
+        "Which harnesses this investigation may put agents on, and whether the lab's spend caps hold it. Changing either gives up the cycle in flight and starts the next one on the answer.",
 
     harnesses: "Harnesses",
     harnessesHint: "It rotates through them in this order. At least one is needed to dispatch to.",
@@ -13,7 +13,7 @@ export const INVESTIGATION_DISPATCH_EN = {
 
     pastCaps: "Spend past the caps",
     pastCapsHint:
-        "Runs this investigation on whatever the vendors will still serve, ignoring the caps set on the subscriptions. A vendor that has stopped serving still stops it.",
+        "Runs this investigation on whatever the vendors will still serve, ignoring the caps set on them. A vendor that has stopped serving still stops it.",
 
     save: "Save the dispatch",
     saving: "Saving",
@@ -28,7 +28,7 @@ export const INVESTIGATION_DISPATCH_EN = {
 export const INVESTIGATION_DISPATCH_RU = {
     title: "Отправка работы",
     description:
-        "На какие подписки это исследование может ставить агентов и держат ли его ограничители лаборатории. Смена любого из двух прерывает текущий цикл, а следующий стартует уже с ответом лаборатории.",
+        "На какие оболочки это исследование может ставить агентов и держат ли его ограничители лаборатории. Смена любого из двух прерывает текущий цикл, а следующий стартует уже с ответом лаборатории.",
 
     harnesses: "Оболочки",
     harnessesHint:

@@ -23,6 +23,19 @@ export const MUSE_BASE_URL = "https://api.meta.ai/v1";
 export const MUSE_NO_AUTO_UPDATE_VARIABLE = "MUSE_NO_AUTO_UPDATE";
 export const MUSE_NO_AUTO_UPDATE_VALUE = "1";
 
+/**
+ * Where Muse Code writes its own account of a session. It follows the XDG data directory rather than
+ * a home of its own, and the lab reads that from the environment it spawned the run with so the two
+ * can never disagree. A session is a directory holding the parent log, the outputs its tools
+ * produced, and one transcript per subagent — none of which reaches the stream the harness watches.
+ */
+export const MuseSessionStore = {
+    HOME_VARIABLE: "XDG_DATA_HOME",
+    HOME_SEGMENTS: [".local", "share"],
+    ROOT_DIRECTORY: "muse",
+    SESSIONS_DIRECTORY: "sessions"
+} as const;
+
 /** The one provider the lab drives Muse Code through; `echo` is the CLI's offline test double. */
 export const MuseProviders = {
     META: "meta"

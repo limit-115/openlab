@@ -41,7 +41,7 @@ interface DispatchEdit {
 }
 
 /**
- * The two moves an operator has over one investigation's spending: point it at other subscriptions,
+ * The two moves an operator has over one investigation's spending: point it at other harnesses,
  * or take the lab's caps off it. They belong together because they are the same decision seen from
  * either side — this run matters more than the allowance, or it can wait on a harness that has some.
  */

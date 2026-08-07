@@ -3,13 +3,13 @@ import type { RuntimePersistence } from "@openlab/db/runtime/runtime-persistence
 import type { InvestigationSummary } from "@openlab/protocol/investigation-status/investigation-summary.types";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import type { ResearchLoopController } from "#src/daemon-runtime/research-loop-controller";
+import type { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowance-readings";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import type {
     ResearchLoopOptions,
     ResearchLoopOutcome
 } from "#src/research-cycle/research-loop.types";
-import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 export type RegistryPersistence = Pick<
     RuntimePersistence,
@@ -36,7 +36,7 @@ export interface InvestigationRegistryOptions {
     readonly workspaceRoot: string;
     readonly persistence: RegistryPersistence;
     readonly investigations: InvestigationRecords;
-    readonly subscriptions?: SubscriptionAllowanceReadings;
+    readonly allowances?: HarnessAllowanceReadings;
     /** Absent starts every investigation on the shipped roster and every role on its default. */
     readonly settings?: LabSettingsReader;
     readonly researchLoop?: ResearchLoopRunner;

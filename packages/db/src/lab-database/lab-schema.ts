@@ -89,6 +89,8 @@ export const agentRuns = sqliteTable(
         exitCode: integer("exit_code"),
         error: text("error"),
         manifestPath: text("manifest_path"),
+        /** The manifest's digest, kept where the directory it describes cannot restate it. */
+        manifestSha256: text("manifest_sha256"),
         startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull().default(now),
         finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
         ...timestamps

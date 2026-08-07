@@ -1,4 +1,4 @@
-import type { WalletBalance } from "#src/subscription-allowance/subscription-allowance.types";
+import type { WalletBalance } from "#src/harness-allowance/harness-allowance.types";
 
 /** What the DeepSeek wallet behind the stored key can still pay for. */
 export interface DeepseekWallet {

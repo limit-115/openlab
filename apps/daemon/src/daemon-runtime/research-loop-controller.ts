@@ -5,13 +5,13 @@ import { InvestigationState } from "@openlab/protocol/investigation-lifecycle/in
 import type { StatusSnapshot } from "@openlab/protocol/investigation-status/status-snapshot.types";
 import type { AgentActivityHub } from "#src/agent-activity/agent-activity-hub";
 import { RESUME_REASON, RESUME_STEP_MS } from "#src/daemon-runtime/research-loop-controller.const";
+import type { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowance-readings";
 import type { InvestigationWorkspace } from "#src/investigation-workspace/investigation-workspace";
 import type { LabSettingsReader } from "#src/lab-settings/lab-settings.types";
 import type {
     ResearchLoopOptions,
     ResearchLoopOutcome
 } from "#src/research-cycle/research-loop.types";
-import type { SubscriptionAllowanceReadings } from "#src/subscription-allowance/subscription-allowance-readings";
 
 export class ResearchLoopController {
     readonly #workspace: InvestigationWorkspace;
@@ -23,7 +23,7 @@ export class ResearchLoopController {
     /** Built afresh for every loop, because the roster an investigation runs on can be moved. */
     readonly #harnesses: (() => readonly AgentHarness[]) | undefined;
     readonly #settings: LabSettingsReader | undefined;
-    readonly #subscriptions: SubscriptionAllowanceReadings | undefined;
+    readonly #allowances: HarnessAllowanceReadings | undefined;
     #abortController: AbortController | undefined;
     #running: Promise<ResearchLoopOutcome> | undefined;
     #restartRequested = false;
@@ -39,14 +39,14 @@ export class ResearchLoopController {
         ) => Promise<ResearchLoopOutcome>,
         harnesses?: () => readonly AgentHarness[],
         settings?: LabSettingsReader,
-        subscriptions?: SubscriptionAllowanceReadings
+        allowances?: HarnessAllowanceReadings
     ) {
         this.#workspace = workspace;
         this.#activity = activity;
         this.#run = run;
         this.#harnesses = harnesses;
         this.#settings = settings;
-        this.#subscriptions = subscriptions;
+        this.#allowances = allowances;
         this.#unsubscribe = workspace.subscribe((event, snapshot) => {
             if (event.type !== EventType.INVESTIGATION_STATE_CHANGED) {
                 return;
@@ -78,7 +78,7 @@ export class ResearchLoopController {
             signal: abortController.signal,
             ...(this.#harnesses === undefined ? {} : { harnesses: this.#harnesses() }),
             ...(this.#settings === undefined ? {} : { settings: this.#settings }),
-            ...(this.#subscriptions === undefined ? {} : { subscriptions: this.#subscriptions })
+            ...(this.#allowances === undefined ? {} : { allowances: this.#allowances })
         });
         this.#running = running;
         const clear = () => {
@@ -113,14 +113,14 @@ export class ResearchLoopController {
      * once, when it starts, so the one in flight is given up rather than finished — the same cost as
      * a pause, and the only way a new harness reaches the next agent.
      *
-     * An investigation the lab put to sleep with a date on it is sleeping on its subscriptions, and
+     * An investigation the lab put to sleep with a date on it is sleeping on its allowances, and
      * pointing it somewhere else is the operator answering exactly that wait, so it goes back to
      * work now instead of at the reset it was holding out for. One that was paused, or that ran out
      * of directions, stays where the operator left it.
      */
     async redispatch(reason: Error): Promise<void> {
         if (this.#workspace.getSnapshot().investigation.state === InvestigationState.HIBERNATING) {
-            await this.wakeIfWaitingOnSubscriptions(reason);
+            await this.wakeIfWaitingOnAllowances(reason);
             return;
         }
         await this.cancel(reason);
@@ -128,11 +128,11 @@ export class ResearchLoopController {
     }
 
     /**
-     * Gives an investigation the lab parked on its subscriptions another go at them, now rather than
+     * Gives an investigation the lab parked on its allowances another go at them, now rather than
      * at the reset it was holding out for. Only a sleep the lab dated is one it took on itself: an
      * investigation the operator paused, and one that ran out of directions, are left where they are.
      */
-    async wakeIfWaitingOnSubscriptions(reason: Error): Promise<void> {
+    async wakeIfWaitingOnAllowances(reason: Error): Promise<void> {
         const investigation = this.#workspace.getSnapshot().investigation;
         if (
             investigation.state !== InvestigationState.HIBERNATING ||

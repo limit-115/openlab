@@ -15,7 +15,7 @@ export const PromiseSettlement = {
 export const DEFAULT_CYCLE_BACKOFF_MS = 5_000;
 
 export const HibernationReason = {
-    NO_HARNESS: "No subscription-authenticated agent CLI harness is available",
+    NO_HARNESS: "No agent CLI harness could take the work",
     NO_DIRECTION: "The director could not name anywhere else worth looking",
     SPEND_CAP: "Every subscription this investigation may use has reached the spend cap set on it"
 } as const;

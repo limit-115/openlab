@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { HarnessAllowanceSection } from "#src/allowance-panel/allowance-section";
 import {
     SETTINGS_NAMESPACES,
     SETTINGS_PAGE,
@@ -9,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "#src/design-system/tab
 import { HarnessSettingsSection } from "#src/harness-settings/harness-settings-section";
 import { LabStorageSection } from "#src/lab-maintenance/lab-storage-section";
 import { NotificationSettingsSection } from "#src/operator-notifications/notification-settings-section";
-import { SubscriptionAllowanceSection } from "#src/subscription-allowance/subscription-allowance-section";
 
 /**
  * What the operator reads and sets for the lab itself rather than for one investigation. The
@@ -32,8 +32,8 @@ export function SettingsView() {
             <TabsContent value={SettingsSection.HARNESSES}>
                 <HarnessSettingsSection />
             </TabsContent>
-            <TabsContent value={SettingsSection.SUBSCRIPTIONS}>
-                <SubscriptionAllowanceSection />
+            <TabsContent value={SettingsSection.ALLOWANCES}>
+                <HarnessAllowanceSection />
             </TabsContent>
             <TabsContent value={SettingsSection.NOTIFICATIONS}>
                 <NotificationSettingsSection />

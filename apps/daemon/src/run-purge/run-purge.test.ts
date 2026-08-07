@@ -21,6 +21,11 @@ import {
 import { labDatabasePath } from "#src/lab-home/lab-home";
 import { planPurge, purgeRuns } from "#src/run-purge/run-purge";
 
+/** A machine where no agent CLI has ever run, so a purge has no retained history to report. */
+const emptyStores: NodeJS.ProcessEnv = {
+    HOME: path.join(tmpdir(), "lab-purge-no-cli-home")
+};
+
 describe("purgeRuns", () => {
     let client: DatabaseClient | undefined;
 
@@ -107,7 +112,7 @@ describe("purgeRuns", () => {
     it("cascades the delete to leads, findings, and events", async () => {
         const workspaceRoot = await seedLab(["investigation-alpha"]);
 
-        const result = await purgeRuns({ workspaceRoot });
+        const result = await purgeRuns({ workspaceRoot, environment: emptyStores });
 
         expect(result.purgedInvestigationRowCount).toBe(1);
         expect(result.purgedDirectoryCount).toBe(1);
@@ -119,7 +124,7 @@ describe("purgeRuns", () => {
     it("empties the lab, leaving no investigation behind", async () => {
         const workspaceRoot = await seedLab(["investigation-alpha", "investigation-beta"]);
 
-        const result = await purgeRuns({ workspaceRoot });
+        const result = await purgeRuns({ workspaceRoot, environment: emptyStores });
 
         expect(result.purgedInvestigationIds).toEqual([
             "investigation-alpha",
