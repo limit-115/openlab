@@ -6,7 +6,7 @@
     "homepage": "https://openlab.bot",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/dibenkobit/lab.git",
+        "url": "git+https://github.com/dibenkobit/openlab.git",
         "directory": "release/npm/openlab"
     },
     "type": "module",
