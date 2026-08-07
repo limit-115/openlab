@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -71,6 +72,24 @@ describe("taking back the disk an update no longer needs", () => {
         await mkdir(path.join(versions, "0.2.0.incoming"), { recursive: true });
 
         expect(await retireVersions(versions, ["0.2.0"])).toContain("0.2.0.incoming");
+    });
+
+    /**
+     * This is a recursive delete driven by a directory listing, so it deletes only what this
+     * program could have put there. An operator who kept something of their own alongside the
+     * versions is owed it back rather than told afterwards.
+     */
+    it("leaves alone what is not a version and not its own scratch", async () => {
+        for (const directory of ["notes", "0.2.0.backup", "my-build"]) {
+            await mkdir(path.join(versions, directory), { recursive: true });
+        }
+
+        const retired = await retireVersions(versions, []);
+
+        expect(retired.toSorted()).toEqual(["0.0.8", "0.0.9", "0.1.0", "0.2.0"]);
+        for (const kept of ["notes", "0.2.0.backup", "my-build"]) {
+            expect(existsSync(path.join(versions, kept))).toBe(true);
+        }
     });
 
     it("says nothing was retired when a lab has only what it needs", async () => {

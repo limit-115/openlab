@@ -1,6 +1,8 @@
 import { realpathSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
+import semver from "semver";
+import { VersionScratchSuffix } from "#src/lab-installation/installed-layout.const";
 
 /**
  * The version directory this process is running out of, when it is running out of one at all.
@@ -43,6 +45,11 @@ function resolved(entry: string): string {
  * Nothing a running lab reads out of is removed. A lab finds its dashboard and its migrations
  * beside the executable it resolved when it started, so deleting the directory it started from
  * takes both away from a lab still serving them.
+ *
+ * Nothing this program did not put there is removed either. Only a directory named after a version
+ * this could have installed, or the scratch a swap of one leaves behind, is deleted — because this
+ * is a recursive delete driven by whatever a directory listing happened to return, and an operator
+ * who kept something of their own in there is owed it back.
  */
 export async function retireVersions(
     versionsDirectory: string,
@@ -52,11 +59,18 @@ export async function retireVersions(
     const entries = await readdir(versionsDirectory, { withFileTypes: true }).catch(() => []);
 
     const retired = entries
-        .filter((entry) => entry.isDirectory() && !kept.has(entry.name))
+        .filter((entry) => entry.isDirectory() && isThisProgramsOwn(entry.name))
+        .filter((entry) => !kept.has(entry.name))
         .map((entry) => entry.name);
 
     for (const version of retired) {
         await rm(path.join(versionsDirectory, version), { recursive: true, force: true });
     }
     return retired;
+}
+
+/** A version this program could have installed, or what a swap of one leaves behind when it dies. */
+function isThisProgramsOwn(name: string): boolean {
+    const scratch = Object.values(VersionScratchSuffix).find((suffix) => name.endsWith(suffix));
+    return semver.valid(scratch === undefined ? name : name.slice(0, -scratch.length)) !== null;
 }
