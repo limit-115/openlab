@@ -97,6 +97,9 @@ describe("Runtime snapshot normalized table projection", () => {
         researchedLead.updated_at = updated.investigation.updated_at;
         verifierRun.status = AgentRunStatus.SUCCEEDED;
         verifierRun.finished_at = updated.investigation.updated_at;
+        verifierRun.manifest_path = "runs/verifier-000/.openlab-artifacts/run-1/harness-run.json";
+        verifierRun.manifest_sha256 =
+            "3b1f2c8a9d4e5067718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8";
         updated.verdicts = [
             {
                 id: `${updated.investigation.id}-verdict-primary`,
@@ -132,7 +135,9 @@ describe("Runtime snapshot normalized table projection", () => {
         ).toEqual(
             expect.objectContaining({
                 status: AgentRunStatus.SUCCEEDED,
-                finishedAt: new Date(updated.investigation.updated_at)
+                finishedAt: new Date(updated.investigation.updated_at),
+                manifestPath: verifierRun.manifest_path,
+                manifestSha256: verifierRun.manifest_sha256
             })
         );
         expect(

@@ -113,7 +113,8 @@ export async function runAgentWithFallback<Output extends AgentCapabilityOutput>
             } else {
                 await finishAgentRun(input.workspace, runId, {
                     exitCode: run.result.exitCode,
-                    manifestPath: run.result.artifacts.manifest.path
+                    manifestPath: run.result.artifacts.manifest.path,
+                    manifestSha256: run.result.artifacts.manifest.sha256
                 });
             }
             return { ...run, runId, harness, agentWorkspace, capabilityRequests };

@@ -1,0 +1,936 @@
+{
+    "version": "6",
+    "dialect": "sqlite",
+    "id": "a246b908-207f-4713-a3b0-15e29aa70409",
+    "prevId": "aed66d1f-ecbf-4d0d-acb9-6092e5a65073",
+    "tables": {
+        "agent_runs": {
+            "name": "agent_runs",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "lead_id": {
+                    "name": "lead_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "role": {
+                    "name": "role",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "objective": {
+                    "name": "objective",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'running'"
+                },
+                "harness": {
+                    "name": "harness",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "model": {
+                    "name": "model",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "effort": {
+                    "name": "effort",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "cwd": {
+                    "name": "cwd",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "exit_code": {
+                    "name": "exit_code",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "error": {
+                    "name": "error",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "manifest_path": {
+                    "name": "manifest_path",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "manifest_sha256": {
+                    "name": "manifest_sha256",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "started_at": {
+                    "name": "started_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "finished_at": {
+                    "name": "finished_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "agent_runs_investigation_status_idx": {
+                    "name": "agent_runs_investigation_status_idx",
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
+                },
+                "agent_runs_lead_idx": {
+                    "name": "agent_runs_lead_idx",
+                    "columns": ["lead_id"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "agent_runs_investigation_id_investigations_id_fk": {
+                    "name": "agent_runs_investigation_id_investigations_id_fk",
+                    "tableFrom": "agent_runs",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "agent_runs_lead_id_leads_id_fk": {
+                    "name": "agent_runs_lead_id_leads_id_fk",
+                    "tableFrom": "agent_runs",
+                    "tableTo": "leads",
+                    "columnsFrom": ["lead_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "capability_requests": {
+            "name": "capability_requests",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "lead_id": {
+                    "name": "lead_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "need": {
+                    "name": "need",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "reason": {
+                    "name": "reason",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "provisioning_hint": {
+                    "name": "provisioning_hint",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "self_provisioning_attempt": {
+                    "name": "self_provisioning_attempt",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "blocking": {
+                    "name": "blocking",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'open'"
+                },
+                "answer": {
+                    "name": "answer",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "answered_at": {
+                    "name": "answered_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "capability_requests_investigation_status_idx": {
+                    "name": "capability_requests_investigation_status_idx",
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "capability_requests_investigation_id_investigations_id_fk": {
+                    "name": "capability_requests_investigation_id_investigations_id_fk",
+                    "tableFrom": "capability_requests",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "capability_requests_lead_id_leads_id_fk": {
+                    "name": "capability_requests_lead_id_leads_id_fk",
+                    "tableFrom": "capability_requests",
+                    "tableTo": "leads",
+                    "columnsFrom": ["lead_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "set null",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "events": {
+            "name": "events",
+            "columns": {
+                "sequence": {
+                    "name": "sequence",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "type": {
+                    "name": "type",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "payload": {
+                    "name": "payload",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "occurred_at": {
+                    "name": "occurred_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "events_id_unique": {
+                    "name": "events_id_unique",
+                    "columns": ["id"],
+                    "isUnique": true
+                },
+                "events_investigation_sequence_idx": {
+                    "name": "events_investigation_sequence_idx",
+                    "columns": ["investigation_id", "sequence"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "events_investigation_id_investigations_id_fk": {
+                    "name": "events_investigation_id_investigations_id_fk",
+                    "tableFrom": "events",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "findings": {
+            "name": "findings",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "lead_id": {
+                    "name": "lead_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "run_id": {
+                    "name": "run_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "claim": {
+                    "name": "claim",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "work": {
+                    "name": "work",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "artifact_paths": {
+                    "name": "artifact_paths",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'[]'"
+                },
+                "status": {
+                    "name": "status",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'unverified'"
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "findings_investigation_status_idx": {
+                    "name": "findings_investigation_status_idx",
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "findings_investigation_id_investigations_id_fk": {
+                    "name": "findings_investigation_id_investigations_id_fk",
+                    "tableFrom": "findings",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "findings_lead_id_leads_id_fk": {
+                    "name": "findings_lead_id_leads_id_fk",
+                    "tableFrom": "findings",
+                    "tableTo": "leads",
+                    "columnsFrom": ["lead_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "findings_run_id_agent_runs_id_fk": {
+                    "name": "findings_run_id_agent_runs_id_fk",
+                    "tableFrom": "findings",
+                    "tableTo": "agent_runs",
+                    "columnsFrom": ["run_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "investigations": {
+            "name": "investigations",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "goal": {
+                    "name": "goal",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "input": {
+                    "name": "input",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "state": {
+                    "name": "state",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'RUNNING'"
+                },
+                "state_reason": {
+                    "name": "state_reason",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "workspace_path": {
+                    "name": "workspace_path",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "started_at": {
+                    "name": "started_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "hibernated_at": {
+                    "name": "hibernated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "breakthrough_at": {
+                    "name": "breakthrough_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "stopped_at": {
+                    "name": "stopped_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "labs_state_idx": {
+                    "name": "labs_state_idx",
+                    "columns": ["state"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "lab_settings": {
+            "name": "lab_settings",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "settings": {
+                    "name": "settings",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "leads": {
+            "name": "leads",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "cycle": {
+                    "name": "cycle",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": 0
+                },
+                "statement": {
+                    "name": "statement",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "rationale": {
+                    "name": "rationale",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'open'"
+                },
+                "outcome": {
+                    "name": "outcome",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "leads_investigation_status_idx": {
+                    "name": "leads_investigation_status_idx",
+                    "columns": ["investigation_id", "status"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "leads_investigation_id_investigations_id_fk": {
+                    "name": "leads_investigation_id_investigations_id_fk",
+                    "tableFrom": "leads",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "notification_settings": {
+            "name": "notification_settings",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "settings": {
+                    "name": "settings",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "runtime_checkpoints": {
+            "name": "runtime_checkpoints",
+            "columns": {
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "revision": {
+                    "name": "revision",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": 1
+                },
+                "snapshot": {
+                    "name": "snapshot",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "last_event_sequence": {
+                    "name": "last_event_sequence",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "persisted_at": {
+                    "name": "persisted_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "runtime_checkpoints_persisted_at_idx": {
+                    "name": "runtime_checkpoints_persisted_at_idx",
+                    "columns": ["persisted_at"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "runtime_checkpoints_investigation_id_investigations_id_fk": {
+                    "name": "runtime_checkpoints_investigation_id_investigations_id_fk",
+                    "tableFrom": "runtime_checkpoints",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "verdicts": {
+            "name": "verdicts",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "investigation_id": {
+                    "name": "investigation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "finding_id": {
+                    "name": "finding_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "run_id": {
+                    "name": "run_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "confirmed": {
+                    "name": "confirmed",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "reasoning": {
+                    "name": "reasoning",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(cast(unixepoch('subsec') * 1000 as integer))"
+                }
+            },
+            "indexes": {
+                "verdicts_finding_idx": {
+                    "name": "verdicts_finding_idx",
+                    "columns": ["finding_id"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "verdicts_investigation_id_investigations_id_fk": {
+                    "name": "verdicts_investigation_id_investigations_id_fk",
+                    "tableFrom": "verdicts",
+                    "tableTo": "investigations",
+                    "columnsFrom": ["investigation_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "verdicts_finding_id_findings_id_fk": {
+                    "name": "verdicts_finding_id_findings_id_fk",
+                    "tableFrom": "verdicts",
+                    "tableTo": "findings",
+                    "columnsFrom": ["finding_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "verdicts_run_id_agent_runs_id_fk": {
+                    "name": "verdicts_run_id_agent_runs_id_fk",
+                    "tableFrom": "verdicts",
+                    "tableTo": "agent_runs",
+                    "columnsFrom": ["run_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        }
+    },
+    "views": {},
+    "enums": {},
+    "_meta": {
+        "schemas": {},
+        "tables": {},
+        "columns": {}
+    },
+    "internal": {
+        "indexes": {}
+    }
+}

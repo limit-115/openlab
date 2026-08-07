@@ -218,6 +218,14 @@ export abstract class CliAgentHarness implements AgentHarness {
                 signal: watchdog.signal
             });
             processCompleted = child.completed;
+            /**
+             * How the process ended is read further down, once its output has been drained. A
+             * process that dies before that — killed by the watchdog while the stream is still being
+             * written — rejects here with nothing yet waiting on it, and an unobserved rejection
+             * takes the daemon down rather than becoming this run's recorded failure. Claiming it
+             * now costs nothing and leaves the awaits below to report it.
+             */
+            void processCompleted.catch(() => undefined);
             const lines = createInterface({
                 input: child.stdout,
                 crlfDelay: Number.POSITIVE_INFINITY
