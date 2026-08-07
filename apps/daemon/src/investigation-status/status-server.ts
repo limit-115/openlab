@@ -39,6 +39,7 @@ import {
     NotificationRequestError,
     NotificationRoute
 } from "#src/operator-notifications/operator-notifications.const";
+import { RELEASE_NOTICE_ROUTE } from "#src/release-notice/release-notice.const";
 import {
     FRESH_READING_PARAM,
     FRESH_READING_VALUE,
@@ -64,6 +65,19 @@ export function createStatusServer(
             root: options.dashboardRoot,
             prefix: "/"
         });
+    }
+
+    /**
+     * Whether a release the operator does not have is out. The lab repeats what it was told rather
+     * than asking the channel itself: what is installed and where it came from is the program's
+     * business, and a lab run from its sources has no installation to be behind.
+     */
+    if (options.release !== undefined) {
+        const release = options.release;
+        app.get(RELEASE_NOTICE_ROUTE, async () => ({
+            running_version: release.runningVersion,
+            newer: release.newer() ?? null
+        }));
     }
 
     /**

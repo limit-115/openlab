@@ -33,6 +33,7 @@ import { UpdateError } from "#src/lab-update/update-error";
 import { updateLab } from "#src/lab-update/update-lab";
 import { UpdateResult } from "#src/lab-update/update-lab.const";
 import { noticeOfNewerRelease } from "#src/lab-update/update-notice";
+import type { UpdateNotice } from "#src/lab-update/update-notice.types";
 import { LAB_VERSION } from "#src/lab-version";
 import {
     renderAssumptions,
@@ -166,13 +167,34 @@ program
          * by nothing. It resolves to nothing at all when there is no newer release, no network, or
          * no installation of ours to be talking about.
          */
-        const newerRelease = noticeOfNewerRelease(LAB_VERSION);
+        let offered: UpdateNotice | undefined;
+        const newerRelease = noticeOfNewerRelease(LAB_VERSION).then((notice) => {
+            offered = notice;
+            return notice;
+        });
         const daemon = await startDaemon(
             {
                 ...(options.port === undefined ? {} : { port: options.port }),
                 ...(options.verbose === true ? { logLevel: DaemonLogLevel.INFO } : {})
             },
-            { reportStartup: reportStartupToTerminal }
+            {
+                reportStartup: reportStartupToTerminal,
+                /**
+                 * The lab repeats this to whoever asks it and never looks it up. Which release is
+                 * installed, and whether the channel that offered it can be trusted, is the
+                 * program's business rather than the lab's.
+                 */
+                release: {
+                    runningVersion: LAB_VERSION,
+                    newer: () =>
+                        offered === undefined
+                            ? undefined
+                            : {
+                                  offered_version: offered.offeredVersion,
+                                  notes_url: offered.notesUrl
+                              }
+                }
+            }
         );
         stopLabOnSignal(() => daemon.close());
         const shown = options.open === false ? false : await openDashboard(daemon.url);

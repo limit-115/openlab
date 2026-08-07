@@ -20,6 +20,7 @@ import { NewInvestigationDialog } from "#src/investigation-roster/new-investigat
 import { RecentInvestigations } from "#src/investigation-roster/recent-investigations";
 import { LAB_SETTINGS, LAB_VIEWS, SIDEBAR_MARK } from "#src/lab-layout/lab-layout.const";
 import { LAB_LAYOUT_NAMESPACE } from "#src/lab-layout/lab-layout.i18n";
+import { NewerReleaseEntry } from "#src/release-notice/newer-release-entry";
 import { ThemeEntry } from "#src/theme/theme-entry";
 
 /**
@@ -76,6 +77,7 @@ export function LabSidebar() {
                     <LabEntry route={LAB_SETTINGS.route} label={t(LAB_SETTINGS.place)} size="sm">
                         <Settings2Icon />
                     </LabEntry>
+                    <NewerReleaseEntry />
                 </SidebarMenu>
             </SidebarFooter>
         </Sidebar>

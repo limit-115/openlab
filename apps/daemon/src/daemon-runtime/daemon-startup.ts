@@ -88,6 +88,7 @@ export async function startDaemon(
             settings,
             notifications: { settings: notificationSettings, dispatch },
             workspaceRoot: config.workspaceRoot,
+            ...(dependencies.release === undefined ? {} : { release: dependencies.release }),
             ...(dashboardRoot === undefined ? {} : { dashboardRoot }),
             logLevel: config.logLevel
         });
