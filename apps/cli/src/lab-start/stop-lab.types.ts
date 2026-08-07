@@ -5,6 +5,10 @@ export interface StopLabOptions {
      * press is left out of a log nobody is reading.
      */
     readonly interactive?: boolean;
+    /** How close behind an interrupt another one is that same interrupt rather than a second press. */
+    readonly samePressWithinMs?: number;
+    /** How long the question about stopping stands before the lab goes back to running. */
+    readonly confirmWithinMs?: number;
     /** How long the stop runs before the way out of waiting for it is offered. */
     readonly quitOfferAfterMs?: number;
     /** How the lab quits when the operator will not wait for it. */

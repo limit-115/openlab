@@ -74,22 +74,75 @@ describe("stopLab", () => {
 });
 
 describe("stopLabOnSignal", () => {
-    it("stops the lab on an interrupt", () => {
+    /** Hours of agents at work are not thrown away by whichever key the operator hit last. */
+    it("asks before taking down a lab somebody is watching, and leaves it up until answered", () => {
+        const read = terminal();
+        const close = vi.fn(async () => undefined);
+
+        stopLabOnSignal(close, { interactive: true });
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(read()).toContain("Press Ctrl+C again to stop the lab");
+        expect(close).not.toHaveBeenCalled();
+    });
+
+    it("stops the lab on the interrupt that answers the question", () => {
         terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close);
+        stopLabOnSignal(close, { interactive: true, samePressWithinMs: 0 });
+        process.emit(ShutdownSignal.INTERRUPT);
         process.emit(ShutdownSignal.INTERRUPT);
 
         expect(close).toHaveBeenCalledOnce();
     });
 
-    it("stops a lab a service manager takes down the same way it stops one an operator does", () => {
+    /**
+     * Ctrl+C on a lab started through pnpm arrives twice within milliseconds, and a forwarded copy
+     * counted as the answer would be a lab that never really asked.
+     */
+    it("reads the interrupt a script runner forwards as the one press it is, not as an answer", () => {
         terminal();
         const close = vi.fn(async () => undefined);
 
-        stopLabOnSignal(close);
+        stopLabOnSignal(close, { interactive: true });
+        process.emit(ShutdownSignal.INTERRUPT);
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(close).not.toHaveBeenCalled();
+    });
+
+    /** A press an hour old is no part of an answer, so the next one starts the question over. */
+    it("puts the question again once an unanswered one has lapsed, rather than stopping", async () => {
+        const read = terminal();
+        const close = vi.fn(async () => undefined);
+
+        stopLabOnSignal(close, { interactive: true, samePressWithinMs: 0, confirmWithinMs: 1 });
+        process.emit(ShutdownSignal.INTERRUPT);
+        await settle();
+        process.emit(ShutdownSignal.INTERRUPT);
+
+        expect(close).not.toHaveBeenCalled();
+        expect(read().match(/Press Ctrl\+C again to stop the lab/g)).toHaveLength(2);
+    });
+
+    /** A service manager has no keyboard to answer with, and Node kills a process that stalls. */
+    it("stops a lab a service manager takes down at its first signal, watched terminal or not", () => {
+        terminal();
+        const close = vi.fn(async () => undefined);
+
+        stopLabOnSignal(close, { interactive: true });
         process.emit(ShutdownSignal.TERMINATE);
+
+        expect(close).toHaveBeenCalledOnce();
+    });
+
+    it("stops a lab nobody is watching at the first interrupt, there being nobody to ask", () => {
+        terminal();
+        const close = vi.fn(async () => undefined);
+
+        stopLabOnSignal(close, { interactive: false });
+        process.emit(ShutdownSignal.INTERRUPT);
 
         expect(close).toHaveBeenCalledOnce();
     });
@@ -98,12 +151,13 @@ describe("stopLabOnSignal", () => {
      * The interrupt a script runner forwards lands while the lab is still going down, and Node
      * kills whatever is left of a process holding no listener for it.
      */
-    it("stays under the signal while it is stopping, so a second one cannot kill the stop", () => {
+    it("stays under the signal while it is stopping, so a further one cannot kill the stop", () => {
         terminal();
         const close = vi.fn(async () => undefined);
         const quit = vi.fn();
 
-        stopLabOnSignal(close, { quit, interactive: true });
+        stopLabOnSignal(close, { quit, interactive: true, samePressWithinMs: 0 });
+        process.emit(ShutdownSignal.INTERRUPT);
         process.emit(ShutdownSignal.INTERRUPT);
 
         expect(process.listenerCount(ShutdownSignal.INTERRUPT)).toBeGreaterThan(0);
@@ -121,12 +175,14 @@ describe("stopLabOnSignal", () => {
         stopLabOnSignal(() => new Promise(() => undefined), {
             quit,
             interactive: true,
+            samePressWithinMs: 0,
             quitOfferAfterMs: 0
         });
         process.emit(ShutdownSignal.INTERRUPT);
+        process.emit(ShutdownSignal.INTERRUPT);
         await settle();
 
-        expect(read()).toContain("Ctrl+C again");
+        expect(read()).toContain("quit without waiting");
 
         process.emit(ShutdownSignal.INTERRUPT);
 
@@ -136,12 +192,17 @@ describe("stopLabOnSignal", () => {
     it("says nothing about a wait to a stop that did not have one", async () => {
         const read = terminal();
 
-        stopLabOnSignal(async () => undefined, { interactive: true, quitOfferAfterMs: 0 });
+        stopLabOnSignal(async () => undefined, {
+            interactive: true,
+            samePressWithinMs: 0,
+            quitOfferAfterMs: 0
+        });
+        process.emit(ShutdownSignal.INTERRUPT);
         process.emit(ShutdownSignal.INTERRUPT);
         await settle();
 
         expect(read()).toContain("See you soon");
-        expect(read()).not.toContain("Ctrl+C again");
+        expect(read()).not.toContain("quit without waiting");
     });
 
     /** A service manager reads what the lab did; it cannot press anything. */
