@@ -272,6 +272,6 @@ describe("CodexHarness", () => {
         });
         const completed = lastCompleted(events);
         expect(completed.result.status).toBe(HarnessRunStatuses.FAILED);
-        expect(completed.result.error).toContain("subscription usage limit reached");
+        expect(completed.result.error).toContain(CodexTestUsageLimitMessage);
     });
 });

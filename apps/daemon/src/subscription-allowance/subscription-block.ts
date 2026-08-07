@@ -1,5 +1,5 @@
 import type { HarnessKind } from "@openlab/harness/agent-harness.const";
-import { subscriptionUsageLimitError } from "@openlab/harness/subscription-usage-limit";
+import { spentAllowanceError } from "@openlab/harness/spent-allowance";
 import { windowSpendCap, withheldWindows } from "@openlab/protocol/spend-caps/spend-cap";
 import type { SpendCaps } from "@openlab/protocol/spend-caps/spend-cap.types";
 import {
@@ -78,7 +78,7 @@ function spentBlock(kind: HarnessKind, allowance: SubscriptionAllowance): Subscr
          * through to the next subscription, asks the operator about this one, and hibernates on the
          * real reason exactly as it already did.
          */
-        capabilityError: subscriptionUsageLimitError(kind, reason)
+        capabilityError: spentAllowanceError(kind, reason)
     };
 }
 

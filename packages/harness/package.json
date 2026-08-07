@@ -41,8 +41,8 @@
             "./subscription-allowance": "./dist/subscription-allowance/subscription-allowance.js",
             "./subscription-allowance.types": "./dist/subscription-allowance/subscription-allowance.types.js",
             "./subscription-environment": "./dist/cli-execution/subscription-environment.js",
-            "./subscription-usage-limit": "./dist/subscription-usage-limit/subscription-usage-limit.js",
-            "./subscription-usage-limit.const": "./dist/subscription-usage-limit/subscription-usage-limit.const.js"
+            "./spent-allowance": "./dist/spent-allowance/spent-allowance.js",
+            "./spent-allowance.const": "./dist/spent-allowance/spent-allowance.const.js"
         },
         "imports": {
             "#src/*": "./dist/*.js"
@@ -81,8 +81,8 @@
         "./subscription-allowance": "./src/subscription-allowance/subscription-allowance.ts",
         "./subscription-allowance.types": "./src/subscription-allowance/subscription-allowance.types.ts",
         "./subscription-environment": "./src/cli-execution/subscription-environment.ts",
-        "./subscription-usage-limit": "./src/subscription-usage-limit/subscription-usage-limit.ts",
-        "./subscription-usage-limit.const": "./src/subscription-usage-limit/subscription-usage-limit.const.ts"
+        "./spent-allowance": "./src/spent-allowance/spent-allowance.ts",
+        "./spent-allowance.const": "./src/spent-allowance/spent-allowance.const.ts"
     },
     "imports": {
         "#src/*": "./src/*.ts"
@@ -95,6 +95,7 @@
         "format": "biome format --write ."
     },
     "dependencies": {
+        "@openlab/protocol": "workspace:*",
         "execa": "10.0.1",
         "write-file-atomic": "8.0.0",
         "zod": "4.4.3"

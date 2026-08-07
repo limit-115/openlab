@@ -34,6 +34,7 @@ import {
     removedHarnessEnvironmentVariables,
     sanitizeHarnessEnvironment
 } from "#src/cli-execution/subscription-environment";
+import { spentAllowanceError, spentAllowanceMessage } from "#src/spent-allowance/spent-allowance";
 import {
     closeRunFiles,
     collectArtifacts,
@@ -64,10 +65,6 @@ import type {
     SubscriptionHarnessOptions
 } from "#src/subscription-cli-harness/subscription-cli-harness.types";
 import { runSubscriptionPreflight } from "#src/subscription-cli-harness/subscription-preflight";
-import {
-    subscriptionUsageLimitError,
-    subscriptionUsageLimitMessage
-} from "#src/subscription-usage-limit/subscription-usage-limit";
 
 export abstract class SubscriptionCliHarness implements AgentHarness {
     abstract readonly kind: HarnessKind;
@@ -205,7 +202,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
         let sequence = 0;
         let streamCompleted = false;
         let semanticError: Error | undefined;
-        let usageLimitMessage: string | undefined;
+        let spentAllowance: string | undefined;
         let structuredOutput: unknown;
         let hasStructuredOutput = false;
         const tailEvents: HarnessEvent[] = [];
@@ -234,7 +231,7 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 await appendNativeEventLine(files.nativeEventsHandle, line);
                 const nativeEvent = parseNativeEvent(this.kind, line);
                 for (const parsedEvent of parser.parse(nativeEvent)) {
-                    usageLimitMessage ??= subscriptionUsageLimitMessage(parsedEvent);
+                    spentAllowance ??= spentAllowanceMessage(parsedEvent);
                     const event = stampEvent(parsedEvent, ++sequence, this.kind, parser.sessionId);
                     await appendEvent(files.eventsHandle, event);
                     yield event;
@@ -246,15 +243,15 @@ export abstract class SubscriptionCliHarness implements AgentHarness {
                 throw new HarnessTimeoutError(this.kind, HarnessTimeoutPhases.RUN, timeoutMs);
             }
             /**
-             * A CLI that stopped because its subscription allowance is spent never reaches the end
-             * of its protocol, so every later check would report a symptom: a missing final message,
-             * an absent structured output. The refusal itself is the finding.
+             * A CLI that stopped because the vendor will no longer serve its account never reaches
+             * the end of its protocol, so every later check would report a symptom: a missing final
+             * message, an absent structured output. The refusal itself is the finding.
              */
             if (
-                usageLimitMessage !== undefined &&
+                spentAllowance !== undefined &&
                 (processExit.failed || processExit.exitCode !== 0)
             ) {
-                throw subscriptionUsageLimitError(this.kind, usageLimitMessage);
+                throw spentAllowanceError(this.kind, spentAllowance);
             }
             for (const parsedEvent of parser.finish()) {
                 const event = stampEvent(parsedEvent, ++sequence, this.kind, parser.sessionId);
