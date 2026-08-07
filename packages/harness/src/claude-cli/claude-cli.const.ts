@@ -8,6 +8,19 @@ export const ClaudeSessionDefaults = {
     EFFORT: HarnessEffortLevels.MEDIUM
 } as const;
 
+/**
+ * Where the Claude CLI writes its own account of a session. `CLAUDE_CONFIG_DIR` moves the whole home
+ * and the lab reads it from the environment it spawned the run with, so the two can never disagree.
+ * A session is one JSONL under the project directory plus a directory of the same name beside it,
+ * which is where the transcript of every subagent the run delegated to lands.
+ */
+export const ClaudeSessionStore = {
+    HOME_VARIABLE: "CLAUDE_CONFIG_DIR",
+    HOME_SEGMENTS: [".claude"],
+    PROJECTS_DIRECTORY: "projects",
+    TRANSCRIPT_SUFFIX: ".jsonl"
+} as const;
+
 export const ClaudePermissionModes = {
     BYPASS_PERMISSIONS: "bypassPermissions",
     PLAN: "plan"

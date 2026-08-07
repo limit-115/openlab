@@ -15,6 +15,7 @@ import {
     codexReasoningEffortOverride,
     codexRunArguments
 } from "#src/codex-cli/codex-run-arguments";
+import { codexSessionStore } from "#src/codex-cli/codex-session-store";
 import {
     DEEPSEEK_API_KEY_VARIABLE,
     DEEPSEEK_BASE_URL,
@@ -29,6 +30,7 @@ import type {
     ResolveDeepseekWallet
 } from "#src/deepseek-cli/deepseek-credential.types";
 import type { DeepseekHarnessOptions } from "#src/deepseek-cli/deepseek-harness.types";
+import type { SessionStore } from "#src/session-transcript/session-transcript.types";
 import { SubscriptionCliHarness } from "#src/subscription-cli-harness/subscription-cli-harness";
 import type {
     HarnessCommand,
@@ -143,6 +145,10 @@ export class DeepseekHarness extends SubscriptionCliHarness {
 
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
         return new CodexEventParser(request.responseSchema !== undefined);
+    }
+
+    protected sessionStore(environment: Readonly<Record<string, string>>): SessionStore {
+        return codexSessionStore(environment);
     }
 
     async #wallet(): Promise<DeepseekWallet> {

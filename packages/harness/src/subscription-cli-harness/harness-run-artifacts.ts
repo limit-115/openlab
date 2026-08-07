@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import type { HarnessKind } from "#src/agent-harness/agent-harness.const";
 import type { HarnessArtifact, HarnessRunRequest } from "#src/agent-harness/agent-harness.types";
 import { HarnessRequestError } from "#src/cli-execution/harness-error";
+import type { SessionTranscript } from "#src/session-transcript/session-transcript.types";
 import {
     HARNESS_ARTIFACT_FILE_MODE,
     HarnessArtifactFiles
@@ -93,7 +94,10 @@ export async function closeRunFiles(files: HarnessRunFiles): Promise<void> {
     await Promise.all([files.nativeEventsHandle.close(), files.eventsHandle.close()]);
 }
 
-export async function collectArtifacts(files: HarnessRunFiles): Promise<NonManifestArtifacts> {
+export async function collectArtifacts(
+    files: HarnessRunFiles,
+    session: SessionTranscript
+): Promise<NonManifestArtifacts> {
     const [nativeEvents, events, stderr] = await Promise.all([
         hashArtifact(files.nativeEventsPath),
         hashArtifact(files.eventsPath),
@@ -104,6 +108,7 @@ export async function collectArtifacts(files: HarnessRunFiles): Promise<NonManif
         nativeEvents,
         events,
         stderr,
+        session,
         ...(files.responseSchema === undefined ? {} : { responseSchema: files.responseSchema })
     };
 }
