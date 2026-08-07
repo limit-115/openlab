@@ -32,20 +32,26 @@ export function reportUpdateToTerminal(): {
     }
 
     const line = spinner();
-    let started = false;
+    let last: string | undefined;
 
     return {
         report: (progress) => {
-            if (started) {
-                line.message(updateLine(progress));
-                return;
+            const said = updateLine(progress);
+            if (last === undefined) {
+                line.start(said);
+            } else {
+                line.message(said);
             }
-            started = true;
-            line.start(updateLine(progress));
+            last = said;
         },
+        /**
+         * Closed on the last thing it said rather than on nothing. Stopping with no message leaves
+         * a bare symbol above the outcome, and the step an update stopped at is the one fact worth
+         * keeping when what comes next is an error rather than an outcome.
+         */
         done: () => {
-            if (started) {
-                line.stop();
+            if (last !== undefined) {
+                line.stop(last);
             }
         }
     };
