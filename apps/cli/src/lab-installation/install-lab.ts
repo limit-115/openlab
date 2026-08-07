@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { cp, mkdir, rename, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { writeInstallReceipt } from "#src/lab-installation/install-receipt";
@@ -70,14 +71,28 @@ export async function installLab(request: InstallRequest): Promise<InstallOutcom
     };
 }
 
-/** Copies a release in beside where it belongs, then renames it on in one step. */
+/**
+ * Copies a release in beside where it belongs, then swaps it on with renames alone.
+ *
+ * The release being replaced is moved aside rather than deleted, so the destination goes from one
+ * whole release to the next across a single rename. Deleting it first would leave the path missing
+ * for as long as the delete took, and a release is a directory of this size: a lab still serving
+ * its dashboard out of that directory would answer its own operator with 404 for the whole of it.
+ *
+ * A run that dies mid-swap leaves the previous release beside the destination rather than gone.
+ */
 async function placeVersion(from: string, destination: string): Promise<void> {
     const incoming = `${destination}.incoming`;
+    const outgoing = `${destination}.outgoing`;
     await rm(incoming, { recursive: true, force: true });
+    await rm(outgoing, { recursive: true, force: true });
     await cp(from, incoming, { recursive: true, verbatimSymlinks: true });
 
-    await rm(destination, { recursive: true, force: true });
+    if (existsSync(destination)) {
+        await rename(destination, outgoing);
+    }
     await rename(incoming, destination);
+    await rm(outgoing, { recursive: true, force: true });
 }
 
 /**
