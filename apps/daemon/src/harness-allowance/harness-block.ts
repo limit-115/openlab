@@ -51,12 +51,16 @@ export function unavailableBlock(kind: HarnessKind, reason: string): HarnessBloc
  * States when the allowance comes back, which is the only thing an operator can act on. The window
  * that ran out is not named: the vendor stops serving whatever else has headroom, so the wait is
  * the whole answer.
+ *
+ * Only an account the vendor sold a tier for is called a plan. A wallet names no tier, and calling
+ * it a plan tells an operator whose account comes back when they pay for it that they are waiting
+ * for a renewal that is never coming.
  */
 export function spentAllowanceMessage(allowance: HarnessAllowance): string {
     const returns = latestWindowReset(spentWindows(allowance));
     return returns === undefined
-        ? `The ${planName(allowance)} plan has no allowance left`
-        : `The ${planName(allowance)} plan has no allowance left until ${returns}`;
+        ? `${accountName(allowance)} has no allowance left`
+        : `${accountName(allowance)} has no allowance left until ${returns}`;
 }
 
 function spentBlock(kind: HarnessKind, allowance: HarnessAllowance): HarnessBlock {
@@ -103,10 +107,10 @@ function withheldMessage(
 ): string {
     const window = withheld[0];
     if (window === undefined) {
-        return `The ${planName(allowance)} plan has reached its spend cap`;
+        return `${accountName(allowance)} has reached its spend cap`;
     }
     const cap = windowSpendCap(caps, allowance.harness, window.duration_minutes);
-    const spent = `The ${planName(allowance)} plan is ${Math.round(window.used_percent)}% into a window capped at ${cap}%`;
+    const spent = `${accountName(allowance)} is ${Math.round(window.used_percent)}% into a window capped at ${cap}%`;
     const returns = latestWindowReset(withheld);
     return returns === undefined ? spent : `${spent}, and is held until ${returns}`;
 }
@@ -116,6 +120,12 @@ function spentWindows(allowance: HarnessAllowance): AllowanceWindow[] {
     return allowance.windows.filter((window) => window.used_percent >= ALLOWANCE_EXHAUSTED_PERCENT);
 }
 
-function planName(allowance: HarnessAllowance): string {
-    return allowance.plan ?? allowance.harness;
+/**
+ * The account as the operator bought it: the tier where the vendor sold one, and the harness itself
+ * where it sold none and there is nothing else to call it by.
+ */
+function accountName(allowance: HarnessAllowance): string {
+    return allowance.plan === null
+        ? `The ${allowance.harness} account`
+        : `The ${allowance.plan} plan`;
 }

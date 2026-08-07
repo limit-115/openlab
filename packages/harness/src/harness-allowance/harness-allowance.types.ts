@@ -25,6 +25,13 @@ export interface HarnessAllowanceReading {
     readonly plan: string | null;
     /** What a token-billed account has left to spend. Null for a subscription. */
     readonly balance: string | null;
+    /**
+     * The vendor has stopped serving this account, said outright rather than read off a meter. A
+     * subscription says it through a window at its ceiling and leaves this false; a wallet has no
+     * window to say it with, so an empty one would otherwise read as an account with everything
+     * still to spend.
+     */
+    readonly spent: boolean;
     readonly windows: readonly AllowanceWindow[];
 }
 

@@ -347,6 +347,7 @@ describe("status server", () => {
                     kind,
                     plan: "max",
                     balance: null,
+                    spent: false,
                     windows: [{ durationMinutes: 300, usedPercent: 41, resetsAt: null }]
                 })
             })
@@ -367,7 +368,7 @@ describe("status server", () => {
             allowances: new HarnessAllowanceReadings({
                 read: async (kind) => {
                     asked += 1;
-                    return { kind, plan: "max", balance: null, windows: [] };
+                    return { kind, plan: "max", balance: null, spent: false, windows: [] };
                 }
             })
         });

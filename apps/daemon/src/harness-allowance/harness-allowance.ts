@@ -13,6 +13,9 @@ import type {
  * Classifies what a vendor answered into what the lab may do with that harness. A window at
  * its ceiling exhausts the plan on its own: the vendor stops serving on whichever window ran out
  * first, however much the others have left.
+ *
+ * A vendor that says outright it has stopped serving is taken at its word, which is the only thing
+ * an empty wallet can say — it meters no window, so there is no ceiling for it to have reached.
  */
 export function allowanceFromReading(
     reading: HarnessAllowanceReading,
@@ -28,9 +31,11 @@ export function allowanceFromReading(
 
     return {
         harness: reading.kind,
-        state: windows.some((window) => window.used_percent >= ALLOWANCE_EXHAUSTED_PERCENT)
-            ? HarnessAllowanceState.EXHAUSTED
-            : HarnessAllowanceState.AVAILABLE,
+        state:
+            reading.spent ||
+            windows.some((window) => window.used_percent >= ALLOWANCE_EXHAUSTED_PERCENT)
+                ? HarnessAllowanceState.EXHAUSTED
+                : HarnessAllowanceState.AVAILABLE,
         plan: reading.plan,
         balance: reading.balance,
         windows,

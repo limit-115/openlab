@@ -18,8 +18,22 @@ describe("allowance readings for a token-billed harness", () => {
             kind: HarnessKinds.DEEPSEEK,
             plan: null,
             balance: "4.21 USD",
+            spent: false,
             windows: []
         });
+    });
+
+    /**
+     * The same verdict the preflight refuses a run on. Dropping it left the panel calling a wallet
+     * available while the lab was already refusing to dispatch to it, and an operator reading that
+     * page had no way to tell why nothing was running.
+     */
+    it("carries DeepSeek's own verdict that a wallet can no longer be spent", async () => {
+        const allowance = await readDeepseekAllowance(undefined, () =>
+            Promise.resolve({ apiKey: "sk-test", available: false, balance: "0.00 USD" })
+        );
+
+        expect(allowance.spent).toBe(true);
     });
 
     /** Meta states nothing, so the balance says that in words and no window can be capped. */

@@ -9,6 +9,10 @@ import type { HarnessAllowanceReading } from "#src/harness-allowance/harness-all
  * a wallet is spent until it is empty, whenever that happens. What it has left is reported as the
  * balance it is, and DeepSeek sells no tier, so it names no plan.
  *
+ * Whether the wallet may still be spent is DeepSeek's own verdict and is carried as it was given.
+ * It is the same verdict the preflight refuses a run on, and a reading that dropped it would leave
+ * the panel calling a wallet available while the lab was already refusing to dispatch to it.
+ *
  * Carrying no windows also means no spend cap can be set against DeepSeek, which is the truth rather
  * than an omission: a cap is a fraction of a window, and there is no window here to take a fraction
  * of.
@@ -22,6 +26,7 @@ export async function readDeepseekAllowance(
         kind: HarnessKinds.DEEPSEEK,
         plan: null,
         balance: wallet.balance,
+        spent: !wallet.available,
         windows: []
     };
 }

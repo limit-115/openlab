@@ -11,12 +11,17 @@ import type { HarnessAllowanceReading } from "#src/harness-allowance/harness-all
  *
  * Carrying no windows is also why no spend cap can be set against Muse. A cap is a fraction of a
  * window, and there is no window here.
+ *
+ * Nothing published also means no verdict on whether the account may still be spent, so the reading
+ * claims none. The lab goes on dispatching to Muse and learns what Meta thinks from the run itself,
+ * which is what it did before there was a reading at all.
  */
 export function readMuseAllowance(): Promise<HarnessAllowanceReading> {
     return Promise.resolve({
         kind: HarnessKinds.MUSE,
         plan: null,
         balance: MUSE_UNPUBLISHED_BALANCE,
+        spent: false,
         windows: []
     });
 }

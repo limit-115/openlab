@@ -54,6 +54,7 @@ export function claudeAllowanceFromUsage(
         kind: HarnessKinds.CLAUDE,
         plan,
         balance: null,
+        spent: false,
         windows: windows.filter((window): window is AllowanceWindow => window !== undefined)
     };
 }

@@ -100,6 +100,7 @@ function readings(spent: readonly HarnessKind[]): HarnessAllowanceReadings {
             kind,
             plan: "max",
             balance: null,
+            spent: false,
             windows: [
                 {
                     durationMinutes: 10_080,
@@ -118,6 +119,7 @@ function partlySpentReadings(usedPercent: number): HarnessAllowanceReadings {
             kind,
             plan: "max",
             balance: null,
+            spent: false,
             windows: [
                 {
                     durationMinutes: WEEKLY_WINDOW_MINUTES,

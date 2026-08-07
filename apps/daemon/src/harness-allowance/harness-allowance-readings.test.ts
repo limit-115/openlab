@@ -8,7 +8,7 @@ import { HarnessAllowanceReadings } from "#src/harness-allowance/harness-allowan
 const TTL_MILLISECONDS = 60_000;
 
 function reading(windows: HarnessAllowanceReading["windows"]): HarnessAllowanceReading {
-    return { kind: HarnessKinds.CLAUDE, plan: "max", balance: null, windows };
+    return { kind: HarnessKinds.CLAUDE, plan: "max", balance: null, spent: false, windows };
 }
 
 describe("HarnessAllowanceReadings", () => {
@@ -25,6 +25,27 @@ describe("HarnessAllowanceReadings", () => {
 
         expect(allowance.state).toBe(HarnessAllowanceState.EXHAUSTED);
         expect(allowance.plan).toBe("max");
+    });
+
+    /**
+     * A wallet meters no window, so there is no ceiling for it to have reached and the vendor says
+     * it outright instead. Read off the windows alone, an empty wallet came back as an account with
+     * everything still to spend — on the same page that names the balance as nought.
+     */
+    it("calls an empty wallet spent, having no window to have read it off", async () => {
+        const readings = new HarnessAllowanceReadings({
+            read: async (kind): Promise<HarnessAllowanceReading> => ({
+                kind,
+                plan: null,
+                balance: "0.00 USD",
+                spent: true,
+                windows: []
+            })
+        });
+
+        const allowance = await readings.read(HarnessKinds.DEEPSEEK);
+
+        expect(allowance.state).toBe(HarnessAllowanceState.EXHAUSTED);
     });
 
     it("reports a vendor that could not be asked as unread rather than spent", async () => {
@@ -153,7 +174,7 @@ describe("HarnessAllowanceReadings", () => {
         const readings = new HarnessAllowanceReadings({
             read: async (kind) => {
                 asked += 1;
-                return { kind, plan: "max", balance: null, windows: [] };
+                return { kind, plan: "max", balance: null, spent: false, windows: [] };
             },
             ttlMs: TTL_MILLISECONDS,
             now: () => 0
@@ -171,7 +192,7 @@ describe("HarnessAllowanceReadings", () => {
                 if (kind === HarnessKinds.CODEX) {
                     throw new Error("codex CLI is not installed");
                 }
-                return { kind, plan: "pro", balance: null, windows: [] };
+                return { kind, plan: "pro", balance: null, spent: false, windows: [] };
             }
         });
 

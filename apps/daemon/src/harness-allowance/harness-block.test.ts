@@ -20,7 +20,20 @@ function readings(usedPercent: number, resetsAt: string | null = RESETS_AT) {
             kind,
             plan: "max",
             balance: null,
+            spent: false,
             windows: [{ durationMinutes: WEEKLY_MINUTES, usedPercent, resetsAt }]
+        })
+    });
+}
+
+function spentWalletReadings() {
+    return new HarnessAllowanceReadings({
+        read: async (kind): Promise<HarnessAllowanceReading> => ({
+            kind,
+            plan: null,
+            balance: "0.00 USD",
+            spent: true,
+            windows: []
         })
     });
 }
@@ -67,6 +80,26 @@ describe("harnessBlock", () => {
             reason: `The max plan has no allowance left until ${RESETS_AT}`
         });
         expect(block?.capabilityError?.capabilityRequest.reason).toContain("no allowance left");
+    });
+
+    /**
+     * The wallet the preflight would refuse the run on anyway, stopped a step earlier and for the
+     * reason the vendor gave. Told to wait for a plan it never bought, an operator would sit out a
+     * renewal that only their own payment brings back.
+     */
+    it("stops a spent wallet without calling it a plan that will renew", async () => {
+        const block = await harnessBlock({
+            readings: spentWalletReadings(),
+            caps: CAPS,
+            kind: HarnessKinds.DEEPSEEK,
+            spendPastCaps: false
+        });
+
+        expect(block).toMatchObject({
+            kind: HarnessBlockKind.EXHAUSTED,
+            reason: "The deepseek account has no allowance left"
+        });
+        expect(block?.returnsAt).toBeUndefined();
     });
 
     it("lets a harness under its cap through", async () => {
