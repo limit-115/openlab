@@ -48,7 +48,6 @@ export interface HarnessRunRequest {
      * and cannot drift; a caller therefore cannot hand over a schema that fails to compile.
      */
     readonly responseSchema?: z.ZodType;
-    readonly resumeSessionId?: string;
     readonly timeoutMs?: number;
     readonly executionProfile?: HarnessExecutionProfile;
 }

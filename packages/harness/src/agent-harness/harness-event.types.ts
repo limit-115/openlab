@@ -15,7 +15,6 @@ interface HarnessEventBase {
 
 export interface HarnessSessionEvent extends HarnessEventBase {
     readonly type: typeof HarnessEventTypes.SESSION_STARTED;
-    readonly resumed: boolean;
 }
 
 export interface HarnessTextEvent extends HarnessEventBase {

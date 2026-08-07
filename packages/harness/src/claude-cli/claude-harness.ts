@@ -82,7 +82,7 @@ export class ClaudeHarness extends SubscriptionCliHarness {
         return { args: claudeRunArguments(request, session) };
     }
 
-    protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
-        return new ClaudeEventParser(request.resumeSessionId);
+    protected createEventParser(): HarnessEventParser {
+        return new ClaudeEventParser();
     }
 }

@@ -57,7 +57,7 @@ export class MuseEventParser implements HarnessEventParser {
 
         switch (readString(event.payload_type)) {
             case MusePayloadTypes.RUN_LIFECYCLE_STARTED:
-                return [{ type: HarnessEventTypes.SESSION_STARTED, resumed: false }];
+                return [{ type: HarnessEventTypes.SESSION_STARTED }];
             case MusePayloadTypes.RUN_MODEL_CONFIGURED:
                 return contributorTierWarning(readString(payload.model_id));
             case MusePayloadTypes.RUN_OUTPUT_DELTA: {

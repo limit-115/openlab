@@ -19,17 +19,14 @@ import {
 
 export class CodexEventParser implements HarnessEventParser {
     readonly kind = HarnessKinds.CODEX;
-    #sessionId: string | null;
+    #sessionId: string | null = null;
     #lastAssistantText: string | undefined;
     #structuredOutputCandidate: unknown;
     #hasStructuredOutputCandidate = false;
     readonly #structuredOutputRequested: boolean;
-    readonly #resumed: boolean;
 
-    constructor(resumeSessionId: string | undefined, structuredOutputRequested: boolean) {
-        this.#sessionId = resumeSessionId ?? null;
+    constructor(structuredOutputRequested: boolean) {
         this.#structuredOutputRequested = structuredOutputRequested;
-        this.#resumed = resumeSessionId !== undefined;
     }
 
     get sessionId(): string | null {
@@ -49,12 +46,7 @@ export class CodexEventParser implements HarnessEventParser {
         switch (nativeType) {
             case CodexNativeEventTypes.THREAD_STARTED:
                 this.setSession(readRequiredString(this.kind, event, "thread_id"));
-                return [
-                    {
-                        type: HarnessEventTypes.SESSION_STARTED,
-                        resumed: this.#resumed
-                    }
-                ];
+                return [{ type: HarnessEventTypes.SESSION_STARTED }];
             case CodexNativeEventTypes.ITEM_STARTED:
                 return this.parseItem(event, HarnessToolPhases.STARTED);
             case CodexNativeEventTypes.ITEM_UPDATED:
@@ -166,11 +158,12 @@ export class CodexEventParser implements HarnessEventParser {
         ];
     }
 
+    /** Filing a second thread's events under the first would put one run's work in another's record. */
     private setSession(sessionId: string): void {
         if (this.#sessionId && this.#sessionId !== sessionId) {
             throw new HarnessProtocolError(
                 this.kind,
-                `Codex resumed session ${this.#sessionId} but reported ${sessionId}`
+                `Codex reported thread ${sessionId} on a stream that opened as ${this.#sessionId}`
             );
         }
         this.#sessionId = sessionId;

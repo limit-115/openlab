@@ -18,7 +18,11 @@ import {
 } from "#src/cli-execution/cli-process-runner.fixture";
 import { HarnessErrorCodes } from "#src/cli-execution/harness-error.const";
 import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
-import { CodexPermissionModes, CodexSessionDefaults } from "#src/codex-cli/codex-cli.const";
+import {
+    CodexColorModes,
+    CodexPermissionModes,
+    CodexSessionDefaults
+} from "#src/codex-cli/codex-cli.const";
 import {
     CodexTestCliValues,
     CodexTestItemTypes,
@@ -99,8 +103,7 @@ describe("CodexHarness", () => {
             expect.arrayContaining([
                 expect.objectContaining({
                     type: HarnessEventTypes.SESSION_STARTED,
-                    sessionId: "codex-session",
-                    resumed: false
+                    sessionId: "codex-session"
                 }),
                 expect.objectContaining({
                     type: HarnessEventTypes.STRUCTURED_OUTPUT,
@@ -139,7 +142,8 @@ describe("CodexHarness", () => {
         );
     });
 
-    it("constructs resume without exposing the prompt in argv", async () => {
+    /** argv is readable by every process on the machine, so the prompt travels by stdin instead. */
+    it("states the whole command line and hands the prompt over on stdin", async () => {
         const runner = new FakeHarnessProcessRunner([
             captureSuccess(CodexTestCliValues.VERSION),
             captureSuccess(CodexTestLoginMarkers.CHATGPT)
@@ -147,29 +151,29 @@ describe("CodexHarness", () => {
         runner.nextStream = streamSuccess([
             {
                 type: CodexTestNativeEventTypes.THREAD_STARTED,
-                thread_id: "existing-session"
+                thread_id: "argv-session"
             },
             {
                 type: CodexTestNativeEventTypes.ITEM_COMPLETED,
                 item: {
                     id: "message-2",
                     type: CodexTestItemTypes.AGENT_MESSAGE,
-                    text: "continued"
+                    text: "answered"
                 }
             }
         ]);
         const harness = new CodexHarness({ runner, environment: testEnvironment() });
-        const request = await harnessRequest("codex-resume", {
-            resumeSessionId: "existing-session",
+        const request = await harnessRequest("codex-argv", {
             model: "gpt-subscription-model",
             effort: HarnessEffortLevels.XHIGH
         });
 
-        const events = await Array.fromAsync(harness.run(request));
+        await Array.fromAsync(harness.run(request));
 
         expect(runner.spawnRequests[0]?.args).toEqual([
             "exec",
-            "resume",
+            "--color",
+            CodexColorModes.NEVER,
             "--json",
             "--ignore-user-config",
             "--skip-git-repo-check",
@@ -178,13 +182,9 @@ describe("CodexHarness", () => {
             "gpt-subscription-model",
             "--config",
             `model_reasoning_effort="${HarnessEffortLevels.XHIGH}"`,
-            "existing-session",
             "-"
         ]);
-        expect(runner.spawnRequests[0]?.args).not.toContain(request.prompt);
-        expect(events).toContainEqual(
-            expect.objectContaining({ type: HarnessEventTypes.SESSION_STARTED, resumed: true })
-        );
+        expect(runner.spawnRequests[0]?.input).toBe(request.prompt);
     });
 
     it("uses the native read-only sandbox without dangerous bypass flags", async () => {

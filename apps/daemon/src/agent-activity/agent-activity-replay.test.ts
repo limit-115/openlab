@@ -16,7 +16,7 @@ import { replayAgentActivity } from "#src/agent-activity/agent-activity-replay";
 import { HarnessEventTranslator } from "#src/agent-activity/harness-event-translation";
 
 const TRANSCRIPT = harnessEvents([
-    { type: HarnessEventTypes.SESSION_STARTED, resumed: false },
+    { type: HarnessEventTypes.SESSION_STARTED },
     { type: HarnessEventTypes.REASONING_DELTA, text: "The evaluator " },
     { type: HarnessEventTypes.REASONING_DELTA, text: "fails on an empty sample." },
     {
