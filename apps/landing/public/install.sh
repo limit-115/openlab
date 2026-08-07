@@ -16,7 +16,8 @@ set -eu
 # Releases live on GitHub, which serves every asset of the newest one under `latest/download` as
 # well as under its own tag. That stable URL is why finding the current version costs no extra
 # request: the manifest fetched from it states the version the rest of the install is pinned to.
-OPENLAB_RELEASES_URL="${OPENLAB_RELEASES_URL:-https://github.com/limit-115/openlab/releases}"
+DEFAULT_RELEASES_URL="https://github.com/limit-115/openlab/releases"
+OPENLAB_RELEASES_URL="${OPENLAB_RELEASES_URL:-$DEFAULT_RELEASES_URL}"
 
 main() {
     version="${OPENLAB_VERSION:-}"
@@ -141,14 +142,23 @@ manifest_field() {
         sed -n "s/.*\"$2\"[[:space:]]*:[[:space:]]*{[^}]*\"$3\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p"
 }
 
+# Nothing is allowed to talk the published channel down off HTTPS, redirect included. A channel the
+# operator named themselves is taken at their word: a mirror inside a private network is often plain
+# HTTP, and refusing one here would leave them with a lab they cannot install and no way to say so.
+from_channel() {
+    if [ "$OPENLAB_RELEASES_URL" = "$DEFAULT_RELEASES_URL" ]; then
+        curl -fsSL --proto '=https' --tlsv1.2 --retry 3 --retry-connrefused "$@"
+        return $?
+    fi
+    curl -fsSL --retry 3 --retry-connrefused "$@"
+}
+
 fetch() {
-    curl -fsSL --proto '=https' --tlsv1.2 --retry 3 --retry-connrefused "$1" ||
-        fail "Could not reach $1"
+    from_channel "$1" || fail "Could not reach $1"
 }
 
 download() {
-    curl -fsSL --proto '=https' --tlsv1.2 --retry 3 --retry-connrefused -o "$2" "$1" ||
-        fail "Could not download $1"
+    from_channel -o "$2" "$1" || fail "Could not download $1"
 }
 
 digest_of() {
