@@ -9,6 +9,8 @@ coverage/
 *.log
 .openlab/
 artifacts/
+.claude/worktrees/
+.zcode/
 release/staging/
 release/signing-key.pem
 
