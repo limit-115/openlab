@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installLab } from "#src/lab-installation/install-lab";
 import type { InstallReceipt } from "#src/lab-installation/install-receipt.types";
-import type { InstalledPaths } from "#src/lab-installation/installed-layout";
+import type { ProgramPaths } from "#src/lab-installation/installed-layout";
 
 const VERSION = "0.1.0";
 
@@ -28,12 +28,12 @@ describe("installing the release an executable came from", () => {
         return from;
     }
 
-    function pathsFor(version: string): InstalledPaths {
+    function pathsFor(): ProgramPaths {
         const home = path.join(root, "openlab");
         const binDirectory = path.join(root, "bin");
         return {
             home,
-            version: path.join(home, "versions", version),
+            versions: path.join(home, "versions"),
             binDirectory,
             launcher: path.join(binDirectory, "openlab"),
             receipt: path.join(home, "install-receipt.json"),
@@ -42,7 +42,7 @@ describe("installing the release an executable came from", () => {
     }
 
     async function install(from: string, version = VERSION, platform: NodeJS.Platform = "linux") {
-        return installLab({ from, version, paths: pathsFor(version), modifyPath: false, platform });
+        return installLab({ from, version, paths: pathsFor(), modifyPath: false, platform });
     }
 
     it("lays the whole release out under the version it is", async () => {
@@ -86,10 +86,14 @@ describe("installing the release an executable came from", () => {
 
     /** An install killed partway leaves scratch behind, and the next one has to install anyway. */
     it("installs over scratch an earlier run left behind", async () => {
-        const paths = pathsFor(VERSION);
-        await mkdir(`${paths.version}.incoming`, { recursive: true });
-        await mkdir(`${paths.version}.outgoing`, { recursive: true });
-        await writeFile(path.join(`${paths.version}.incoming`, "junk"), "junk", "utf8");
+        const paths = pathsFor();
+        await mkdir(`${path.join(paths.versions, VERSION)}.incoming`, { recursive: true });
+        await mkdir(`${path.join(paths.versions, VERSION)}.outgoing`, { recursive: true });
+        await writeFile(
+            path.join(`${path.join(paths.versions, VERSION)}.incoming`, "junk"),
+            "junk",
+            "utf8"
+        );
 
         const outcome = await install(await releaseOf("first"));
 
@@ -119,9 +123,7 @@ describe("installing the release an executable came from", () => {
     it("records the launcher and the version directory an uninstall will need", async () => {
         const outcome = await install(await releaseOf("first"));
 
-        const receipt = JSON.parse(
-            await readFile(pathsFor(VERSION).receipt, "utf8")
-        ) as InstallReceipt;
+        const receipt = JSON.parse(await readFile(pathsFor().receipt, "utf8")) as InstallReceipt;
         expect(receipt.version).toBe(VERSION);
         expect(receipt.version_directory).toBe(outcome.versionDirectory);
         expect(receipt.launcher).toBe(outcome.launcher);

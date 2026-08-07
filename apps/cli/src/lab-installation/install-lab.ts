@@ -3,14 +3,19 @@ import { cp, mkdir, rename, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { writeInstallReceipt } from "#src/lab-installation/install-receipt";
 import type { InstallReceipt } from "#src/lab-installation/install-receipt.types";
-import { executableName, type InstalledPaths } from "#src/lab-installation/installed-layout";
+import {
+    executableName,
+    type ProgramPaths,
+    versionDirectory
+} from "#src/lab-installation/installed-layout";
+import { VersionScratchSuffix } from "#src/lab-installation/installed-layout.const";
 import { ensureOnPath } from "#src/lab-installation/path-entry";
 
 export interface InstallRequest {
     /** The release being installed, which is the directory the running executable sits in. */
     readonly from: string;
     readonly version: string;
-    readonly paths: InstalledPaths;
+    readonly paths: ProgramPaths;
     /** An operator who manages their own `PATH` is not to be written to. */
     readonly modifyPath: boolean;
     readonly platform?: NodeJS.Platform;
@@ -39,15 +44,15 @@ export interface InstallOutcome {
 export async function installLab(request: InstallRequest): Promise<InstallOutcome> {
     const platform = request.platform ?? process.platform;
     const { paths, version } = request;
+    const destination = versionDirectory(paths, version);
 
-    await mkdir(path.dirname(paths.version), { recursive: true });
-    if (path.resolve(request.from) !== path.resolve(paths.version)) {
-        await placeVersion(request.from, paths.version);
+    await mkdir(paths.versions, { recursive: true });
+    if (path.resolve(request.from) !== path.resolve(destination)) {
+        await placeVersion(request.from, destination);
     }
 
     await mkdir(paths.binDirectory, { recursive: true });
-    const target = path.join(paths.version, executableName(platform));
-    await writeLauncher(paths.launcher, target, platform);
+    await writeLauncher(paths.launcher, path.join(destination, executableName(platform)), platform);
 
     const onPath = request.modifyPath
         ? await ensureOnPath(paths.binDirectory)
@@ -56,7 +61,7 @@ export async function installLab(request: InstallRequest): Promise<InstallOutcom
     const receipt: InstallReceipt = {
         version,
         installed_at: new Date().toISOString(),
-        version_directory: paths.version,
+        version_directory: destination,
         launcher: paths.launcher,
         path_files: onPath.written
     };
@@ -64,7 +69,7 @@ export async function installLab(request: InstallRequest): Promise<InstallOutcom
 
     return {
         version,
-        versionDirectory: paths.version,
+        versionDirectory: destination,
         launcher: paths.launcher,
         pathFiles: onPath.written,
         alreadyOnPath: onPath.alreadyOnPath
@@ -82,8 +87,8 @@ export async function installLab(request: InstallRequest): Promise<InstallOutcom
  * A run that dies mid-swap leaves the previous release beside the destination rather than gone.
  */
 async function placeVersion(from: string, destination: string): Promise<void> {
-    const incoming = `${destination}.incoming`;
-    const outgoing = `${destination}.outgoing`;
+    const incoming = `${destination}${VersionScratchSuffix.INCOMING}`;
+    const outgoing = `${destination}${VersionScratchSuffix.OUTGOING}`;
     await rm(incoming, { recursive: true, force: true });
     await rm(outgoing, { recursive: true, force: true });
     await cp(from, incoming, { recursive: true, verbatimSymlinks: true });

@@ -12,10 +12,17 @@ import { execa } from "execa";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installLab } from "#src/lab-installation/install-lab";
 import type { InstallReceipt } from "#src/lab-installation/install-receipt.types";
-import { installedPaths } from "#src/lab-installation/installed-layout";
+import { programPaths, versionDirectory } from "#src/lab-installation/installed-layout";
 import { UpdateError } from "#src/lab-update/update-error";
 import { updateLab } from "#src/lab-update/update-lab";
 import { UpdateResult } from "#src/lab-update/update-lab.const";
+import { UpdateStep } from "#src/lab-update/update-progress.const";
+import type { UpdateProgress } from "#src/lab-update/update-progress.types";
+
+/** Keeps the first of each run of a repeated step, so a download saying so 26 times counts once. */
+function unrepeated<T>(value: T, index: number, values: readonly T[]): boolean {
+    return values[index - 1] !== value;
+}
 
 /** These tests publish a real archive for this machine, so they need a machine with a build. */
 function targetOfThisMachine(): ReleaseTarget {
@@ -127,7 +134,7 @@ describe("moving an installed lab to another release", () => {
         await installLab({
             from,
             version,
-            paths: installedPaths(version, environment()),
+            paths: programPaths(environment()),
             modifyPath: false,
             platform: "linux"
         });
@@ -146,6 +153,28 @@ describe("moving an installed lab to another release", () => {
             ...options
         });
     }
+
+    /**
+     * An update spends minutes on a network, and a terminal that says nothing for a minute cannot
+     * be told apart from a hung one. Every step long enough to be waited through says so, and the
+     * download says how much of the archive has arrived rather than only that one is arriving.
+     */
+    it("says what it is doing at every step long enough to be waited through", async () => {
+        await installedAt("0.1.0");
+        await publish("0.2.0");
+        const said: UpdateProgress[] = [];
+
+        await update("0.1.0", { report: (progress) => said.push(progress) });
+
+        expect(said.map((progress) => progress.step).filter(unrepeated)).toEqual([
+            UpdateStep.ASKING,
+            UpdateStep.DOWNLOADING,
+            UpdateStep.UNPACKING,
+            UpdateStep.INSTALLING
+        ]);
+        const downloads = said.filter((progress) => progress.step === UpdateStep.DOWNLOADING);
+        expect(downloads.at(-1)?.received).toBe(downloads.at(-1)?.total);
+    });
 
     /** An update has nothing to replace unless this program put the lab there in the first place. */
     it("refuses a lab it did not install", async () => {
@@ -172,7 +201,7 @@ describe("moving an installed lab to another release", () => {
         const outcome = await update("0.9.0");
 
         expect(outcome.result).toBe(UpdateResult.AHEAD_OF_CHANNEL);
-        expect(existsSync(installedPaths("0.2.0", environment()).version)).toBe(false);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.2.0"))).toBe(false);
     });
 
     it("installs nothing when it was only asked what the channel offers", async () => {
@@ -183,7 +212,7 @@ describe("moving an installed lab to another release", () => {
 
         expect(outcome.result).toBe(UpdateResult.AVAILABLE);
         expect(outcome.offeredVersion).toBe("0.2.0");
-        expect(existsSync(installedPaths("0.2.0", environment()).version)).toBe(false);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.2.0"))).toBe(false);
     });
 
     it("installs the release the channel offers and points the launcher at it", async () => {
@@ -191,11 +220,14 @@ describe("moving an installed lab to another release", () => {
         await publish("0.2.0");
 
         const outcome = await update("0.1.0");
-        const paths = installedPaths("0.2.0", environment());
+        const paths = programPaths(environment());
+        const installedVersion = versionDirectory(paths, "0.2.0");
 
         expect(outcome.result).toBe(UpdateResult.UPDATED);
-        expect(await readFile(path.join(paths.version, "openlab"), "utf8")).toBe("openlab 0.2.0");
-        expect(await readlink(paths.launcher)).toBe(path.join(paths.version, "openlab"));
+        expect(await readFile(path.join(installedVersion, "openlab"), "utf8")).toBe(
+            "openlab 0.2.0"
+        );
+        expect(await readlink(paths.launcher)).toBe(path.join(installedVersion, "openlab"));
         const receipt = JSON.parse(await readFile(paths.receipt, "utf8")) as InstallReceipt;
         expect(receipt.version).toBe("0.2.0");
     });
@@ -211,7 +243,7 @@ describe("moving an installed lab to another release", () => {
         const outcome = await update("0.1.0");
 
         expect(outcome.retired).toEqual([]);
-        expect(existsSync(installedPaths("0.1.0", environment()).version)).toBe(true);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.1.0"))).toBe(true);
     });
 
     it("deletes the versions older than the one it replaced", async () => {
@@ -222,7 +254,7 @@ describe("moving an installed lab to another release", () => {
         const outcome = await update("0.1.0");
 
         expect(outcome.retired).toEqual(["0.0.9"]);
-        expect(existsSync(installedPaths("0.0.9", environment()).version)).toBe(false);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.0.9"))).toBe(false);
     });
 
     it("keeps every version on disk when it was told not to prune", async () => {
@@ -233,7 +265,7 @@ describe("moving an installed lab to another release", () => {
         const outcome = await update("0.1.0", { prune: false });
 
         expect(outcome.retired).toEqual([]);
-        expect(existsSync(installedPaths("0.0.9", environment()).version)).toBe(true);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.0.9"))).toBe(true);
     });
 
     /** A release still on disk is a rollback that needs no network at all. */
@@ -247,7 +279,7 @@ describe("moving an installed lab to another release", () => {
 
         expect(outcome.result).toBe(UpdateResult.UPDATED);
         expect(outcome.fromDisk).toBe(true);
-        expect(await readlink(installedPaths("0.1.0", environment()).launcher)).toContain("0.1.0");
+        expect(await readlink(programPaths(environment()).launcher)).toContain("0.1.0");
     });
 
     /** Naming a version is taken at its word, including when it goes backwards. */
@@ -280,6 +312,6 @@ describe("moving an installed lab to another release", () => {
         await writeFile(path.join(published, artifact?.file ?? ""), "not the release", "utf8");
 
         await expect(update("0.1.0")).rejects.toThrow(/Checksum mismatch/);
-        expect(existsSync(installedPaths("0.2.0", environment()).version)).toBe(false);
+        expect(existsSync(versionDirectory(programPaths(environment()), "0.2.0"))).toBe(false);
     });
 });

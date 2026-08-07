@@ -3,9 +3,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
     executableName,
-    installedPaths,
     launcherName,
-    resolveBinDirectory
+    programPaths,
+    resolveBinDirectory,
+    versionDirectory
 } from "#src/lab-installation/installed-layout";
 import { InstallEnvironment, InstalledLayout } from "#src/lab-installation/installed-layout.const";
 
@@ -49,32 +50,42 @@ describe("resolveBinDirectory", () => {
     });
 });
 
-describe("installedPaths", () => {
+describe("where the program keeps itself", () => {
     /** Two versions never share a directory, which is what makes an install reversible. */
-    it("gives each version a directory of its own", () => {
-        const first = installedPaths("0.1.0", {});
-        const second = installedPaths("0.2.0", {});
+    it("gives each version a directory of its own under the one it keeps them in", () => {
+        const paths = programPaths({});
 
-        expect(first.version).not.toBe(second.version);
-        expect(path.dirname(first.version)).toBe(path.dirname(second.version));
+        const first = versionDirectory(paths, "0.1.0");
+        const second = versionDirectory(paths, "0.2.0");
+        expect(first).not.toBe(second);
+        expect(path.dirname(first)).toBe(paths.versions);
     });
 
     /** The launcher outlives any one version, so it must not sit inside one. */
-    it("keeps the launcher outside the version it points at", () => {
-        const paths = installedPaths("0.1.0", {
-            [InstallEnvironment.INSTALL_DIRECTORY]: "/opt/bin"
-        });
+    it("keeps the launcher outside the versions it points into", () => {
+        const paths = programPaths({ [InstallEnvironment.INSTALL_DIRECTORY]: "/opt/bin" });
 
-        expect(paths.launcher.startsWith(paths.version)).toBe(false);
+        expect(paths.launcher.startsWith(paths.versions)).toBe(false);
         expect(paths.launcher).toBe(path.join("/opt/bin", launcherName()));
+    });
+
+    /**
+     * The receipt and the remembered answer from the channel are the program's, not a version's,
+     * and an update that replaces every version must not take either with it.
+     */
+    it("keeps what outlives a version out of every version", () => {
+        const paths = programPaths({});
+
+        expect(paths.receipt.startsWith(paths.versions)).toBe(false);
+        expect(paths.updateCheck.startsWith(paths.versions)).toBe(false);
     });
 
     /** A lab is a directory an operator can copy or delete, which the program must stay out of. */
     it("keeps the program out of the lab's own home", () => {
-        const paths = installedPaths("0.1.0", { OPENLAB_HOME: "/data/my-lab" });
+        const paths = programPaths({ OPENLAB_HOME: "/data/my-lab" });
 
         expect(paths.home.startsWith("/data/my-lab")).toBe(false);
-        expect(paths.version.startsWith("/data/my-lab")).toBe(false);
+        expect(paths.versions.startsWith("/data/my-lab")).toBe(false);
     });
 });
 

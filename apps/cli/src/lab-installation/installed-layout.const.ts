@@ -19,6 +19,20 @@ export const InstalledLayout = {
 } as const;
 
 /**
+ * What a version directory is called while it is being swapped in or out.
+ *
+ * Both are this program's own working state and neither outlives the swap that made it. They are
+ * named here rather than beside the swap, because the update that clears versions away has to know
+ * its own scratch from a directory somebody else put there.
+ */
+export const VersionScratchSuffix = {
+    INCOMING: ".incoming",
+    OUTGOING: ".outgoing"
+} as const;
+
+export type VersionScratchSuffix = (typeof VersionScratchSuffix)[keyof typeof VersionScratchSuffix];
+
+/**
  * The environment an operator can install through.
  *
  * `OPENLAB_INSTALL_DIR` is asked first because it is the one an operator sets on purpose;

@@ -7,15 +7,26 @@ import { currentReleaseTarget } from "@openlab/core/release-channel/release-targ
 import semver from "semver";
 import { installLab } from "#src/lab-installation/install-lab";
 import { readInstallReceipt } from "#src/lab-installation/install-receipt";
-import type { InstallReceipt } from "#src/lab-installation/install-receipt.types";
-import { executableName, installedPaths } from "#src/lab-installation/installed-layout";
+import {
+    executableName,
+    type ProgramPaths,
+    programPaths,
+    versionDirectory
+} from "#src/lab-installation/installed-layout";
 import { downloadArtifact } from "#src/lab-update/download-release";
-import { offeredRelease, releaseNotesUrl, releaseUrl } from "#src/lab-update/release-channel";
+import { holdUpdateLock } from "#src/lab-update/one-update-at-a-time";
+import {
+    offeredRelease,
+    releaseNotesUrl,
+    releasesUrl,
+    releaseUrl
+} from "#src/lab-update/release-channel";
 import { retireVersions, runningVersion } from "#src/lab-update/retire-versions";
 import { unpackRelease } from "#src/lab-update/unpack-release";
 import { UpdateError } from "#src/lab-update/update-error";
 import { UpdateResult } from "#src/lab-update/update-lab.const";
-import type { UpdateOutcome, UpdateRequest } from "#src/lab-update/update-lab.types";
+import type { PlaceRelease, UpdateOutcome, UpdateRequest } from "#src/lab-update/update-lab.types";
+import { UpdateStep } from "#src/lab-update/update-progress.const";
 
 /**
  * Moves an installed lab to the release the channel offers, or to one an operator names.
@@ -32,9 +43,11 @@ import type { UpdateOutcome, UpdateRequest } from "#src/lab-update/update-lab.ty
  */
 export async function updateLab(request: UpdateRequest): Promise<UpdateOutcome> {
     const environment = request.environment ?? process.env;
+    const report = request.report ?? (() => {});
     const running = request.runningVersion;
+    const paths = programPaths(environment);
 
-    const receipt = await readInstallReceipt(installedPaths(running, environment).receipt);
+    const receipt = await readInstallReceipt(paths.receipt);
     if (receipt === undefined) {
         return outcomeOf(UpdateResult.NOT_INSTALLED, running);
     }
@@ -49,10 +62,11 @@ export async function updateLab(request: UpdateRequest): Promise<UpdateOutcome> 
      * download. The release is already there, and installing it is pointing the launcher back at
      * it, which is what makes a rollback work on a machine that cannot reach a network at all.
      */
-    if (named !== undefined && !request.check && holdsRelease(named, environment)) {
-        return install(named, receipt, request, environment, true);
+    if (named !== undefined && !request.check && holdsRelease(paths, named)) {
+        return placeOnDisk({ version: named, from: undefined, receipt, paths, request });
     }
 
+    report({ step: UpdateStep.ASKING, channel: releasesUrl(environment) });
     const manifest = await offeredRelease(named, environment);
     const offered = manifest.version;
 
@@ -78,14 +92,14 @@ export async function updateLab(request: UpdateRequest): Promise<UpdateOutcome> 
         };
     }
 
-    if (holdsRelease(offered, environment)) {
-        return install(offered, receipt, request, environment, true);
+    if (holdsRelease(paths, offered)) {
+        return placeOnDisk({ version: offered, from: undefined, receipt, paths, request });
     }
 
     const workspace = await mkdtemp(path.join(tmpdir(), `openlab-update-${offered}-`));
     try {
-        const from = await bringInRelease(manifest, offered, workspace, environment);
-        return await install(offered, receipt, request, environment, false, from);
+        const from = await bringInRelease(manifest, offered, workspace, request);
+        return await placeOnDisk({ version: offered, from, receipt, paths, request });
     } finally {
         await rm(workspace, { recursive: true, force: true });
     }
@@ -94,40 +108,49 @@ export async function updateLab(request: UpdateRequest): Promise<UpdateOutcome> 
 /**
  * Hands the release over to the install, then takes back the disk the update no longer needs.
  *
- * What is kept is the version now answering and the one it replaced. Nothing a running lab reads
- * out of is removed either: a lab resolves its own executable at startup and reads its dashboard
- * and its migrations beside it, so its directory outlives an update that happened underneath it.
+ * One update happens at a time. Two of them would lay their releases out through the same two
+ * scratch directories and rename each other's work into place, and the lock is what turns that into
+ * the second one saying so rather than into a version directory holding halves of two releases.
+ *
+ * What is kept afterwards is the version now answering and the one it replaced. Nothing a running
+ * lab reads out of is removed either: a lab resolves its own executable at startup and reads its
+ * dashboard and its migrations beside it, so its directory outlives an update underneath it.
  */
-async function install(
-    version: string,
-    receipt: InstallReceipt,
-    request: UpdateRequest,
-    environment: NodeJS.ProcessEnv,
-    fromDisk: boolean,
-    from?: string
-): Promise<UpdateOutcome> {
-    const paths = installedPaths(version, environment);
-    const installed = await installLab({
-        from: from ?? paths.version,
-        version,
-        paths,
-        modifyPath: false
-    });
+async function placeOnDisk(placing: PlaceRelease): Promise<UpdateOutcome> {
+    const { version, from, receipt, paths, request } = placing;
+    const report = request.report ?? (() => {});
+    const environment = request.environment ?? process.env;
 
-    const versions = path.dirname(paths.version);
-    const retired = request.prune
-        ? await retireVersions(versions, [version, receipt.version, runningVersion(versions)])
-        : [];
+    const release = await holdUpdateLock(paths.home);
+    try {
+        report({ step: UpdateStep.INSTALLING, versionDirectory: versionDirectory(paths, version) });
+        const installed = await installLab({
+            from: from ?? versionDirectory(paths, version),
+            version,
+            paths,
+            modifyPath: false
+        });
 
-    return {
-        result: UpdateResult.UPDATED,
-        runningVersion: request.runningVersion,
-        offeredVersion: version,
-        versionDirectory: installed.versionDirectory,
-        notesUrl: releaseNotesUrl(version, environment),
-        fromDisk,
-        retired
-    };
+        const retired = request.prune
+            ? await retireVersions(paths.versions, [
+                  version,
+                  receipt.version,
+                  runningVersion(paths.versions)
+              ])
+            : [];
+
+        return {
+            result: UpdateResult.UPDATED,
+            runningVersion: request.runningVersion,
+            offeredVersion: version,
+            versionDirectory: installed.versionDirectory,
+            notesUrl: releaseNotesUrl(version, environment),
+            fromDisk: from === undefined,
+            retired
+        };
+    } finally {
+        await release();
+    }
 }
 
 /** Downloads this platform's archive, refuses it unless it verifies, and lays it out. */
@@ -135,8 +158,11 @@ async function bringInRelease(
     manifest: ReleaseManifest,
     version: string,
     workspace: string,
-    environment: NodeJS.ProcessEnv
+    request: UpdateRequest
 ): Promise<string> {
+    const environment = request.environment ?? process.env;
+    const report = request.report ?? (() => {});
+
     const target = currentReleaseTarget();
     if (target === undefined) {
         throw new UpdateError(
@@ -152,14 +178,17 @@ async function bringInRelease(
     const archive = await downloadArtifact(
         `${releaseUrl(version, environment)}/${artifact.file}`,
         artifact,
-        workspace
+        workspace,
+        report
     );
+
+    report({ step: UpdateStep.UNPACKING, file: artifact.file });
     return unpackRelease(archive, path.join(workspace, "release"));
 }
 
 /** Whether a version is already installed here as a whole release rather than a leftover directory. */
-function holdsRelease(version: string, environment: NodeJS.ProcessEnv): boolean {
-    return existsSync(path.join(installedPaths(version, environment).version, executableName()));
+function holdsRelease(paths: ProgramPaths, version: string): boolean {
+    return existsSync(path.join(versionDirectory(paths, version), executableName()));
 }
 
 /**

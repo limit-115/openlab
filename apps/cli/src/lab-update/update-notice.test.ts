@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { installedPaths } from "#src/lab-installation/installed-layout";
+import { programPaths, versionDirectory } from "#src/lab-installation/installed-layout";
 import { noticeOfNewerRelease } from "#src/lab-update/update-notice";
 import { UPDATE_CHECK_INTERVAL_MS } from "#src/lab-update/update-notice.const";
 import type { UpdateCheck } from "#src/lab-update/update-notice.types";
@@ -52,14 +52,14 @@ describe("telling an operator a release they do not have is out", () => {
 
     /** Only a lab this program installed has a receipt, and only that lab can act on a notice. */
     async function installedAt(version: string): Promise<void> {
-        const paths = installedPaths(version, environment());
+        const paths = programPaths(environment());
         await mkdir(paths.home, { recursive: true });
         await writeFile(
             paths.receipt,
             JSON.stringify({
                 version,
                 installed_at: new Date(NOW).toISOString(),
-                version_directory: paths.version,
+                version_directory: versionDirectory(paths, version),
                 launcher: paths.launcher,
                 path_files: []
             }),
@@ -68,11 +68,7 @@ describe("telling an operator a release they do not have is out", () => {
     }
 
     async function remember(check: UpdateCheck): Promise<void> {
-        await writeFile(
-            installedPaths("0.1.0", environment()).updateCheck,
-            JSON.stringify(check),
-            "utf8"
-        );
+        await writeFile(programPaths(environment()).updateCheck, JSON.stringify(check), "utf8");
     }
 
     it("names the release and where to read what is in it", async () => {
@@ -111,7 +107,7 @@ describe("telling an operator a release they do not have is out", () => {
 
         expect(asked).toBe(1);
         const remembered = JSON.parse(
-            await readFile(installedPaths("0.1.0", environment()).updateCheck, "utf8")
+            await readFile(programPaths(environment()).updateCheck, "utf8")
         ) as UpdateCheck;
         expect(remembered.offered_version).toBe("0.2.0");
     });
@@ -143,11 +139,7 @@ describe("telling an operator a release they do not have is out", () => {
 
     it("says nothing rather than failing when it kept an answer it cannot read", async () => {
         await installedAt("0.1.0");
-        await writeFile(
-            installedPaths("0.1.0", environment()).updateCheck,
-            "this is not a check",
-            "utf8"
-        );
+        await writeFile(programPaths(environment()).updateCheck, "this is not a check", "utf8");
 
         expect((await noticeOfNewerRelease("0.1.0", environment(), NOW))?.offeredVersion).toBe(
             "0.2.0"

@@ -16,7 +16,7 @@ import { resolveCliConfig } from "#src/config";
 import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
 import { installLab } from "#src/lab-installation/install-lab";
 import { reportInstallation } from "#src/lab-installation/installation-report";
-import { installedPaths } from "#src/lab-installation/installed-layout";
+import { programPaths } from "#src/lab-installation/installed-layout";
 import {
     renderInstallationReport,
     renderInstallOutcome,
@@ -27,6 +27,7 @@ import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
 import { stopLabOnSignal } from "#src/lab-start/stop-lab";
 import { renderUpdateOutcome } from "#src/lab-update/render-update";
+import { reportUpdateToTerminal } from "#src/lab-update/report-update";
 import { UpdateError } from "#src/lab-update/update-error";
 import { updateLab } from "#src/lab-update/update-lab";
 import { UpdateResult } from "#src/lab-update/update-lab.const";
@@ -206,7 +207,7 @@ program
         const outcome = await installLab({
             from: dirname(process.execPath),
             version: LAB_VERSION,
-            paths: installedPaths(LAB_VERSION),
+            paths: programPaths(),
             modifyPath: options.modifyPath !== false
         });
         process.stdout.write(`${renderInstallOutcome(outcome)}\n`);
@@ -216,7 +217,7 @@ program
     .command("uninstall")
     .description("take the program back out, leaving your lab where it is")
     .action(async () => {
-        const paths = installedPaths(LAB_VERSION);
+        const paths = programPaths();
         const outcome = await uninstallLab(paths.home, resolvePurgeConfig().workspaceRoot);
         process.stdout.write(`${renderUninstallOutcome(outcome)}\n`);
     });
@@ -228,12 +229,16 @@ program
     .option("--check", "say what the channel offers and install nothing")
     .option("--no-prune", "keep every version already on disk")
     .action(async (version: string | undefined, options: UpdateOptions, command: Command) => {
+        /** A machine being written to gets the outcome and none of the working out. */
+        const watching = globals(command).json === true ? undefined : reportUpdateToTerminal();
         const outcome = await updateLab({
             runningVersion: LAB_VERSION,
             version,
             check: options.check === true,
-            prune: options.prune !== false
-        });
+            prune: options.prune !== false,
+            ...(watching === undefined ? {} : { report: watching.report })
+        }).finally(() => watching?.done());
+
         const running =
             outcome.result === UpdateResult.UPDATED && (await daemonIsAnswering(command));
         print(outcome, globals(command).json, () => renderUpdateOutcome(outcome, running));
@@ -249,7 +254,7 @@ program
         const version = LAB_VERSION;
         const report = await reportInstallation(
             version,
-            installedPaths(version),
+            programPaths(),
             resolvePurgeConfig().workspaceRoot
         );
         print(report, globals(command).json, () => renderInstallationReport(report));

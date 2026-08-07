@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import semver from "semver";
 import writeFileAtomic from "write-file-atomic";
 import { readInstallReceipt } from "#src/lab-installation/install-receipt";
-import { installedPaths } from "#src/lab-installation/installed-layout";
+import { programPaths } from "#src/lab-installation/installed-layout";
 import { offeredRelease, releaseNotesUrl } from "#src/lab-update/release-channel";
 import {
     UPDATE_CHECK_INTERVAL_MS,
@@ -38,7 +38,7 @@ async function lookForNewerRelease(
     environment: NodeJS.ProcessEnv,
     now: number
 ): Promise<UpdateNotice | undefined> {
-    const paths = installedPaths(runningVersion, environment);
+    const paths = programPaths(environment);
 
     /** A lab this program did not install is a lab it cannot update, so it does not mention one. */
     if ((await readInstallReceipt(paths.receipt)) === undefined) {

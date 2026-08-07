@@ -2,12 +2,18 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { InstallEnvironment, InstalledLayout } from "#src/lab-installation/installed-layout.const";
 
-/** Everywhere one installation touches, worked out from the operator's environment. */
-export interface InstalledPaths {
+/**
+ * Everywhere the program keeps itself, worked out from the operator's environment.
+ *
+ * None of it is named after a version, because none of it changes when the version does. That is
+ * the point of the layout: the launcher, the receipt and the home outlive every version installed
+ * under them, and a version swap is one symlink moving inside a layout that stayed still.
+ */
+export interface ProgramPaths {
     /** The program's home, holding every version. */
     readonly home: string;
-    /** Where this version's release is unpacked to. */
-    readonly version: string;
+    /** The directory the versions go in, one directory per version. */
+    readonly versions: string;
     /** The directory the launcher goes in, which is the one that has to be on `PATH`. */
     readonly binDirectory: string;
     /** The launcher itself: what an operator types, pointing at the version that answers it. */
@@ -18,6 +24,21 @@ export interface InstalledPaths {
     readonly updateCheck: string;
 }
 
+/** Where this program keeps itself on this machine. */
+export function programPaths(environment: NodeJS.ProcessEnv = process.env): ProgramPaths {
+    const home = path.join(homedir(), InstalledLayout.HOME_DIRECTORY);
+    const binDirectory = resolveBinDirectory(environment);
+
+    return {
+        home,
+        versions: path.join(home, InstalledLayout.VERSIONS_DIRECTORY),
+        binDirectory,
+        launcher: path.join(binDirectory, launcherName()),
+        receipt: path.join(home, InstalledLayout.RECEIPT_FILE),
+        updateCheck: path.join(home, InstalledLayout.UPDATE_CHECK_FILE)
+    };
+}
+
 /**
  * Where a given version installs to.
  *
@@ -25,18 +46,8 @@ export interface InstalledPaths {
  * put in is never the one currently answering, so a failed install leaves the working lab alone and
  * an operator can point the launcher back at a version that worked.
  */
-export function installedPaths(version: string, environment = process.env): InstalledPaths {
-    const home = path.join(homedir(), InstalledLayout.HOME_DIRECTORY);
-    const binDirectory = resolveBinDirectory(environment);
-
-    return {
-        home,
-        version: path.join(home, InstalledLayout.VERSIONS_DIRECTORY, version),
-        binDirectory,
-        launcher: path.join(binDirectory, launcherName()),
-        receipt: path.join(home, InstalledLayout.RECEIPT_FILE),
-        updateCheck: path.join(home, InstalledLayout.UPDATE_CHECK_FILE)
-    };
+export function versionDirectory(paths: ProgramPaths, version: string): string {
+    return path.join(paths.versions, version);
 }
 
 /**
@@ -46,7 +57,7 @@ export function installedPaths(version: string, environment = process.env): Inst
  * belong in, which the XDG specification names and which every shell on these platforms either has
  * on `PATH` already or can be told about once.
  */
-export function resolveBinDirectory(environment = process.env): string {
+export function resolveBinDirectory(environment: NodeJS.ProcessEnv = process.env): string {
     const named = environment[InstallEnvironment.INSTALL_DIRECTORY];
     if (isStated(named)) {
         return path.resolve(expandHome(named));

@@ -3,7 +3,7 @@ import { access, stat } from "node:fs/promises";
 import path from "node:path";
 import { AgentHarnessKind } from "@openlab/protocol/agents/agent-execution.const";
 import { readInstallReceipt } from "#src/lab-installation/install-receipt";
-import type { InstalledPaths } from "#src/lab-installation/installed-layout";
+import type { ProgramPaths } from "#src/lab-installation/installed-layout";
 import { isOnPath } from "#src/lab-installation/path-entry";
 
 /** What a harness costs an operator to fix: the command they have to have, and whether they do. */
@@ -41,7 +41,7 @@ const HARNESS_COMMAND = {
  */
 export async function reportInstallation(
     runningVersion: string,
-    paths: InstalledPaths,
+    paths: ProgramPaths,
     labHome: string,
     environment = process.env
 ): Promise<InstallationReport> {
