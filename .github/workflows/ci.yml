@@ -39,7 +39,12 @@ jobs:
             - name: Lint the shell scripts
               run: shellcheck --shell=sh apps/landing/public/install.sh release/verify-release.sh
 
+    # Compiling five platforms and then starting each one costs more than every other job here put
+    # together, and a macOS runner bills ten minutes for each one it takes. A pull request gets the
+    # checks instead, and the release itself is built and driven on every push to main. `verify`
+    # needs this job, so leaving it out leaves that out too.
     build:
+        if: github.event_name != 'pull_request'
         runs-on: blacksmith-4vcpu-ubuntu-2404
         timeout-minutes: 25
         steps:
