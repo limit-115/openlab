@@ -3,9 +3,9 @@ import { AgentHarnessKind } from "#src/agents/agent-execution.const";
 import { HarnessReadinessState } from "#src/harness-readiness/harness-readiness.const";
 
 /**
- * Whether one harness can run, as of the moment the lab last ran its CLI. `cli_version` and `plan`
- * are what the two checks got back, so a ready harness proves itself by naming the version that
- * answered and the subscription it is signed in to rather than by asserting it is fine.
+ * Whether one harness can run, as of the moment the lab last ran its CLI. `cli_version`, `plan` and
+ * `balance` are what the two checks got back, so a ready harness proves itself by naming the version
+ * that answered and the account it is signed in to rather than by asserting it is fine.
  */
 export const HarnessReadinessSchema = z.object({
     harness: z.enum(AgentHarnessKind),
