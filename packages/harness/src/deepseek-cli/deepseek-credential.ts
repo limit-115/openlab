@@ -91,10 +91,15 @@ export async function resolveDeepseekWallet(signal?: AbortSignal): Promise<Deeps
     }
 
     const balance = BalanceSchema.parse(await response.json());
-    const first = balance.balance_infos[0];
+    /**
+     * A wallet can hold more than one currency, and DeepSeek says whether it may be spent across all
+     * of them at once. Naming only the first would show an operator less money than they have, or
+     * none at all while another currency still pays, so every entry is stated.
+     */
+    const balances = balance.balance_infos.map((info) => `${info.total_balance} ${info.currency}`);
     return {
         apiKey,
         available: balance.is_available,
-        balance: first === undefined ? null : `${first.total_balance} ${first.currency}`
+        balance: balances.length === 0 ? null : balances.join(" · ")
     };
 }

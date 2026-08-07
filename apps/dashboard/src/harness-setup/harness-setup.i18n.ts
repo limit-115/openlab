@@ -11,7 +11,7 @@ export const HARNESS_SETUP_EN = {
 
     billingUsage: "BILLING USAGE",
     billingUsageNote:
-        "This one spends money while it runs. There is no cap: an investigation left working overnight bills every token it writes, and only forgetting the key stops it.",
+        "This one spends money while it runs. There is no cap: an investigation left working overnight bills every token it writes. Stop the investigation to stop the spending — an agent already running was handed the key and keeps it, so forgetting the key only holds back the runs that have not started.",
 
     [HarnessReadinessState.READY]: "Ready",
     [HarnessReadinessState.NOT_INSTALLED]: "Not installed",
@@ -40,6 +40,8 @@ export const HARNESS_SETUP_EN = {
     deepseekKeyHeld:
         "The lab is holding a key. It is not shown again — replace it by pasting another.",
     deepseekKeyRefused: "The lab could not store that key.",
+    deepseekKeyUnknown:
+        "The lab could not say whether it is holding a key. Forgetting one is offered anyway, because a key that is there would still be spending.",
 
     checking: "Running the CLIs to see what is here",
     watching: "This page keeps checking on its own. Install in another window and come back.",
@@ -56,7 +58,7 @@ export const HARNESS_SETUP_RU = {
 
     billingUsage: "BILLING USAGE",
     billingUsageNote:
-        "Эта оболочка тратит деньги, пока работает. Потолка нет: исследование, оставленное на ночь, оплачивает каждый написанный токен, и остановить это можно только забрав ключ.",
+        "Эта оболочка тратит деньги, пока работает. Потолка нет: исследование, оставленное на ночь, оплачивает каждый написанный токен. Чтобы трата прекратилась, останови само исследование — уже запущенный агент получил ключ и держит его, так что забрать ключ значит лишь не дать начаться следующим прогонам.",
 
     [HarnessReadinessState.READY]: "Готов",
     [HarnessReadinessState.NOT_INSTALLED]: "Не установлен",
@@ -84,6 +86,8 @@ export const HARNESS_SETUP_RU = {
     deepseekKeyHeld:
         "Лаборатория держит ключ. Показывать его больше не будет — чтобы заменить, вставь другой.",
     deepseekKeyRefused: "Лаборатория не смогла сохранить этот ключ.",
+    deepseekKeyUnknown:
+        "Лаборатория не смогла сказать, держит ли она ключ. Забрать его всё равно предлагается: если ключ на месте, он продолжает тратить.",
 
     checking: "Запускаем CLI, чтобы увидеть, что здесь есть",
     watching: "Страница проверяет сама. Ставь в соседнем окне и возвращайся.",

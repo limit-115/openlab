@@ -7,6 +7,7 @@ import {
 } from "#src/agent-harness/agent-harness.const";
 import {
     captureSuccess,
+    type FakeCaptureResult,
     FakeHarnessProcessRunner,
     streamSuccess
 } from "#src/cli-execution/cli-process-runner.fixture";
@@ -43,11 +44,16 @@ const DeepseekTestWallet: DeepseekWallet = {
     balance: "42.50 USD"
 } as const;
 
-function successfulRunner(): FakeHarnessProcessRunner {
-    const runner = new FakeHarnessProcessRunner([
+/** What `codex login status` prints. The DeepSeek harness reads it for nothing but liveness. */
+const CODEX_LOGIN_OUTPUT = "Logged in using ChatGPT";
+
+function successfulRunner(
+    captures: readonly FakeCaptureResult[] = [
         captureSuccess(DeepseekTestCliValues.VERSION),
-        captureSuccess("Logged in using ChatGPT")
-    ]);
+        captureSuccess(CODEX_LOGIN_OUTPUT)
+    ]
+): FakeHarnessProcessRunner {
+    const runner = new FakeHarnessProcessRunner(captures);
     runner.nextStream = streamSuccess([
         {
             type: CodexNativeEventTypes.THREAD_STARTED,
@@ -162,6 +168,37 @@ describe("DeepseekHarness", () => {
         expect(runner.spawnRequests[0]?.args).toEqual(
             expect.arrayContaining(["--model", DeepseekSessionDefaults.MODEL])
         );
+    });
+
+    /**
+     * The credential is wanted three times on the way to a spawned process. Reading it three times
+     * would let a key replaced mid-flight leave the manifest naming one wallet while the process
+     * spends another, and would spend three calls on DeepSeek before any work begins.
+     */
+    it("reads the wallet once for a whole run, and again for the next one", async () => {
+        let reads = 0;
+        /** A run and the preflight after it are two conversations with the CLI, so both are answered. */
+        const runner = successfulRunner([
+            captureSuccess(DeepseekTestCliValues.VERSION),
+            captureSuccess(CODEX_LOGIN_OUTPUT),
+            captureSuccess(DeepseekTestCliValues.VERSION),
+            captureSuccess(CODEX_LOGIN_OUTPUT)
+        ]);
+        const deepseek = new DeepseekHarness({
+            runner,
+            environment: testEnvironment(),
+            resolveWallet: async () => {
+                reads += 1;
+                return DeepseekTestWallet;
+            }
+        });
+
+        await Array.fromAsync(deepseek.run(await harnessRequest("deepseek-once")));
+        const duringOneRun = reads;
+        await deepseek.preflight();
+
+        expect(duringOneRun).toBe(1);
+        expect(reads).toBe(2);
     });
 
     it("refuses a wallet DeepSeek will no longer serve before anything is spawned", async () => {

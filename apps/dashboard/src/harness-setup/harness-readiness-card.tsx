@@ -66,10 +66,10 @@ export function HarnessReadinessCard({ harness }: { harness: HarnessReadiness })
             ) : null}
             <HarnessNextStep harness={harness} />
             {/**
-             * The key field stays after the harness is ready, because forgetting the key is the only
-             * control that stops the lab spending the wallet, and it must not disappear at exactly
-             * the moment the lab has started spending it. Only a missing CLI hides it: a key is no
-             * use until the binary that spends it is on the machine.
+             * The key field stays after the harness is ready, because taking the key back is how the
+             * lab is kept from spending the wallet again, and it must not disappear at exactly the
+             * moment the lab has started spending it. Only a missing CLI hides it: a key is no use
+             * until the binary that spends it is on the machine.
              */}
             {harness.harness === AgentHarnessKind.DEEPSEEK &&
             harness.state !== HarnessReadinessState.NOT_INSTALLED ? (

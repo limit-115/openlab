@@ -24,8 +24,9 @@ import { HARNESS_SETUP_NAMESPACE } from "#src/harness-setup/harness-setup.i18n";
  * the one card that asks for a secret.
  *
  * A key that was accepted is never shown again — the field empties and the card says the lab is
- * holding one. Forgetting it is offered in the same breath, because that is the only control that
- * stops the lab spending the wallet.
+ * holding one. Forgetting it is offered in the same breath, because it is what keeps the lab from
+ * spending the wallet again. It does not reach an agent that is already running: that one was handed
+ * the key when it started, and stopping the investigation is what stops it.
  */
 export function DeepseekKeyField() {
     const { t } = useTranslation(HARNESS_SETUP_NAMESPACE);
@@ -65,6 +66,8 @@ export function DeepseekKeyField() {
                     placeholder={t("deepseekKeyPlaceholder")}
                     value={typed}
                     onChange={(event) => setTyped(event.target.value)}
+                    /** The field is emptied once the lab answers, which would swallow a key typed while it was still answering. */
+                    disabled={busy}
                 />
                 <Button
                     type="button"
@@ -73,7 +76,12 @@ export function DeepseekKeyField() {
                 >
                     {save.isPending ? t("deepseekKeySaving") : t("deepseekKeySave")}
                 </Button>
-                {held.data?.key_set === true ? (
+                {/**
+                 * Offered when the lab holds a key and also when it could not be asked. Forgetting a
+                 * key that is not there costs nothing; not offering it while one might be spending
+                 * costs money.
+                 */}
+                {held.data?.key_set === true || held.isError ? (
                     <Button
                         type="button"
                         variant="ghost"
@@ -90,6 +98,12 @@ export function DeepseekKeyField() {
             {save.isError || forget.isError ? (
                 <p className={HARNESS_CARD_ERROR}>{t("deepseekKeyRefused")}</p>
             ) : null}
+            {/**
+             * A read that failed is not the same as a lab holding no key, and drawing it as one would
+             * take away the control that stops the spending while the spending carries on. The card
+             * says it does not know instead.
+             */}
+            {held.isError ? <p className={HARNESS_CARD_ERROR}>{t("deepseekKeyUnknown")}</p> : null}
         </>
     );
 }

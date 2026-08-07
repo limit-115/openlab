@@ -91,6 +91,69 @@ describe("the DeepSeek harness card", () => {
         expect(screen.getByText("42.50 USD")).toBeInTheDocument();
     });
 
+    /**
+     * A read that failed says nothing about whether a key is there. Drawing it as "no key" would take
+     * the way out away from an operator whose wallet may be spending right now.
+     */
+    it("still offers to forget the key when it cannot be told whether one is held", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((_url: string, init?: RequestInit) =>
+                init?.method === undefined
+                    ? Promise.resolve(new Response("nope", { status: 500 }))
+                    : Promise.resolve(
+                          new Response(JSON.stringify({ key_set: false }), {
+                              status: 200,
+                              headers: { "Content-Type": "application/json" }
+                          })
+                      )
+            )
+        );
+        renderCard(stood(HarnessReadinessState.NOT_SIGNED_IN));
+
+        expect(
+            await screen.findByRole("button", { name: HARNESS_SETUP_EN.deepseekKeyForget })
+        ).toBeInTheDocument();
+        expect(screen.getByText(HARNESS_SETUP_EN.deepseekKeyUnknown)).toBeInTheDocument();
+    });
+
+    /** The field empties when the lab answers, which would swallow a key typed while it answered. */
+    it("locks the field while the lab is storing, so nothing typed is thrown away", async () => {
+        let release: (() => void) | undefined;
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((_url: string, init?: RequestInit) =>
+                init?.method === "PUT"
+                    ? new Promise<Response>((resolve) => {
+                          release = () =>
+                              resolve(
+                                  new Response(JSON.stringify({ key_set: true }), {
+                                      status: 200,
+                                      headers: { "Content-Type": "application/json" }
+                                  })
+                              );
+                      })
+                    : Promise.resolve(
+                          new Response(JSON.stringify({ key_set: false }), {
+                              status: 200,
+                              headers: { "Content-Type": "application/json" }
+                          })
+                      )
+            )
+        );
+        renderCard(stood(HarnessReadinessState.NOT_SIGNED_IN));
+
+        const field = screen.getByLabelText(HARNESS_SETUP_EN.deepseekKeyLabel);
+        await userEvent.type(field, API_KEY);
+        await userEvent.click(
+            screen.getByRole("button", { name: HARNESS_SETUP_EN.deepseekKeySave })
+        );
+
+        await waitFor(() => expect(field).toBeDisabled());
+        release?.();
+        await waitFor(() => expect(field).toHaveValue(""));
+    });
+
     /** A key is no use until the CLI that spends it is on the machine, so installing comes first. */
     it("asks for the CLI before it asks for a key", () => {
         respond(false);

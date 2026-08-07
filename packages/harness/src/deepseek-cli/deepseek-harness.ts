@@ -1,9 +1,11 @@
 import { HarnessAuthenticationMethods, HarnessKinds } from "#src/agent-harness/agent-harness.const";
 import type {
     HarnessAuthentication,
+    HarnessPreflight,
     HarnessRunRequest,
     HarnessSession
 } from "#src/agent-harness/agent-harness.types";
+import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
 import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
@@ -39,10 +41,37 @@ import type { HarnessCommand } from "#src/subscription-cli-harness/subscription-
 export class DeepseekHarness extends SubscriptionCliHarness {
     readonly kind = HarnessKinds.DEEPSEEK;
     readonly #resolveWallet: ResolveDeepseekWallet;
+    #held: Promise<DeepseekWallet> | undefined;
 
     constructor(options: DeepseekHarnessOptions = {}) {
         super(DEEPSEEK_BINARY, options);
         this.#resolveWallet = options.resolveWallet ?? resolveDeepseekWallet;
+    }
+
+    /**
+     * One wallet reading serves a whole preflight or run. The credential is asked for three times on
+     * the way to a spawned process — twice to build an environment and once to report what is paying
+     * — and reading it three times would let an operator who replaces the key mid-flight end up with
+     * a manifest naming one wallet and a process spending another. It is dropped afterwards so the
+     * next run asks again rather than reporting a balance from an hour ago.
+     */
+    override async preflight(signal?: AbortSignal): Promise<HarnessPreflight> {
+        try {
+            return await super.preflight(signal);
+        } finally {
+            this.#held = undefined;
+        }
+    }
+
+    override async *run(
+        request: HarnessRunRequest,
+        signal?: AbortSignal
+    ): AsyncIterable<HarnessEvent> {
+        try {
+            yield* super.run(request, signal);
+        } finally {
+            this.#held = undefined;
+        }
     }
 
     /**
@@ -114,8 +143,9 @@ export class DeepseekHarness extends SubscriptionCliHarness {
     }
 
     async #wallet(): Promise<DeepseekWallet> {
+        this.#held ??= this.#resolveWallet();
         try {
-            return await this.#resolveWallet();
+            return await this.#held;
         } catch (error) {
             throw this.#unusableWallet(error);
         }
