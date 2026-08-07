@@ -1,6 +1,7 @@
 import { InvestigationRepository } from "@openlab/db/investigations/investigation-repository";
 import { createDatabase } from "@openlab/db/lab-database/lab-database-client";
 import { labDatabasePath } from "#src/lab-home/lab-home";
+import { retainedCliHistory } from "#src/run-purge/retained-cli-history";
 import type {
     PurgePlan,
     PurgePlanInput,
@@ -50,6 +51,7 @@ export async function purgeRuns(input: PurgeRunsInput): Promise<PurgeResult> {
             ...new Set([...purgedInvestigationIds, ...purgedDirectories])
         ].sort(),
         purgedDirectoryCount: purgedDirectories.length,
-        purgedInvestigationRowCount: purgedInvestigationIds.length
+        purgedInvestigationRowCount: purgedInvestigationIds.length,
+        retainedCliHistory: await retainedCliHistory(input.environment)
     };
 }
