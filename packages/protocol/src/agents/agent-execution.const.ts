@@ -3,7 +3,8 @@ export const AgentHarnessKind = {
     CODEX: "codex",
     CLAUDE: "claude",
     GLM: "glm",
-    DEEPSEEK: "deepseek"
+    DEEPSEEK: "deepseek",
+    MUSE: "muse"
 } as const;
 export type AgentHarnessKind = (typeof AgentHarnessKind)[keyof typeof AgentHarnessKind];
 

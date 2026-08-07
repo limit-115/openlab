@@ -3,6 +3,7 @@ import { readClaudeAllowance } from "#src/subscription-allowance/claude-allowanc
 import { readCodexAllowance } from "#src/subscription-allowance/codex-allowance";
 import { readDeepseekAllowance } from "#src/subscription-allowance/deepseek-allowance";
 import { readGlmAllowance } from "#src/subscription-allowance/glm-allowance";
+import { readMuseAllowance } from "#src/subscription-allowance/muse-allowance";
 import type {
     ReadSubscriptionAllowance,
     SubscriptionAllowance
@@ -12,7 +13,8 @@ const ALLOWANCE_READER: Record<HarnessKind, ReadSubscriptionAllowance> = {
     [HarnessKinds.CLAUDE]: readClaudeAllowance,
     [HarnessKinds.CODEX]: readCodexAllowance,
     [HarnessKinds.GLM]: readGlmAllowance,
-    [HarnessKinds.DEEPSEEK]: readDeepseekAllowance
+    [HarnessKinds.DEEPSEEK]: readDeepseekAllowance,
+    [HarnessKinds.MUSE]: readMuseAllowance
 };
 
 /**

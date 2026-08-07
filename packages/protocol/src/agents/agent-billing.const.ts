@@ -14,12 +14,15 @@ export type AgentHarnessBilling = (typeof AgentHarnessBilling)[keyof typeof Agen
 
 /**
  * How each harness is paid for. Three of them draw on a plan the operator already bought, so a long
- * night of research costs what the plan cost. DeepSeek bills the wallet per token, and an
- * investigation left running spends real money for as long as it runs.
+ * night of research costs what the plan cost. DeepSeek and Muse Code bill per token, and an
+ * investigation left running spends real money for as long as it runs. DeepSeek at least states a
+ * balance the lab can show; Muse Code states nothing at all, so an operator running it overnight
+ * finds out what it cost from Meta afterwards.
  */
 export const HARNESS_BILLING: Record<AgentHarnessKind, AgentHarnessBilling> = {
     [AgentHarnessKind.CODEX]: AgentHarnessBilling.SUBSCRIPTION,
     [AgentHarnessKind.CLAUDE]: AgentHarnessBilling.SUBSCRIPTION,
     [AgentHarnessKind.GLM]: AgentHarnessBilling.SUBSCRIPTION,
-    [AgentHarnessKind.DEEPSEEK]: AgentHarnessBilling.USAGE
+    [AgentHarnessKind.DEEPSEEK]: AgentHarnessBilling.USAGE,
+    [AgentHarnessKind.MUSE]: AgentHarnessBilling.USAGE
 };

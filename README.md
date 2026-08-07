@@ -11,7 +11,7 @@ Local autonomous research runtime described in
 - `packages/protocol` — stable runtime contracts and JSON schemas;
 - `packages/core` — lab lifecycle rules;
 - `packages/db` — the lab's SQLite database;
-- `packages/harness` — subscription-authenticated Codex and Claude CLI harnesses;
+- `packages/harness` — the locally authenticated agent CLI harnesses;
 - `packages/notifier` — the channels the lab reaches its operator through;
 - `packages/executor` — local experiment execution.
 
@@ -50,9 +50,9 @@ openlab start
 ```
 
 The one thing OpenLab cannot install for you is an agent to think with. It dispatches every agent to
-a locally authenticated `codex`, `claude`, `glm` or `deepseek` CLI harness — the first three on a
-product subscription you already hold, DeepSeek on a key you give it — and `openlab doctor` says
-which of them it can find.
+a locally authenticated `codex`, `claude`, `glm`, `deepseek` or `muse` CLI harness — the first three
+on a product subscription you already hold, DeepSeek on a key you give it, Muse Code on the Meta
+account you sign in to — and `openlab doctor` says which of them it can find.
 
 Nothing else is needed. Node, pnpm and a toolchain are not requirements: a release is one executable
 with its runtime inside it, and the dashboard and migrations installed beside it.
@@ -144,9 +144,12 @@ pnpm openlab new --file examples/investigation.example.json
 
 The daemon applies database migrations before it opens, and reopens every investigation it already
 holds. It invokes agents only through the CLI harnesses installed on this machine: `codex`, `claude`,
-`glm` and `deepseek`. Three of them run on a subscription you already bought, which is the way this
-is meant to be run. DeepSeek is the exception — it bills a wallet by the token, nothing caps it, and
-its setup card says so before you hand over a key.
+`glm`, `deepseek` and `muse`. Three of them run on a subscription you already bought, which is the
+way this is meant to be run. Two are not — DeepSeek bills a wallet by the token, and Muse Code bills
+a Meta account the same way while publishing no balance and reporting no token counts at all, so the
+lab cannot show you what a Muse run cost until Meta does. Nothing caps either, and both setup cards
+say so before you pick one. Muse Code also sells a cheaper tier that is paid for with your prompts
+and your code; the lab pins the tier Meta does not train on, and warns on any run that is not it.
 
 ## Commands
 

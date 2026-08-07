@@ -9,5 +9,6 @@ export const HARNESS_NAME: Record<AgentHarnessKind, string> = {
     [AgentHarnessKind.CODEX]: "Codex",
     [AgentHarnessKind.CLAUDE]: "Claude",
     [AgentHarnessKind.GLM]: "GLM (Claude Harness)",
-    [AgentHarnessKind.DEEPSEEK]: "DeepSeek (Codex Harness)"
+    [AgentHarnessKind.DEEPSEEK]: "DeepSeek (Codex Harness)",
+    [AgentHarnessKind.MUSE]: "Muse Code"
 };
