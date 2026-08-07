@@ -32,6 +32,8 @@ jobs:
             attestations: write
         steps:
             - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
 
             # The version is read from the manifest rather than from the tag, so a tag that says
             # something else would publish artifacts named after a version nobody asked for. They
@@ -78,12 +80,10 @@ jobs:
                   OPENLAB_SIGNING_KEY: ${{ secrets.OPENLAB_SIGNING_KEY }}
               run: pnpm sign-release
 
-            # The archives are built from sources this workflow checked out, and the attestation is
-            # what lets anyone confirm that afterwards with `gh attestation verify`. Only a
-            # published archive is worth attesting: signing a rehearsal's would put a permanent
-            # record in the transparency log for a file that is deleted minutes later.
+            # Attesting needs a public repository or Enterprise, and only a published archive is
+            # worth a permanent transparency-log record.
             - name: Attest what was built
-              if: startsWith(github.ref, 'refs/tags/v')
+              if: startsWith(github.ref, 'refs/tags/v') && !github.event.repository.private
               uses: actions/attest-build-provenance@v4
               with:
                   subject-path: release/dist/openlab-*
@@ -120,6 +120,8 @@ jobs:
         timeout-minutes: 15
         steps:
             - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
 
             - uses: actions/download-artifact@v8
               with:
@@ -144,6 +146,7 @@ jobs:
             - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
+                  persist-credentials: false
 
             - uses: actions/download-artifact@v8
               with:
@@ -167,6 +170,7 @@ jobs:
               run: |
                   gh release create "${GITHUB_REF_NAME}" \
                       --title "${GITHUB_REF_NAME}" \
+                      --verify-tag \
                       --notes-file "${{ steps.notes.outputs.changelog }}" \
                       release/dist/openlab-* \
                       release/dist/manifest.json \
