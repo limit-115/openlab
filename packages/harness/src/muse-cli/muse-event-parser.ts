@@ -9,6 +9,7 @@ import type {
     HarnessEventParser,
     ParsedHarnessEvent
 } from "#src/agent-harness/harness-event-parser.types";
+import { HarnessProtocolError } from "#src/cli-execution/harness-error";
 import {
     MuseModels,
     MusePayloadTypes,
@@ -129,12 +130,28 @@ export class MuseEventParser implements HarnessEventParser {
         return text ? [{ type: HarnessEventTypes.ASSISTANT_COMPLETED, text }] : [];
     }
 
+    /**
+     * A stream that changes session mid-run would have every later event filed under the session it
+     * opened as, and the manifest would attribute one session's work to another. Muse can pass
+     * messages between sessions, so a second id arriving here is not unthinkable — and there is no
+     * reading of it that leaves the record true, so it stops the run instead.
+     */
     private readSession(event: Readonly<Record<string, unknown>>): void {
         const stream = readRecord(event.stream);
         if (readString(stream?.kind) !== MuseStreamKinds.SESSION) {
             return;
         }
-        this.#sessionId ??= readString(stream?.id) ?? null;
+        const sessionId = readString(stream?.id);
+        if (!sessionId) {
+            return;
+        }
+        if (this.#sessionId && this.#sessionId !== sessionId) {
+            throw new HarnessProtocolError(
+                this.kind,
+                `Muse reported session ${sessionId} on a stream that opened as ${this.#sessionId}`
+            );
+        }
+        this.#sessionId = sessionId;
     }
 }
 

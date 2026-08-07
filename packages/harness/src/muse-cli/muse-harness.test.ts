@@ -22,7 +22,9 @@ import {
     MUSE_NO_AUTO_UPDATE_VARIABLE,
     MuseAuthMechanisms,
     MuseModels,
-    MuseSessionDefaults
+    MusePayloadTypes,
+    MuseSessionDefaults,
+    MuseStreamKinds
 } from "#src/muse-cli/muse-cli.const";
 import { MuseTestValues, museRecord, museRunStream } from "#src/muse-cli/muse-cli.fixture";
 import { MuseHarness } from "#src/muse-cli/muse-harness";
@@ -277,6 +279,23 @@ describe("MuseHarness", () => {
         await expect(Array.fromAsync(muse.run(request))).rejects.toBeInstanceOf(
             HarnessRequestError
         );
+    });
+
+    /** Filing a second session's events under the first would put one run's work in another's record. */
+    it("fails the run rather than file a second session's events under the first", async () => {
+        const foreign = museRecord(MusePayloadTypes.RUN_OUTPUT_DELTA, { text: "not ours" });
+        const runner = museRunner([
+            ...museRunStream("done").slice(0, 2),
+            { ...foreign, stream: { kind: MuseStreamKinds.SESSION, id: "a-different-session" } },
+            ...museRunStream("done").slice(2)
+        ]);
+        const muse = harness(runner);
+
+        const events = await Array.fromAsync(muse.run(await harnessRequest("muse-two-sessions")));
+        const completed = lastCompleted(events);
+
+        expect(completed.result.status).toBe(HarnessRunStatuses.FAILED);
+        expect(completed.result.error).toContain("a-different-session");
     });
 
     it("reports a tool call and its result as one call the operator can follow", async () => {
