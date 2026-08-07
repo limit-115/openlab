@@ -21,7 +21,11 @@ export const AllowanceWindowSchema = z.object({
 export const SubscriptionAllowanceSchema = z.object({
     harness: z.enum(AgentHarnessKind),
     state: z.enum(SubscriptionAllowanceState),
-    /** The plan tier the vendor named, which is what tells the operator which account answered. */
+    /**
+     * What the vendor said the account is worth: a plan tier from a vendor that sells tiers, and the
+     * balance left from one that sells tokens. Either way it is the sentence that tells the operator
+     * which account answered and how much of it is left.
+     */
     plan: z.string().min(1).nullable(),
     windows: z.array(AllowanceWindowSchema),
     error: z.string().min(1).nullable(),

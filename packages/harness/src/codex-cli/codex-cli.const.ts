@@ -8,9 +8,19 @@ export const CodexSessionDefaults = {
     EFFORT: HarnessEffortLevels.MEDIUM
 } as const;
 
-/** Codex takes reasoning effort as a config override rather than a flag. */
+/** Codex takes everything but the model itself as a config override rather than as a flag. */
 export const CodexConfigKeys = {
-    MODEL_REASONING_EFFORT: "model_reasoning_effort"
+    MODEL_REASONING_EFFORT: "model_reasoning_effort",
+    MODEL_PROVIDER: "model_provider",
+    MODEL_PROVIDERS: "model_providers"
+} as const;
+
+/** What one entry under `model_providers` states about the endpoint a run is served from. */
+export const CodexProviderFields = {
+    NAME: "name",
+    BASE_URL: "base_url",
+    WIRE_API: "wire_api",
+    ENV_KEY: "env_key"
 } as const;
 
 export const CodexPermissionModes = {

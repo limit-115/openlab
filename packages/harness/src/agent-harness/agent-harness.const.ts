@@ -1,15 +1,22 @@
 export const HarnessKinds = {
     CODEX: "codex",
     CLAUDE: "claude",
-    GLM: "glm"
+    GLM: "glm",
+    DEEPSEEK: "deepseek"
 } as const;
 
 export type HarnessKind = (typeof HarnessKinds)[keyof typeof HarnessKinds];
 
+/**
+ * What a harness proved before it was allowed to run. Three of these name a subscription the vendor
+ * bills by the month; `DEEPSEEK_API_KEY` names a wallet the vendor bills by the token, and it is
+ * spelled differently precisely so a run manifest never reads as a subscription run.
+ */
 export const HarnessAuthenticationMethods = {
     CHATGPT: "chatgpt",
     CLAUDE_AI: "claude.ai",
-    ZAI_CODING_PLAN: "zai-coding-plan"
+    ZAI_CODING_PLAN: "zai-coding-plan",
+    DEEPSEEK_API_KEY: "deepseek-api-key"
 } as const;
 
 export type HarnessAuthenticationMethod =

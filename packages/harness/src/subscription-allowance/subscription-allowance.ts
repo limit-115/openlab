@@ -1,6 +1,7 @@
 import { type HarnessKind, HarnessKinds } from "#src/agent-harness/agent-harness.const";
 import { readClaudeAllowance } from "#src/subscription-allowance/claude-allowance";
 import { readCodexAllowance } from "#src/subscription-allowance/codex-allowance";
+import { readDeepseekAllowance } from "#src/subscription-allowance/deepseek-allowance";
 import { readGlmAllowance } from "#src/subscription-allowance/glm-allowance";
 import type {
     ReadSubscriptionAllowance,
@@ -10,7 +11,8 @@ import type {
 const ALLOWANCE_READER: Record<HarnessKind, ReadSubscriptionAllowance> = {
     [HarnessKinds.CLAUDE]: readClaudeAllowance,
     [HarnessKinds.CODEX]: readCodexAllowance,
-    [HarnessKinds.GLM]: readGlmAllowance
+    [HarnessKinds.GLM]: readGlmAllowance,
+    [HarnessKinds.DEEPSEEK]: readDeepseekAllowance
 };
 
 /**

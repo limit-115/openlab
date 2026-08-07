@@ -51,7 +51,8 @@ export class ClaudeHarness extends SubscriptionCliHarness {
             const auth = ClaudeAuthStatusSchema.parse(JSON.parse(result.stdout));
             return {
                 method: HarnessAuthenticationMethods.CLAUDE_AI,
-                subscription: auth.subscriptionType
+                subscription: auth.subscriptionType,
+                wallet: null
             };
         } catch (error) {
             throw new HarnessCapabilityError(
