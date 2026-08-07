@@ -26,6 +26,10 @@ import { uninstallLab } from "#src/lab-installation/uninstall-lab";
 import { openDashboard } from "#src/lab-start/open-dashboard";
 import { reportStartupToTerminal } from "#src/lab-start/startup-checklist";
 import { stopLabOnSignal } from "#src/lab-start/stop-lab";
+import { renderUpdateOutcome } from "#src/lab-update/render-update";
+import { UpdateError } from "#src/lab-update/update-error";
+import { updateLab } from "#src/lab-update/update-lab";
+import { UpdateResult } from "#src/lab-update/update-lab.const";
 import { LAB_VERSION } from "#src/lab-version";
 import {
     renderAssumptions,
@@ -49,6 +53,11 @@ interface StartOptions {
 
 interface InstallOptions {
     modifyPath?: boolean;
+}
+
+interface UpdateOptions {
+    check?: boolean;
+    prune?: boolean;
 }
 
 interface NewOptions {
@@ -192,6 +201,27 @@ program
         const paths = installedPaths(LAB_VERSION);
         const outcome = await uninstallLab(paths.home, resolvePurgeConfig().workspaceRoot);
         process.stdout.write(`${renderUninstallOutcome(outcome)}\n`);
+    });
+
+program
+    .command("update")
+    .description("move this lab to the release published now, or to one you name")
+    .argument("[version]", "install this version instead of the current release")
+    .option("--check", "say what the channel offers and install nothing")
+    .option("--no-prune", "keep every version already on disk")
+    .action(async (version: string | undefined, options: UpdateOptions, command: Command) => {
+        const outcome = await updateLab({
+            runningVersion: LAB_VERSION,
+            version,
+            check: options.check === true,
+            prune: options.prune !== false
+        });
+        const running =
+            outcome.result === UpdateResult.UPDATED && (await daemonIsAnswering(command));
+        print(outcome, globals(command).json, () => renderUpdateOutcome(outcome, running));
+        if (outcome.result === UpdateResult.NOT_INSTALLED) {
+            process.exitCode = 1;
+        }
     });
 
 program
@@ -389,7 +419,7 @@ async function resolveInvestigationRequest(options: NewOptions): Promise<Investi
 try {
     await program.parseAsync();
 } catch (error) {
-    if (error instanceof LabApiError) {
+    if (error instanceof LabApiError || error instanceof UpdateError) {
         consola.error(error.message);
         process.exitCode = 1;
     } else {
