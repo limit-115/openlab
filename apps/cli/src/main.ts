@@ -12,6 +12,7 @@ import type { StatusSnapshot } from "@openlab/protocol/investigation-status/stat
 import { Command, InvalidArgumentError } from "commander";
 import { consola } from "consola";
 import { LabApiClient, LabApiError } from "#src/api-client";
+import { OPENLAB_MARK } from "#src/brand/openlab-mark";
 import { resolveCliConfig } from "#src/config";
 import { harnessKindList, parseHarnessKinds } from "#src/harness-selection";
 import { installLab } from "#src/lab-installation/install-lab";
@@ -157,6 +158,8 @@ program
     .option("--no-open", "leave the browser alone")
     .option("--verbose", "write what every request did, not only what went wrong")
     .action(async (options: StartOptions) => {
+        /** The mark stands above the block, the name opens it: the lockup, stacked. */
+        process.stdout.write(`\n${OPENLAB_MARK}\n\n`);
         intro("OpenLab");
         /**
          * Asked for while the lab comes up rather than before it, so a slow channel delays a start
