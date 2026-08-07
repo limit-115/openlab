@@ -24,8 +24,7 @@ const FrameBaseSchema = z.object({
 const RunStartedFrameSchema = FrameBaseSchema.extend({
     kind: z.literal(AgentActivityFrameKind.RUN_STARTED),
     ...AgentRunIdentitySchema.shape,
-    session_id: z.string().min(1).nullable(),
-    resumed: z.boolean()
+    session_id: z.string().min(1).nullable()
 });
 
 /**

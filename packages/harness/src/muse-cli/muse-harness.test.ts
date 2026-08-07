@@ -13,7 +13,7 @@ import {
     FakeHarnessProcessRunner,
     streamSuccess
 } from "#src/cli-execution/cli-process-runner.fixture";
-import { HarnessCapabilityError, HarnessRequestError } from "#src/cli-execution/harness-error";
+import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { testEnvironment } from "#src/cli-execution/subscription-environment.fixture";
 import { museCredentialPath } from "#src/muse-cli/muse-account";
 import type { MuseAccount } from "#src/muse-cli/muse-account.types";
@@ -267,18 +267,6 @@ describe("MuseHarness", () => {
                 wallet: expect.stringContaining(MuseTestValues.EMAIL)
             }
         });
-    });
-
-    /** A resume the CLI never performed would leave a manifest claiming continuity that never was. */
-    it("refuses to resume rather than start a fresh session under a borrowed id", async () => {
-        const muse = harness(museRunner());
-        const request = await harnessRequest("muse-resume", {
-            resumeSessionId: MuseTestValues.SESSION_ID
-        });
-
-        await expect(Array.fromAsync(muse.run(request))).rejects.toBeInstanceOf(
-            HarnessRequestError
-        );
     });
 
     /** Filing a second session's events under the first would put one run's work in another's record. */

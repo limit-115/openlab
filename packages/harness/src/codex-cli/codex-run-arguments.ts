@@ -21,7 +21,10 @@ export function codexRunArguments(
     responseSchemaPath: string | undefined,
     configOverrides: readonly string[]
 ): readonly string[] {
-    const sharedArguments = [
+    return [
+        "exec",
+        "--color",
+        CodexColorModes.NEVER,
         "--json",
         "--ignore-user-config",
         "--skip-git-repo-check",
@@ -31,14 +34,9 @@ export function codexRunArguments(
         "--model",
         session.model,
         ...configOverrides,
-        ...(responseSchemaPath === undefined ? [] : ["--output-schema", responseSchemaPath])
+        ...(responseSchemaPath === undefined ? [] : ["--output-schema", responseSchemaPath]),
+        "-"
     ];
-
-    if (request.resumeSessionId) {
-        return ["exec", "resume", ...sharedArguments, request.resumeSessionId, "-"];
-    }
-
-    return ["exec", "--color", CodexColorModes.NEVER, ...sharedArguments, "-"];
 }
 
 /** Codex parses an override value as TOML, so every value has to arrive as a quoted string. */

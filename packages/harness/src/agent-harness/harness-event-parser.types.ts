@@ -6,7 +6,7 @@ import type {
 } from "#src/agent-harness/harness-event.const";
 
 export type ParsedHarnessEvent =
-    | { readonly type: typeof HarnessEventTypes.SESSION_STARTED; readonly resumed: boolean }
+    | { readonly type: typeof HarnessEventTypes.SESSION_STARTED }
     | {
           readonly type:
               | typeof HarnessEventTypes.ASSISTANT_DELTA

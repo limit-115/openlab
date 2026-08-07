@@ -81,6 +81,6 @@ export class CodexHarness extends SubscriptionCliHarness {
     }
 
     protected createEventParser(request: HarnessRunRequest): HarnessEventParser {
-        return new CodexEventParser(request.resumeSessionId, request.responseSchema !== undefined);
+        return new CodexEventParser(request.responseSchema !== undefined);
     }
 }

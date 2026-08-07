@@ -27,7 +27,6 @@ export function claudeRunArguments(
         session.model,
         "--effort",
         session.effort,
-        ...(request.resumeSessionId === undefined ? [] : ["--resume", request.resumeSessionId]),
         ...(request.responseSchema === undefined
             ? []
             : ["--json-schema", JSON.stringify(responseJsonSchema(request.responseSchema))])

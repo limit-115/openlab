@@ -21,15 +21,9 @@ import { HarnessProtocolError } from "#src/cli-execution/harness-error";
 
 export class ClaudeEventParser implements HarnessEventParser {
     readonly kind = HarnessKinds.CLAUDE;
-    #sessionId: string | null;
+    #sessionId: string | null = null;
     #structuredOutputCandidate: unknown;
     #hasStructuredOutputCandidate = false;
-    readonly #resumed: boolean;
-
-    constructor(resumeSessionId: string | undefined) {
-        this.#sessionId = resumeSessionId ?? null;
-        this.#resumed = resumeSessionId !== undefined;
-    }
 
     get sessionId(): string | null {
         return this.#sessionId;
@@ -50,12 +44,7 @@ export class ClaudeEventParser implements HarnessEventParser {
         switch (nativeType) {
             case ClaudeNativeEventTypes.SYSTEM:
                 if (readString(event.subtype) === ClaudeSystemSubtypes.INIT) {
-                    return [
-                        {
-                            type: HarnessEventTypes.SESSION_STARTED,
-                            resumed: this.#resumed
-                        }
-                    ];
+                    return [{ type: HarnessEventTypes.SESSION_STARTED }];
                 }
                 break;
             case ClaudeNativeEventTypes.STREAM_EVENT:
@@ -190,6 +179,7 @@ export class ClaudeEventParser implements HarnessEventParser {
         return events;
     }
 
+    /** Filing a second session's events under the first would put one run's work in another's record. */
     private readSession(event: Readonly<Record<string, unknown>>): void {
         const sessionId = readString(event.session_id);
         if (!sessionId) {
@@ -198,7 +188,7 @@ export class ClaudeEventParser implements HarnessEventParser {
         if (this.#sessionId && this.#sessionId !== sessionId) {
             throw new HarnessProtocolError(
                 this.kind,
-                `Claude resumed session ${this.#sessionId} but reported ${sessionId}`
+                `Claude reported session ${sessionId} on a stream that opened as ${this.#sessionId}`
             );
         }
         this.#sessionId = sessionId;

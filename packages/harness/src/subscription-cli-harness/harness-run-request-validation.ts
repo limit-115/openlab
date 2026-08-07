@@ -19,9 +19,6 @@ export function validateHarnessRunRequest(kind: HarnessKind, request: HarnessRun
     if (request.model !== undefined && !request.model.trim()) {
         throw new HarnessRequestError(kind, "Harness model cannot be empty");
     }
-    if (request.resumeSessionId !== undefined && !request.resumeSessionId.trim()) {
-        throw new HarnessRequestError(kind, "Resume session id cannot be empty");
-    }
     const timeoutMs = request.timeoutMs ?? HarnessTimeoutMilliseconds.RUN;
     try {
         validateTimeoutMilliseconds(timeoutMs, "Run timeout");

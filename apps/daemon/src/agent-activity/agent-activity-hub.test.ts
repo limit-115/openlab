@@ -36,7 +36,7 @@ describe("AgentActivityHub", () => {
         hub.subscribe((_frame, activity) => phases.push(activity.phase));
 
         for (const event of harnessEvents([
-            { type: HarnessEventTypes.SESSION_STARTED, resumed: false },
+            { type: HarnessEventTypes.SESSION_STARTED },
             { type: HarnessEventTypes.REASONING_COMPLETED, text: "plan the run" },
             {
                 type: HarnessEventTypes.TOOL,

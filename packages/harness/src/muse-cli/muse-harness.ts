@@ -12,7 +12,7 @@ import type {
 } from "#src/agent-harness/agent-harness.types";
 import type { HarnessEvent } from "#src/agent-harness/harness-event.types";
 import type { HarnessEventParser } from "#src/agent-harness/harness-event-parser.types";
-import { HarnessCapabilityError, HarnessRequestError } from "#src/cli-execution/harness-error";
+import { HarnessCapabilityError } from "#src/cli-execution/harness-error";
 import { HarnessCapabilityGaps } from "#src/cli-execution/harness-error.const";
 import { resolveMuseAccount } from "#src/muse-cli/muse-account";
 import type { MuseAccount, ResolveMuseAccount } from "#src/muse-cli/muse-account.types";
@@ -65,23 +65,11 @@ export class MuseHarness extends SubscriptionCliHarness {
         }
     }
 
-    /**
-     * `muse resume` continues a session and `muse exec --session-id` names one, and the lab has not
-     * established that the second does the first. Starting a fresh session under a borrowed id would
-     * leave a manifest claiming continuity that never happened, so a resume is refused in words
-     * instead. Nothing in the lab resumes a harness session today.
-     */
+    /** One credential reading serves a whole run, and the next one asks again. */
     override async *run(
         request: HarnessRunRequest,
         signal?: AbortSignal
     ): AsyncIterable<HarnessEvent> {
-        if (request.resumeSessionId !== undefined) {
-            throw new HarnessRequestError(
-                this.kind,
-                "Muse Code runs cannot be resumed: the CLI resumes a session interactively and its headless mode only names one"
-            );
-        }
-
         try {
             yield* super.run(request, signal);
         } finally {

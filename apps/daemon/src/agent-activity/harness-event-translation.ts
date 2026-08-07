@@ -44,8 +44,7 @@ export class HarnessEventTranslator {
                     ...this.#identity,
                     ...base,
                     kind: AgentActivityFrameKind.RUN_STARTED,
-                    session_id: event.sessionId,
-                    resumed: event.resumed
+                    session_id: event.sessionId
                 };
             case HarnessEventTypes.REASONING_DELTA:
                 return this.textFrame(base, event, AgentActivityFrameKind.THINKING, false);

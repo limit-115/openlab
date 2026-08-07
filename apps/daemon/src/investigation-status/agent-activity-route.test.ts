@@ -24,7 +24,7 @@ import { ResearchLoopOutcomeStatus } from "#src/research-cycle/research-loop.con
 import type { ResearchLoopOutcome } from "#src/research-cycle/research-loop.types";
 
 const HISTORY = harnessEvents([
-    { type: HarnessEventTypes.SESSION_STARTED, resumed: false },
+    { type: HarnessEventTypes.SESSION_STARTED },
     { type: HarnessEventTypes.REASONING_COMPLETED, text: "The evaluator needs a guard" },
     {
         type: HarnessEventTypes.TOOL,
