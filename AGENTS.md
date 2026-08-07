@@ -108,3 +108,13 @@
 - When babysitting: poll checks and comments newer than the last push, verify each bot finding against
   the source, fix real ones, dismiss false positives with a written reason. Stay quiet when nothing is
   new. Stop when the bots are green on the latest commit.
+
+## Taste
+
+- Comments describe how a thing is used, and move when the code moves. To be used mostly to describe
+  functions, not to annotate every line of behavior.
+- If a rule here fights the task in front of you, say so loudly and get a human sign-off before
+  breaking it.
+- Don't verify with browsers or computer use unless the user explicitly agrees or requests it.
+- Security is important, but should not be over-indexed on, especially for dev mode/maintainer-only
+  features.
