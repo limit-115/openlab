@@ -30,6 +30,7 @@ import { renderUpdateOutcome } from "#src/lab-update/render-update";
 import { UpdateError } from "#src/lab-update/update-error";
 import { updateLab } from "#src/lab-update/update-lab";
 import { UpdateResult } from "#src/lab-update/update-lab.const";
+import { noticeOfNewerRelease } from "#src/lab-update/update-notice";
 import { LAB_VERSION } from "#src/lab-version";
 import {
     renderAssumptions,
@@ -156,6 +157,12 @@ program
     .option("--verbose", "write what every request did, not only what went wrong")
     .action(async (options: StartOptions) => {
         intro("OpenLab");
+        /**
+         * Asked for while the lab comes up rather than before it, so a slow channel delays a start
+         * by nothing. It resolves to nothing at all when there is no newer release, no network, or
+         * no installation of ours to be talking about.
+         */
+        const newerRelease = noticeOfNewerRelease(LAB_VERSION);
         const daemon = await startDaemon(
             {
                 ...(options.port === undefined ? {} : { port: options.port }),
@@ -174,6 +181,17 @@ program
                 ? `Lab running at ${daemon.url}, opened in your browser`
                 : `Lab running at ${daemon.url}`
         );
+        /**
+         * A release the operator does not have is said once and installed never. A lab that is
+         * about to research for hours is not a lab to change underneath, and the one command that
+         * would change it is theirs to run when it suits them.
+         */
+        const newer = await newerRelease;
+        if (newer !== undefined) {
+            log.info(
+                `OpenLab ${newer.offeredVersion} is out — install it when it suits you with: openlab update`
+            );
+        }
         /** What the lab did is written down for whoever reads it; what to press is for whoever can. */
         if (isTTY(process.stdout)) {
             log.message("Press Ctrl+C to stop the lab");

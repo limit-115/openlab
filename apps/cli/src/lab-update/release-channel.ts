@@ -3,6 +3,7 @@ import type { ReleaseManifest } from "@openlab/core/release-channel/release-mani
 import {
     DEFAULT_RELEASES_URL,
     MANIFEST_FILE,
+    MANIFEST_TIMEOUT_MS,
     UpdateEnvironment
 } from "#src/lab-update/release-channel.const";
 import { UpdateError } from "#src/lab-update/update-error";
@@ -38,14 +39,15 @@ export function releaseNotesUrl(
  */
 export async function offeredRelease(
     version: string | undefined,
-    environment: NodeJS.ProcessEnv = process.env
+    environment: NodeJS.ProcessEnv = process.env,
+    timeoutMs: number = MANIFEST_TIMEOUT_MS
 ): Promise<ReleaseManifest> {
     const from =
         version === undefined
             ? `${releasesUrl(environment)}/latest/download/${MANIFEST_FILE}`
             : `${releaseUrl(version, environment)}/${MANIFEST_FILE}`;
 
-    const parsed = ReleaseManifestSchema.safeParse(await fetchJson(from, version));
+    const parsed = ReleaseManifestSchema.safeParse(await fetchJson(from, version, timeoutMs));
     if (!parsed.success) {
         throw new UpdateError(
             `${from} is not a release manifest this lab can read. Nothing was installed.`
@@ -54,8 +56,12 @@ export async function offeredRelease(
     return parsed.data;
 }
 
-async function fetchJson(from: string, version: string | undefined): Promise<unknown> {
-    const response = await fetch(from).catch(() => {
+async function fetchJson(
+    from: string,
+    version: string | undefined,
+    timeoutMs: number
+): Promise<unknown> {
+    const response = await fetch(from, { signal: AbortSignal.timeout(timeoutMs) }).catch(() => {
         throw new UpdateError(`Could not reach ${from}.`);
     });
 

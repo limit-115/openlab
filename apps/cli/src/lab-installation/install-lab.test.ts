@@ -36,7 +36,8 @@ describe("installing the release an executable came from", () => {
             version: path.join(home, "versions", version),
             binDirectory,
             launcher: path.join(binDirectory, "openlab"),
-            receipt: path.join(home, "install-receipt.json")
+            receipt: path.join(home, "install-receipt.json"),
+            updateCheck: path.join(home, "update-check.json")
         };
     }
 

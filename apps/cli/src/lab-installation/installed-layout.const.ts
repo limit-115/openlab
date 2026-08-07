@@ -12,6 +12,8 @@ export const InstalledLayout = {
     VERSIONS_DIRECTORY: "versions",
     /** What was installed, where it was put, and what was changed to make it reachable. */
     RECEIPT_FILE: "install-receipt.json",
+    /** The last thing the release channel said, so that starting a lab does not ask it every time. */
+    UPDATE_CHECK_FILE: "update-check.json",
     /** Where the launcher goes when the operator names no directory of their own. */
     FALLBACK_BIN_DIRECTORY: ".local/bin"
 } as const;

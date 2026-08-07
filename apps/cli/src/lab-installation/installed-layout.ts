@@ -14,6 +14,8 @@ export interface InstalledPaths {
     readonly launcher: string;
     /** Where the receipt of this installation is kept. */
     readonly receipt: string;
+    /** Where the last answer from the release channel is remembered. */
+    readonly updateCheck: string;
 }
 
 /**
@@ -32,7 +34,8 @@ export function installedPaths(version: string, environment = process.env): Inst
         version: path.join(home, InstalledLayout.VERSIONS_DIRECTORY, version),
         binDirectory,
         launcher: path.join(binDirectory, launcherName()),
-        receipt: path.join(home, InstalledLayout.RECEIPT_FILE)
+        receipt: path.join(home, InstalledLayout.RECEIPT_FILE),
+        updateCheck: path.join(home, InstalledLayout.UPDATE_CHECK_FILE)
     };
 }
 
