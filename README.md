@@ -103,7 +103,7 @@ Releases are built by GitHub Actions and attested, so what you downloaded can be
 workflow that built it:
 
 ```bash
-gh attestation verify openlab-<version>-<platform>.tar.gz --repo dibenkobit/openlab
+gh attestation verify openlab-<version>-<platform>.tar.gz --repo limit-115/openlab
 ```
 
 ## Running from the sources

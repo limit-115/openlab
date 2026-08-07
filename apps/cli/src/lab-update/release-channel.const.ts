@@ -9,7 +9,7 @@ export const UpdateEnvironment = {
  * This is the variable and the default the bootstrap installer already reads, so an operator who
  * mirrors releases states it once and both the first install and every update after it follow.
  */
-export const DEFAULT_RELEASES_URL = "https://github.com/dibenkobit/openlab/releases";
+export const DEFAULT_RELEASES_URL = "https://github.com/limit-115/openlab/releases";
 
 /** The file every install and every update reads before it downloads anything. */
 export const MANIFEST_FILE = "manifest.json";

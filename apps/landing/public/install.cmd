@@ -12,7 +12,7 @@
 :: Anyone who needs one runs install.ps1 directly, which is what its own help describes.
 setlocal
 
-if "%OPENLAB_RELEASES_URL%"=="" set "OPENLAB_RELEASES_URL=https://github.com/dibenkobit/openlab/releases"
+if "%OPENLAB_RELEASES_URL%"=="" set "OPENLAB_RELEASES_URL=https://github.com/limit-115/openlab/releases"
 
 where powershell >nul 2>&1
 if errorlevel 1 (

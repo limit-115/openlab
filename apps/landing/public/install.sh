@@ -16,7 +16,7 @@ set -eu
 # Releases live on GitHub, which serves every asset of the newest one under `latest/download` as
 # well as under its own tag. That stable URL is why finding the current version costs no extra
 # request: the manifest fetched from it states the version the rest of the install is pinned to.
-OPENLAB_RELEASES_URL="${OPENLAB_RELEASES_URL:-https://github.com/dibenkobit/openlab/releases}"
+OPENLAB_RELEASES_URL="${OPENLAB_RELEASES_URL:-https://github.com/limit-115/openlab/releases}"
 
 main() {
     version="${OPENLAB_VERSION:-}"

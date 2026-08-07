@@ -41,7 +41,7 @@ $ProgressPreference = 'SilentlyContinue'
 $ReleasesUrl = if ($env:OPENLAB_RELEASES_URL) {
     $env:OPENLAB_RELEASES_URL
 } else {
-    'https://github.com/dibenkobit/openlab/releases'
+    'https://github.com/limit-115/openlab/releases'
 }
 
 function Write-Step([string]$Message) {

@@ -33,12 +33,13 @@ const SOCIAL_PREVIEW = {
 } as const;
 
 /**
- * Where the source is. `lab` is the name the git remote still carries and GitHub redirects it here,
- * so the canonical name is the one written down. Stated once because both the header link and the
- * structured data below point at it, and a page that names its repository twice will eventually
- * name two different ones.
+ * Where the source is. The git remote still carries the owner the repository was created under and
+ * GitHub redirects it here, so the canonical owner is the one written down: a redirect lasts only
+ * until somebody creates a repository under the retired name. Stated once because both the header
+ * link and the structured data below point at it, and a page that names its repository twice will
+ * eventually name two different ones.
  */
-const REPOSITORY_URL = "https://github.com/dibenkobit/openlab";
+const REPOSITORY_URL = "https://github.com/limit-115/openlab";
 
 /**
  * The same claims the page already makes in prose, in the one shape a search engine and an answer
