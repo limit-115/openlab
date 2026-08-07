@@ -41,15 +41,70 @@ jobs:
 
             # The installers are the lab's front door and nothing else reads them. POSIX sh is easy
             # to get subtly wrong, and getting it wrong here means an operator who cannot install.
-            - name: Lint the shell installer
-              run: shellcheck --shell=sh apps/landing/public/install.sh
+            - name: Lint the shell scripts
+              run: shellcheck --shell=sh apps/landing/public/install.sh release/verify-release.sh
 
-            # A compiled lab can break while the sources still pass, because the release runtime is
-            # not the one the tests ran on. Building one and installing it is what catches that.
-            - name: Build and install a release
-              run: |
-                  pnpm release linux-x64
-                  mkdir -p /tmp/release-check
-                  tar -xzf release/dist/openlab-*-linux-x64.tar.gz -C /tmp/release-check
-                  HOME=/tmp/release-home /tmp/release-check/openlab install --no-modify-path
-                  HOME=/tmp/release-home /tmp/release-check/openlab doctor
+    # Every platform is cross-compiled from one machine, which is how a release is cut, so this is
+    # built the same way rather than once per runner. Windows in particular cannot build its own:
+    # its archive is a zip, and `zip` is not a thing a Windows runner has.
+    build:
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version-file: .node-version
+                  cache: pnpm
+
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version-file: .bun-version
+
+            - run: pnpm install --frozen-lockfile
+
+            # The three targets that have a runner to be run on. A release builds all five; the two
+            # without a runner are covered by being built the same way as the three that are.
+            - run: pnpm release linux-x64 darwin-arm64 windows-x64
+
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: release
+                  path: release/dist/
+                  retention-days: 3
+
+    # A compiled lab can break while the sources still pass, because the runtime a release carries
+    # is not the one the tests ran on — and it breaks per platform. Until this ran, four of the five
+    # binaries a release publishes had never been started by anyone before an operator started them.
+    verify:
+        needs: build
+        strategy:
+            # One platform failing is a fact about that platform, and stopping the others hides
+            # whether it is the only one.
+            fail-fast: false
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      target: linux-x64
+                    - os: macos-latest
+                      target: darwin-arm64
+                    - os: windows-latest
+                      target: windows-x64
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/download-artifact@v7
+              with:
+                  name: release
+                  path: release/dist
+
+            # Git Bash is on the Windows runner, so one script drives all three platforms rather
+            # than one script per shell that would then differ in what it checks.
+            - name: Install, update and run the release
+              shell: bash
+              run: sh release/verify-release.sh ${{ matrix.target }}

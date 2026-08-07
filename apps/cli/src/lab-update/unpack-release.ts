@@ -15,7 +15,7 @@ import { UpdateError } from "#src/lab-update/update-error";
  */
 export async function unpackRelease(archive: string, into: string): Promise<string> {
     await mkdir(into, { recursive: true });
-    await execa("tar", ["-xf", archive, "-C", into]).catch(() => {
+    await execa(tarCommand(), ["-xf", archive, "-C", into]).catch(() => {
         throw new UpdateError(`Could not unpack ${path.basename(archive)}. Nothing was installed.`);
     });
 
@@ -25,4 +25,21 @@ export async function unpackRelease(archive: string, into: string): Promise<stri
         );
     }
     return into;
+}
+
+/**
+ * Which `tar` the archive is handed to.
+ *
+ * Everywhere but Windows this is whatever `tar` the machine has, and every one of them reads the
+ * gzipped tar those platforms are published as. Windows has shipped bsdtar as part of the system
+ * since Windows 10 1803, and bsdtar is what reads the zip Windows is published as — but it is asked
+ * for by its full path rather than looked up, because a Windows machine with Git installed has GNU
+ * tar ahead of it on `PATH`, and GNU tar does not read a zip at all.
+ */
+function tarCommand(): string {
+    if (process.platform !== "win32") {
+        return "tar";
+    }
+    const system = path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe");
+    return existsSync(system) ? system : "tar";
 }
